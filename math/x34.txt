@@ -1,0 +1,1000 @@
+, Qk+1 =
+Q
+0 k+1
+k
+Q
+0 k+1k ,
+where 1 ≤ k ≤ n − 1. If we express the vectors Ak
+in terms of the Qi and Q
+0 i
+, we get the
+triangular system
+A
+1 = k Q
+0
+1
+k Q
+1
+,
+.
+.
+.
+A
+j = (A
+j
+· Q
+1
+) Q
+1 + · · · + (A
+j
+· Q
+i
+) Q
+i + · · · + (A
+j
+· Q
+j−1
+) Q
+j−1 + k Q
+0
+j
+k Q
+j
+,
+.
+.
+.
+A
+n = (A
+n
+· Q
+1
+) Q
+1 + · · · + (A
+n
+· Q
+n−1
+) Q
+n−1 + k Q
+0
+n
+k Q
+n
+.
+Letting rk k = k Q
+0 kk
+, and ri j = Aj
+· Qi
+(the reversal of i and j on the right-hand side is
+intentional!), where 1 ≤ k ≤ n, 2 ≤ j ≤ n, and 1 ≤ i ≤ j − 1, and letting qi j be the ith
+component of Qj
+, we note that ai j , the ith component of Aj
+, is given by
+ai j = r1 jqi 1 + · · · + ri jqi i + · · · + rj jqi j = qi 1r1 j + · · · + qi iri j + · · · + qi jrj j .
+If we let Q = (qi j ), the matrix whose columns are the components of the Qj
+, and R = (ri j ),
+the above equations show that A = QR, where R is upper triangular. The diagonal entries
+rk k = k Q
+0 kk = Ak
+· Qk are indeed positive.
+474 CHAPTER 12. EUCLIDEAN SPACES
+The reader should try the above procedure on some concrete examples for 2×2 and 3×3
+matrices.
+Remarks:
+(1) Because the diagonal entries of R are positive, it can be shown that Q and R are unique.
+More generally, if A is invertible and if A = Q1R1 = Q2R2 are two QR-decompositions
+for A, then
+R1R2
+−1 = Q
+>1 Q2.
+The matrix Q>1 Q2 is orthogonal and it is easy to see that R1R2
+−1
+is upper triangular.
+But an upper triangular matrix which is orthogonal must be a diagonal matrix D with
+diagonal entries ±1, so Q2 = Q1D and R1 = DR2.
+(2) The QR-decomposition holds even when A is not invertible. In this case, R has some
+zero on the diagonal. However, a different proof is needed. We will give a nice proof
+using Householder matrices (see Proposition 13.4, and also Strang [169, 170], Golub
+and Van Loan [80], Trefethen and Bau [176], Demmel [48], Kincaid and Cheney [102],
+or Ciarlet [41]).
+For better numerical stability, it is preferable to use the modified Gram–Schmidt method
+to implement the QR-factorization method. Here is a Matlab program implementing QR￾factorization using modified Gram–Schmidt.
+function [Q,R] = qrv4(A)
+n = size(A,1);
+for i = 1:n
+Q(:,i) = A(:,i);
+for j = 1:i-1
+R(j,i) = Q(:,j)’*Q(:,i);
+Q(:,i) = Q(:,i) - R(j,i)*Q(:,j);
+end
+R(i,i) = sqrt(Q(:,i)’*Q(:,i));
+Q(:,i) = Q(:,i)/R(i,i);
+end
+end
+Example 12.13. Consider the matrix
+A =
+
+
+0 0 5
+0 4 1
+1 1 1
+
+ .
+To determine the QR-decomposition of A, we first use the Gram-Schmidt orthonormalization
+12.8. QR-DECOMPOSITION FOR INVERTIBLE MATRICES 475
+procedure to calculate Q = (Q1Q2Q3
+). By definition
+A
+1 = Q
+0
+1 = Q
+1 =
+
+
+0
+0
+1
+
+ ,
+and since A2 =
+
+
+0
+4
+1
+
+, we discover that
+Q
+0
+2 = A
+2 − (A
+2
+· Q
+1
+)Q
+1 =
+
+
+0
+4
+1
+
+ −
+
+
+0
+0
+1
+
+ =
+
+
+0
+4
+0
+
+ .
+Hence, Q2 =
+
+
+0
+1
+0
+
+. Finally,
+Q
+0
+3 = A3 − (A
+3
+· Q
+1
+)Q
+1 − (A
+3
+· Q
+2
+)Q
+2 =
+
+
+5
+1
+1
+
+ −
+
+
+0
+0
+1
+
+ −
+
+
+0
+1
+0
+
+ =
+
+
+5
+0
+0
+
+ ,
+which implies that Q3 =
+
+
+1
+0
+0
+
+. According to Proposition 12.16, in order to determine R we
+need to calculate
+r11 =
+  Q
+0
+1
+
+ = 1 r12 = A
+2
+· Q
+1 = 1 r13 = A
+3
+· Q
+1 = 1
+r22 =
+  Q
+0
+2
+
+ = 4 r23 = A3 · Q
+2 = 1
+r33 =
+  Q
+0
+3
+
+ = 5.
+In summary, we have found that the QR-decomposition of A =
+
+
+0 0 5
+0 4 1
+1 1 1
+
+ is
+Q =
+
+
+0 0 1
+0 1 0
+1 0 0
+
+ and R =
+
+
+1 1 1
+0 4 1
+0 0 5
+
+ .
+Example 12.14. Another example of QR-decomposition is
+A =
+
+
+1 1 2
+0 0 1
+1 0 0
+
+ =
+
+
+1
+1
+/
+/
+0 0 1
+√
+√
+2 1
+2 −1
+/
+/
+√
+√
+2 0
+2 0
+
+
+
+
+√
+0 1
+0 0 1
+2 1/
+/
+√
+√
+2
+2
+√
+√
+2
+2
+
+ .
+476 CHAPTER 12. EUCLIDEAN SPACES
+Example 12.15. If we apply the above Matlab function to the matrix
+A =
+
+
+4 1 0 0 0
+1 4 1 0 0
+0 1 4 1 0
+0 0 1 4 1
+0 0 0 1 4
+
+
+,
+we obtain
+Q =
+
+
+0
+0
+.
+.
+9701
+2425 0
+0 0
+−0
+.
+.
+9354
+2650 0
+.2339 0
+−0
+.
+.
+0619
+9291
+.2477 0
+−
+−
+0
+0
+.0663
+.
+.
+0166 0
+2486 0
+−0
+.
+.
+0046
+0691
+.0184
+0 0 0
+0 0 0 0
+.2677 0.
+.
+9283
+2679 0
+−0
+.9634
+.2581
+
+
+and
+R =
+
+
+4.1231 1
+0 3
+0 0 3
+.
+.
+9403 0
+7730 1
+.
+.
+.
+2425 0 0
+9956 0
+7361 1
+.
+.
+2650 0
+9997 0.2677
+0 0 073
+0 0 0 0 3
+.7324 2.
+.
+0000
+5956
+
+
+.
+Remark: The Matlab function qr, called by [Q, R] = qr(A), does not necessarily return
+an upper-triangular matrix whose diagonal entries are positive.
+The QR-decomposition yields a rather efficient and numerically stable method for solving
+systems of linear equations. Indeed, given a system Ax = b, where A is an n × n invertible
+matrix, writing A = QR, since Q is orthogonal, we get
+Rx = Q
+> b,
+and since R is upper triangular, we can solve it by Gaussian elimination, by solving for the
+last variable xn first, substituting its value into the system, then solving for xn−1, etc. The
+QR-decomposition is also very useful in solving least squares problems (we will come back
+to this in Chapter 23), and for finding eigenvalues; see Chapter 18. It can be easily adapted
+to the case where A is a rectangular m ×n matrix with independent columns (thus, n ≤ m).
+In this case, Q is not quite orthogonal. It is an m ×n matrix whose columns are orthogonal,
+and R is an invertible n×n upper triangular matrix with positive diagonal entries. For more
+on QR, see Strang [169, 170], Golub and Van Loan [80], Demmel [48], Trefethen and Bau
+[176], or Serre [156].
+A somewhat surprising consequence of the QR-decomposition is a famous determinantal
+inequality due to Hadamard.
+12.8. QR-DECOMPOSITION FOR INVERTIBLE MATRICES 477
+Proposition 12.17. (Hadamard) For any real n × n matrix A = (aij ), we have
+| det(A)| ≤
+nY
+i=1
+
+nX
+j=1
+a
+2
+ij
+1/2
+and | det(A)| ≤
+nY
+j=1
+
+nX
+i=1
+a
+2
+ij
+1/2
+.
+Moreover, equality holds iff either A has orthogonal rows in the left inequality or orthogonal
+columns in the right inequality.
+Proof. If det(A) = 0, then the inequality is trivial. In addition, if the righthand side is also
+0, then either some column or some row is zero. If det(A) 6 = 0, then we can factor A as
+A = QR, with Q is orthogonal and R = (rij ) upper triangular with positive diagonal entries.
+Then since Q is orthogonal det(Q) = ±1, so
+| det(A)| = | det(Q)| | det(R)| =
+Y
+j=1
+rjj .
+Now as Q is orthogonal, it preserves the Euclidean norm, so
+nX
+i=1
+a
+2
+ij =
+  A
+j
+
+ 2
+2
+=
+  QRj
+
+ 2
+2
+=
+  R
+j
+
+ 2
+2
+=
+nX
+i=1
+rij
+2 ≥ rjj
+2
+,
+which implies that
+| det(A)| =
+nY
+j=1
+rjj ≤
+nY
+j=1
+
+
+R
+j
+
+
+2
+=
+nY
+j=1
+
+nX
+i=1
+a
+2
+ij
+1/2
+.
+The other inequality is obtained by replacing A by A> . Finally, if det(A) 6 = 0 and equality
+holds, then we must have
+rjj =
+  A
+j
+
+
+2
+, 1 ≤ j ≤ n,
+which can only occur if A has orthogonal columns.
+Another version of Hadamard’s inequality applies to symmetric positive semidefinite
+matrices.
+Proposition 12.18. (Hadamard) For any real n × n matrix A = (aij ), if A is symmetric
+positive semidefinite, then we have
+det(A) ≤
+nY
+i=1
+aii.
+Moreover, if A is positive definite, then equality holds iff A is a diagonal matrix.
+478 CHAPTER 12. EUCLIDEAN SPACES
+Proof. If det(A) = 0, the inequality is trivial. Otherwise, A is positive definite, and by
+Theorem 8.10 (the Cholesky Factorization), there is a unique upper triangular matrix B
+with positive diagonal entries such that
+A = B
+> B.
+Thus, det(A) = det(B> B) = det(B> ) det(B) = det(B)
+2
+. If we apply the Hadamard inequal￾ity (Proposition 12.17) to B, we obtain
+det(B) ≤
+nY
+j=1
+
+nX
+i=1
+b
+2
+ij
+1/2
+. (∗)
+However, the diagonal entries ajj of A = B> B are precisely the square norms k Bjk 2
+2 = P
+n
+i=1 b
+2
+ij , so by squaring (∗), we obtain
+det(A) = det(B)
+2 ≤
+nY
+j=1
+
+nX
+i=1
+b
+2
+ij =
+nY
+j=1
+ajj .
+If det(A) 6 = 0 and equality holds, then B must have orthogonal columns, which implies that
+B is a diagonal matrix, and so is A.
+We derived the second Hadamard inequality (Proposition 12.18) from the first (Proposi￾tion 12.17). We leave it as an exercise to prove that the first Hadamard inequality can be
+deduced from the second Hadamard inequality.
+12.9 Some Applications of Euclidean Geometry
+Euclidean geometry has applications in computational geometry, in particular Voronoi dia￾grams and Delaunay triangulations. In turn, Voronoi diagrams have applications in motion
+planning (see O’Rourke [133]).
+Euclidean geometry also has applications to matrix analysis. Recall that a real n × n
+matrix A is symmetric if it is equal to its transpose A> . One of the most important properties
+of symmetric matrices is that they have real eigenvalues and that they can be diagonalized
+by an orthogonal matrix (see Chapter 17). This means that for every symmetric matrix A,
+there is a diagonal matrix D and an orthogonal matrix P such that
+A = P DP > .
+Even though it is not always possible to diagonalize an arbitrary matrix, there are various
+decompositions involving orthogonal matrices that are of great practical interest. For exam￾ple, for every real matrix A, there is the QR-decomposition, which says that a real matrix
+A can be expressed as
+A = QR,
+12.10. SUMMARY 479
+where Q is orthogonal and R is an upper triangular matrix. This can be obtained from the
+Gram–Schmidt orthonormalization procedure, as we saw in Section 12.8, or better, using
+Householder matrices, as shown in Section 13.2. There is also the polar decomposition,
+which says that a real matrix A can be expressed as
+A = QS,
+where Q is orthogonal and S is symmetric positive semidefinite (which means that the eigen￾values of S are nonnegative). Such a decomposition is important in continuum mechanics
+and in robotics, since it separates stretching from rotation. Finally, there is the wonderful
+singular value decomposition, abbreviated as SVD, which says that a real matrix A can be
+expressed as
+A = V DU > ,
+where U and V are orthogonal and D is a diagonal matrix with nonnegative entries (see
+Chapter 22). This decomposition leads to the notion of pseudo-inverse, which has many
+applications in engineering (least squares solutions, etc). For an excellent presentation of all
+these notions, we highly recommend Strang [170, 169], Golub and Van Loan [80], Demmel
+[48], Serre [156], and Trefethen and Bau [176].
+The method of least squares, invented by Gauss and Legendre around 1800, is another
+great application of Euclidean geometry. Roughly speaking, the method is used to solve
+inconsistent linear systems Ax = b, where the number of equations is greater than the
+number of variables. Since this is generally impossible, the method of least squares consists
+in finding a solution x minimizing the Euclidean norm k Ax − bk
+2
+, that is, the sum of the
+squares of the “errors.” It turns out that there is always a unique solution x
++ of smallest
+norm minimizing k Ax − bk
+2
+, and that it is a solution of the square system
+A
+> Ax = A
+> b,
+called the system of normal equations. The solution x
++ can be found either by using the QR￾decomposition in terms of Householder transformations, or by using the notion of pseudo￾inverse of a matrix. The pseudo-inverse can be computed using the SVD decomposition.
+Least squares methods are used extensively in computer vision. More details on the method
+of least squares and pseudo-inverses can be found in Chapter 23.
+12.10 Summary
+The main concepts and results of this chapter are listed below:
+• Bilinear forms; positive definite bilinear forms.
+• Inner products, scalar products, Euclidean spaces.
+• Quadratic form associated with a bilinear form.
+480 CHAPTER 12. EUCLIDEAN SPACES
+• The Euclidean space E
+n
+.
+• The polar form of a quadratic form.
+• Gram matrix associated with an inner product.
+• The Cauchy–Schwarz inequality; the Minkowski inequality.
+• The parallelogram law.
+• Orthogonality, orthogonal complement F
+⊥; orthonormal family.
+• The musical isomorphisms [ : E → E
+∗ and ] : E
+∗ → E (when E is finite-dimensional);
+Theorem 12.6.
+• The adjoint of a linear map (with respect to an inner product).
+• Existence of an orthonormal basis in a finite-dimensional Euclidean space (Proposition
+12.9).
+• The Gram–Schmidt orthonormalization procedure (Proposition 12.10).
+• The Legendre and the Chebyshev polynomials.
+• Linear isometries (orthogonal transformations, rigid motions).
+• The orthogonal group, orthogonal matrices.
+• The matrix representing the adjoint f
+∗ of a linear map f is the transpose of the matrix
+representing f.
+• The orthogonal group O(n) and the special orthogonal group SO(n).
+• QR-decomposition for invertible matrices.
+• The Hadamard inequality for arbitrary real matrices.
+• The Hadamard inequality for symmetric positive semidefinite matrices.
+• The Rodrigues formula for rotations in SO(3).
+12.11. PROBLEMS 481
+12.11 Problems
+Problem 12.1. E be a vector space of dimension 2, and let (e1, e2) be a basis of E. Prove
+that if a > 0 and b
+2 − ac < 0, then the bilinear form defined such that
+ϕ(x1e1 + y1e2, x2e1 + y2e2) = ax1x2 + b(x1y2 + x2y1) + cy1y2
+is a Euclidean inner product.
+Problem 12.2. Let C[a, b] denote the set of continuous functions f : [a, b] → R. Given any
+two functions f, g ∈ C[a, b], let
+h
+f, gi =
+Z
+b
+a
+f(t)g(t)dt.
+Prove that the above bilinear form is indeed a Euclidean inner product.
+Problem 12.3. Consider the inner product
+h
+f, gi =
+Z
+π
+−π
+f(t)g(t)dt
+of Problem 12.2 on the vector space C[−π, π]. Prove that
+h
+sin px,sin qxi =
+
+π
+0 if
+if p
+p
+=
+6
+=
+q
+q
+,
+,
+p, q
+p, q
+≥
+≥
+1,
+1,
+h
+cos px, cos qxi =
+
+0 if
+π if
+p
+p
+6
+=
+=
+q
+q
+,
+,
+p, q
+p, q
+≥
+≥
+0,
+1,
+h
+sin px, cos qxi = 0,
+for all p ≥ 1 and q ≥ 0, and h 1, 1i =
+R
+π
+−π
+dx = 2π.
+Problem 12.4. Prove that the following matrix is orthogonal and skew-symmetric:
+M = √
+1
+3
+
+
+−
+−
+−
+0 1 1 1
+1 0
+1 1 0
+1 −1 1 0
+−1 1
+−1
+
+ .
+Problem 12.5. Let E and F be two finite Euclidean spaces, let (u1, . . . , un) be a basis of
+E, and let (v1, . . . , vm) be a basis of F. For any linear map f : E → F, if A is the matrix of
+f w.r.t. the basis (u1, . . . , un) and B is the matrix of f
+∗ w.r.t. the basis (v1, . . . , vm), if G1
+is the Gram matrix of the inner product on E (w.r.t. (u1, . . . , un)) and if G2 is the Gram
+matrix of the inner product on F (w.r.t. (v1, . . . , vm)), then
+B = G
+−
+1
+1A
+> G2.
+482 CHAPTER 12. EUCLIDEAN SPACES
+Problem 12.6. Let A be an invertible matrix. Prove that if A = Q1R1 = Q2R2 are two
+QR-decompositions of A and if the diagonal entries of R1 and R2 are positive, then Q1 = Q2
+and R1 = R2.
+Problem 12.7. Prove that the first Hadamard inequality can be deduced from the second
+Hadamard inequality.
+Problem 12.8. Let E be a real vector space of finite dimension, n ≥ 1. Say that two
+bases, (u1, . . . , un) and (v1, . . . , vn), of E have the same orientation iff det(P) > 0, where P
+the change of basis matrix from (u1, . . . , un) to (v1, . . . , vn), namely, the matrix whose jth
+columns consist of the coordinates of vj over the basis (u1, . . . , un).
+(1) Prove that having the same orientation is an equivalence relation with two equivalence
+classes.
+An orientation of a vector space, E, is the choice of any fixed basis, say (e1, . . . , en), of
+E. Any other basis, (v1, . . . , vn), has the same orientation as (e1, . . . , en) (and is said to be
+positive or direct) iff det(P) > 0, else it is said to have the opposite orientation of (e1, . . . , en)
+(or to be negative or indirect), where P is the change of basis matrix from (e1, . . . , en) to
+(v1, . . . , vn). An oriented vector space is a vector space with some chosen orientation (a
+positive basis).
+(2) Let B1 = (u1, . . . , un) and B2 = (v1, . . . , vn) be two orthonormal bases. For any
+sequence of vectors, (w1, . . . , wn), in E, let detB1
+(w1, . . . , wn) be the determinant of the
+matrix whose columns are the coordinates of the wj
+’s over the basis B1 and similarly for
+detB2
+(w1, . . . , wn).
+Prove that if B1 and B2 have the same orientation, then
+detB1
+(w1, . . . , wn) = detB2
+(w1, . . . , wn).
+Given any oriented vector space, E, for any sequence of vectors, (w1, . . . , wn), in E, the
+common value, detB(w1, . . . , wn), for all positive orthonormal bases, B, of E is denoted
+λE(w1, . . . , wn)
+and called a volume form of (w1, . . . , wn).
+(3) Given any Euclidean oriented vector space, E, of dimension n for any n − 1 vectors,
+w1, . . . , wn−1, in E, check that the map
+x 7→ λE(w1, . . . , wn−1, x)
+is a linear form. Then prove that there is a unique vector, denoted w1 × · · · × wn−1, such
+that
+λE(w1, . . . , wn−1, x) = (w1 × · · · × wn−1) · x,
+for all x ∈ E. The vector w1 × · · · × wn−1 is called the cross-product of (w1, . . . , wn−1). It is
+a generalization of the cross-product in R
+3
+(when n = 3).
+12.11. PROBLEMS 483
+Problem 12.9. Given p vectors (u1, . . . , up) in a Euclidean space E of dimension n ≥ p,
+the Gram determinant (or Gramian) of the vectors (u1, . . . , up) is the determinant
+Gram(u1, . . . , up) =
+
+
+
+  
+
+
+
+k
+u1k
+2
+h
+u1, u2i . . . h u1, upi
+h
+u2, u1i k u2k
+2
+. . . h u2, upi
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+h
+up, u1i h up, u2i . . . k upk
+2
+
+
+
+
+
+
+
+
+
+.
+(1) Prove that
+Gram(u1, . . . , un) = λE(u1, . . . , un)
+2
+.
+Hint. If (e1, . . . , en) is an orthonormal basis and A is the matrix of the vectors (u1, . . . , un)
+over this basis,
+det(A)
+2 = det(A
+> A) = det(A
+i
+· A
+j
+),
+where Ai denotes the ith column of the matrix A, and (Ai
+· Aj
+) denotes the n × n matrix
+with entries Ai
+· Aj
+.
+(2) Prove that
+k
+u1 × · · · × un−1k
+2 = Gram(u1, . . . , un−1).
+Hint. Letting w = u1 × · · · × un−1, observe that
+λE(u1, . . . , un−1, w) = h w, wi = k wk
+2
+,
+and show that
+k
+wk
+4 = λE(u1, . . . , un−1, w)
+2 = Gram(u1, . . . , un−1, w)
+= Gram(u1, . . . , un−1)k wk
+2
+.
+Problem 12.10. Let ϕ: E × E → R be a bilinear form on a real vector space E of finite
+dimension n. Given any basis (e1, . . . , en) of E, let A = (ai j ) be the matrix defined such
+that
+ai j = ϕ(ei
+, ej ),
+1 ≤ i, j ≤ n. We call A the matrix of ϕ w.r.t. the basis (e1, . . . , en).
+(1) For any two vectors x and y, if X and Y denote the column vectors of coordinates of
+x and y w.r.t. the basis (e1, . . . , en), prove that
+ϕ(x, y) = X
+> AY.
+(2) Recall that A is a symmetric matrix if A = A> . Prove that ϕ is symmetric if A is a
+symmetric matrix.
+(3) If (f1, . . . , fn) is another basis of E and P is the change of basis matrix from (e1, . . . , en)
+to (f1, . . . , fn), prove that the matrix of ϕ w.r.t. the basis (f1, . . . , fn) is
+P
+> AP.
+The common rank of all matrices representing ϕ is called the rank of ϕ.
+484 CHAPTER 12. EUCLIDEAN SPACES
+Problem 12.11. Let ϕ: E × E → R be a symmetric bilinear form on a real vector space E
+of finite dimension n. Two vectors x and y are said to be conjugate or orthogonal w.r.t. ϕ
+if ϕ(x, y) = 0. The main purpose of this problem is to prove that there is a basis of vectors
+that are pairwise conjugate w.r.t. ϕ.
+(1) Prove that if ϕ(x, x) = 0 for all x ∈ E, then ϕ is identically null on E.
+Otherwise, we can assume that there is some vector x ∈ E such that ϕ(x, x) 6 = 0.
+Use induction to prove that there is a basis of vectors (u1, . . . , un) that are pairwise
+conjugate w.r.t. ϕ.
+Hint. For the induction step, proceed as follows. Let (u1, e2, . . . , en) be a basis of E, with
+ϕ(u1, u1) 6 = 0. Prove that there are scalars λ2, . . . , λn such that each of the vectors
+vi = ei + λiu1
+is conjugate to u1 w.r.t. ϕ, where 2 ≤ i ≤ n, and that (u1, v2, . . . , vn) is a basis.
+(2) Let (e1, . . . , en) be a basis of vectors that are pairwise conjugate w.r.t. ϕ and assume
+that they are ordered such that
+ϕ(ei
+, ei) =  θi 6 = 0 if 1 ≤ i ≤ r,
+0 if r + 1 ≤ i ≤ n,
+where r is the rank of ϕ. Show that the matrix of ϕ w.r.t. (e1, . . . , en) is a diagonal matrix,
+and that
+ϕ(x, y) =
+rX
+i=1
+θixiyi
+,
+where x =
+P
+n
+i=1 xiei and y =
+P
+n
+i=1 yiei
+.
+Prove that for every symmetric matrix A, there is an invertible matrix P such that
+P
+> AP = D,
+where D is a diagonal matrix.
+(3) Prove that there is an integer p, 0 ≤ p ≤ r (where r is the rank of ϕ), such that
+ϕ(ui
+, ui) > 0 for exactly p vectors of every basis (u1, . . . , un) of vectors that are pairwise
+conjugate w.r.t. ϕ (Sylvester’s inertia theorem).
+Proceed as follows. Assume that in the basis (u1, . . . , un), for any x ∈ E, we have
+ϕ(x, x) = α1x
+2
+1 + · · · + αpx
+2
+p − αp+1x
+2
+p+1 − · · · − αrx
+2
+r
+,
+where x =
+P
+n
+i=1 xiui
+, and that in the basis (v1, . . . , vn), for any x ∈ E, we have
+ϕ(x, x) = β1y1
+2 + · · · + βqyq
+2 − βq+1yq
+2
++1 − · · · − βryr
+2
+,
+12.11. PROBLEMS 485
+where x =
+P
+n
+i=1 yivi
+, with αi > 0, βi > 0, 1 ≤ i ≤ r.
+Assume that p > q and derive a contradiction. First consider x in the subspace F spanned
+by
+(u1, . . . , up, ur+1, . . . , un),
+and observe that ϕ(x, x) ≥ 0 if x 6 = 0. Next consider x in the subspace G spanned by
+(vq+1, . . . , vr),
+and observe that ϕ(x, x) < 0 if x 6 = 0. Prove that F ∩ G is nontrivial (i.e., contains some
+nonnull vector), and derive a contradiction. This implies that p ≤ q. Finish the proof.
+The pair (p, r − p) is called the signature of ϕ.
+(4) A symmetric bilinear form ϕ is definite if for every x ∈ E, if ϕ(x, x) = 0, then x = 0.
+Prove that a symmetric bilinear form is definite iff its signature is either (n, 0) or (0, n). In
+other words, a symmetric definite bilinear form has rank n and is either positive or negative.
+Problem 12.12. Consider the n × n matrices Ri,j defined for all i, j with 1 ≤ i < j ≤ n
+and n ≥ 3, such that the only nonzero entries are
+R
+i,j (i, j) = −1
+R
+i,j (i, i) = 0
+R
+i,j (j, i) = 1
+R
+i,j (j, j) = 0
+R
+i,j (k, k) = 1, 1 ≤ k ≤ n, k 6 = i, j.

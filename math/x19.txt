@@ -1,0 +1,1000 @@
+−1
+)
+−1
+(Ek
+k
+)
+−1
+, (†)
+and finishes the induction step for the proof of this formula.
+If we apply Equation (∗) again with k + 1 in place of k, we have
+(E1
+k
+)
+−1
+· · ·(Ek
+k
+)
+−1 = I + E
+k
+1 + · · · + E
+k
+k
+,
+and together with (†), we obtain,
+Λk = E
+k
+1 + · · · + E
+k
+k
+,
+also finishing the induction step for the proof of this formula. For k = n−1 in (†), we obtain
+the desired equation: L = I + Λn−1.
+8.7 Dealing with Roundoff Errors; Pivoting Strategies
+Let us now briefly comment on the choice of a pivot. Although theoretically, any pivot can
+be chosen, the possibility of roundoff errors implies that it is not a good idea to pick very
+small pivots. The following example illustrates this point. Consider the linear system
+10−4x + y = 1
+x + y = 2.
+Since 10−4
+is nonzero, it can be taken as pivot, and we get
+10−4x + y = 1
+(1 − 104
+)y = 2 − 104
+.
+Thus, the exact solution is
+x =
+104
+104 − 1
+, y =
+104 − 2
+104 − 1
+.
+However, if roundoff takes place on the fourth digit, then 104 − 1 = 9999 and 104 − 2 = 9998
+will be rounded off both to 9990, and then the solution is x = 0 and y = 1, very far from the
+exact solution where x ≈ 1 and y ≈ 1. The problem is that we picked a very small pivot. If
+instead we permute the equations, the pivot is 1, and after elimination we get the system
+x + y = 2
+(1 − 10−4
+)y = 1 − 2 × 10−4
+.
+8.7. DEALING WITH ROUNDOFF ERRORS; PIVOTING STRATEGIES 277
+This time, 1 − 10−4 = 0.9999 and 1 − 2 × 10−4 = 0.9998 are rounded off to 0.999 and the
+solution is x = 1, y = 1, much closer to the exact solution.
+To remedy this problem, one may use the strategy of partial pivoting. This consists of
+choosing during Step k (1 ≤ k ≤ n − 1) one of the entries a
+(
+i k
+k)
+such that
+|a
+(
+i k
+k)
+| = max
+k≤p≤n
+|a
+(
+p k
+k)
+|.
+By maximizing the value of the pivot, we avoid dividing by undesirably small pivots.
+Remark: A matrix, A, is called strictly column diagonally dominant iff
+|aj j | >
+nX
+i=1, i6=j
+|ai j |, for j = 1, . . . , n
+(resp. strictly row diagonally dominant iff
+|ai i| >
+nX
+j=1, j6=i
+|ai j |, for i = 1, . . . , n.)
+For example, the matrix
+
+
+7
+2
+1
+1 4 1 0
+.
+.
+.
+.
+.
+.
+.
+.
+.
+0 1 4 1
+1
+7
+2
+
+
+of the curve interpolation problem discussed in Section 8.1 is strictly column (and row)
+diagonally dominant.
+It has been known for a long time (before 1900, say by Hadamard) that if a matrix
+A is strictly column diagonally dominant (resp. strictly row diagonally dominant), then it
+is invertible. It can also be shown that if A is strictly column diagonally dominant, then
+Gaussian elimination with partial pivoting does not actually require pivoting (see Problem
+8.12).
+Another strategy, called complete pivoting, consists in choosing some entry a
+(
+i j
+k)
+, where
+k ≤ i, j ≤ n, such that
+|a
+(
+i j
+k)
+| = max
+k≤p,q≤n
+|a
+(
+p q
+k)
+|.
+However, in this method, if the chosen pivot is not in column k, it is also necessary to
+permute columns. This is achieved by multiplying on the right by a permutation matrix.
+However, complete pivoting tends to be too expensive in practice, and partial pivoting is the
+method of choice.
+A special case where the LU-factorization is particularly efficient is the case of tridiagonal
+matrices, which we now consider.
+278 CHAPTER 8. GAUSSIAN ELIMINATION, LU, CHOLESKY, ECHELON FORM
+8.8 Gaussian Elimination of Tridiagonal Matrices
+Consider the tridiagonal matrix
+A =
+
+
+b1 c1
+a2 b2 c2
+a3 b3 c3
+.
+.
+.
+.
+.
+.
+.
+.
+.
+an−2 bn−2 cn−2
+an−1 bn−1 cn−1
+an bn
+
+
+.
+Define the sequence
+δ0 = 1, δ1 = b1, δk = bkδk−1 − akck−1δk−2, 2 ≤ k ≤ n.
+Proposition 8.7. If A is the tridiagonal matrix above, then δk = det(A(1 : k, 1 : k)) for
+k = 1, . . . , n.
+Proof. By expanding det(A(1 : k, 1 : k)) with respect to its last row, the proposition follows
+by induction on k.
+Theorem 8.8. If A is the tridiagonal matrix above and δk 6 = 0 for k = 1, . . . , n, then A has
+the following LU-factorization:
+A =
+
+
+1
+a2
+δ0
+δ1
+1
+a3
+δ1
+δ2
+1
+.
+.
+.
+.
+.
+.
+an−1
+δn−3
+δn−2
+1
+an
+δn−2
+δn−1
+1
+
+
+
+
+δ
+δ
+0
+1
+c1
+δ2
+δ1
+c2
+δ3
+δ2
+c3
+.
+.
+.
+.
+.
+.
+δn−1
+δn−2
+cn−1
+δn
+δn−1
+
+
+.
+Proof. Since δk = det(A(1 : k, 1 : k)) 6 = 0 for k = 1, . . . , n, by Theorem 8.5 (and Proposition
+8.2), we know that A has a unique LU-factorization. Therefore, it suffices to check that the
+proposed factorization works. We easily check that
+(LU)k k+1 = ck, 1 ≤ k ≤ n − 1
+(LU)k k−1 = ak, 2 ≤ k ≤ n
+(LU)k l = 0, |k − l| ≥ 2
+(LU)1 1 =
+δ1
+δ0
+= b1
+(LU)k k =
+akck−1δk−2 + δk
+δk−1
+= bk, 2 ≤ k ≤ n,
+8.8. GAUSSIAN ELIMINATION OF TRIDIAGONAL MATRICES 279
+since δk = bkδk−1 − akck−1δk−2.
+It follows that there is a simple method to solve a linear system Ax = d where A is
+tridiagonal (and δk 6 = 0 for k = 1, . . . , n). For this, it is convenient to “squeeze” the diagonal
+matrix ∆ defined such that ∆k k = δk/δk−1 into the factorization so that A = (L∆)(∆−1U),
+and if we let
+z1 =
+c1
+b1
+, zk = ck
+δk−1
+δk
+, 2 ≤ k ≤ n − 1, zn =
+δn
+δn−1
+= bn − anzn−1,
+A = (L∆)(∆−1U) is written as
+A =
+
+
+z
+c1
+1
+a2
+c2
+z2
+a3
+c3
+z3
+.
+.
+.
+.
+.
+.
+an−1
+cn−1
+zn−1
+an zn
+
+
+
+
+1 z1
+1 z2
+1 z3
+.
+.
+.
+.
+.
+.
+1 zn−2
+1 zn−1
+1
+
+
+.
+As a consequence, the system Ax = d can be solved by constructing three sequences: First,
+the sequence
+z1 =
+c1
+b1
+, zk =
+ck
+bk − akzk−1
+, k = 2, . . . , n − 1, zn = bn − anzn−1,
+corresponding to the recurrence δk = bkδk−1 − akck−1δk−2 and obtained by dividing both
+sides of this equation by δk−1, next
+w1 =
+d1
+b1
+, wk =
+dk − akwk−1
+bk − akzk−1
+, k = 2, . . . , n,
+corresponding to solving the system L∆w = d, and finally
+xn = wn, xk = wk − zkxk+1, k = n − 1, n − 2, . . . , 1,
+corresponding to solving the system ∆−1Ux = w.
+Remark: It can be verified that this requires 3(n − 1) additions, 3(n − 1) multiplications,
+and 2n divisions, a total of 8n−6 operations, which is much less that the O(2n
+3/3) required
+by Gaussian elimination in general.
+We now consider the special case of symmetric positive definite matrices (SPD matrices).
+280 CHAPTER 8. GAUSSIAN ELIMINATION, LU, CHOLESKY, ECHELON FORM
+8.9 SPD Matrices and the Cholesky Decomposition
+Definition 8.4. A real n × n matrix A is symmetric positive definite, for short SPD, iff it
+is symmetric and if
+x
+> Ax > 0 for all x ∈ R
+n with x 6 = 0.
+The following facts about a symmetric positive definite matrix A are easily established
+(some left as an exercise):
+(1) The matrix A is invertible. (Indeed, if Ax = 0, then x
+> Ax = 0, which implies x = 0.)
+(2) We have ai i > 0 for i = 1, . . . , n. (Just observe that for x = ei
+, the ith canonical basis
+vector of R
+n
+, we have e
+>i Aei = ai i > 0.)
+(3) For every n × n real invertible matrix Z, the matrix Z
+> AZ is real symmetric positive
+definite iff A is real symmetric positive definite.
+(4) The set of n × n real symmetric positive definite matrices is convex. This means that
+if A and B are two n×n symmetric positive definite matrices, then for any λ ∈ R such
+that 0 ≤ λ ≤ 1, the matrix (1 − λ)A + λB is also symmetric positive definite. Clearly
+since A and B are symmetric, (1 − λ)A + λB is also symmetric. For any nonzero
+x ∈ R
+n
+, we have x
+> Ax > 0 and x
+> Bx > 0, so
+x
+> ((1 − λ)A + λB)x = (1 − λ)x
+> Ax + λx> Bx > 0,
+because 0 ≤ λ ≤ 1, so 1−λ ≥ 0 and λ ≥ 0, and 1−λ and λ can’t be zero simultaneously.
+(5) The set of n×n real symmetric positive definite matrices is a cone. This means that if
+A is symmetric positive definite and if λ > 0 is any real, then λA is symmetric positive
+definite. Clearly λA is symmetric, and for nonzero x ∈ R
+n
+, we have x
+> Ax > 0, and
+since λ > 0, we have x
+> λAx = λx> Ax > 0.
+Remark: Given a complex m × n matrix A, we define the matrix A as the m × n matrix
+A = (aij ). Then we define A∗ as the n × m matrix A∗ = (A)
+> = (A> ). The n × n complex
+matrix A is Hermitian if A∗ = A. This is the complex analog of the notion of a real symmetric
+matrix.
+Definition 8.5. A complex n × n matrix A is Hermitian positive definite, for short HPD,
+if it is Hermitian and if
+z
+∗Az > 0 for all z ∈ C
+n with z 6 = 0.
+It is easily verified that Properties (1)-(5) hold for Hermitian positive definite matrices;
+replace > by ∗.
+8.9. SPD MATRICES AND THE CHOLESKY DECOMPOSITION 281
+It is instructive to characterize when a 2 ×2 real matrix A is symmetric positive definite.
+Write
+A =
+
+a c
+c b .
+Then we have
+￾
+x y 
+a c
+c b 
+x
+y
+
+= ax2 + 2cxy + by2
+.
+If the above expression is strictly positive for all nonzero vectors ￾ x
+y
+
+, then for x = 1, y = 0
+we get a > 0 and for x = 0, y = 1 we get b > 0. Then we can write
+ax2 + 2cxy + by2 =
+
+√
+ax + √
+c
+a
+y
+
+2
++ by2 −
+c
+2
+a
+y
+2
+=
+
+√
+ax + √
+c
+a
+y
+
+2
++
+1
+a
+￾
+ab − c
+2
+
+y
+2
+. (†)
+Since a > 0, if ab − c
+2 ≤ 0, then we can choose y > 0 so that the second term is negative or
+zero, and we can set x = −(c/a)y to make the first term zero, in which case ax2+2cxy+by2 ≤
+0, so we must have ab − c
+2 > 0.
+Conversely, if a > 0, b > 0 and ab > c2
+, then for any (x, y) 6 = (0, 0), if y = 0, then x 6 = 0
+and the first term of (†) is positive, and if y 6 = 0, then the second term of (†) is positive.
+Therefore, the matrix A is symmetric positive definite iff
+a > 0, b > 0, ab > c2
+. (∗)
+Note that ab − c
+2 = det(A), so the third condition says that det(A) > 0.
+Observe that the condition b > 0 is redundant, since if a > 0 and ab > c2
+, then we must
+have b > 0 (and similarly b > 0 and ab > c2
+implies that a > 0).
+We can try to visualize the space of 2 × 2 real symmetric positive definite matrices in
+R
+3
+, by viewing (a, b, c) as the coordinates along the x, y, z axes. Then the locus determined
+by the strict inequalities in (∗) corresponds to the region on the side of the cone of equation
+xy = z
+2
+that does not contain the origin and for which x > 0 and y > 0. For z = δ fixed,
+the equation xy = δ
+2 define a hyperbola in the plane z = δ. The cone of equation xy = z
+2
+consists of the lines through the origin that touch the hyperbola xy = 1 in the plane z = 1.
+We only consider the branch of this hyperbola for which x > 0 and y > 0. See Figure 8.6.
+It is not hard to show that the inverse of a real symmetric positive definite matrix is
+also real symmetric positive definite, but the product of two real symmetric positive definite
+matrices may not be symmetric positive definite, as the following example shows:
+
+1 1
+1 2  −
+1
+1
+/
+/
+√
+√
+2
+2 3
+−
+/
+1
+√
+√
+2
+2
+
+=
+
+−1/
+0 2
+√
+2 5
+/
+/
+√
+√
+2
+2
+
+.
+282 CHAPTER 8. GAUSSIAN ELIMINATION, LU, CHOLESKY, ECHELON FORM
+xy = 1
+Figure 8.6: Two views of the surface xy = z
+2
+in R
+3
+. The intersection of the surface with
+a constant z plane results in a hyperbola. The region associated with the 2 × 2 symmetric
+positive definite matrices lies in ”front” of the green side.
+According to the above criterion, the two matrices on the left-hand side are real symmetric
+positive definite, but the matrix on the right-hand side is not even symmetric, and
+￾
+−6 1 
+−1/
+0 2
+√
+2 5
+/
+/
+√
+√
+2
+2
+ 
+−
+1
+6
+
+=
+￾ −6 1 
+11
+2/
+/
+√
+√
+2
+2
+
+= −1/
+√
+2,
+even though its eigenvalues are both real and positive.
+Next we show that a real symmetric positive definite matrix has a special LU-factorization
+of the form A = BB> , where B is a lower-triangular matrix whose diagonal elements are
+strictly positive. This is the Cholesky factorization.
+First we note that a symmetric positive definite matrix satisfies the condition of Propo￾sition 8.2.
+Proposition 8.9. If A is a real symmetric positive definite matrix, then A(1 : k, 1 : k) is
+symmetric positive definite and thus invertible for k = 1, . . . , n.
+8.9. SPD MATRICES AND THE CHOLESKY DECOMPOSITION 283
+Proof. Since A is symmetric, each A(1 : k, 1 : k) is also symmetric. If w ∈ R
+k
+, with
+1 ≤ k ≤ n, we let x ∈ R
+n be the vector with xi = wi
+for i = 1, . . . , k and xi = 0 for
+i = k + 1, . . . , n. Now since A is symmetric positive definite, we have x
+> Ax > 0 for all
+x ∈ R
+n with x 6 = 0. This holds in particular for all vectors x obtained from nonzero vectors
+w ∈ R
+k as defined earlier, and clearly
+x
+> Ax = w
+> A(1 : k, 1 : k)w,
+which implies that A(1 : k, 1 : k) is symmetric positive definite. Thus, by Fact 1 above,
+A(1 : k, 1 : k) is also invertible.
+Proposition 8.9 also holds for a complex Hermitian positive definite matrix. Proposition
+8.9 can be strengthened as follows: A real (resp. complex) matrix A is symmetric (resp.
+Hermitian) positive definite iff det(A(1 : k, 1 : k)) > 0 for k = 1, . . . , n.
+The above fact is known as Sylvester’s criterion. We will prove it after establishing the
+Cholesky factorization.
+Let A be an n × n real symmetric positive definite matrix and write
+A =
+
+a1 1 W>
+W C  ,
+where C is an (n − 1) × (n − 1) symmetric matrix and W is an (n − 1) × 1 matrix. Since A
+is symmetric positive definite, a1 1 > 0, and we can compute α =
+√
+a1 1. The trick is that we
+can factor A uniquely as
+A =
+
+a1 1 W>
+W C  =
+ W/α I
+α 0
+  1 0
+0 C − WW> /a1 1 
+α W> /α
+0 I
+
+,
+i.e., as A = B1A1B1
+>
+, where B1 is lower-triangular with positive diagonal entries. Thus, B1
+is invertible, and by Fact (3) above, A1 is also symmetric positive definite.
+Remark: The matrix C −WW> /a1 1 is known as the Schur complement of the 1×1 matrix
+(a11) in A.
+Theorem 8.10. (Cholesky factorization) Let A be a real symmetric positive definite matrix.
+Then there is some real lower-triangular matrix B so that A = BB> . Furthermore, B can
+be chosen so that its diagonal elements are strictly positive, in which case B is unique.
+Proof. We proceed by induction on the dimension n of A. For n = 1, we must have a1 1 > 0,
+and if we let α =
+√
+a1 1 and B = (α), the theorem holds trivially. If n ≥ 2, as we explained
+above, again we must have a1 1 > 0, and we can write
+A =
+
+a1 1 W>
+W C  =
+ W/α I
+α 0
+  1 0
+0 C − WW> /a1 1 
+α W> /α
+0 I
+
+= B1A1B1
+>
+,
+284 CHAPTER 8. GAUSSIAN ELIMINATION, LU, CHOLESKY, ECHELON FORM
+where α =
+√
+a1 1, the matrix B1 is invertible and
+A1 =
+
+1 0
+0 C − WW> /a1 1
+is symmetric positive definite. However, this implies that C − WW> /a1 1 is also symmetric
+positive definite (consider x
+> A1x for every x ∈ R
+n with x 6 = 0 and x1 = 0). Thus, we can
+apply the induction hypothesis to C − WW> /a1 1 (which is an (n − 1) × (n − 1) matrix),
+and we find a unique lower-triangular matrix L with positive diagonal entries so that
+C − WW> /a1 1 = LL> .
+But then we get
+A =
+ W/α I
+α 0
+  1 0
+0 C − WW> /a1 1 
+α W> /α
+0 I
+
+=
+ W/α I
+α 0
+  1 0
+0 LL>  
+α W> /α
+0 I
+
+=
+ W/α I
+α 0
+  1 0
+0 L
+ 
+1 0
+0 L
+>
+ 
+α W> /α
+0 I
+
+=
+ W/α L
+α 0
+  α W> /α
+0 L
+>
+
+.
+Therefore, if we let
+B =
+ W/α L
+α 0
+
+,
+we have a unique lower-triangular matrix with positive diagonal entries and A = BB> .
+Remark: The uniqueness of the Cholesky decomposition can also be established using the
+uniqueness of an LU-decomposition. Indeed, if A = B1B1
+> = B2B2
+> where B1 and B2 are
+lower triangular with positive diagonal entries, if we let ∆1 (resp. ∆2) be the diagonal matrix
+consisting of the diagonal entries of B1 (resp. B2) so that (∆k)ii = (Bk)ii for k = 1, 2, then
+we have two LU-decompositions
+A = (B1∆
+−
+1
+1
+)(∆1B1
+>
+) = (B2∆
+−
+2
+1
+)(∆2B2
+>
+)
+with B1∆
+−
+1
+1
+, B2∆
+−
+2
+1
+unit lower triangular, and ∆1B1
+>
+, ∆2B2
+> upper triangular. By uniquenes
+of LU-factorization (Theorem 8.5(1)), we have
+B1∆
+−
+1
+1 = B2∆
+−
+2
+1
+, ∆1B1
+> = ∆2B2
+>
+,
+and the second equation yields
+B1∆1 = B2∆2. (∗)
+8.9. SPD MATRICES AND THE CHOLESKY DECOMPOSITION 285
+The diagonal entries of B1∆1 are (B1)
+2
+ii and similarly the diagonal entries of B2∆2 are (B2)
+2
+ii,
+so the above equation implies that
+(B1)
+2
+ii = (B2)
+2
+ii, i = 1, . . . , n.
+Since the diagonal entries of both B1 and B2 are assumed to be positive, we must have
+(B1)ii = (B2)ii, i = 1, . . . , n;
+that is, ∆1 = ∆2, and since both are invertible, we conclude from (∗) that B1 = B2.
+Theorem 8.10 also holds for complex Hermitian positive definite matrices. In this case,
+we have A = BB∗
+for some unique lower triangular matrix B with positive diagonal entries.
+The proof of Theorem 8.10 immediately yields an algorithm to compute B from A by
+solving for a lower triangular matrix B such that A = BB> (where both A and B are real
+matrices). For j = 1, . . . , n,
+bj j =
+ aj j −
+X
+k
+j−
+=1
+1
+b
+2
+j k!
+1/2
+,
+and for i = j + 1, . . . , n (and j = 1, . . . , n − 1)
+bi j =
+ ai j −
+X
+k
+j−
+=1
+1
+bi kbj k! /bj j .
+The above formulae are used to compute the jth column of B from top-down, using the first
+j − 1 columns of B previously computed, and the matrix A. In the case of n = 3, A = BB>
+yields
+
+
+a11 a12 a31
+a21 a22 a32
+a31 a32 a33
+
+ =
+
+
+b11 0 0
+b21 b22 0
+b31 b32 b33
+
+
+
+
+b11 b21 b31
+0 b22 b32
+0 0 b33
+
+
+=
+
+
+b
+b
+11
+11
+b
+2
+11
+b
+b
+31
+21
+b21b
+b
+31
+2
+21
+b11
++
++
+b21
+b
+b
+22
+2
+22
+b32 b
+b
+2
+31
+21b
++
+31
+b11
+b
++
+2
+32
+b31
+b
++
+22b
+b
+32
+2
+33
+
+ .
+We work down the first column of A, compare entries, and discover that
+a11 = b
+2
+11 b11 =
+√
+a11
+a21 = b11b21 b21 =
+a21
+b11
+a31 = b11b31 b31 =
+a31
+b11
+.
+286 CHAPTER 8. GAUSSIAN ELIMINATION, LU, CHOLESKY, ECHELON FORM
+Next we work down the second column of A using previously calculated expressions for
+b21 and b31 to find that
+a22 = b
+2
+21 + b
+2
+22 b22 =
+￾ a22 − b
+2
+21
+1
+2
+a32 = b21b31 + b22b32 b32 =
+a32 − b21b31
+b22
+.
+Finally, we use the third column of A and the previously calculated expressions for b31
+and b32 to determine b33 as
+a33 = b
+2
+31 + b
+2
+32 + b
+2
+33 b33 =
+￾ a33 − b
+2
+31 − b
+2
+32
+1
+2
+.
+For another example, if
+A =
+
+
+1 1 1 1 1 1
+1 2 2 2 2 2
+1 2 3 3 3 3
+1 2 3 4 4 4
+1 2 3 4 5 5
+1 2 3 4 5 6
+
+
+,
+we find that
+B =
+
+
+1 0 0 0 0 0
+1 1 0 0 0 0
+1 1 1 0 0 0
+1 1 1 1 0 0
+1 1 1 1 1 0
+1 1 1 1 1 1
+
+
+.
+We leave it as an exercise to find similar formulae (involving conjugation) to factor a
+complex Hermitian positive definite matrix A as A = BB∗
+. The following Matlab program
+implements the Cholesky factorization.
+function B = Cholesky(A)
+n = size(A,1);
+B = zeros(n,n);
+for j = 1:n-1;
+if j == 1
+B(1,1) = sqrt(A(1,1));
+for i = 2:n
+B(i,1) = A(i,1)/B(1,1);
+end
+else
+B(j,j) = sqrt(A(j,j) - B(j,1:j-1)*B(j,1:j-1)’);
+for i = j+1:n
+8.9. SPD MATRICES AND THE CHOLESKY DECOMPOSITION 287
+B(i,j) = (A(i,j) - B(i,1:j-1)*B(j,1:j-1)’)/B(j,j);
+end
+end
+end
+B(n,n) = sqrt(A(n,n) - B(n,1:n-1)*B(n,1:n-1)’);
+end
+If we run the above algorithm on the following matrix
+A =
+
+
+4 1 0 0 0
+1 4 1 0 0
+0 1 4 1 0
+0 0 1 4 1
+0 0 0 1 4
+
+
+,
+we obtain
+B =
+
+
+2
+0
+.
+.
+0000 0 0 0 0
+5000 1
+0 0
+.
+.
+9365 0 0 0
+5164 1.9322 0 0
+0 0 0
+0 0 0 0
+.5175 1.
+.
+9319 0
+5176 1.9319
+
+
+.
+The Cholesky factorization can be used to solve linear systems Ax = b where A is
+symmetric positive definite: Solve the two systems Bw = b and B> x = w.
+Remark: It can be shown that this method requires n
+3/6 + O(n
+2
+) additions, n
+3/6 + O(n
+2
+)
+multiplications, n
+2/2+O(n) divisions, and O(n) square root extractions. Thus, the Cholesky
+method requires half of the number of operations required by Gaussian elimination (since
+Gaussian elimination requires n
+3/3 + O(n
+2
+) additions, n
+3/3 + O(n
+2
+) multiplications, and
+n
+2/2 + O(n) divisions). It also requires half of the space (only B is needed, as opposed
+to both L and U). Furthermore, it can be shown that Cholesky’s method is numerically

@@ -1,0 +1,1000 @@
+The Delaunay triangulation of the set of 20 points and the drawing of the corresponding
+graph are shown in Figure 21.4. The graph drawing on the right looks nicer than the graph
+on the left but is is no longer planar.
+0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1
+0
+0.1
+0.2
+0.3
+0.4
+0.5
+0.6
+0.7
+0.8
+0.9
+−0.4 −0.3 −0.2 −0.1 0 0.1 0.2 0.3 0.4 −0.4
+−0.3
+−0.2
+−0.1
+0
+0.1
+0.2
+0.3
+0.4
+0.5
+Figure 21.4: Delaunay triangulation (left) and drawing of the graph from Example 4 (right).
+Example 5. Our last example, also borrowed from Spielman [163], corresponds to the skele￾ton of the “Buckyball,” a geodesic dome invented by the architect Richard Buckminster
+730 CHAPTER 21. SPECTRAL GRAPH DRAWING
+Fuller (1895–1983). The Montr´eal Biosph`ere is an example of a geodesic dome designed by
+Buckminster Fuller.
+A = full(bucky);
+D = diag(sum(A));
+L = D - A;
+[v, e] = eig(L);
+gplot(A, v(:, [2 3]))
+hold on;
+gplot(A,v(:, [2 3]), ’o’)
+Figure 21.5 shows a graph drawing of the Buckyball. This picture seems a bit squashed
+for two reasons. First, it is really a 3-dimensional graph; second, λ2 = 0.2434 is a triple
+eigenvalue. (Actually, the Laplacian of L has many multiple eigenvalues.) What we should
+really do is to plot this graph in R
+3 using three orthonormal eigenvectors associated with λ2.
+−0.25 −0.2 −0.15 −0.1 −0.05 0 0.05 0.1 0.15 0.2 0.25 −0.25
+−0.2
+−0.15
+−0.1
+−0.05
+0
+0.05
+0.1
+0.15
+0.2
+0.25
+Figure 21.5: Drawing of the graph of the Buckyball.
+A 3D picture of the graph of the Buckyball is produced by the following Matlab program,
+and its image is shown in Figure 21.6. It looks better!
+[x, y] = gplot(A, v(:, [2 3]));
+[x, z] = gplot(A, v(:, [2 4]));
+plot3(x,y,z)
+21.3 Summary
+The main concepts and results of this chapter are listed below:
+• Graph drawing.
+21.3. SUMMARY 731
+−0.4 −0.3 −0.2 −0.1 0 0.1 0.2 0.3
+−0.4
+−0.2
+0
+0.2
+0.4
+−0.25
+−0.2
+−0.15
+−0.1
+−0.05
+0
+0.05
+0.1
+0.15
+0.2
+0.25
+Figure 21.6: Drawing of the graph of the Buckyball in R
+3
+.
+• Matrix of a graph drawing.
+• Balanced graph drawing.
+• Energy E(R) of a graph drawing.
+• Orthogonal graph drawing.
+• Delaunay triangulation.
+• Buckyball.
+732 CHAPTER 21. SPECTRAL GRAPH DRAWING
+Chapter 22
+Singular Value Decomposition and
+Polar Form
+22.1 Properties of f
+∗ ◦ f
+In this section we assume that we are dealing with real Euclidean spaces. Let f : E → E
+be any linear map. In general, it may not be possible to diagonalize f. We show that every
+linear map can be diagonalized if we are willing to use two orthonormal bases. This is the
+celebrated singular value decomposition (SVD). A close cousin of the SVD is the polar form
+of a linear map, which shows how a linear map can be decomposed into its purely rotational
+component (perhaps with a flip) and its purely stretching part.
+The key observation is that f
+∗ ◦ f is self-adjoint since
+h
+(f
+∗
+◦ f)(u), vi = h f(u), f(v)i = h u,(f
+∗
+◦ f)(v)i .
+Similarly, f ◦ f
+∗
+is self-adjoint.
+The fact that f
+∗ ◦ f and f ◦ f
+∗ are self-adjoint is very important, because by Theorem
+17.8, it implies that f
+∗ ◦ f and f ◦ f
+∗
+can be diagonalized and that they have real eigenvalues.
+In fact, these eigenvalues are all nonnegative as shown in the following proposition.
+Proposition 22.1. The eigenvalues of f
+∗ ◦ f and f ◦ f
+∗ are nonnegative.
+Proof. If u is an eigenvector of f
+∗ ◦ f for the eigenvalue λ, then
+h
+(f
+∗
+◦ f)(u), ui = h f(u), f(u)i
+and
+h
+(f
+∗
+◦ f)(u), ui = λh u, ui ,
+and thus
+λh u, ui = h f(u), f(u)i ,
+which implies that λ ≥ 0, since h−, −i is positive definite. A similar proof applies to
+f ◦ f
+∗
+.
+733
+734 CHAPTER 22. SINGULAR VALUE DECOMPOSITION AND POLAR FORM
+Thus, the eigenvalues of f
+∗ ◦f are of the form σ1
+2
+, . . . , σr
+2 or 0, where σi > 0, and similarly
+for f ◦ f
+∗
+.
+The above considerations also apply to any linear map f : E → F between two Euclidean
+spaces (E,h−, −i1) and (F,h−, −i2). Recall that the adjoint f
+∗
+: F → E of f is the unique
+linear map f
+∗
+such that
+h
+f(u), vi 2 = h u, f ∗
+(v)i 1, for all u ∈ E and all v ∈ F .
+Then f
+∗ ◦ f and f ◦ f
+∗ are self-adjoint (the proof is the same as in the previous case),
+and the eigenvalues of f
+∗ ◦ f and f ◦ f
+∗ are nonnegative.
+Proof. If λ is an eigenvalue of f
+∗ ◦ f and u (6= 0) is a corresponding eigenvector, we have
+h
+(f
+∗
+◦ f)(u), ui 1 = h f(u), f(u)i 2,
+and also
+h
+(f
+∗
+◦ f)(u), ui 1 = λh u, ui 1,
+so
+λh u, ui 1, = h f(u), f(u)i 2,
+which implies that λ ≥ 0. A similar proof applies to f ◦ f
+∗
+.
+The situation is even better, since we will show shortly that f
+∗ ◦ f and f ◦ f
+∗ have the
+same nonzero eigenvalues.
+Remark: Given any two linear maps f : E → F and g : F → E, where dim(E) = n and
+dim(F) = m, it can be shown that
+λ
+m det(λ In − g ◦ f) = λ
+n
+det(λ Im − f ◦ g),
+and thus g ◦ f and f ◦ g always have the same nonzero eigenvalues; see Problem 15.14.
+Definition 22.1. Given any linear map f : E → F, the square roots σi > 0 of the positive
+eigenvalues of f
+∗ ◦ f (and f ◦ f
+∗
+) are called the singular values of f.
+Definition 22.2. A self-adjoint linear map f : E → E whose eigenvalues are nonnegative is
+called positive semidefinite (or positive), and if f is also invertible, f is said to be positive
+definite. In the latter case, every eigenvalue of f is strictly positive.
+The following proposition shows that the conditions on the eigenvalues of a self-adjoint
+linear map used to define the notion of a positive definite linear map is equivalent to the
+condition used in Definition 8.4. A similar but weaker condition is equivalent to the notion
+of self-adjoint positive semidefinite linear map.
+Proposition 22.2. Let f : E → E be a self-adjoint linear map, where E is a Euclidean
+space of finite dimension with inner product h−.−i.
+22.1. PROPERTIES OF f
+∗ ◦ f 735
+(1) The eigenvalues of f are strictly positive iff
+h
+f(u), ui > 0 for all u 6 = 0.
+(2) The eigenvalues of f are nonnegative iff
+h
+f(u), ui ≥ 0 for all u 6 = 0.
+Proof. Since f is self-adjoint, by the spectral theorem (Theorem 17.8), f has real eigenvalues
+λ1, . . . , λn, and there is some orthonormal basis (e1, . . . , en), where ei
+is an eigenvector for
+λi
+. With respect to this basis, every vector u ∈ E can be written in a unique way as
+u =
+P
+n
+i=1 xiui
+for some xi ∈ R. Since each ei
+is eigenvector associated with λi ∈ R, we have
+f
+
+nX
+i=1
+xiei
+ =
+nX
+i=1
+xif(ei) =
+nX
+i=1
+λixiei
+,
+and using the bilinearity of the inner product, we have
+h
+f(u), ui =
+* f
+
+nX
+i=1
+xiei
+
+,
+nX
+j=1
+xjej
++
+=
+*
+nX
+i=1
+λixiei
+,
+nX
+j=1
+xjej
++
+=
+nX
+i=1
+nX
+j=1
+λixixj h ei
+, ej i
+,
+and since (e1, . . . , en), is an orthonormal basis, we obtain
+h
+f(u), ui =
+nX
+i=1
+λix
+2
+i
+. (†)
+(1) If λi > 0 for i = 1, . . . , n, for any u 6 = 0, we have xi 6 = 0 for some i, so h f(u), ui = P
+n
+i=1 λix
+2
+i > 0.
+Conversely, if h f(u), ui > 0 for all u 6 = 0, by picking u = ei
+, we get
+h
+f(ei), eii = h λiei
+, eii = λih ei
+, eii = λi
+,
+so λi > 0 for i = 1, . . . , n.
+(2) If λi ≥ 0 for i = 1, . . . , n, for any u 6 = 0, then h f(u), ui =
+P
+n
+i=1 λix
+2
+i ≥ 0.
+Conversely, if h f(u), ui ≥ 0 for all u 6 = 0, by picking u = ei
+, we get
+h
+f(ei), eii = h λiei
+, eii = λih ei
+, eii = λi
+,
+so λi ≥ 0 for i = 1, . . . , n.
+736 CHAPTER 22. SINGULAR VALUE DECOMPOSITION AND POLAR FORM
+Proposition 22.2 also holds for self-adjoint linear maps on a complex vector space with a
+Hermitian inner product. The proof is essentially the same and is left as an exercise to the
+reader.
+The version of Proposition 22.2 for matrices follows immediately.
+Proposition 22.3. Let A be a real n × n symmetric matrix.
+(1) The eigenvalues of A are strictly positive iff
+u
+> Au > 0 for all u 6 = 0.
+(2) The eigenvalues of A are nonnegative iff
+u
+> Au ≥ 0 for all u 6 = 0.
+It is important to note that Proposition 22.3 is false for nonsymmetric matrices.
+Example 22.1. The matrix
+A =
+
+1 4
+0 1
+has the positive eigenvalues (1, 1), but
+￾
+1 −1
+
+
+1 4
+0 1  −
+1
+1
+
+=
+￾ 1 −1
+
+
+−
+−
+3
+1
+
+= −2.
+Example 22.2. The matrix
+A =
+
+1
+2 1
+−2
+
+has the complex eigenvalues 1 + 2i, 1 − 2i, and yet
+￾
+x y 
+1
+2 1
+−2
+  x
+y
+
+=
+￾ x y 
+x
+2x
+−
++
+2
+y
+y
+
+= x
+2 + y
+2
+,
+so u
+> Au > 0 for all u 6 = 0.
+Since u
+> Au is a scalar, if A is a skew symmetric matrix (A> = −A), then we see that
+u
+> Au = 0 for all u ∈ R.
+Therefore, if A is a real n × n matrix then
+u
+> Au = u
+> H(A)u for all u ∈ R,
+where H(A) = (1/2)(A + A> ) is the symmetric part of A. This explains why the notion
+of a positive definite matrix is only interesting for symmetric matrices. But but one should
+also be aware that even if a nonsymmetric matrix A has “well-behaved” eigenvalues, its
+symmetric part H(A) may not be positive definite.
+22.1. PROPERTIES OF f
+∗ ◦ f 737
+Example 22.3. The matrix
+A =
+
+1 4
+0 1
+of Example 22.1 has positive eigenvalues (1, 1), but its symmetric part
+H(A) =  1 2
+2 1
+is not positive definite, since its eigenvalues are −1, 3.
+Beware that if A is a complex skew-Hermitian matrix, which means that A∗ = −A, then
+(u
+∗Au)
+∗ = −u
+∗Au,
+but this only implies that the real part of u
+∗Au is zero. So for any arbitrary complex square
+matrix A, in general,
+u
+∗Au 6 = u
+∗H(A)u,
+where H(A) = (1/2)(A + A∗
+).
+If f : E → F is any linear map, we just showed that f
+∗ ◦ f and f ◦ f
+∗ are positive
+semidefinite self-adjoint linear maps. This fact has the remarkable consequence that every
+linear map has two important decompositions:
+1. The polar form.
+2. The singular value decomposition (SVD).
+The wonderful thing about the singular value decomposition is that there exist two or￾thonormal bases (u1, . . . , un) and (v1, . . . , vm) such that, with respect to these bases, f is a
+diagonal matrix consisting of the singular values of f or 0. Thus, in some sense, f can always
+be diagonalized with respect to two orthonormal bases. The SVD is also a useful tool for
+solving overdetermined linear systems in the least squares sense and for data analysis, as we
+show later on.
+First we show some useful relationships between the kernels and the images of f, f
+∗
+,
+f
+∗ ◦ f, and f ◦ f
+∗
+. Recall that if f : E → F is a linear map, the image Im f of f is the
+subspace f(E) of F, and the rank of f is the dimension dim(Im f) of its image. Also recall
+that (Theorem 6.16)
+dim (Ker f) + dim (Im f) = dim (E),
+and that (Propositions 12.11 and 14.13) for every subspace W of E,
+dim (W) + dim (W⊥) = dim (E).
+738 CHAPTER 22. SINGULAR VALUE DECOMPOSITION AND POLAR FORM
+Proposition 22.4. Given any two Euclidean spaces E and F, where E has dimension n
+and F has dimension m, for any linear map f : E → F, we have
+Ker f = Ker (f
+∗
+◦ f),
+Ker f
+∗ = Ker (f ◦ f
+∗
+),
+Ker f = (Im f
+∗
+)
+⊥,
+Ker f
+∗ = (Im f)
+⊥,
+dim(Im f) = dim(Im f
+∗
+),
+and f, f
+∗
+, f
+∗ ◦ f, and f ◦ f
+∗ have the same rank.
+Proof. To simplify the notation, we will denote the inner products on E and F by the same
+symbol h−, −i (to avoid subscripts). If f(u) = 0, then (f
+∗ ◦ f)(u) = f
+∗
+(f(u)) = f
+∗
+(0) = 0,
+and so Ker f ⊆ Ker (f
+∗ ◦ f). By definition of f
+∗
+, we have
+h
+f(u), f(u)i = h (f
+∗
+◦ f)(u), ui
+for all u ∈ E. If (f
+∗ ◦ f)(u) = 0, since h−, −i is positive definite, we must have f(u) = 0,
+and so Ker (f
+∗ ◦ f) ⊆ Ker f. Therefore,
+Ker f = Ker (f
+∗
+◦ f).
+The proof that Ker f
+∗ = Ker (f ◦ f
+∗
+) is similar.
+By definition of f
+∗
+, we have
+h
+f(u), vi = h u, f ∗
+(v)i for all u ∈ E and all v ∈ F . (∗)
+This immediately implies that
+Ker f = (Im f
+∗
+)
+⊥ and Ker f
+∗ = (Im f)
+⊥.
+Let us explain why Ker f = (Im f
+∗
+)
+⊥, the proof of the other equation being similar.
+Because the inner product is positive definite, for every u ∈ E, we have
+• u ∈ Ker f
+• iff f(u) = 0
+• iff h f(u), vi = 0 for all v,
+• by (∗) iff h u, f ∗
+(v)i = 0 for all v,
+• iff u ∈ (Im f
+∗
+)
+⊥.
+22.2. SINGULAR VALUE DECOMPOSITION FOR SQUARE MATRICES 739
+Since
+dim(Im f) = n − dim(Ker f)
+and
+dim(Im f
+∗
+) = n − dim((Im f
+∗
+)
+⊥),
+from
+Ker f = (Im f
+∗
+)
+⊥
+we also have
+dim(Ker f) = dim((Im f
+∗
+)
+⊥),
+from which we obtain
+dim(Im f) = dim(Im f
+∗
+).
+Since
+dim(Ker (f
+∗
+◦ f)) + dim(Im (f
+∗
+◦ f)) = dim(E),
+Ker (f
+∗ ◦ f) = Ker f and Ker f = (Im f
+∗
+)
+⊥, we get
+dim((Im f
+∗
+)
+⊥) + dim(Im (f
+∗
+◦ f)) = dim(E).
+Since
+dim((Im f
+∗
+)
+⊥) + dim(Im f
+∗
+) = dim(E),
+we deduce that
+dim(Im f
+∗
+) = dim(Im (f
+∗
+◦ f)).
+A similar proof shows that
+dim(Im f) = dim(Im (f ◦ f
+∗
+)).
+Consequently, f, f
+∗
+, f
+∗ ◦ f, and f ◦ f
+∗ have the same rank.
+22.2 Singular Value Decomposition for
+Square Matrices
+We will now prove that every square matrix has an SVD. Stronger results can be obtained
+if we first consider the polar form and then derive the SVD from it (there are uniqueness
+properties of the polar decomposition). For our purposes, uniqueness results are not as
+important so we content ourselves with existence results, whose proofs are simpler. Readers
+interested in a more general treatment are referred to Gallier [72].
+The early history of the singular value decomposition is described in a fascinating paper
+by Stewart [165]. The SVD is due to Beltrami and Camille Jordan independently (1873,
+1874). Gauss is the grandfather of all this, for his work on least squares (1809, 1823)
+(but Legendre also published a paper on least squares!). Then come Sylvester, Schmidt, and
+740 CHAPTER 22. SINGULAR VALUE DECOMPOSITION AND POLAR FORM
+Hermann Weyl. Sylvester’s work was apparently “opaque.” He gave a computational method
+to find an SVD. Schmidt’s work really has to do with integral equations and symmetric and
+asymmetric kernels (1907). Weyl’s work has to do with perturbation theory (1912). Autonne
+came up with the polar decomposition (1902, 1915). Eckart and Young extended SVD to
+rectangular matrices (1936, 1939).
+Theorem 22.5. (Singular value decomposition) For every real n×n matrix A there are two
+orthogonal matrices U and V and a diagonal matrix D such that A = V DU > , where D is of
+the form
+D =
+
+
+σ1 . . .
+σ2 . . .
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+. . . σ
+.
+n
+
+
+,
+where σ1, . . . , σr are the singular values of A, i.e., the (positive) square roots of the nonzero
+eigenvalues of A> A and A A> , and σr+1 = · · · = σn = 0. The columns of U are eigenvectors
+of A> A, and the columns of V are eigenvectors of A A> .
+Proof. Since A> A is a symmetric matrix, in fact, a positive semidefinite matrix, there exists
+an orthogonal matrix U such that
+A
+> A = UD2U
+> ,
+with D = diag(σ1, . . . , σr, 0, . . . , 0), where σ1
+2
+, . . . , σr
+2 are the nonzero eigenvalues of A> A,
+and where r is the rank of A; that is, σ1, . . . , σr are the singular values of A. It follows that
+U
+> A
+> AU = (AU)
+> AU = D
+2
+,
+and if we let fj be the jth column of AU for j = 1, . . . , n, then we have
+h
+fi
+, fj i = σi
+2
+δij , 1 ≤ i, j ≤ r
+and
+fj = 0, r + 1 ≤ j ≤ n.
+If we define (v1, . . . , vr) by
+vj = σ
+−1
+j
+fj
+, 1 ≤ j ≤ r,
+then we have
+h
+vi
+, vj i = δij , 1 ≤ i, j ≤ r,
+so complete (v1, . . . , vr) into an orthonormal basis (v1, . . . , vr, vr+1, . . . , vn) (for example,
+using Gram–Schmidt). Now since fj = σjvj
+for j = 1 . . . , r, we have
+h
+vi
+, fj i = σj h vi
+, vj i = σjδi,j , 1 ≤ i ≤ n, 1 ≤ j ≤ r
+22.2. SINGULAR VALUE DECOMPOSITION FOR SQUARE MATRICES 741
+and since fj = 0 for j = r + 1, . . . , n,
+h
+vi
+, fj i = 0 1 ≤ i ≤ n, r + 1 ≤ j ≤ n.
+If V is the matrix whose columns are v1, . . . , vn, then V is orthogonal and the above equations
+prove that
+V
+> AU = D,
+which yields A = V DU > , as required.
+The equation A = V DU > implies that
+A
+> A = UD2U
+> , AA> = V D2V
+> ,
+which shows that A> A and AA> have the same eigenvalues, that the columns of U are
+eigenvectors of A> A, and that the columns of V are eigenvectors of AA> .
+Example 22.4. Here is a simple example of how to use the proof of Theorem 22.5 to obtain
+an SVD decomposition. Let A =
+
+1 1
+0 0 . Then A> =
+
+1 0
+1 0 , A> A =
+
+1 1
+1 1 , and
+AA> =
+
+2 0
+0 0 . A simple calculation shows that the eigenvalues of A> A are 2 and 0, and
+for the eigenvalue 2, a unit eigenvector is  1
+1
+/
+/
+√
+√
+2
+2
+
+, while a unit eigenvector for the eigenvalue
+0 is 
+−
+1
+1
+/
+/
+√
+√
+2
+2
+
+. Observe that the singular values are σ1 =
+√
+2 and σ2 = 0. Furthermore,
+U =
+
+1
+1
+/
+/
+√
+√
+2 1
+2 −1
+/
+/
+√
+√
+2
+2
+
+= U
+> . To determine V , the proof of Theorem 22.5 tells us to first
+calculate
+AU =
+
+√
+0 0
+2 0
+,
+and then set
+v1 = (1/
+√
+2) 
+√
+0
+2
+
+=
+
+1
+0
+
+.
+Once v1 is determined, since σ2 = 0, we have the freedom to choose v2 such that (v1, v2)
+forms an orthonormal basis for R
+2
+. Naturally, we chose v2 =
+
+0
+1
+
+and set V =
+
+1 0
+0 1 . The
+columns of V are unit eigenvectors of AA> , but finding V by computing unit eigenvectors of
+AA> does not guarantee that these vectors are consistent with U so that A = V ΣU
+> . Thus
+one has to use AU instead. We leave it to the reader to check that
+A = V
+
+√
+0 0
+2 0 U
+> .
+Theorem 22.5 suggests the following definition.
+742 CHAPTER 22. SINGULAR VALUE DECOMPOSITION AND POLAR FORM
+Definition 22.3. A triple (U, D, V ) such that A = V D U > , where U and V are orthogonal
+and D is a diagonal matrix whose entries are nonnegative (it is positive semidefinite) is
+called a singular value decomposition (SVD) of A. If D = diag(σ1, . . . , σn), it is customary
+to assume that σ1 ≥ σ2 ≥ · · · ≥ σn.
+The Matlab command for computing an SVD A = V DU > of a matrix A is
+[V, D, U] = svd(A).
+The proof of Theorem 22.5 shows that there are two orthonormal bases (u1, . . . , un) and
+(v1, . . . , vn), where (u1, . . . , un) are eigenvectors of A> A and (v1, . . . , vn) are eigenvectors
+of AA> . Furthermore, (u1, . . . , ur) is an orthonormal basis of Im A> , (ur+1, . . . , un) is an
+orthonormal basis of Ker A, (v1, . . . , vr) is an orthonormal basis of Im A, and (vr+1, . . . , vn)
+is an orthonormal basis of Ker A> .
+Using a remark made in Chapter 4, if we denote the columns of U by u1, . . . , un and the
+columns of V by v1, . . . , vn, then we can write
+A = V D U > = σ1v1u
+>1 + · · · + σrvru
+>r
+,
+with σ1 ≥ σ2 ≥ · · · ≥ σr. As a consequence, if r is a lot smaller than n (we write r  n), we
+see that A can be reconstructed from U and V using a much smaller number of elements.
+This idea will be used to provide “low-rank” approximations of a matrix. The idea is to keep
+only the k top singular values for some suitable k  r for which σk+1, . . . , σr are very small.
+Remarks:
+(1) In Strang [170] the matrices U, V, D are denoted by U = Q2, V = Q1, and D = Σ, and
+an SVD is written as A = Q1ΣQ>2
+. This has the advantage that Q1 comes before Q2 in
+A = Q1ΣQ>2
+. This has the disadvantage that A maps the columns of Q2 (eigenvectors
+of A> A) to multiples of the columns of Q1 (eigenvectors of A A> ).
+(2) Algorithms for actually computing the SVD of a matrix are presented in Golub and
+Van Loan [80], Demmel [48], and Trefethen and Bau [176], where the SVD and its
+applications are also discussed quite extensively.
+(3) If A is a symmetric matrix, then in general, there is no SVD V ΣU
+> of A with V = U.
+However, if A is positive semidefinite, then the eigenvalues of A are nonnegative, and
+so the nonzero eigenvalues of A are equal to the singular values of A and SVDs of A
+are of the form
+A = V ΣV
+> .
+(4) The SVD also applies to complex matrices. In this case, for every complex n×n matrix
+A, there are two unitary matrices U and V and a diagonal matrix D such that
+A = V D U∗
+,
+where D is a diagonal matrix consisting of real entries σ1, . . . , σn, where σ1 ≥ · · · ≥ σr
+are the singular values of A, i.e., the positive square roots of the nonzero eigenvalues
+of A∗A and A A∗
+, and σr+1 = . . . = σn = 0.
+22.3. POLAR FORM FOR SQUARE MATRICES 743
+22.3 Polar Form for Square Matrices
+A notion closely related to the SVD is the polar form of a matrix.
+Definition 22.4. A pair (R, S) such that A = RS with R orthogonal and S symmetric
+positive semidefinite is called a polar decomposition of A.
+Theorem 22.5 implies that for every real n×n matrix A, there is some orthogonal matrix
+R and some positive semidefinite symmetric matrix S such that
+A = RS.
+This is easy to show and we will prove it below. Furthermore, R, S are unique if A is
+invertible, but this is harder to prove; see Problem 22.9.
+For example, the matrix
+A =
+1
+2
+
+
+1 1 1 1
+1 1 −1 −1
+1
+1
+−
+−
+1 1
+1 −1 1
+−1
+
+
+is both orthogonal and symmetric, and A = RS with R = A and S = I, which implies that
+some of the eigenvalues of A are negative.
+Remark: In the complex case, the polar decomposition states that for every complex n × n
+matrix A, there is some unitary matrix U and some positive semidefinite Hermitian matrix
+H such that
+A = UH.
+It is easy to go from the polar form to the SVD, and conversely.
+Given an SVD A = V D U > , let R = V U > and S = UD U > . It is clear that R is
+orthogonal and that S is positive semidefinite symmetric, and
+RS = V U > UD U > = V D U > = A.
+Example 22.5. Recall from Example 22.4 that A = V DU > where V = I2 and
+A =
+
+1 1
+0 0 , U =
+ 
+1
+√
+2
+1
+√
+2
+1
+√
+2
+−
+1
+√
+2
+!
+, D =
+
+√
+0 0
+2 0
+.
+Set R = V U > = U and
+S = UDU > =
+ 
+1
+√
+2
+1
+√
+2
+1
+√
+2
+1
+√
+2
+!
+.
+Since S = √
+1
+2
+A> A, S has eigenvalues √
+2 and 0. We leave it to the reader to check that
+A = RS.
+744 CHAPTER 22. SINGULAR VALUE DECOMPOSITION AND POLAR FORM
+Going the other way, given a polar decomposition A = R1S, where R1 is orthogonal
+and S is positive semidefinite symmetric, there is an orthogonal matrix R2 and a positive
+semidefinite diagonal matrix D such that S = R2D R2
+>
+, and thus
+A = R1R2D R2
+> = V D U > ,
+where V = R1R2 and U = R2 are orthogonal.
+Example 22.6. Let A =
+
+1 1
+0 0 and A = R1S, where R1 =
+
+1
+1
+/
+/
+√
+√
+2 1
+2 −1
+/
+/
+√
+√
+2
+2
+
+and S =
+
+1
+1
+/
+/
+√
+√
+2 1
+2 1
+/
+/
+√
+√
+2
+2
+
+. This is the polar decomposition of Example 22.5. Observe that
+S =
+ 
+1
+√
+2
+1
+√
+2
+1
+√
+2
+−
+1
+√
+2
+!
+
+√
+0 0
+2 0 1
+√
+2
+1
+√
+2
+1
+√
+2
+−
+1
+√
+2
+!
+= R2DR2
+>
+.
+Set U = R2 and V = R1R2 =
+

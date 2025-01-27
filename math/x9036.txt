@@ -1,0 +1,1000 @@
+[lamb,mu,w] = SVMhard2(10,u14,v14)
+and produces the output shown in Figure 52.5. Observe that there is one blue support vector
+and two red support vectors.
+52.8 Applications of ADMM to ` 1
+-Norm Problems
+Another important application of ADMM is to ` 1
+-norm minimization problems, especially
+lasso minimization, discussed below and in Section 55.4. This involves the special case of
+ADMM where f(x) = τ k xk 1
+and A = I. In particular, in the one-dimensional case, we need
+to solve the minimization problem: find
+x
+∗ = arg min
+x
+￾
+τ |x| + (ρ/2)(x − v)
+2
+
+,
+with x, v ∈ R, and ρ, τ > 0. Let c = τ/ρ and write
+f(x) =
+2
+τ
+c
+￾
+2c|x| + (x − v)
+2
+
+.
+Minimizing f over x is equivalent to minimizing
+g(x) = 2c|x| + (x − v)
+2 = 2c|x| + x
+2 − 2xv + v
+2
+,
+52.8. APPLICATIONS OF ADMM TO ` 1
+-NORM PROBLEMS 1897
+-50 -40 -30 -20 -10 0 10 20 30 40
+-50
+-40
+-30
+-20
+-10
+0
+10
+20
+30
+40
+50
+Figure 52.5: An example of hard margin SVM.
+which is equivalent to minimizing
+h(x) = x
+2 + 2(c|x| − xv)
+over x. If x ≥ 0, then
+h(x) = x
+2 + 2(cx − xv) = x
+2 + 2(c − v)x = (x − (v − c))2 − (v − c)
+2
+.
+If v − c > 0, that is, v > c, since x ≥ 0, the function x 7→ (x − (v − c))2 has a minimum for
+x = v − c > 0, else if v − c ≤ 0, then the function x 7→ (x − (v − c))2 has a minimum for
+x = 0.
+If x ≤ 0, then
+h(x) = x
+2 + 2(−cx − xv) = x
+2 − 2(c + v)x = (x − (v + c))2 − (v + c)
+2
+.
+if v + c < 0, that is, v < −c, since x ≤ 0, the function x 7→ (x − (v + c))2 has a minimum for
+x = v + c, else if v + c ≥ 0, then the function x 7→ (x − (v + c))2 has a minimum for x = 0.
+In summary, infx h(x) is the function of v given by
+Sc(v) =
+
+
+
+v − c if v > c
+0 if |v| ≤ c
+v + c if v < −c.
+The function Sc is known as a soft thresholding operator . The graph of Sc shown in Figure
+52.6.
+1898 CHAPTER 52. DUAL ASCENT METHODS; ADMM
+Figure 52.6: The graph of Sc (when c = 2).
+One can check that
+Sc(v) = (v − c)+ − (−v − c)+,
+and also
+Sc(v) = (1 − c/|v|)+v, v 6 = 0,
+which shows that Sc is a shrinkage operator (it moves a point toward zero).
+The operator Sc is extended to vectors in R
+n
+component wise, that is, if x = (x1, . . . , xn),
+then
+Sc(x) = (Sc(x1), . . . , Sc(xn)).
+We now consider several ` 1
+-norm problems.
+(1) Least absolute deviation.
+This is the problem of minimizing k Ax − bk 1
+, rather than k Ax − bk 2
+. Least absolute
+deviation is more robust than least squares fit because it deals better with outliers.
+The problem can be formulated in ADMM form as follows:
+minimize k zk 1
+subject to Ax − z = b,
+with f = 0 and g = k k 1
+. As usual, we assume that A is an m × n matrix of rank n,
+so that A> A is invertible. ADMM (in scaled form) can be expressed as
+x
+k+1 = (A
+> A)
+−1A
+> (b + z
+k − u
+k
+)
+z
+k+1 = S1/ρ(Axk+1 − b + u
+k
+)
+u
+k+1 = u
+k + Axk+1 − z
+k+1 − b.
+52.8. APPLICATIONS OF ADMM TO ` 1
+-NORM PROBLEMS 1899
+(2) Basis pursuit.
+This is the following minimization problem:
+minimize k xk 1
+subject to Ax = b,
+where A is an m × n matrix of rank m < n, and b ∈ R
+m, x ∈ R
+n
+. The problem is to
+find a sparse solution to an underdetermined linear system, which means a solution x
+with many zero coordinates. This problem plays a central role in compressed sensing
+and statistical signal processing.
+Basis pursuit can be expressed in ADMM form as the problem
+minimize IC(x) + k zk 1
+subject to x − z = 0,
+with C = {x ∈ R
+n
+| Ax = b}. It is easy to see that the ADMM procedure (in scaled
+form) is
+x
+k+1 = ΠC(z
+k − u
+k
+)
+z
+k+1 = S1/ρ(x
+k+1 + u
+k
+)
+u
+k+1 = u
+k + x
+k+1 − z
+k+1
+,
+where ΠC is the orthogonal projection onto the subspace C. In fact, it is not hard to
+show that
+x
+k+1 = (I − A
+> (AA> )
+−1A)(z
+k − u
+k
+) + A
+> (AA> )
+−1
+b.
+In some sense, an ` 1
+-minimization problem is reduced to a sequence of ` 2
+-norm prob￾lems. There are ways of improving the efficiency of the method; see Boyd et al. [28]
+(Section 6.2)
+(3) General ` 1
+-regularized loss minimization.
+This is the following minimization problem:
+minimize l(x) + τ k xk 1
+,
+where l is any proper closed and convex loss function, and τ > 0. We convert the
+problem to the ADMM problem:
+minimize l(x) + τ k zk 1
+subject to x − z = 0.
+1900 CHAPTER 52. DUAL ASCENT METHODS; ADMM
+The ADMM procedure (in scaled form) is
+x
+k+1 = arg min
+x
+
+l(x) + (ρ/2)
+  x − z
+k + u
+k
+
+
+2
+2
+
+z
+k+1 = Sτ /ρ(x
+k+1 + u
+k
+)
+u
+k+1 = u
+k + x
+k+1 − z
+k+1
+.
+The x-update is a proximal operator evaluation. In general, one needs to apply a
+numerical procedure to compute x
+k+1, for example, a version of Newton’s method.
+The special case where l(x) = (1/2) k Ax − bk
+2
+2
+is particularly important.
+(4) Lasso regularization.
+This is the following minimization problem:
+minimize (1/2) k Ax − bk
+2
+2 + τ k xk 1
+.
+This is a linear regression with the regularizing term τ k xk 1
+instead of τ k xk 2
+, to en￾courage a sparse solution. This method was first proposed by Tibshirani around 1996,
+under the name lasso, which stands for “least absolute selection and shrinkage opera￾tor.” This method is also known as ` 1
+-regularized regression, but this is not as cute as
+“lasso,” which is used predominantly. This method is discussed extensively in Hastie,
+Tibshirani, and Wainwright [89].
+The lasso minimization is converted to the following problem in ADMM form:
+minimize
+1
+2
+k
+Ax − bk
+2
+2 + τ k zk 1
+subject to x − z = 0.
+Then the ADMM procedure (in scaled form) is
+x
+k+1 = (A
+> A + ρI)
+−1
+(A
+> b + ρ(z
+k − u
+k
+))
+z
+k+1 = Sτ /ρ(x
+k+1 + u
+k
+)
+u
+k+1 = u
+k + x
+k+1 − z
+k+1
+.
+Since ρ > 0, the matrix A> A+ρI is symmetric positive definite. Note that the x-update
+looks like a ridge regression step (see Section 55.1).
+There are various generalizations of lasso.
+(5) Generalized Lasso regularization.
+This is the following minimization problem:
+minimize (1/2) k Ax − bk
+2
+2 + τ k F xk 1
+,
+52.9. SUMMARY 1901
+where A is an m × n matrix, F is a p × n matrix, and either A has rank n or F has
+rank n. This problem is converted to the ADMM problem
+minimize k Ax − bk
+2
+2 + τ k zk 1
+subject to F x − z = 0,
+and the corresponding ADMM procedure (in scaled form) is
+x
+k+1 = (A
+> A + ρF > F)
+−1
+(A
+> b + ρF > (z
+k − u
+k
+))
+z
+k+1 = Sτ /ρ(F xk+1 + u
+k
+)
+u
+k+1 = u
+k + F xk+1 − z
+k+1
+.
+(6) Group Lasso.
+This a generalization of (3). Here we assume that x is split as x = (x1, . . . , xN ),
+with xi ∈ R
+ni and n1 + · · · + xN = n, and the regularizing term k xk 1
+is replaced by
+P
+N
+i=1 k xik 2
+. When ni = 1, this reduces to (3). The z-update of the ADMM procedure
+needs to modified. We define the soft thresholding operator Sc : R
+m → R
+m given by
+Sc(v) =  1 −
+k
+v
+c
+k
+2
+ +
+v,
+with Sc(0) = 0. Then the z-update consists of the N updates
+z
+k
+i
++1 = Sτ /ρ(x
+k
+i
++1 + u
+k
+), i = 1, . . . , N.
+The method can be extended to deal with overlapping groups; see Boyd et al. [28]
+(Section 6.4).
+There are many more applications of ADMM discussed in Boyd et al. [28], including
+consensus and sharing. See also Strang [171] for a brief overview.
+52.9 Summary
+The main concepts and results of this chapter are listed below:
+• Dual ascent.
+• Augmented Lagrangian.
+• Penalty parameter.
+• Method of multipliers.
+• ADMM (alternating direction method of multipliers).
+1902 CHAPTER 52. DUAL ASCENT METHODS; ADMM
+• x-update, z-update, λ-update.
+• Scaled form of ADMM.
+• Residual, dual residual.
+• Stopping criteria.
+• Proximity operator, proximal minimization.
+• Quadratic programming.
+• KKT equations.
+• Soft thresholding operator.
+• Shrinkage operator.
+• Least absolute deviation.
+• Basis pursuit.
+• General ` 1
+-regularized loss minimization.
+• Lasso regularization.
+• Generalized lasso regularization.
+• Group lasso.
+52.10 Problems
+Problem 52.1. In the method of multipliers described in Section 52.2, prove that choosing
+α
+k = ρ guarantees that (u
+k+1, λk+1) satisfies the equation
+∇Juk+1 + A
+> λ
+k+1 = 0.
+Problem 52.2. Prove that the Inequality (A1) follows from the Inequalities (A2) and (A3)
+(see the proof of Theorem 52.1). For help consult Appendix A of Boyd et al. [28].
+Problem 52.3. Consider Example 52.8. Prove that if f = IC, the indicator function of a
+nonempty closed convex set C, then
+x
++ = arg min
+x
+￾
+IC(x) + (ρ/2) k x − vk
+2
+2
+ = ΠC(v),
+the orthogonal projection of v onto C. In the special case where C = R
+n
++ (the first orthant),
+then
+x
++ = (v)+,
+the vector obtained by setting the negative components of v to zero.
+52.10. PROBLEMS 1903
+Problem 52.4. Prove that the soft thresholding operator Sc from Section 52.8 satisfies the
+equations
+Sc(v) = (v − c)+ − (−v − c)+,
+and
+Sc(v) = (1 − c/|v|)+v, v 6 = 0.
+Problem 52.5. Rederive the formula
+Sc(v) =
+
+
+
+v − c if v > c
+0 if |v| ≤ c
+v + c if v < −c
+using subgradients.
+Problem 52.6. In basis pursuit (see Section 52.8 (2)) prove that
+x
+k+1 = (I − A
+> (AA> )
+−1A)(z
+k − u
+k
+) + A
+> (AA> )
+−1
+b.
+Problem 52.7. Implement (in Matlab) ADMM applied to lasso regularization as described
+in Section 52.6 (4). The stopping criterion should be based on feasibility tolerances  pri
+and  dual, say 10−4
+, and on a maximum number of iteration steps, say 10000. There is a
+build in Matlab function wthresh implementing soft thresholding. You may use the Matlab
+command randn to create a random data set X and a random response vector y (see the
+help menu in Matlab under lasso). Try various values of ρ and τ . You will observe that
+the choice of ρ greatly affects the rate of convergence of the procedure.
+1904 CHAPTER 52. DUAL ASCENT METHODS; ADMM
+Part IX
+Applications to Machine Learning
+1905
+Chapter 53
+Positive Definite Kernels
+This chapter is an introduction to positive definite kernels and the use of kernel functions in
+machine learning.
+Let X be a nonempty set. If the set X represents a set of highly nonlinear data, it
+may be advantageous to map X into a space F of much higher dimension called the feature
+space, using a function ϕ: X → F called a feature map. This idea is that ϕ “unwinds” the
+description of the objects in F in an attempt to make it linear. The space F is usually a
+vector space equipped with an inner product h−, −i. If F is infinite dimensional, then we
+assume that it is a Hilbert space.
+Many algorithms that analyze or classify data make use of the inner products h ϕ(x), ϕ(y)i ,
+where x, y ∈ X. These algorithms make use of the function κ: X × X → C given by
+κ(x, y) = h ϕ(x), ϕ(y)i , x, y ∈ X,
+called a kernel function.
+The kernel trick is to pretend that we have a feature embedding ϕ: X → F (actually
+unknown), but to only use inner products h ϕ(x), ϕ(y)i that can be evaluated using the
+original data through the known kernel function κ. It turns out that the functions of the
+form κ as above can be defined in terms of a condition which is reminiscent of positive
+semidefinite matrices (see Definition 53.2). Furthermore, every function satisfying Definition
+53.2 arises from a suitable feature map into a Hilbert space; see Theorem 53.8.
+We illustrate the kernel methods on kernel PCA (see Section 53.4).
+53.1 Feature Maps and Kernel Functions
+Definition 53.1. Let X be a nonempty set, let H be a (complex) Hilbert space, and let
+ϕ: X → H be a function called a feature map. The function κ: X × X → C given by
+κ(x, y) = h ϕ(x), ϕ(y)i , x, y ∈ X,
+is called a kernel function.
+1907
+1908 CHAPTER 53. POSITIVE DEFINITE KERNELS
+Remark: A feature map is often called a feature embedding, but this terminology is a bit
+misleading because it suggests that such a map is injective, which is not necessarily the case.
+Unfortunately this terminology is used by most people.
+Example 53.1. Suppose we have two feature maps ϕ1 : X → R
+n1 and ϕ2 : X → R
+n2
+, and let
+κ1(x, y) = h ϕ1(x), ϕ1(y)i and κ2(x, y) = h ϕ2(x), ϕ2(y)i be the corresponding kernel functions
+(where h−, −i is the standard inner product on R
+n
+). Define the feature map ϕ: X → R
+n1+n2
+by
+ϕ(x) = (ϕ1(x), ϕ2(x)),
+an (n1 + n2)-tuple. We have
+h
+ϕ(x), ϕ(y)i = h (ϕ1(x), ϕ2(x)),(ϕ1(y), ϕ2(y))i = h ϕ1(x), ϕ1(y)i + h ϕ2(x), ϕ2(y)i
+= κ1(x, y) + κ2(x, y),
+which shows that the map κ given by
+κ(x, y) = κ1(x, y) + κ2(x, y)
+is the kernel function corresponding to the feature map ϕ: X → R
+n1+n2
+.
+Example 53.2. Let X be a subset of R
+2
+, and let ϕ1 : X → R
+3 be the map given by
+ϕ1(x1, x2) = (x
+2
+1
+, x2
+2
+,
+√
+2x1x2).
+Figure 53.1 illustrates ϕ1 : X → R
+3 when X = {((x1, x2) | −10 ≤ x1 ≤ 10, −10 ≤ x2 ≤ 10}.
+Observe that linear relations in the feature space H = R
+3
+correspond to quadratic rela￾tions in the input space (of data). We have
+h
+ϕ1(x), ϕ1(y)i = h (x
+2
+1
+, x2
+2
+,
+√
+2x1x2),(y1
+2
+, y2
+2
+,
+√
+2y1y2)i
+= x
+2
+1
+y1
+2 + x
+2
+2
+y2
+2 + 2x1x2y1y2
+= (x1y1 + x2y2)
+2 = h x, yi 2
+,
+where h x, yi is the usual inner product on R
+2
+. Hence the function
+κ(x, y) = h x, yi 2
+is a kernel function associated with the feature space R
+3
+.
+If we now consider the map ϕ2 : X → R
+4 given by
+ϕ2(x1, x2) = (x
+2
+1
+, x2
+2
+, x1x2, x1x2),
+we check immediately that
+h
+ϕ2(x), ϕ2(y)i = κ(x, y) = h x, yi 2
+,
+which shows that the same kernel can arise from different maps into different feature spaces.
+53.1. FEATURE MAPS AND KERNEL FUNCTIONS 1909
+Figure 53.1: The parametric surface ϕ1(x1, x2) = (x
+2
+1
+, x2
+2
+,
+√
+2x1x2) where −10 ≤ x1 ≤ 10 and
+−10 ≤ x2 ≤ 10.
+Example 53.3. Example 53.2 can be generalized as follows. Suppose we have a feature map
+ϕ1 : X → R
+n and let κ1(x, y) = h ϕ1(x), ϕ1(y)i be the corresponding kernel function (where
+its
+h−,
+n
+−i
+2
+components
+is the standard inner product on R
+n
+). Define the feature map ϕ: X → R
+n × R
+n by
+ϕ(x)(i,j) = (ϕ1(x))i(ϕ1(x))j
+, 1 ≤ i, j ≤ n,
+with the inner product on R
+n × R
+n given by
+h
+u, vi =
+nX
+i,j=1
+u(i,j)v(i,j)
+.
+Then we have
+h
+ϕ(x), ϕ(y)i =
+nX
+i,j=1
+ϕ(i,j)(x)ϕ(i,j)(y)
+=
+nX
+i,j=1
+(ϕ1(x))i(ϕ1(x))j (ϕ1(y))i(ϕ1(y))j
+=
+nX
+i=1
+(ϕ1(x))i(ϕ1(y))i
+nX
+j=1
+(ϕ1(x))j (ϕ1(y))j
+= (κ1(x, y))2
+.
+1910 CHAPTER 53. POSITIVE DEFINITE KERNELS
+Thus the map κ given by κ(x, y) = (κ1(x, y))2
+is a kernel map associated with the feature
+map ϕ: X → R
+n × R
+n
+. The feature map ϕ is a direct generalization of the feature map ϕ2
+of Example 53.2.
+The above argument is immediately adapted to show that if ϕ1 : X → R
+n1 and ϕ2 : X →
+R
+n2 are two feature maps and if κ1(x, y) = h ϕ1(x), ϕ1(y)i and κ2(x, y) = h ϕ2(x), ϕ2(y)i are
+the corresponding kernel functions, then the map defined by
+κ(x, y) = κ1(x, y)κ2(x, y)
+is a kernel function for the feature space R
+n1 × R
+n2 and the feature map
+ϕ(x)(i,j) = (ϕ1(x))i(ϕ2(x))j
+, 1 ≤ i ≤ n1, 1 ≤ j ≤ n2.
+Example 53.4. Note that the feature map ϕ: X → R
+n ×R
+n
+is not very economical because
+if i 6 = j then the components ϕ(i,j)(x) and ϕ(j,i)(x) are both equal to (ϕ1(x))i(ϕ1(x))j
+.
+Therefore we can define the more economical embedding ϕ
+0 : X → R(
+n+1
+2 ) given by
+ϕ
+0 (x)(i,j) =
+(
+(ϕ1(x))2
+i
+i = j,
+√
+2(ϕ1(x))i(ϕ1(x))j i < j,
+where the pairs (i, j) with 1 ≤ i ≤ j ≤ n are ordered lexicographically. The feature map ϕ
+is a direct generalization of the feature map ϕ1 of Example 53.2.
+Observe that ϕ
+0 can also be defined in the following way which makes it easier to come
+up with the generalization to any power:
+ϕ
+0(i1,...,in)
+(x) = 
+i1 · · ·
+2
+in
+
+1/2
+(ϕ1(x))i
+1
+1
+(ϕ1(x))i
+1
+2
+· · ·(ϕ1(x))i
+1
+n
+, i1 + i2 + · · · + in = 2, ij ∈ N,
+where the n-tuples (i1, . . . , in) are ordered lexicographically. Recall that for any m ≥ 1 and
+any (i1, . . . , in) ∈ N
+m such that i1 + i2 + · · · + in = m, we have
+
+i1 · · ·
+m
+in
+
+=
+i1! · · ·
+m!
+in!
+.
+More generally, for any m ≥ 2, using the multinomial theorem, we can define a feature
+embedding ϕ: X → R(
+n+
+m
+m−1
+) defining the kernel function κ given by κ(x, y) = (κ1(x, y))m,
+with ϕ given by
+ϕ(i1,...,in)(x) = 
+i1 · · ·
+m
+in
+
+1/2
+(ϕ1(x))i
+1
+1
+(ϕ1(x))i
+1
+2
+· · ·(ϕ1(x))i
+1
+n
+, i1 + i2 + · · · + in = m, ij ∈ N,
+where the n-tuples (i1, . . . , in) are ordered lexicographically.
+53.1. FEATURE MAPS AND KERNEL FUNCTIONS 1911
+Example 53.5. For any positive real constant R > 0, the constant function κ(x, y) = R is
+a kernel function corresponding to the feature map ϕ: X → R given by ϕ(x, y) = √
+R.
+By definition, the function κ
+01
+: R
+n → R given by κ
+01
+(x, y) = h x, yi is a kernel function
+(the feature map is the identity map from R
+n
+to itself). We just saw that for any positive
+real constant R > 0, the constant κ
+02
+(x, y) = R is a kernel function. By Example 53.1, the
+function κ
+03
+(x, y) = κ
+01
+(x, y) + κ
+02
+(x, y) is a kernel function, and for any integer d ≥ 1, by
+Example 53.4, the function κd given by
+κd(x, y) = (κ
+03
+(x, y))d = (h x, yi + R)
+d
+,
+is a kernel function on R
+n
+. By the binomial formula,
+κd(x, y) =
+d
+X
+m=0
+R
+d−mh x, yi m.
+By Example 53.1, the feature map of this kernel function is the concatenation of the features
+of the d + 1 kernel maps Rd−mh x, yi m. By Example 53.3, the components of the feature map
+of the kernel map Rd−mh x, yi m are reweightings of the functions
+ϕ(i1,...,in)(x) = x
+i
+1
+1 x
+i
+2
+2
+· · · x
+i
+n
+n
+, i1 + i2 + · · · + in = m,
+with (i1, . . . , in) ∈ N
+n
+. Thus the components of the feature map of the kernel function κd
+are reweightings of the functions
+ϕ(i1,...,in)(x) = x
+i
+1
+1 x
+i
+2
+2
+· · · x
+i
+n
+n
+, i1 + i2 + · · · + in ≤ d,
+with (i1, . . . , in) ∈ N
+n
+. It is easy to see that the dimension of this feature space is ￾ m+d
+d
+
+.
+There are a number of variations of the polynomial kernel κd; all-subsets embedding
+kernels, ANOVA kernels; see Shawe–Taylor and Christianini [159], Chapter III.
+In the next example the set X is not a vector space.
+Example 53.6. Let D be a finite set and let X = 2D be its power set. If |D| = n,
+let H = R
+X ∼= R
+2
+n
+. We are assuming that the subsets of D are enumerated in some
+fashion so that each coordinate of R
+2
+n
+corresponds to one of these subsets. For example, if
+D = {1, 2, 3, 4}, let
+U1 = ∅ U2 = {1} U3 = {2} U4 = {3}
+U5 = {4} U6 = {1, 2} U7 = {1, 3} U8 = {1, 4}
+U9 = {2, 3} U10 = {2, 4} U11 = {3, 4} U12 = {1, 2, 3}
+U13 = {1, 2, 4} U14 = {1, 3, 4} U15 = {2, 3, 4} U16 = {1, 2, 3, 4}.
+Let ϕ: X → H be the feature map defined as follows: for any subsets A, U ∈ X,
+ϕ(A)U =
+(
+0 otherwise
+1 if U ⊆ A
+.
+1912 CHAPTER 53. POSITIVE DEFINITE KERNELS
+For example, if A1 = {1, 2, 3}, we obtain the vector
+ϕ({1, 2, 3}) = (1, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0),
+and if A2 = {2, 3, 4}, we obtain the vector
+ϕ({2, 3, 4}) = (1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 0).
+For any two subsets A1 and A2 of D, it is easy to check that
+h
+ϕ(A1), ϕ(A2)i = 2|A1∩A2|
+,
+the number of common subsets of A1 and A2. For example, A1 ∩ A2 = {2, 3}, and
+h
+ϕ(A1), ϕ(A2)i = 4.
+Therefore, the function κ: X × X → R given by
+κ(A1, A2) = 2|A1∩A2|
+, A1, A2 ⊆ D
+is a kernel function.
+Kernels on collections of sets can be defined in terms of measures.
+Example 53.7. Let (D, A) be a measurable space, where D is a nonempty set and A is a
+σ-algebra on D (the measurable sets). Let X be a subset of A. If µ is a positive measure
+on (D, A) and if µ is finite, which means that µ(D) is finite, then we can define the map
+κ1 : X × X → R given by
+κ1(A1, A2) = µ(A1 ∩ A2), A1, A2 ∈ X.
+We can show that κ is a kernel function as follows. Let H = L2
+µ
+(D, A, R) be the Hilbert
+space of µ-square-integrable functions with the inner product
+h
+f, gi =
+Z
+D
+f(s)g(s) dµ(s),
+and let ϕ: X → H be the feature embedding given by
+ϕ(A) = χA, A ∈ X,
+the characteristic function of A. Then we have
+κ1(A1, A2) = µ(A1 ∩ A2) = Z
+D
+χA1∩A2
+(s) dµ(s)
+=
+Z
+D
+χA1
+(s)χA2
+(s) dµ(s) = h χA1
+, χA2
+i
+= h ϕ(A1), ϕ(A2)i .
+53.1. FEATURE MAPS AND KERNEL FUNCTIONS 1913
+The above kernel is called the intersection kernel. If we assume that µ is normalized so
+that µ(D) = 1, then we also have the union complement kernel:
+κ2(A1, A2) = µ(A1 ∩ A2) = 1 − µ(A1 ∪ A2).
+The sum κ3 of the kernels κ1 and κ2 is the agreement kernel:
+κs(A1, A2) = 1 − µ(A1 − A2) − µ(A2 − A1).
+Many other kinds of kernels can be designed, in particular, graph kernels. For com￾prehensive presentations of kernels, see Sch¨olkopf and Smola [145] and Shawe–Taylor and
+Christianini [159].
+Kernel functions have the following important property.
+Proposition 53.1. Let X be any nonempty set, let H be any (complex) Hilbert space, let
+ϕ: X → H be any function, and let κ: X × X → C be the kernel given by
+κ(x, y) = h ϕ(x), ϕ(y)i , x, y ∈ X.
+For any finite subset S = {x1, . . . , xp} of X, if KS is the p × p matrix
+KS = (κ(xj
+, xi))1≤i,j≤p = (h ϕ(xj ), ϕ(xi)i )1≤i,j≤p,
+then we have
+u
+∗KS u ≥ 0, for all u ∈ C
+p
+.
+Proof. We have
+u
+∗KS u = u
+> KS
+> u =
+p
+X
+i,j=1
+κ(xi
+, xj )uiuj
+=
+p
+X
+i,j=1
+h
+ϕ(x), ϕ(y)i uiuj
+=
+*
+p
+X
+i=1
+uiϕ(xi),
+p
+X
+j=1
+ujϕ(xj )
++ =
+
+
+ 
+
+p
+X
+i=1
+uiϕ(xi)
+
+
+
+
+2
+≥ 0,
+as claimed.
+1914 CHAPTER 53. POSITIVE DEFINITE KERNELS
+53.2 Basic Properties of Positive Definite Kernels
+Proposition 53.1 suggests a second approach to kernel functions which does not assume that
+a feature space and a feature map are provided. We will see in Section 53.3 that the two
+approaches are equivalent. The second approach is useful in practice because it is often
+difficult to define a feature space and a feature map in a simple manner.
+Definition 53.2. Let X be a nonempty set. A function κ: X × X → C is a positive definite
+kernel if for every finite subset S = {x1, . . . , xp} of X, if KS is the p × p matrix
+KS = (κ(xj
+, xi))1≤i,j≤p
+called a Gram matrix , then we have
+u
+∗KS u =
+p
+X
+i,j=1
+κ(xi
+, xj )uiuj ≥ 0, for all u ∈ C
+p
+.
+Observe that Definition 53.2 does not require that u
+∗KS u > 0 if u 6 = 0, so the terminology
+positive definite is a bit abusive, and it would be more appropriate to use the terminology
+positive semidefinite. However, it seems customary to use the term positive definite kernel,
+or even positive kernel.
+Proposition 53.2. Let κ: X × X → C be a positive definite kernel. Then κ(x, x) ≥ 0 for
+all x ∈ X, and for any finite subset S = {x1, . . . , xp} of X, the p × p matrix KS given by
+KS = (κ(xj
+, xi))1≤i,j≤p
+is Hermitian, that is, KS
+∗ = KS.
+Proof. The first property is obvious by choosing S = {x}. To prove that KS is Hermitian,
+observe that we have
+(u + v)
+∗KS(u + v) = u
+∗KSu + u
+∗KSv + v
+∗KSu + v
+∗KSv,
+and since (u + v)
+∗KS(u + v), u∗KSu, v∗KSv ≥ 0, we deduce that
+2A = u
+∗KSv + v
+∗KSu (1)
+must be real. By replacing u by iu, we see that
+2B = −iu∗KSv + iv∗KSu (2)
+must also be real. By multiplying Equation (2) by i and adding it to Equation (1) we get
+u
+∗KSv = A + iB. (3)
+53.2. BASIC PROPERTIES OF POSITIVE DEFINITE KERNELS 1915
+By subtracting Equation (3) from Equation (1) we get
+v
+∗KSu = A − iB.
+Then
+u
+∗KS
+∗
+v = v
+∗KSu = A − iB = A + iB = u
+∗KSv,
+for all u, v ∈ C
+∗
+, which implies KS
+∗ = KS.
+If the map κ: X × X → R is real-valued, then we have the following criterion for κ to be
+a positive definite kernel that only involves real vectors.
+Proposition 53.3. If κ: X × X → R, then κ is a positive definite kernel iff for any finite
+subset S = {x1, . . . , xp} of X, the p × p real matrix KS given by
+KS = (κ(xk, xj ))1≤j,k≤p
+is symmetric, that is, KS
+> = KS, and
+u
+> KS u =
+p
+X
+j,k=1
+κ(xj
+, xk)ujuk ≥ 0, for all u ∈ R
+p
+.
+Proof. If κ is a real-valued positive definite kernel, then the proposition is a trivial conse￾quence of Proposition 53.2.
+For the converse assume that κ is symmetric and that it satisfies the second condition of
+the proposition. We need to show that κ is a positive definite kernel with respect to complex
+vectors. If we write uk = ak + ibk, then
+u
+∗KS u =
+p
+X
+j,k=1
+κ(xj
+, xk)(aj + ibj )(ak − ibk)
+=
+p
+X
+j,k=1
+(ajak + bj bk)κ(xj
+, xk) + i
+p
+X
+j,k=1
+(bjak − aj bk)κ(xj
+, xk)
+=
+p
+X
+j,k=1
+(ajak + bj bk)κ(xj
+, xk) + i
+X
+1≤j<k≤p

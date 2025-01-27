@@ -1,0 +1,1000 @@
+2
+=
+  V diag(0, . . . , 0, σk+1, . . . , σp)U
+>
+  2
+= σk+1.
+It remains to show that k A − Bk 2 ≥ σk+1 for all rank k matrices B. Let B be any rank k
+matrix, so its kernel has dimension n − k. The subspace Uk+1 spanned by (u1, . . . , uk+1) has
+dimension k + 1, and because the sum of the dimensions of the kernel of B and of Uk+1 is
+(n − k) + k + 1 = n + 1, these two subspaces must intersect in a subspace of dimension at
+least 1. Pick any unit vector h in Ker(B) ∩ Uk+1. Then since Bh = 0, and since U and V
+are isometries, we have
+k
+A − Bk
+2
+2 ≥ k(A − B)hk
+2
+2 = k Ahk 2
+2 =
+  V DU > h
+
+2
+2
+=
+  DU > h
+
+2
+2
+≥ σk
+2
++1
+  U
+> h
+
+2
+2
+= σk
+2
++1,
+which proves our claim.
+Note that Ak can be stored using (m + n)k entries, as opposed to mn entries. When
+k  m, this is a substantial gain.
+Example 23.4. Consider the badly conditioned symmetric matrix
+A =
+
+
+10 7 8 7
+7 5 6 5
+8 6 10 9
+7 5 9 10
+
+
+from Section 9.5. Since A is SPD, we have the SVD
+A = UDU > ,
+23.4. PRINCIPAL COMPONENTS ANALYSIS (PCA) 769
+with
+U =
+
+
+−0.5286 −0.6149 0.3017 −0.5016
+−
+−
+0
+0
+.
+.
+5520 0
+3803 −0
+.2716
+.3963
+−
+−
+0
+0
+.
+.
+7603
+0933 0
+−0
+.8304
+.2086
+−0.5209 0.6254 0.5676 0.1237
+
+
+, D =
+
+
+30.2887 0 0 0
+0 3
+0 0 0
+0 0 0 0
+.8581 0 0
+.8431 0
+.0102
+
+ .
+If we set σ3 = σ4 = 0, we obtain the best rank 2 approximation
+A2 = U(:, 1 : 2) ∗ D(:, 1 : 2) ∗ U(:, 1 : 2)0 =
+
+
+9.9207 7.0280 8.1923 6.8563
+7
+8
+.
+.
+0280 4
+1923 5
+.
+.
+9857 5
+9419 9
+.
+.
+9419 5
+5122 9
+.
+.
+0436
+3641
+6.8563 5.0436 9.3641 9.7282
+
+ .
+A nice example of the use of Proposition 23.9 in image compression is given in Demmel
+[48], Chapter 3, Section 3.2.3, pages 113–115; see the Matlab demo.
+Proposition 23.9 also holds for the Frobenius norm; see Problem 23.4.
+An interesting topic that we have not addressed is the actual computation of an SVD.
+This is a very interesting but tricky subject. Most methods reduce the computation of
+an SVD to the diagonalization of a well-chosen symmetric matrix which is not A> A; see
+Problem 22.1 and Problem 22.3. Interested readers should read Section 5.4 of Demmel’s
+excellent book [48], which contains an overview of most known methods and an extensive
+list of references.
+23.4 Principal Components Analysis (PCA)
+Suppose we have a set of data consisting of n points X1, . . . , Xn, with each Xi ∈ R
+d
+viewed
+as a row vector . Think of the Xi
+’s as persons, and if Xi = (xi 1, . . . , xi d), each xi j is the
+value of some feature (or attribute) of that person.
+Example 23.5. For example, the Xi
+’s could be mathematicians, d = 2, and the first com￾ponent, xi 1, of Xi could be the year that Xi was born, and the second component, xi 2, the
+length of the beard of Xi
+in centimeters. Here is a small data set.
+770 CHAPTER 23. APPLICATIONS OF SVD AND PSEUDO-INVERSES
+Name year length
+Carl Friedrich Gauss 1777 0
+Camille Jordan 1838 12
+Adrien-Marie Legendre 1752 0
+Bernhard Riemann 1826 15
+David Hilbert 1862 2
+Henri Poincar´e 1854 5
+Emmy Noether 1882 0
+Karl Weierstrass 1815 0
+Eugenio Beltrami 1835 2
+Hermann Schwarz 1843 20
+We usually form the n × d matrix X whose ith row is Xi
+, with 1 ≤ i ≤ n. Then the
+jth column is denoted by Cj (1 ≤ j ≤ d). It is sometimes called a feature vector , but this
+terminology is far from being universally accepted. In fact, many people in computer vision
+call the data points Xi
+feature vectors!
+The purpose of principal components analysis, for short PCA, is to identify patterns in
+data and understand the variance–covariance structure of the data. This is useful for the
+following tasks:
+1. Data reduction: Often much of the variability of the data can be accounted for by a
+smaller number of principal components.
+2. Interpretation: PCA can show relationships that were not previously suspected.
+Given a vector (a sample of measurements) x = (x1, . . . , xn) ∈ R
+n
+, recall that the mean
+(or average) x of x is given by
+x =
+P
+n
+i=1 xi
+n
+.
+We let x − x denote the centered data point
+x − x = (x1 − x, . . . , xn − x).
+In order to measure the spread of the xi
+’s around the mean, we define the sample variance
+(for short, variance) var(x) (or s
+2
+) of the sample x by
+var(x) =
+P
+n
+i=1(xi − x)
+2
+n − 1
+.
+Example 23.6. If x = (1, 3, −1), x =
+1+3
+3
+−1 = 1, x − x = (0, 2, −2), and var(x) =
+0
+2+22+(−2)2
+2 = 4. If y = (1, 2, 3), y =
+1+2+3
+3 = 2, y −y = (−1, 0, 1), and var(y) = (−1)2+02+12
+2 =
+2.
+23.4. PRINCIPAL COMPONENTS ANALYSIS (PCA) 771
+There is a reason for using n − 1 instead of n. The above definition makes var(x) an
+unbiased estimator of the variance of the random variable being sampled. However, we
+don’t need to worry about this. Curious readers will find an explanation of these peculiar
+definitions in Epstein [57] (Chapter 14, Section 14.5) or in any decent statistics book.
+Given two vectors x = (x1, . . . , xn) and y = (y1, . . . , yn), the sample covariance (for short,
+covariance) of x and y is given by
+cov(x, y) =
+P
+n
+i=1(xi − x)(yi − y)
+n − 1
+.
+Example 23.7. If we take x = (1, 3, −1) and y = (0, 2, −2), we know from Example 23.6
+that x − x = (0, 2, −2) and y − y = (−1, 0, 1). Thus, cov(x, y) = 0(−1)+2(0)+(
+2
+−2)(1) = −1.
+The covariance of x and y measures how x and y vary from the mean with respect to each
+other . Obviously, cov(x, y) = cov(y, x) and cov(x, x) = var(x).
+Note that
+cov(x, y) = (x − x)
+> (y − y)
+n − 1
+.
+We say that x and y are uncorrelated iff cov(x, y) = 0.
+Finally, given an n × d matrix X of n points Xi
+, for PCA to be meaningful, it will be
+necessary to translate the origin to the centroid (or center of gravity) µ of the Xi
+’s, defined
+by
+µ =
+1
+n
+(X1 + · · · + Xn).
+Observe that if µ = (µ1, . . . , µd), then µj
+is the mean of the vector Cj (the jth column of
+X).
+We let X − µ denote the matrix whose ith row is the centered data point Xi − µ (1 ≤
+i ≤ n). Then the sample covariance matrix (for short, covariance matrix ) of X is the d × d
+symmetric matrix
+Σ = 1
+n − 1
+(X − µ)
+> (X − µ) = (cov(Ci
+, Cj )).
+Example 23.8. Let X =
+
+
+−
+1 1
+3 2
+1 3
+
+, the 3 × 2 matrix whose columns are the vector x and
+y of Example 23.6. Then
+µ =
+1
+3
+[(1, 1) + (3, 2) + (−1, 3)] = (1, 2),
+772 CHAPTER 23. APPLICATIONS OF SVD AND PSEUDO-INVERSES
+X − µ =
+
+
+−
+0
+2 0
+2 1
+−1
+
+ ,
+and
+Σ = 1
+2
+ −
+0 2
+1 0 1
+−2
+
+
+
+−
+0
+2 0
+2 1
+−1
+
+ =
+
+−
+4
+1 1
+−1
+
+.
+Remark: The factor 1
+n−1
+is irrelevant for our purposes and can be ignored.
+Example 23.9. Here is the matrix X − µ in the case of our bearded mathematicians: since
+µ1 = 1828.4, µ2 = 5.6,
+we get the following centered data set.
+Name year length
+Carl Friedrich Gauss −51.4 −5.6
+Camille Jordan 9.6 6.4
+Adrien-Marie Legendre −76.4 −5.6
+Bernhard Riemann −2.4 9.4
+David Hilbert 33.6 −3.6
+Henri Poincar´e 25.6 −0.6
+Emmy Noether 53.6 −5.6
+Karl Weierstrass 13.4 −5.6
+Eugenio Beltrami 6.6 −3.6
+Hermann Schwarz 14.6 14.4
+See Figure 23.3.
+We can think of the vector Cj as representing the features of X in the direction ej (the
+jth canonical basis vector in R
+d
+, namely ej = (0, . . . , 1, . . . 0), with a 1 in the jth position).
+If v ∈ R
+d
+is a unit vector, we wish to consider the projection of the data points X1, . . . , Xn
+onto the line spanned by v. Recall from Euclidean geometry that if x ∈ R
+d
+is any vector
+and v ∈ R
+d
+is a unit vector, the projection of x onto the line spanned by v is
+h
+x, vi v.
+Thus, with respect to the basis v, the projection of x has coordinate h x, vi . If x is represented
+by a row vector and v by a column vector, then
+h
+x, vi = xv.
+23.4. PRINCIPAL COMPONENTS ANALYSIS (PCA) 773
+Gauss
+Jordan
+Legendre
+Riemann
+Hilbert
+Poincare
+Noether
+Weierstrass
+Beltrami
+Schwarz
+Figure 23.3: The centered data points of Example 23.9.
+Therefore, the vector Y ∈ R
+n
+consisting of the coordinates of the projections of X1, . . . , Xn
+onto the line spanned by v is given by Y = Xv, and this is the linear combination
+Xv = v1C1 + · · · + vdCd
+of the columns of X (with v = (v1, . . . , vd)).
+Observe that because µj
+is the mean of the vector Cj (the jth column of X), we get
+Y = Xv = v1µ1 + · · · + vdµd,
+and so the centered point Y − Y is given by
+Y − Y = v1(C1 − µ1) + · · · + vd(Cd − µd) = (X − µ)v.
+Furthermore, if Y = Xv and Z = Xw, then
+cov(Y, Z) = ((X − µ)v)
+> (X − µ)w
+n − 1
+= v
+>
+1
+n − 1
+(X − µ)
+> (X − µ)w
+= v
+> Σw,
+where Σ is the covariance matrix of X. Since Y − Y has zero mean, we have
+var(Y ) = var(Y − Y ) = v
+>
+1
+n − 1
+(X − µ)
+> (X − µ)v.
+774 CHAPTER 23. APPLICATIONS OF SVD AND PSEUDO-INVERSES
+The above suggests that we should move the origin to the centroid µ of the Xi
+’s and consider
+the matrix X − µ of the centered data points Xi − µ.
+From now on beware that we denote the columns of X − µ by C1, . . . , Cd and that Y
+denotes the centered point Y = (X − µ)v =
+P
+d
+j=1 vjCj
+, where v is a unit vector.
+Basic idea of PCA: The principal components of X are uncorrelated projections Y of the
+data points X1, . . ., Xn onto some directions v (where the v’s are unit vectors) such that
+var(Y ) is maximal.
+This suggests the following definition:
+Definition 23.2. Given an n×d matrix X of data points X1, . . . , Xn, if µ is the centroid of
+the Xi
+’s, then a first principal component of X (first PC) is a centered point Y1 = (X −µ)v1,
+the projection of X1, . . . , Xn onto a direction v1 such that var(Y1) is maximized, where v1 is
+a unit vector (recall that Y1 = (X − µ)v1 is a linear combination of the Cj
+’s, the columns of
+X − µ).
+More generally, if Y1, . . . , Yk are k principal components of X along some unit vectors
+v1, . . . , vk, where 1 ≤ k < d, a (k+1)th principal component of X ((k+1)th PC) is a centered
+point Yk+1 = (X − µ)vk+1, the projection of X1, . . . , Xn onto some direction vk+1 such that
+var(Yk+1) is maximized, subject to cov(Yh, Yk+1) = 0 for all h with 1 ≤ h ≤ k, and where
+vk+1 is a unit vector (recall that Yh = (X − µ)vh is a linear combination of the Cj
+’s). The
+vh are called principal directions.
+The following proposition is the key to the main result about PCA. This result was
+already proven in Proposition 17.23 except that the eigenvalues were listed in increasing
+order. For the reader’s convenience we prove it again.
+Proposition 23.10. If A is a symmetric d × d matrix with eigenvalues λ1 ≥ λ2 ≥ · · · ≥
+λd and if (u1, . . . , ud) is any orthonormal basis of eigenvectors of A, where ui
+is a unit
+eigenvector associated with λi, then
+max
+x6=0
+x
+> Ax
+x
+> x
+= λ1
+(with the maximum attained for x = u1) and
+max
+x6=0,x∈{u1,...,uk}⊥
+x
+> Ax
+x
+> x
+= λk+1
+(with the maximum attained for x = uk+1), where 1 ≤ k ≤ d − 1.
+Proof. First observe that
+max
+x6=0
+x
+> Ax
+x
+> x
+= max
+x
+{x
+> Ax | x
+> x = 1},
+23.4. PRINCIPAL COMPONENTS ANALYSIS (PCA) 775
+and similarly,
+max
+x6=0,x∈{u1,...,uk}⊥
+x
+> Ax
+x
+> x
+= max
+x
+
+x
+> Ax | (x ∈ {u1, . . . , uk}
+⊥) ∧ (x
+> x = 1)	 .
+Since A is a symmetric matrix, its eigenvalues are real and it can be diagonalized with respect
+to an orthonormal basis of eigenvectors, so let (u1, . . . , ud) be such a basis. If we write
+x =
+d
+X
+i=1
+xiui
+,
+a simple computation shows that
+x
+> Ax =
+d
+X
+i=1
+λix
+2
+i
+.
+If x
+> x = 1, then P d
+i=1 x
+2
+i = 1, and since we assumed that λ1 ≥ λ2 ≥ · · · ≥ λd, we get
+x
+> Ax =
+d
+X
+i=1
+λix
+2
+i ≤ λ1
+
+d
+X
+i=1
+x
+2
+i
+ = λ1.
+Thus,
+max
+x
+
+x
+> Ax | x
+> x = 1	 ≤ λ1,
+and since this maximum is achieved for e1 = (1, 0, . . . , 0), we conclude that
+max
+x
+
+x
+> Ax | x
+> x = 1	 = λ1.
+Next observe that x ∈ {u1, . . . , uk}
+⊥ and x
+> x = 1 iff x1 = · · · = xk = 0 and P d
+i=1 xi = 1.
+Consequently, for such an x, we have
+x
+> Ax =
+d
+X
+i=k+1
+λix
+2
+i ≤ λk+1
+d
+X
+i=k+1
+x
+2
+i
+ = λk+1.
+Thus,
+max
+x
+
+x
+> Ax | (x ∈ {u1, . . . , uk}
+⊥) ∧ (x
+> x = 1)	 ≤ λk+1,
+and since this maximum is achieved for ek+1 = (0, . . . , 0, 1, 0, . . . , 0) with a 1 in position k+1,
+we conclude that
+max
+x
+
+x
+> Ax | (x ∈ {u1, . . . , uk}
+⊥) ∧ (x
+> x = 1)	 = λk+1,
+as claimed.
+776 CHAPTER 23. APPLICATIONS OF SVD AND PSEUDO-INVERSES
+The quantity
+x
+> Ax
+x
+> x
+is known as the Rayleigh ratio or Rayleigh–Ritz ratio (see Section 17.6 ) and Proposition
+23.10 is often known as part of the Rayleigh–Ritz theorem.
+Proposition 23.10 also holds if A is a Hermitian matrix and if we replace x
+> Ax by x
+∗Ax
+and x
+> x by x
+∗x. The proof is unchanged, since a Hermitian matrix has real eigenvalues
+and is diagonalized with respect to an orthonormal basis of eigenvectors (with respect to the
+Hermitian inner product).
+We then have the following fundamental result showing how the SVD of X yields the
+PCs:
+Theorem 23.11. (SVD yields PCA) Let X be an n × d matrix of data points X1, . . . , Xn,
+and let µ be the centroid of the Xi’s. If X − µ = V DU > is an SVD decomposition of X − µ
+and if the main diagonal of D consists of the singular values σ1 ≥ σ2 ≥ · · · ≥ σd, then the
+centered points Y1, . . . , Yd, where
+Yk = (X − µ)uk = kth column of V D
+and uk is the kth column of U, are d principal components of X. Furthermore,
+var(Yk) = σk
+2
+n − 1
+and cov(Yh, Yk) = 0, whenever h 6 = k and 1 ≤ k, h ≤ d.
+Proof. Recall that for any unit vector v, the centered projection of the points X1, . . . , Xn
+onto the line of direction v is Y = (X − µ)v and that the variance of Y is given by
+var(Y ) = v
+>
+1
+n − 1
+(X − µ)
+> (X − µ)v.
+Since X − µ = V DU > , we get
+var(Y ) = v
+>
+1
+(n − 1)(X − µ)
+> (X − µ)v
+= v
+>
+1
+(n − 1)UDV > V DU > v
+= v
+> U
+1
+(n − 1)D
+2U
+> v.
+Similarly, if Y = (X − µ)v and Z = (X − µ)w, then the covariance of Y and Z is given by
+cov(Y, Z) = v
+> U
+1
+(n − 1)D
+2U
+> w.
+23.4. PRINCIPAL COMPONENTS ANALYSIS (PCA) 777
+Obviously, U (n−
+1
+1)D2U
+> is a symmetric matrix whose eigenvalues are σ
+2
+n−
+1
+1 ≥ · · · ≥ σ
+2
+d
+n−1
+, and
+the columns of U form an orthonormal basis of unit eigenvectors.
+We proceed by induction on k. For the base case, k = 1, maximizing var(Y ) is equivalent
+to maximizing
+v
+> U
+1
+(n − 1)D
+2U
+> v,
+where v is a unit vector. By Proposition 23.10, the maximum of the above quantity is the
+largest eigenvalue of U (n−
+1
+1)D2U
+> , namely σ
+2
+n−
+1
+1
+, and it is achieved for u1, the first columnn
+of U. Now we get
+Y1 = (X − µ)u1 = V DU > u1,
+and since the columns of U form an orthonormal basis, U
+> u1 = e1 = (1, 0, . . . , 0), and so Y1
+is indeed the first column of V D.
+By the induction hypothesis, the centered points Y1, . . . , Yk, where Yh = (X − µ)uh and
+u1, . . . , uk are the first k columns of U, are k principal components of X. Because
+cov(Y, Z) = v
+> U
+1
+(n − 1)D
+2U
+> w,
+where Y = (X − µ)v and Z = (X − µ)w, the condition cov(Yh, Z) = 0 for h = 1, . . . , k
+is equivalent to the fact that w belongs to the orthogonal complement of the subspace
+spanned by {u1, . . . , uk}, and maximizing var(Z) subject to cov(Yh, Z) = 0 for h = 1, . . . , k
+is equivalent to maximizing
+w
+> U
+1
+(n − 1)D
+2U
+> w,
+where w is a unit vector orthogonal to the subspace spanned by {u1, . . . , uk}. By Proposition
+23.10, the maximum of the above quantity is the (k+1)th eigenvalue of U (n−
+1
+1)D2U
+> , namely
+σk
+2
++1
+n−1
+, and it is achieved for uk+1, the (k + 1)th columnn of U. Now we get
+Yk+1 = (X − µ)uk+1 = V DU > uk+1,
+and since the columns of U form an orthonormal basis, U
+> uk+1 = ek+1, and Yk+1 is indeed
+the (k + 1)th column of V D, which completes the proof of the induction step.
+The d columns u1, . . . , ud of U are usually called the principal directions of X − µ (and
+X). We note that not only do we have cov(Yh, Yk) = 0 whenever h 6 = k, but the directions
+u1, . . . , ud along which the data are projected are mutually orthogonal.
+Example 23.10. For the centered data set of our bearded mathematicians (Example 23.9)
+we have X − µ = V ΣU
+> , where Σ has two nonzero singular values, σ1 = 116.9803, σ2 =
+21.7812, and with
+U =
+
+0
+0
+.
+.
+9995 0
+0325 −0
+.0325
+.9995 ,
+778 CHAPTER 23. APPLICATIONS OF SVD AND PSEUDO-INVERSES
+so the principal directions are u1 = (0.9995, 0.0325) and u2 = (0.0325, −0.9995). Observe
+that u1 is almost the direction of the x-axis, and u2 is almost the opposite direction of the
+y-axis. We also find that the projections Y1 and Y2 along the principal directions are
+V D =
+
+
+−
+9
+51
+.8031
+.5550 3
+−6
+.9249
+.0843
+−76.5417 3.1116
+−2.0929 −9.4731
+33
+25
+.
+.
+4651 4
+5669 1
+.
+.
+6912
+4325
+53.3894 7.3408
+13.2107 6.0330
+6.4794 3.8128
+15.0607 −13.9174
+
+
+, with X − µ =
+
+
+−
+9
+51
+.6000 6
+.4000 −5
+.4000
+.6000
+−76.4000 −5.6000
+−2.4000 9.4000
+33
+25
+.
+.
+6000
+6000
+−
+−
+3
+0
+.
+.
+6000
+6000
+53.6000 −5.6000
+13.4000 −5.6000
+14
+6.
+.
+6000
+6000 14
+−3
+.
+.
+4000
+6000
+
+
+.
+See Figures 23.4, 23.5, and 23.6.
+u1
+u2
+Gauss Legendre
+Riemann
+Jordan
+Schwarz
+Noether Weierstrass
+Hilbert
+Poincaire
+Beltrami
+Figure 23.4: The centered data points of Example 23.9 and the two principal directions of
+Example 23.10.
+We know from our study of SVD that σ1
+2
+, . . . , σd
+2 are the eigenvalues of the symmetric
+positive semidefinite matrix (X − µ)
+> (X − µ) and that u1, . . . , ud are corresponding eigen￾vectors. Numerically, it is preferable to use SVD on X −µ rather than to compute explicitly
+(X − µ)
+> (X − µ) and then diagonalize it. Indeed, the explicit computation of A> A from
+a matrix A can be numerically quite unstable, and good SVD algorithms avoid computing
+A> A explicitly.
+23.4. PRINCIPAL COMPONENTS ANALYSIS (PCA) 779
+Gauss
+Jordan
+Schwarz
+Poincaire
+Legendre
+Beltrami
+Riemann
+Hilbert
+Noether
+Weierstrass
+u1
+Figure 23.5: The first principal components of Example 23.10, i.e. the projection of the
+centered data points onto the u1 line.
+Legendre Gauss
+Riemann
+Jordan
+Schwarz
+Beltrami
+Weierstrass
+Poincare
+Hilbert
+Noether
+u2
+Figure 23.6: The second principal components of Example 23.10, i.e. the projection of the
+centered data points onto the u2 line.
+780 CHAPTER 23. APPLICATIONS OF SVD AND PSEUDO-INVERSES
+In general, since an SVD of X is not unique, the principal directions u1, . . . , ud are not
+unique. This can happen when a data set has some rotational symmetries, and in such a
+case, PCA is not a very good method for analyzing the data set.
+23.5 Best Affine Approximation
+A problem very close to PCA (and based on least squares) is to best approximate a data
+set of n points X1, . . . , Xn, with Xi ∈ R
+d
+, by a p-dimensional affine subspace A of R
+d
+, with
+1 ≤ p ≤ d − 1 (the terminology rank d − p is also used).
+First consider p = d − 1. Then A = A1 is an affine hyperplane (in R
+d
+), and it is given by
+an equation of the form
+a1x1 + · · · + adxd + c = 0.
+By best approximation, we mean that (a1, . . . , ad, c) solves the homogeneous linear system
+
+
+x1 1 · · · x1 d 1
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+xn 1 · · · xn d 1
+
+
+
+
+a1
+.
+.
+.
+ad
+c
+
+
+=
+
+
+0
+.
+.
+.
+0
+0
+
+
+in the least squares sense, subject to the condition that a = (a1, . . . , ad) is a unit vector , that
+is, a
+> a = 1, where Xi = (xi 1, · · · , xi d).
+If we form the symmetric matrix
+
+
+x1 1 · · · x1 d 1
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+xn 1 · · · xn d 1
+
+
+>
+
+
+x1 1 · · · x1 d 1
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+xn 1 · · · xn d 1
+
+
+involved in the normal equations, we see that the bottom row (and last column) of that
+matrix is
+nµ1 · · · nµd n,
+where nµj =
+P
+n
+i=1 xi j is n times the mean of the column Cj of X.
+Therefore, if (a1, . . . , ad, c) is a least squares solution, that is, a solution of the normal
+equations, we must have
+nµ1a1 + · · · + nµdad + nc = 0,
+that is,
+a1µ1 + · · · + adµd + c = 0,
+which means that the hyperplane A1 must pass through the centroid µ of the data points
+X1, . . . , Xn. Then we can rewrite the original system with respect to the centered data
+Xi − µ, find that the variable c drops out, get the system
+(X − µ)a = 0,
+23.5. BEST AFFINE APPROXIMATION 781
+where a = (a1, . . . , ad).
+Thus, we are looking for a unit vector a solving (X − µ)a = 0 in the least squares sense,
+that is, some a such that a
+> a = 1 minimizing
+a
+> (X − µ)
+> (X − µ)a.
+Compute some SVD V DU > of X −µ, where the main diagonal of D consists of the singular
+values σ1 ≥ σ2 ≥ · · · ≥ σd of X − µ arranged in descending order. Then
+a
+> (X − µ)
+> (X − µ)a = a
+> UD2U
+> a,
+where D2 = diag(σ1
+2
+, . . . , σd
+2
+) is a diagonal matrix, so pick a to be the last column in U
+(corresponding to the smallest eigenvalue σd
+2 of (X − µ)
+> (X − µ)). This is a solution to our
+best fit problem.
+Therefore, if Ud−1 is the linear hyperplane defined by a, that is,
+Ud−1 = {u ∈ R
+d
+| hu, ai = 0},
+where a is the last column in U for some SVD V DU > of X − µ, we have shown that the
+affine hyperplane A1 = µ + Ud−1 is a best approximation of the data set X1, . . . , Xn in the
+least squares sense.
+It is easy to show that this hyperplane A1 = µ + Ud−1 minimizes the sum of the square
+distances of each Xi to its orthogonal projection onto A1. Also, since Ud−1 is the orthogonal
+complement of a, the last column of U, we see that Ud−1 is spanned by the first d−1 columns
+of U, that is, the first d − 1 principal directions of X − µ.
+All this can be generalized to a best (d−k)-dimensional affine subspace Ak approximating
+X1, . . . , Xn in the least squares sense (1 ≤ k ≤ d − 1). Such an affine subspace Ak is cut out
+by k independent hyperplanes Hi (with 1 ≤ i ≤ k), each given by some equation
+ai 1x1 + · · · + ai dxd + ci = 0.
+If we write ai = (ai 1, · · · , ai d), to say that the Hi are independent means that a1, . . . , ak are
+linearly independent. In fact, we may assume that a1, . . . , ak form an orthonormal system.
+Then finding a best (d − k)-dimensional affine subspace Ak amounts to solving the ho￾mogeneous linear system
+
+
+X
+.
+1 0 · · · 0 0 0
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+0 0 0 · · · 0 X 1
+.
+
+
+
+
+a1
+c1
+.

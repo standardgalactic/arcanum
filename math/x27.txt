@@ -1,0 +1,1000 @@
+n
++1
+−1 = −an−1 1u
+k
+1
+· · · −an−1 n−2u
+k
+n−2 −an−1 nu
+k
+n + bn−1
+an nu
+k
+n
++1 = −an 1u
+k
+1 −an 2u
+k
+2
+· · · −an n−1u
+k
+n−1 + bn
+.
+In Matlab one step of Jacobi iteration is achieved by the following function:
+function v = Jacobi2(A,b,u)
+n = size(A,1);
+v = zeros(n,1);
+for i = 1:n
+v(i,1) = u(i,1) + (-A(i,:)*u + b(i))/A(i,i);
+end
+end
+10.3. METHODS OF JACOBI, GAUSS–SEIDEL, AND RELAXATION 383
+In order to run m iteration steps, run the following function:
+function u = jacobi(A,b,u0,m)
+u = u0;
+for j = 1:m
+u = Jacobi2(A,b,u);
+end
+end
+Example 10.1. Consider the linear system
+
+
+2 −1 0 0
+−1 2 −1 0
+0
+0 0
+−1 2
+−1 2
+−1
+
+
+
+
+x
+x
+1
+2
+x
+x
+3
+4
+
+ =
+
+
+25
+−24
+21
+−15
+
+ .
+We check immediately that the solution is
+x1 = 11, x2 = −3, x3 = 7, x4 = −4.
+It is easy to see that the Jacobi matrix is
+J =
+1
+2
+
+
+0 1 0 0
+1 0 1 0
+0 1 0 1
+0 0 1 0
+
+ .
+After 10 Jacobi iterations, we find the approximate solution
+x1 = 10.2588, x2 = −2.5244, x3 = 5.8008, x4 = −3.7061.
+After 20 iterations, we find the approximate solution
+x1 = 10.9110, x2 = −2.9429, x3 = 6.8560, x4 = −3.9647.
+After 50 iterations, we find the approximate solution
+x1 = 10.9998, x2 = −2.9999, x3 = 6.9998, x4 = −3.9999,
+and After 60 iterations, we find the approximate solution
+x1 = 11.0000, x2 = −3.0000, x3 = 7.0000, x4 = −4.0000,
+correct up to at least four decimals.
+It can be shown (see Problem 10.6) that the eigenvalues of J are
+cos 
+π
+5
+
+, cos 
+2
+5
+π
+
+, cos 
+3
+5
+π
+
+, cos 
+4
+5
+π
+
+,
+384 CHAPTER 10. ITERATIVE METHODS FOR SOLVING LINEAR SYSTEMS
+so the spectral radius of J = B is
+ρ(J) = cos  π
+5
+
+= 0.8090 < 1.
+By Theorem 10.3, Jacobi’s method converges for the matrix of this example.
+Observe that we can try to “speed up” the method by using the new value u
+k
+1
++1 instead
+of u
+k
+1
+in solving for u
+k
+2
++2 using the second equations, and more generally, use u
+k
+1
++1, . . . , uk
+i−
++1
+1
+instead of u
+k
+1
+, . . . , uk
+i−1
+in solving for u
+k
+i
++1 in the ith equation. This observation leads to the
+system
+a11u
+k
+1
++1 = −a12u
+k
+2 −a13u
+k
+3
+· · · −a1nu
+k
+n + b1
+a22u
+k
+2
++1 = −a21u
+k
+1
++1 −a23u
+k
+3
+· · · −a2nu
+k
+n + b2
+.
+.
+.
+.
+.
+.
+.
+.
+.
+an−1 n−1u
+k
+n
++1
+−1 = −an−1 1u
+k
+1
++1
+· · · −an−1 n−2u
+k
+n
++1
+−2 −an−1 nu
+k
+n + bn−1
+an nu
+k
+n
++1 = −an 1u
+k
+1
++1 −an 2u
+k
+2
++1
+· · · −an n−1u
+k
+n
++1
+−1 + bn,
+which, in matrix form, is written
+Duk+1 = Euk+1 + F uk + b.
+Because D is invertible and E is lower triangular, the matrix D − E is invertible, so the
+above equation is equivalent to
+uk+1 = (D − E)
+−1F uk + (D − E)
+−1
+b, k ≥ 0.
+The above corresponds to choosing M and N to be
+M = D − E
+N = F,
+and the matrix B is given by
+B = M−1N = (D − E)
+−1F.
+Since M = D − E is invertible, we know that I − B = M−1A is also invertible.
+The method that we just described is the iterative method of Gauss–Seidel, and the
+matrix B is called the matrix of Gauss–Seidel and denoted by L1, with
+L1 = (D − E)
+−1F.
+One of the advantages of the method of Gauss–Seidel is that is requires only half of the
+memory used by Jacobi’s method, since we only need
+u
+k
+1
++1, . . . , uk
+i−
++1
+1
+, uk
+i+1, . . . , uk
+n
+to compute u
+k
+i
++1. We also show that in certain important cases (for example, if A is a
+tridiagonal matrix), the method of Gauss–Seidel converges faster than Jacobi’s method (in
+this case, they both converge or diverge simultaneously).
+In Matlab one step of Gauss–Seidel iteration is achieved by the following function:
+10.3. METHODS OF JACOBI, GAUSS–SEIDEL, AND RELAXATION 385
+function u = GaussSeidel3(A,b,u)
+n = size(A,1);
+for i = 1:n
+u(i,1) = u(i,1) + (-A(i,:)*u + b(i))/A(i,i);
+end
+end
+It is remarkable that the only difference with Jacobi2 is that the same variable u is used on
+both sides of the assignment. In order to run m iteration steps, run the following function:
+function u = GaussSeidel1(A,b,u0,m)
+u = u0;
+for j = 1:m
+u = GaussSeidel3(A,b,u);
+end
+end
+Example 10.2. Consider the same linear system
+
+
+2 −1 0 0
+−1 2 −1 0
+0
+0 0
+−1 2
+−1 2
+−1
+
+
+
+
+x
+x
+1
+2
+x
+x
+3
+4
+
+ =
+
+
+25
+−24
+21
+−15
+
+
+as in Example 10.1, whose solution is
+x1 = 11, x2 = −3, x3 = 7, x4 = −4.
+After 10 Gauss–Seidel iterations, we find the approximate solution
+x1 = 10.9966, x2 = −3.0044, x3 = 6.9964, x4 = −4.0018.
+After 20 iterations, we find the approximate solution
+x1 = 11.0000, x2 = −3.0001, x3 = 6.9999, x4 = −4.0000.
+After 25 iterations, we find the approximate solution
+x1 = 11.0000, x2 = −3.0000, x3 = 7.0000, x4 = −4.0000,
+correct up to at least four decimals. We observe that for this example, Gauss–Seidel’s method
+converges about twice as fast as Jacobi’s method. It will be shown in Proposition 10.8 that
+for a tridiagonal matrix, the spectral radius of the Gauss–Seidel matrix L1 is given by
+ρ(L1) = (ρ(J))2
+,
+so our observation is consistent with the theory.
+386 CHAPTER 10. ITERATIVE METHODS FOR SOLVING LINEAR SYSTEMS
+The new ingredient in the relaxation method is to incorporate part of the matrix D into
+N: we define M and N by
+M =
+D
+ω
+− E
+N =
+1 − ω
+ω
+D + F,
+where ω 6 = 0 is a real parameter to be suitably chosen. Actually, we show in Section 10.4
+that for the relaxation method to converge, we must have ω ∈ (0, 2). Note that the case
+ω = 1 corresponds to the method of Gauss–Seidel.
+If we assume that all diagonal entries of D are nonzero, the matrix M is invertible. The
+matrix B is denoted by Lω and called the matrix of relaxation, with
+Lω =
+
+D
+ω
+− E
+
+−1
+1 −
+ω
+ω
+D + F
+ = (D − ωE)
+−1
+((1 − ω)D + ωF).
+The number ω is called the parameter of relaxation.
+When ω > 1, the relaxation method is known as successive overrelaxation, abbreviated
+as SOR.
+At first glance the relaxation matrix Lω seems a lot more complicated than the Gauss–
+Seidel matrix L1, but the iterative system associated with the relaxation method is very
+similar to the method of Gauss–Seidel, and is quite simple. Indeed, the system associated
+with the relaxation method is given by
+
+D
+ω
+− E
+ uk+1 =
+
+1 −
+ω
+ω
+D + F
+ uk + b,
+which is equivalent to
+(D − ωE)uk+1 = ((1 − ω)D + ωF)uk + ωb,
+and can be written
+Duk+1 = Duk − ω(Duk − Euk+1 − F uk − b).
+Explicitly, this is the system
+a11u
+k
+1
++1 = a11u
+k
+1 − ω(a11u
+k
+1 + a12u
+k
+2 + a13u
+k
+3 + · · · + a1n−2u
+k
+n−2 + a1n−1u
+k
+n−1 + a1nu
+k
+n − b1)
+a22u
+k
+2
++1 = a22u
+k
+2 − ω(a21u
+k
+1
++1 + a22u
+k
+2 + a23u
+k
+3 + · · · + a2n−2u
+k
+n−2 + a2n−1u
+k
+n−1 + a2nu
+k
+n − b2)
+.
+.
+.
+an nu
+k
+n
++1 = an nu
+k
+n − ω(an 1u
+k
+1
++1 + an 2u
+k
+2
++1 + · · · + an n−2u
+k
+n
++1
+−2 + an n−1u
+k
+n
++1
+−1 + an nu
+k
+n − bn).
+In Matlab one step of relaxation iteration is achieved by the following function:
+10.3. METHODS OF JACOBI, GAUSS–SEIDEL, AND RELAXATION 387
+function u = relax3(A,b,u,omega)
+n = size(A,1);
+for i = 1:n
+u(i,1) = u(i,1) + omega*(-A(i,:)*u + b(i))/A(i,i);
+end
+end
+Observe that function relax3 is obtained from the function GaussSeidel3 by simply insert￾ing ω in front of the expression (−A(i, :) ∗u+b(i))/A(i, i). In order to run m iteration steps,
+run the following function:
+function u = relax(A,b,u0,omega,m)
+u = u0;
+for j = 1:m
+u = relax3(A,b,u,omega);
+end
+end
+Example 10.3. Consider the same linear system as in Examples 10.1 and 10.2, whose
+solution is
+x1 = 11, x2 = −3, x3 = 7, x4 = −4.
+After 10 relaxation iterations with ω = 1.1, we find the approximate solution
+x1 = 11.0026, x2 = −2.9968, x3 = 7.0024, x4 = −3.9989.
+After 10 iterations with ω = 1.2, we find the approximate solution
+x1 = 11.0014, x2 = −2.9985, x3 = 7.0010, x4 = −3.9996.
+After 10 iterations with ω = 1.3, we find the approximate solution
+x1 = 10.9996, x2 = −3.0001, x3 = 6.9999, x4 = −4.0000.
+After 10 iterations with ω = 1.27, we find the approximate solution
+x1 = 11.0000, x2 = −3.0000, x3 = 7.0000, x4 = −4.0000,
+correct up to at least four decimals. We observe that for this example the method of relax￾ation with ω = 1.27 converges faster than the method of Gauss–Seidel. This observation will
+be confirmed by Proposition 10.10.
+What remains to be done is to find conditions that ensure the convergence of the relax￾ation method (and the Gauss–Seidel method), that is:
+1. Find conditions on ω, namely some interval I ⊆ R so that ω ∈ I implies ρ(Lω) < 1;
+we will prove that ω ∈ (0, 2) is a necessary condition.
+388 CHAPTER 10. ITERATIVE METHODS FOR SOLVING LINEAR SYSTEMS
+2. Find if there exist some optimal value ω0 of ω ∈ I, so that
+ρ(Lω0
+) = inf
+ω∈I
+ρ(Lω).
+We will give partial answers to the above questions in the next section.
+It is also possible to extend the methods of this section by using block decompositions
+of the form A = D − E − F, where D, E, and F consist of blocks, and D is an invertible
+block-diagonal matrix. See Figure 10.1.
+D
+D
+D
+D
+E
+E
+E
+F
+F
+F
+1
+1 1
+2
+2 2
+3
+3 3
+4
+Figure 10.1: A schematic representation of a block decomposition A = D − E − F, where
+D = ∪
+4
+i=1Di
+, E = ∪
+3
+i=1Ei
+, and F = ∪
+3
+i=1Fi
+.
+10.4 Convergence of the Methods of Gauss–Seidel and
+Relaxation
+We begin with a general criterion for the convergence of an iterative method associated with
+a (complex) Hermitian positive definite matrix, A = M − N. Next we apply this result to
+the relaxation method.
+Proposition 10.5. Let A be any Hermitian positive definite matrix, written as
+A = M − N,
+with M invertible. Then M∗ + N is Hermitian, and if it is positive definite, then
+ρ(M−1N) < 1,
+so that the iterative method converges.
+10.4. CONVERGENCE OF THE METHODS 389
+Proof. Since M = A + N and A is Hermitian, A∗ = A, so we get
+M∗ + N = A
+∗ + N
+∗ + N = A + N + N
+∗ = M + N
+∗ = (M∗ + N)
+∗
+,
+which shows that M∗ + N is indeed Hermitian.
+Because A is Hermitian positive definite, the function
+v 7→ (v
+∗Av)
+1/2
+from C
+n
+to R is a vector norm k k , and let k k also denote its subordinate matrix norm. We
+prove that
+k
+M−1Nk < 1,
+which by Theorem 10.1 proves that ρ(M−1N) < 1. By definition
+k
+M−1Nk = k I − M−1Ak = sup
+k
+vk =1
+k
+v − M−1Avk ,
+which leads us to evaluate k v − M−1Avk when k vk = 1. If we write w = M−1Av, using the
+facts that k vk = 1, v = A−1Mw, A∗ = A, and A = M − N, we have
+k
+v − wk
+2 = (v − w)
+∗A(v − w)
+= k vk
+2 − v
+∗Aw − w
+∗Av + w
+∗Aw
+= 1 − w
+∗M∗w − w
+∗Mw + w
+∗Aw
+= 1 − w
+∗
+(M∗ + N)w.
+Now since we assumed that M∗ + N is positive definite, if w 6 = 0, then w
+∗
+(M∗ + N)w > 0,
+and we conclude that
+if k vk = 1, then k v − M−1Avk < 1.
+Finally, the function
+v 7→ kv − M−1Avk
+is continuous as a composition of continuous functions, therefore it achieves its maximum
+on the compact subset {v ∈ C
+n
+| kvk = 1}, which proves that
+sup
+k
+vk =1
+k
+v − M−1Avk < 1,
+and completes the proof.
+Now as in the previous sections, we assume that A is written as A = D − E − F,
+with D invertible, possibly in block form. The next theorem provides a sufficient condition
+(which turns out to be also necessary) for the relaxation method to converge (and thus, for
+the method of Gauss–Seidel to converge). This theorem is known as the Ostrowski-Reich
+theorem.
+390 CHAPTER 10. ITERATIVE METHODS FOR SOLVING LINEAR SYSTEMS
+Theorem 10.6. If A = D − E − F is Hermitian positive definite, and if 0 < ω < 2, then
+the relaxation method converges. This also holds for a block decomposition of A.
+Proof. Recall that for the relaxation method, A = M − N with
+M =
+D
+ω
+− E
+N =
+1 − ω
+ω
+D + F,
+and because D∗ = D, E
+∗ = F (since A is Hermitian) and ω 6 = 0 is real, we have
+M∗ + N =
+D∗
+ω
+− E
+∗ +
+1 − ω
+ω
+D + F =
+2 − ω
+ω
+D.
+If D consists of the diagonal entries of A, then we know from Section 8.8 that these entries
+are all positive, and since ω ∈ (0, 2), we see that the matrix ((2−ω)/ω)D is positive definite.
+If D consists of diagonal blocks of A, because A is positive, definite, by choosing vectors z
+obtained by picking a nonzero vector for each block of D and padding with zeros, we see
+that each block of D is positive definite, and thus D itself is positive definite. Therefore, in
+all cases, M∗ + N is positive definite, and we conclude by using Proposition 10.5.
+Remark: What if we allow the parameter ω to be a nonzero complex number ω ∈ C? In
+this case, we get
+M∗ + N =
+D∗
+ω
+− E
+∗ +
+1 − ω
+ω
+D + F =
+
+ω
+1
++
+ω
+1
+− 1
+ D.
+But,
+1
+ω
++
+1
+ω
+− 1 =
+ω + ω − ωω
+ωω
+=
+1 − (ω − 1)(ω − 1)
+|ω|
+2
+=
+1 − |ω − 1|
+2
+|ω|
+2
+,
+so the relaxation method also converges for ω ∈ C, provided that
+|ω − 1| < 1.
+This condition reduces to 0 < ω < 2 if ω is real.
+Unfortunately, Theorem 10.6 does not apply to Jacobi’s method, but in special cases,
+Proposition 10.5 can be used to prove its convergence. On the positive side, if a matrix
+is strictly column (or row) diagonally dominant, then it can be shown that the method of
+Jacobi and the method of Gauss–Seidel both converge. The relaxation method also converges
+if ω ∈ (0, 1], but this is not a very useful result because the speed-up of convergence usually
+occurs for ω > 1.
+We now prove that, without any assumption on A = D − E − F, other than the fact
+that A and D are invertible, in order for the relaxation method to converge, we must have
+ω ∈ (0, 2).
+10.5. CONVERGENCE METHODS FOR TRIDIAGONAL MATRICES 391
+Proposition 10.7. Given any matrix A = D − E − F, with A and D invertible, for any
+ω 6 = 0, we have
+ρ(Lω) ≥ |ω − 1|,
+where Lω =
+
+D
+ω − E
+
+−1
+1−ω
+ω D + F
+ . Therefore, the relaxation method (possibly by blocks)
+does not converge unless ω ∈ (0, 2). If we allow ω to be complex, then we must have
+|ω − 1| < 1
+for the relaxation method to converge.
+Proof. Observe that the product λ1 · · · λn of the eigenvalues of Lω, which is equal to det(Lω),
+is given by
+λ1 · · · λn = det(Lω) =
+det  1 − ω
+ω
+D + F
+
+det  D
+ω
+− E
+
+= (1 − ω)
+n
+.
+It follows that
+ρ(Lω) ≥ |λ1 · · · λn|
+1/n = |ω − 1|.
+The proof is the same if ω ∈ C.
+10.5 Convergence of the Methods of Jacobi,
+Gauss–Seidel, and Relaxation for
+Tridiagonal Matrices
+We now consider the case where A is a tridiagonal matrix , possibly by blocks. In this case,
+we obtain precise results about the spectral radius of J and Lω, and as a consequence,
+about the convergence of these methods. We also obtain some information about the rate of
+convergence of these methods. We begin with the case ω = 1, which is technically easier to
+deal with. The following proposition gives us the precise relationship between the spectral
+radii ρ(J) and ρ(L1) of the Jacobi matrix and the Gauss–Seidel matrix.
+Proposition 10.8. Let A be a tridiagonal matrix (possibly by blocks). If ρ(J) is the spectral
+radius of the Jacobi matrix and ρ(L1) is the spectral radius of the Gauss–Seidel matrix, then
+we have
+ρ(L1) = (ρ(J))2
+.
+Consequently, the method of Jacobi and the method of Gauss–Seidel both converge or both
+diverge simultaneously (even when A is tridiagonal by blocks); when they converge, the method
+of Gauss–Seidel converges faster than Jacobi’s method.
+392 CHAPTER 10. ITERATIVE METHODS FOR SOLVING LINEAR SYSTEMS
+Proof. We begin with a preliminary result. Let A(µ) be a tridiagonal matrix by block of the
+form
+A(µ) =
+
+
+A1 µ
+−1C1 0 0 · · · 0
+µB1 A2 µ
+−1C2 0 · · · 0
+0
+.
+.
+.
+.
+.
+.
+.
+.
+. · · ·
+.
+.
+.
+.
+.
+. · · ·
+.
+.
+.
+.
+.
+.
+.
+.
+. 0
+0 · · · 0 µBp−2 Ap−1 µ
+−1Cp−1
+0 · · · · · · 0 µBp−1 Ap
+
+
+,
+then
+det(A(µ)) = det(A(1)), µ 6 = 0.
+To prove this fact, form the block diagonal matrix
+P(µ) = diag(µI1, µ2
+I2, . . . , µp
+Ip),
+where Ij
+is the identity matrix of the same dimension as the block Aj
+. Then it is easy to see
+that
+A(µ) = P(µ)A(1)P(µ)
+−1
+,
+and thus,
+det(A(µ)) = det(P(µ)A(1)P(µ)
+−1
+) = det(A(1)).
+Since the Jacobi matrix is J = D−1
+(E + F), the eigenvalues of J are the zeros of the
+characteristic polynomial
+pJ (λ) = det(λI − D
+−1
+(E + F)),
+and thus, they are also the zeros of the polynomial
+qJ (λ) = det(λD − E − F) = det(D)pJ (λ).
+Similarly, since the Gauss–Seidel matrix is L1 = (D − E)
+−1F, the zeros of the characteristic
+polynomial
+pL1
+(λ) = det(λI − (D − E)
+−1F)
+are also the zeros of the polynomial
+qL1
+(λ) = det(λD − λE − F) = det(D − E)pL1
+(λ).
+Since A = D − E − F is tridiagonal (or tridiagonal by blocks), λ
+2D − λ
+2E − F is also
+tridiagonal (or tridiagonal by blocks), and by using our preliminary result with µ = λ 6 = 0
+starting with the matrix λ
+2D − λE − λF, we get
+λ
+n
+qJ (λ) = det(λ
+2D − λE − λF) = det(λ
+2D − λ
+2E − F) = qL1
+(λ
+2
+).
+By continuity, the above equation also holds for λ = 0. But then we deduce that:
+10.5. CONVERGENCE METHODS FOR TRIDIAGONAL MATRICES 393
+1. For any β 6 = 0, if β is an eigenvalue of L1, then β
+1/2 and −β
+1/2 are both eigenvalues of
+J, where β
+1/2
+is one of the complex square roots of β.
+2. For any α 6 = 0, α is an eigenvalues of J iff −α is an eigenvalues of J, and if α is an
+eigenvalues of J, then α
+2
+is an eigenvalue of L1.
+The above immediately implies that ρ(L1) = (ρ(J))2
+.
+We now consider the more general situation where ω is any real in (0, 2).
+Proposition 10.9. Let A be a tridiagonal matrix (possibly by blocks), and assume that
+the eigenvalues of the Jacobi matrix are all real. If ω ∈ (0, 2), then the method of Jacobi
+and the method of relaxation both converge or both diverge simultaneously (even when A is
+tridiagonal by blocks). When they converge, the function ω 7→ ρ(Lω) (for ω ∈ (0, 2)) has a
+unique minimum equal to ω0 − 1 for
+ω0 =
+2
+1 + p 1 − (ρ(J))2
+,
+where 1 < ω0 < 2 if ρ(J) > 0.
+Proof. The proof is very technical and can be found in Serre [156] and Ciarlet [41]. As in the
+proof of the previous proposition, we begin by showing that the eigenvalues of the matrix
+Lω are the zeros of the polynomial
+qLω
+(λ) = det  λ +
+ω
+ω − 1
+D − λE − F
+ = det  D
+ω
+− E
+ pLω
+(λ),
+where pLω
+(λ) is the characteristic polynomial of Lω. Then using the preliminary fact from
+Proposition 10.8, it is easy to show that
+qLω
+(λ
+2
+) = λ
+n
+qJ
+
+λ
+2 +
+λω
+ω − 1
+
+,
+for all λ ∈ C, with λ 6 = 0. This time we cannot extend the above equation to λ = 0. This
+leads us to consider the equation
+λ
+2 + ω − 1
+λω = α,
+which is equivalent to
+λ
+2 − αωλ + ω − 1 = 0,
+for all λ 6 = 0. Since λ 6 = 0, the above equivalence does not hold for ω = 1, but this is not a
+problem since the case ω = 1 has already been considered in the previous proposition. Then
+we can show the following:
+394 CHAPTER 10. ITERATIVE METHODS FOR SOLVING LINEAR SYSTEMS
+1. For any β 6 = 0, if β is an eigenvalue of Lω, then
+β + ω − 1
+β
+1/2ω
+, −
+β + ω − 1
+β
+1/2ω
+are eigenvalues of J.
+2. For every α 6 = 0, if α and −α are eigenvalues of J, then µ+(α, ω) and µ−(α, ω) are
+eigenvalues of Lω, where µ+(α, ω) and µ−(α, ω) are the squares of the roots of the
+equation
+λ
+2 − αωλ + ω − 1 = 0.
+It follows that
+ρ(Lω) = max
+α | pJ (α)=0
+{max(|µ+(α, ω)|, |µ−(α, ω)|)},
+and since we are assuming that J has real roots, we are led to study the function
+M(α, ω) = max{|µ+(α, ω)|, |µ−(α, ω)|},
+where α ∈ R and ω ∈ (0, 2). Actually, because M(−α, ω) = M(α, ω), it is only necessary to
+consider the case where α ≥ 0.
+Note that for α 6 = 0, the roots of the equation
+λ
+2 − αωλ + ω − 1 = 0.
+are
+αω ±
+√
+α2ω2 − 4ω + 4
+2
+.
+In turn, this leads to consider the roots of the equation
+ω
+2α
+2 − 4ω + 4 = 0,
+which are
+2(1 ±
+√
+1 − α2
+)
+α2
+,
+for α 6 = 0. Since we have
+2(1 + √
+1 − α2
+)
+α2
+=
+2(1 + √
+1 − α2
+)(1 −
+√
+1 − α2
+)
+α2
+(1 −
+√
+1 − α2
+)
+=
+2
+1 −
+√
+1 − α2
+and
+2(1 −
+√
+1 − α2
+)
+α2
+=
+2(1 + √
+1 − α2
+)(1 −
+√
+1 − α2
+)
+α2
+(1 + √
+1 − α2
+)
+=
+2
+1 + √
+1 − α2
+,
+these roots are
+ω0(α) = 2
+1 + √
+1 − α2
+, ω1(α) = 2
+1 −
+√
+1 − α2
+.
+10.5. CONVERGENCE METHODS FOR TRIDIAGONAL MATRICES 395
+Observe that the expression for ω0(α) is exactly the expression in the statement of our
+proposition! The rest of the proof consists in analyzing the variations of the function M(α, ω)
+by considering various cases for α. In the end, we find that the minimum of ρ(Lω) is obtained
+for ω0(ρ(J)). The details are tedious and we omit them. The reader will find complete proofs
+in Serre [156] and Ciarlet [41].
+Combining the results of Theorem 10.6 and Proposition 10.9, we obtain the following
+result which gives precise information about the spectral radii of the matrices J, L1, and
+Lω.
+Proposition 10.10. Let A be a tridiagonal matrix (possibly by blocks) which is Hermitian
+positive definite. Then the methods of Jacobi, Gauss–Seidel, and relaxation, all converge for
+ω ∈ (0, 2). There is a unique optimal relaxation parameter
+ω0 =
+2
+1 + p 1 − (ρ(J))2
+,
+such that
+ρ(Lω0
+) = inf
+0<ω<2
+ρ(Lω) = ω0 − 1.
+Furthermore, if ρ(J) > 0, then
+ρ(Lω0
+) < ρ(L1) = (ρ(J))2 < ρ(J),
+and if ρ(J) = 0, then ω0 = 1 and ρ(L1) = ρ(J) = 0.
+Proof. In order to apply Proposition 10.9, we have to check that J = D−1
+(E + F) has real
+eigenvalues. However, if α is any eigenvalue of J and if u is any corresponding eigenvector,
+then
+D
+−1
+(E + F)u = αu
+implies that
+(E + F)u = αDu,
+and since A = D − E − F, the above shows that (D − A)u = αDu, that is,
+Au = (1 − α)Du.
+Consequently,
+u
+∗Au = (1 − α)u
+∗Du,
+and since A and D are Hermitian positive definite, we have u
+∗Au > 0 and u
+∗Du > 0 since
+u 6 = 0, which proves that α ∈ R. The rest follows from Theorem 10.6 and Proposition
+10.9.
+Remark: It is preferable to overestimate rather than underestimate the relaxation param￾eter when the optimum relaxation parameter is not known exactly.

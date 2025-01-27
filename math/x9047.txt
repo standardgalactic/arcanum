@@ -1,0 +1,1000 @@
+where the row vectors x
+>i
+are the rows of X, and thus the xi ∈ R
+n are column vectors. So
+instead we solve the least-squares problem of minimizing k Xw − yk
+2
+2
+. In general there are
+still infinitely many solutions so we add a regularizing term. If we add the term K k wk
+2
+2
+to
+the objective function J(w) = k Xw − yk
+2
+2
+, then we have ridge regression. This problem is
+discussed in Section 55.1 where we derive the dual program. The dual has a unique solution
+which yields a solution of the primal. However, the solution of the dual is given in terms of
+the matrix XX> (whereas the solution of the primal is given in terms of X> X), and since
+our data points xi are represented by the rows of the matrix X, we see that this solution
+only involves inner products of the xi
+. This observation is the core of the idea of kernel
+functions, which were discussed in Chapter 53. We also explain how to solve the problem of
+learning an affine function f(x) = x
+> w + b.
+In general the vectors w produced by ridge regression have few zero entries. In practice it
+is highly desirable to obtain sparse solutions, that is vectors w with many components equal
+to zero. This can be achieved by replacing the regularizing term K k wk
+2
+2
+by the regularizing
+term K k wk 1
+; that is, to use the ` 1
+-norm instead of the ` 2
+-norm; see Section 55.4. This
+method has the exotic name of lasso regression. This time there is no closed-form solution,
+but this is a convex optimization problem and there are efficient iterative methods to solve
+2033
+2034 CHAPTER 55. RIDGE REGRESSION, LASSO, ELASTIC NET
+it. One of the best methods relies on ADMM (see Section 52.8) and is discussed in Section
+55.4. The lasso method has some limitations, in particular when the number m of data is
+smaller than the dimension n of the data. This happens in some applications in genetics and
+medicine. Fortunately there is a way to combine the best features of ridge regression and
+lasso, which is to use two regularizing terms:
+1. An ` 2
+-term (1/2)K k wk
+2
+2
+as in ridge regression (with K > 0).
+2. An ` 1
+-term τ k wk 1
+as in lasso.
+This method is known as elastic net regression and is discussed in Section 55.6. It retains
+most of the desirable features of ridge regression and lasso, and eliminates some of their
+weaknesses. Furthermore, it is effectively solved by ADMM.
+55.1 Ridge Regression
+The problem of solving an overdetermined or underdetermined linear system Aw = y, where
+A is an m ×n matrix, arises as a “learning problem” in which we observe a sequence of data
+((a1, y1), . . . ,(am, ym)), viewed as input-output pairs of some unknown function f that we
+are trying to infer, where the ai are the rows of the matrix A and yi ∈ R. The values yi
+are sometimes called labels or responses. The simplest kind of function is a linear function
+f(x) = x
+> w, where w ∈ R
+n
+is a vector of coefficients usually called a weight vector , or
+sometimes an estimator . In the statistical literature w is often denoted by β. Since the
+problem is overdetermined and since our observations may be subject to errors, we can’t
+solve for w exactly as the solution of the system Aw = y, so instead we solve the least-square
+problem of minimizing k Aw − yk
+2
+2
+.
+In Section 23.1 we showed that this problem can be solved using the pseudo-inverse. We
+know that the minimizers w are solutions of the normal equations A> Aw = A> y, but when
+A> A is not invertible, such a solution is not unique so some criterion has to be used to choose
+among these solutions.
+One solution is to pick the unique vector w
++ of smallest Euclidean norm k w
++k
+2
+that
+minimizes k Aw − yk
+2
+2
+. The solution w
++ is given by w
++ = A+y, where A+ is the pseudo￾inverse of A. The matrix A+ is obtained from an SVD of A, say A = V ΣU
+> . Namely,
+A+ = UΣ
++V
+> , where Σ+ is the matrix obtained from Σ by replacing every nonzero singular
+value σi
+in Σ by σi
+−1
+, leaving all zeros in place, and then transposing. The difficulty with
+this approach is that it requires knowing whether a singular value is zero or very small but
+nonzero. A very small nonzero singular value σ in Σ yields a very large value σ
+−1
+in Σ+, but
+σ = 0 remains 0 in Σ+.
+This discontinuity phenomenon is not desirable and another way is to control the size of
+w by adding a regularization term to k Aw − yk
+2
+, and a natural candidate is k wk
+2
+.
+55.1. RIDGE REGRESSION 2035
+It is customary to rename each column vector a
+>i
+as xi (where xi ∈ R
+n
+) and to rename
+the input data matrix A as X, so that the row vector x
+>i
+are the rows of the m × n matrix
+X
+X =
+
+
+x
+>1
+.
+.
+x
+.
+>
+m
+
+ .
+Our optimization problem, called ridge regression, is
+Program (RR1):
+minimize k y − Xwk 2 + K k wk
+2
+,
+which by introducing the new variable ξ = y − Xw can be rewritten as
+Program (RR2):
+minimize ξ
+> ξ + Kw> w
+subject to
+y − Xw = ξ,
+where K > 0 is some constant determining the influence of the regularizing term w
+> w, and
+we minimize over ξ and w.
+The objective function of the first version of our minimization problem can be expressed
+as
+J(w) = k y − Xwk 2 + K k wk
+2
+= (y − Xw)
+> (y − Xw) + Kw> w
+= y
+> y − 2w
+> X
+> y + w
+> X
+> Xw + Kw> w
+= w
+> (X
+> X + KIn)w − 2w
+> X
+> y + y
+> y.
+The matrix X> X is symmetric positive semidefinite and K > 0, so the matrix X> X+KIn
+is positive definite. It follows that
+J(w) = w
+> (X
+> X + KIn)w − 2w
+> X
+> y + y
+> y
+is strictly convex, so by Theorem 40.13(2)-(4), it has a unique minimum iff ∇Jw = 0. Since
+∇Jw = 2(X
+> X + KIn)w − 2X
+> y,
+we deduce that
+w = (X
+> X + KIn)
+−1X
+> y. (∗wp)
+There is an interesting connection between the matrix (X> X+KIn)
+−1X> and the pseudo￾inverse X+ of X.
+2036 CHAPTER 55. RIDGE REGRESSION, LASSO, ELASTIC NET
+Proposition 55.1. The limit of the matrix (X> X + KIn)
+−1X> when K > 0 goes to zero is
+the pseudo-inverse X+ of X.
+Proof. To show this let X = V ΣU
+> be a SVD of X. Then
+(X
+> X + KIn) = UΣ
+> V
+> V ΣU
+> + KIn = U(Σ> Σ + KIn)U
+> ,
+so
+(X
+> X + KIn)
+−1X
+> = U(Σ> Σ + KIn)
+−1U
+> UΣ
+> V
+> = U(Σ> Σ + KIn)
+−1Σ
+> V
+> .
+The diagonal entries in the matrix (Σ> Σ + KIn)
+−1Σ
+> are
+σi
+σi
+2 + K
+, if σi > 0,
+and zero if σi = 0. All nondiagonal entries are zero. When σi > 0 and K > 0 goes to 0,
+lim
+K7→0
+σi
+σi
+2 + K
+= σi
+−1
+,
+so
+lim
+K7→0
+(Σ> Σ + KIn)
+−1Σ
+> = Σ+,
+which implies that
+lim
+K7→0
+(X
+> X + KIn)
+−1X
+> = X
++.
+The dual function of the first formulation of our problem is a constant function (with
+value the minimum of J) so it is not useful, but the second formulation of our problem yields
+an interesting dual problem. The Lagrangian is
+L(ξ, w, λ) = ξ
+> ξ + Kw> w + (y − Xw − ξ)
+> λ
+= ξ
+> ξ + Kw> w − w
+> X
+> λ − ξ
+> λ + λ
+> y,
+with λ, ξ, y ∈ R
+m. The Lagrangian L(ξ, w, λ), as a function of ξ and w with λ held fixed, is
+obviously convex, in fact strictly convex.
+To derive the dual function G(λ) we minimize L(ξ, w, λ) with respect to ξ and w. Since
+L(ξ, w, λ) is (strictly) convex as a function of ξ and w, by Theorem 40.13(4), it has a
+minimum iff its gradient ∇Lξ,w is zero (in fact, by Theorem 40.13(2), a unique minimum
+since the function is strictly convex). Since
+∇Lξ,w =
+
+2Kw
+2ξ
+−
+−
+X
+λ
+>
+λ
+
+,
+we get
+λ = 2ξ
+w =
+1
+2K
+X
+> λ = X
+>
+ξ
+K
+.
+55.2. RIDGE REGRESSION; LEARNING AN AFFINE FUNCTION 2037
+The above suggests defining the variable α so that ξ = Kα, so we have λ = 2Kα and
+w = X> α. Then we obtain the dual function as a function of α by substituting the above
+values of ξ, λ and w back in the Lagrangian and we get
+G(α) = K2α
+> α + Kα> XX> α − 2Kα> XX> α − 2K2α
+> α + 2Kα> y
+= −Kα> (XX> + KIm)α + 2Kα> y.
+This is a strictly concave function so by Theorem 40.13(4), its maximum is achieved iff
+∇Gα = 0, that is,
+2K(XX> + KIm)α = 2Ky,
+which yields
+α = (XX> + KIm)
+−1
+y.
+Putting everything together we obtain
+α = (XX> + KIm)
+−1
+y
+w = X
+> α
+ξ = Kα,
+which yields
+w = X
+> (XX> + KIm)
+−1
+y. (∗wd)
+Earlier in (∗wp) we found that
+w = (X
+> X + KIn)
+−1X
+> y,
+and it is easy to check that
+(X
+> X + KIn)
+−1X
+> = X
+> (XX> + KIm)
+−1
+.
+If n < m it is cheaper to use the formula on the left-hand side, but if m < n it is cheaper to
+use the formula on the right-hand side.
+55.2 Ridge Regression; Learning an Affine Function
+It is easy to adapt the above method to learn an affine function f(x) = x
+> w + b instead of
+a linear function f(x) = x
+> w, where b ∈ R. We have the following optimization program
+Program (RR3):
+minimize ξ
+> ξ + Kw> w
+subject to
+y − Xw − b1 = ξ,
+2038 CHAPTER 55. RIDGE REGRESSION, LASSO, ELASTIC NET
+with y, ξ, 1 ∈ R
+m and w ∈ R
+n
+. Note that in Program (RR3) minimization is performed over
+ξ, w and b, but b is not penalized in the objective function. As in Section 55.1, the objective
+function is strictly convex.
+The Lagrangian associated with this program is
+L(ξ, w, b, λ) = ξ
+> ξ + Kw> w − w
+> X
+> λ − ξ
+> λ − b1
+> λ + λ
+> y.
+Since L is (strictly) convex as a function of ξ, b, w, by Theorem 40.13(4), it has a minimum
+iff ∇Lξ,b,w = 0. We get
+λ = 2ξ
+1
+> λ = 0
+w =
+1
+2K
+X
+> λ = X
+>
+ξ
+K
+.
+As before, if we set ξ = Kα we obtain λ = 2Kα, w = X> α, and
+G(α) = −Kα> (XX> + KIm)α + 2Kα> y.
+Since K > 0 and λ = 2Kα, the dual to ridge regression is the following program
+Program (DRR3):
+minimize α
+> (XX> + KIm)α − 2α
+> y
+subject to
+1
+> α = 0,
+where the minimization is over α.
+Observe that up to the factor 1/2, this problem satisfies the conditions of Proposition
+42.3 with
+A = (XX> + KIm)
+−1
+b = y
+B = 1m
+f = 0,
+and x renamed as α. Therefore, it has a unique solution (α, µ) (beware that λ = 2Kα is
+not the λ used in Proposition 42.3, which we rename as µ), which is the unique solution of
+the KKT-equations
+
+XX> + KIm 1m
+1
+>m 0
+ 
+α
+µ
+
+=
+
+y
+0
+
+.
+Since the solution given by Proposition 42.3 is
+µ = (B
+> AB)
+−1
+(B
+> Ab − f), α = A(b − Bµ),
+55.2. RIDGE REGRESSION; LEARNING AN AFFINE FUNCTION 2039
+we get
+µ = (1
+> (XX> + KIm)
+−11)
+−11
+> (XX> + KIm)
+−1
+y, α = (XX> + KIm)
+−1
+(y − µ1).
+Note that the matrix B> AB is the scalar 1
+> (XX> + KIm)
+−11, which is the negative of the
+Schur complement of XX> + KIm.
+Interestingly b = µ, which is not obvious a priori.
+Proposition 55.2. We have b = µ.
+Proof. To prove this result we need to express α differently. Since µ is a scalar, µ1 = 1µ, so
+µ1 = 1µ = (1
+> (XX> + KIm)
+−11)
+−111> (XX> + KIm)
+−1
+y,
+and we obtain
+α = (XX> + KIm)
+−1
+(Im − (1
+> (XX> + KIm)
+−11)
+−111> (XX> + KIm)
+−1
+)y. (∗α3
+)
+Since w = X> α, we have
+w = X
+> (XX> + KIm)
+−1
+(Im − (1
+> (XX> + KIm)
+−11)
+−111> (XX> + KIm)
+−1
+)y. (∗w3
+)
+From ξ = Kα, we deduce that b is given by the equation
+b1 = y − Xw − Kα.
+Since w = X> α, using (∗α3
+) we obtain
+b1 = y − Xw − Kα
+= y − (XX> + KIm)α
+= y − (Im − (1
+> (XX> + KIm)
+−11)
+−111> (XX> + KIm)
+−1
+)y
+= (1
+> (XX> + KIm)
+−11)
+−111> (XX> + KIm)
+−1
+)y
+= µ1,
+and thus
+b = µ = (1
+> (XX> + KIm)
+−11)
+−11
+> (XX> + KIm)
+−1
+y, (∗b3
+)
+as claimed.
+In summary the KKT-equations determine both α and µ, and so w = X> α and b as well.
+There is also a useful expression of b as an average.
+Since 1
+> 1 = m and 1
+> α = 0, we get
+b =
+1
+m
+1
+> y −
+1
+m
+1
+> Xw −
+1
+m
+K1
+> α = y −
+nX
+j=1
+Xjwj
+,
+2040 CHAPTER 55. RIDGE REGRESSION, LASSO, ELASTIC NET
+where y is the mean of y and Xj
+is the mean of the jth column of X. Therefore,
+b = y −
+nX
+j=1
+Xjwj = y − (X1
+· · · Xn)w,
+where (X1
+· · · Xn) is the 1 × n row vector whose jth entry is Xj
+.
+We will now show that solving the dual (DRR3) for α and obtaining w = X> α is
+equivalent to solving our previous ridge regression Problem (RR2) applied to the centered
+data yb = y −y1m and Xb = X − X, where X is the m×n matrix whose jth column is Xj1m,
+the vector whose coordinates are all equal to the mean Xj of the jth column Xj of X.
+The expression
+b = y − (X1
+· · · Xn)w
+suggests looking for an intercept term b (also called bias) of the above form, namely
+Program (RR4):
+minimize ξ
+> ξ + Kw> w
+subject to
+y − Xw − b1 = ξ
+b = b b + y − (X1
+· · · Xn)w,
+with b b ∈ R. Again, in Program (RR4), minimization is performed over ξ, w, b and b b, but b
+and b b are not penalized.
+Since
+b1 = b b1 + y1 − (X11 · · · Xn1)w,
+if X = (X11 · · · Xn1) is the m × n matrix whose jth column is the vector Xj1, then the
+above program is equivalent to the program
+Program (RR5):
+minimize ξ
+> ξ + Kw> w
+subject to
+y − Xw − y1 + Xw −b b1 = ξ,
+where minimization is performed over ξ, w and b b. If we write yb = y − y1 and b X = X − X,
+then the above program becomes
+Program (RR6):
+minimize ξ
+> ξ + Kw> w
+subject to
+yb − Xwb −b b1 = ξ,
+55.2. RIDGE REGRESSION; LEARNING AN AFFINE FUNCTION 2041
+minimizing over ξ, w and b b. If the solution to this program is wb, then b b is given by
+b
+b = yb − (Xb1
+· · · Xbn)wb = 0,
+since the data yb and b X are centered. Therefore (RR6) is equivalent to ridge regression
+without an intercept term applied to the centered data yb = y − y1 and b X = X − X,
+Program (RR60 ):
+minimize ξ
+> ξ + Kw> w
+subject to
+yb − Xwb = ξ,
+minimizing over ξ and w.
+If wb is the optimal solution of this program given by
+wb = Xb
+> (XbXb
+> + KIm)
+−1
+y, b (∗w6
+)
+then b is given by
+b = y − (X1
+· · · Xn)w. b
+Remark: Although this is not obvious a priori, the optimal solution w
+∗ of the Program
+(RR3) given by (∗w3
+) is equal to the optimal solution wb of Program (RR60 ) given by (∗w6
+).
+We believe that it should be possible to prove the equivalence of these formulae but a proof
+eludes us at this time. We leave this as an open problem. In practice the Program (RR60 )
+involving the centered data appears to be the preferred one.
+Example 55.1. Consider the data set (X, y1) with
+X =
+
+
+−10 11
+−6 5
+−2 4
+0 0
+1 2
+2 −5
+6
+10
+−
+−
+4
+6
+
+
+, y1 =
+
+
+0
+−2.5
+0.5
+−
+2.5
+2
+−
+1
+4
+4.2
+
+
+as illustrated in Figure 55.1. We find that y = −0.0875 and (X1
+, X2
+) = (0.125, 0.875). For
+the value K = 5, we obtain
+w =
+
+0
+0
+.
+.
+9207
+8677 , b = −0.9618,
+2042 CHAPTER 55. RIDGE REGRESSION, LASSO, ELASTIC NET
+for K = 0.1, we obtain
+w =
+
+1
+1
+.
+.
+1651
+1341 , b = −1.2255,
+and for K = 0.01,
+w =
+
+1
+1
+.
+.
+1709
+1405 , b = −1.2318.
+See Figure 55.2.
+15 -4
+-2
+15
+0
+10
+2
+4
+10 5
+X
+5 0
+Y
+0 -5
+-5 -10
+-10 -15
+Figure 55.1: The data set (X, y1) of Example 55.1.
+Figure 55.2: The graph of the plane f(x, y) = 1.1709x+ 1.1405y −1.2318 as an approximate
+fit to the data (X, y1) of Example 55.1.
+Z
+55.2. RIDGE REGRESSION; LEARNING AN AFFINE FUNCTION 2043
+We conclude that the points (Xi
+, yi) (where Xi
+is the ith row of X) almost lie on the
+plane of equation
+x + y − z − 1 = 0,
+and that f is almost the function given by f(x, y) = 1.1x + 1.1y − 1.2. See Figures 55.3 and
+55.4.
+Figure 55.3: The graph of the plane f(x, y) = 1.1x + 1.1y − 1.2 as an approximate fit to the
+data (X, y1) of Example 55.1.
+Figure 55.4: A comparison of how the graphs of the planes corresponding to K = 1, 0.1, 0.01
+and the salmon plane of equation f(x, y) = 1.1x + 1.1y − 1.2 approximate the data (X, y1)
+of Example 55.1.
+If we change y1 to
+y2 =
+￾ 0 −2 1 −1 2 −4 1 3 > ,
+2044 CHAPTER 55. RIDGE REGRESSION, LASSO, ELASTIC NET
+as evidenced by Figure 55.5, the exact solution is
+w =
+
+1
+1
+
+, b = −1,
+and for K = 0.01, we find that
+w =
+
+0
+0
+.
+.
+9999
+9999 , b = −0.9999.
+Figure 55.5: The data (X, y2) of Example 55.1 is contained within the graph of the plane
+f(x, y) = x + y − 1.
+We can see how the choice of K affects the quality of the solution (w, b) by computing
+the norm k ξk 2
+of the error vector ξ = yb − b Xw. We notice that the smaller K is, the smaller
+is this norm.
+It is natural to wonder what happens if we also penalize b in program (RR3). Let us
+add the term Kb2
+to the objective function. Then we obtain the program
+minimize ξ
+> ξ + Kw> w + Kb2
+subject to
+y − Xw − b1 = ξ,
+minimizing over ξ, w and b.
+This suggests treating b an an extra component of the weight vector w and by forming
+the m × (n + 1) matrix [X 1] obtained by adding a column of 1’s (of dimension m) to the
+matrix X, we obtain
+55.2. RIDGE REGRESSION; LEARNING AN AFFINE FUNCTION 2045
+Program (RR3b):
+minimize ξ
+> ξ + Kw> w + Kb2
+subject to
+y − [X 1]
+
+w
+b
+
+= ξ,
+minimizing over ξ, w and b.
+This program is solved just as Program (RR2). In terms of the dual variable α, we get
+α = ([X 1][X 1]
+> + KIm)
+−1
+y
+
+w
+b
+
+= [X 1]
+> α
+ξ = Kα.
+Thus b = 1
+> α. Observe that [X 1][X 1]
+> = XX> + 11> .
+If n < m, it is preferable to use the formula
+
+w
+b
+
+= ([X 1]
+> [X 1] + KIn+1)
+−1
+[X 1]
+> y.
+Since we also have the equation
+y − Xw − b1 = ξ,
+we obtain
+1
+m
+1
+> y −
+1
+m
+1
+> Xw −
+1
+m
+b1
+> 1 =
+1
+m
+1
+> Kα,
+so
+y − (X1
+· · · Xn)w − b =
+1
+m
+Kb,
+which yields
+b =
+m
+m + K
+(y − (X1
+· · · Xn)w).
+Remark: As a least squares problem, the solution is given in terms of the pseudo-inverse
+[X 1]
++ of [X 1] by
+
+w
+b
+
+= [X 1]
++y.
+Example 55.2. Applying Program (RR3b) to the data set of Example 55.1 with K = 0.01
+yields
+w =
+
+1
+1
+.
+.
+1706
+1401 , b = −1.2298.
+2046 CHAPTER 55. RIDGE REGRESSION, LASSO, ELASTIC NET
+Figure 55.6: The graph of the plane f(x, y) = 1.1706x+ 1.1401y −1.2298 as an approximate
+fit to the data (X, y1) of Example 55.1.
+See Figure 55.6. We can see how the choice of K affects the quality of the solution (w, b)
+by computing the norm k ξk 2
+of the error vector ξ = y − Xw − b1m. As in Example 55.1 we
+notice that the smaller K is, the smaller is this norm. We also observe that for a given value
+of K, Program (RR60 ) gives a slightly smaller value of k ξk 2
+than (RR3b) does.
+As pointed out by Hastie, Tibshirani, and Friedman [88] (Section 3.4), a defect of the
+approach where b is also penalized is that the solution for b is not invariant under adding a
+constant c to each value yi
+. This is not the case for the approach using Program (RR60 ).
+55.3 Kernel Ridge Regression
+One interesting aspect of the dual (of either (RR2) or (RR3)) is that it shows that the
+solution w being of the form X> α, is a linear combination
+w =
+mX
+i=1
+αixi
+of the data points xi
+, with the coefficients αi corresponding to the dual variable λ = 2Kα
+of the dual function, and with
+α = (XX> + KIm)
+−1
+y.
+If m is smaller than n, then it is more advantageous to solve for α. But what really makes
+the dual interesting is that with our definition of X as
+X =
+
+
+x
+>1
+.
+.
+x
+.
+>
+m
+
+ ,
+55.3. KERNEL RIDGE REGRESSION 2047
+the matrix XX> consists of the inner products x
+>i xj
+, and similarly the function learned
+f(x) = x
+> w can be expressed as
+f(x) =
+mX
+i=1
+αix
+>i x,
+namely that both w and f(x) are given in terms of the inner products x
+>i xj and x
+>i x.
+This fact is the key to a generalization to ridge regression in which the input space R
+n
+is embedded in a larger (possibly infinite dimensional) Euclidean space F (with an inner
+product h−, −i) usually called a feature space, using a function
+ϕ: R
+n → F.
+The problem becomes (kernel ridge regression)
+Program (KRR2):
+minimize ξ
+> ξ + Kh w, wi
+subject to
+yi − hw, ϕ(xi)i = ξi
+, i = 1, . . . , m,
+minimizing over ξ and w. Note that w ∈ F. This problem is discussed in Shawe–Taylor and
+Christianini [159] (Section 7.3).
+We will show below that the solution is exactly the same:
+α = (G + KIm)
+−1
+y
+w =
+mX
+i=1
+αiϕ(xi)
+ξ = Kα,
+where G is the Gram matrix given by Gij = h ϕ(xi), ϕ(xj )i . This matrix is also called the
+kernel matrix and is often denoted by K instead of G.
+In this framework we have to be a little careful in using gradients since the inner product
+because we can use derivatives, and by Proposition 39.5 we have
+h−, −i on F is involved and F could be infinite dimensional, but this causes no problem
+dh−, −i(u,v)(x, y) = h x, vi + h u, yi .
+This implies that the derivative of the map u 7→ hu, ui is
+dh−, −iu(x) = 2h x, ui . (d1)
+2048 CHAPTER 55. RIDGE REGRESSION, LASSO, ELASTIC NET
+Since the map u 7→ hu, vi (with v fixed) is linear, its derivative is
+dh−, vi u(x) = h x, vi . (d2)
+The derivative of the Lagrangian
+L(ξ, w, λ) = ξ
+> ξ + Kh w, wi −
+mX
+i=1
+λih ϕ(xi), wi − ξ
+> λ + λ
+> y
+with respect to ξ and w is
+dLξ,w￾ e ξ,we
+ = 2(eξ)
+> ξ − (eξ)
+> λ +
+ 2Kw −
+mX
+i=1
+λiϕ(xi),we
+ ,
+where we used (d1) to calculate the derivative of ξ
+> ξ + Kh w, wi and (d2) to calculate the
+derivative of −
+P
+m
+i=1 λih ϕ(xi), wi − ξ
+> λ. We have dLξ,w￾ e ξ,we
+ = 0 for all e ξ and we iff
+2Kw =
+mX
+i=1
+λiϕ(xi)
+λ = 2ξ.
+Again we define ξ = Kα, so we have λ = 2Kα, and
+w =
+mX
+i=1
+αiϕ(xi).
+Plugging back into the Lagrangian we get
+G(α) = K2α
+> α + K
+mX
+i,j=1
+αiαj h ϕ(xi), ϕ(xj )i − 2K
+mX
+i,j=1
+αiαj h ϕ(xi), ϕ(xj )i
+− 2K2α
+> α + 2Kα> y
+= −K2α
+> α − K
+mX
+i,j=1
+αiαj h ϕ(xi), ϕ(xj )i + 2Kα> y.
+If G is the matrix given by Gij = h ϕ(xi), ϕ(xj )i , then we have
+G(α) = −Kα> (G + KIm)α + 2Kα> y.
+The function G is strictly concave, so by Theorem 40.13(4) it has a maximum for
+α = (G + KIm)
+−1
+y,
+as claimed earlier.
+55.3. KERNEL RIDGE REGRESSION 2049
+As in the standard case of ridge regression, if F = R
+n
+(but the inner product h−, −i
+is arbitrary), we can adapt the above method to learn an affine function f(w) = x
+> w + b
+instead of a linear function f(w) = x
+> w, where b ∈ R. This time we assume that b is of the
+form
+b = y − hw,(X1
+· · · Xn)i ,
+where Xj
+is the j column of the m × n matrix X whose ith row is the transpose of the
+column vector ϕ(xi), and where (X1
+· · · Xn) is viewed as a column vector. We have the
+minimization problem
+Program (KRR60 ):
+minimize ξ
+> ξ + Kh w, wi
+subject to
+ybi − hw, ϕ[(xi)i = ξi
+, i = 1, . . . , m,
+minimizing over ξ and w, where ϕ[(xi) is the n-dimensional vector ϕ(xi) − (X1
+· · · Xn).
+The solution is given in terms of the matrix Gb defined by
+Gbij = h ϕ[(xi), ϕ[(xj )i ,
+as before. We get
+α = (Gb + KIm)
+−1
+y, b
+and according to a previous computation, b is given by
+b = y −
+1
+m
+1Gbα.
+We explained in Section 53.4 how to compute the matrix Gb from the matrix G.
+Since the dimension of the feature space F may be very large, one might worry that
+computing the inner products h ϕ(xi), ϕ(xj )i might be very expensive. This is where kernel
+functions come to the rescue. A kernel function κ for an embedding ϕ: R
+n → F is a map
+κ: R
+n × R
+n → R with the property that
+κ(u, v) = h ϕ(u), ϕ(v)i for all u, v ∈ R
+n
+.
+If κ(u, v) can be computed in a reasonably cheap way, and if ϕ(u) can be computed cheaply,
+then the inner products h ϕ(xi), ϕ(xj )i (and h ϕ(xi), ϕ(x)i ) can be computed cheaply; see
+Chapter 53. Fortunately there are good kernel functions. Two very good sources on kernel
+methods are Sch¨olkopf and Smola [145] and Shawe–Taylor and Christianini [159].
+2050 CHAPTER 55. RIDGE REGRESSION, LASSO, ELASTIC NET
+55.4 Lasso Regression (` 1
+-Regularized Regression)
+The main weakness of ridge regression is that the estimated weight vector w usually has
+many nonzero coefficients. As a consequence, ridge regression does not scale up well. In
+practice we need methods capable of handling millions of parameters, or more. A way to
+encourage sparsity of the vector w, which means that many coordinates of w are zero, is to
+replace the quadratic penalty function τw> w = τ k wk
+2
+2
+by the penalty function τ k wk 1
+, with

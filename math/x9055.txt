@@ -1,0 +1,163 @@
+else
+fprintf(’** Not enough support vectors ** \n’)
+end
+end
+To run donuregb use the function runuregb listed below.
+function [lamb,mu,alpha,beta,lambnz,munz,lamK,muK,w] = runuregb (rho,nu,X,y,C)
+%
+% Runs soft margin nu-regression
+% with the constraint
+% \sum_{i = 1}^m + \sum_{j = 1}^m mu_j = C nu
+% (Without the variable gamma)
+%
+% Input: an m x n matrix of data points represented as
+% as the rows of X, and y a vector in R^n
+%
+% First builds the matrices for the dual program
+% C is a scale factor
+%
+m = size(X,1); n = size(X,2);
+[lamb,mu,alpha,beta,lambnz,munz,lamK,muK,numsvl1,numsvm1,w,epsilon,b]
+= donuregb(rho,nu,X,y,C);
+2152 APPENDIX B. MATLAB PROGRAMS
+if n == 1
+[ll,mm] = showgraph(X,y);
+ww = [w;-1]; n1 = sqrt(ww’*ww);
+if numsvl1 > 0 && numsvm1 > 0
+showSVMs2(ww,-b,epsilon,ll,mm,n1)
+end
+else
+if n == 2
+offset = 10;
+[ll,mm] = showpoints(X,y,offset);
+if numsvl1 > 0 && numsvm1 > 0
+showplanes(w,b,ll,mm,epsilon)
+end
+axis equal
+axis([ll(1) mm(1) ll(2) mm(2)]);
+view([-1 -1 1]);
+xlabel(’X’,’fontsize’,14);ylabel(’Y’,’fontsize’,14);
+zlabel(’Z’,’fontsize’,14);
+end
+end
+end
+The function buildnuregb creates the constraint matrix and the matrices defining the
+quadratic functional.
+function [A,c,P,Pa,qa] = buildnuregb (nu,X,y,C)
+% builds the matrix of constraints A for
+% soft margin nu-regression
+% with the constraint
+% \sum_{i = 1}^m + \sum_{j = 1}^m mu_j = C nu
+% (without the variable gamma)
+% and the right-hand side c.
+% Input: an m x n matrix X of data points represented as
+% as the rows of X, and y a vector in R^n.
+% builds the m x m matrix X*X^T, the 2m x 2m matrix
+% P = [X*X^T -X*X^T; -X*X^T X*X^T],
+% and the matrix Pa as the 4m x 4m matrix obtained
+% by augmenting with zeros.
+% Also builds the vector q_a (q augmented with zeros).
+% C is a scale factor.
+m = size(X,1); n = size(X,2);
+B.4. ν-SV REGRESSION 2153
+% Ks = 1/(p+q);
+Ks = C; Km = C*nu;
+A = [ones(1,m) -ones(1,m) zeros(1,2*m);
+ones(1,m) ones(1,m) zeros(1,2*m) ;
+eye(m) zeros(m,m) eye(m) zeros(m,m);
+zeros(m,m) eye(m) zeros(m,m) eye(m)];
+c = [0; Km; (Ks/m)*ones(2*m,1)];
+XX1 = X*X’;
+P = [XX1 -XX1; -XX1 XX1];
+Pa = [P zeros(2*m,2*m); zeros(2*m, 4*m )];
+qa = [y; -y; zeros(2*m,1)];
+end
+2154 APPENDIX B. MATLAB PROGRAMS
+Appendix C
+Zorn’s Lemma; Some Applications
+C.1 Statement of Zorn’s Lemma
+Zorn’s lemma is a particularly useful form of the axiom of choice, especially for algebraic
+applications. Readers who want to learn more about Zorn’s lemma and its applications to
+algebra should consult either Lang [109], Appendix 2, §2 (pp. 878-884) and Chapter III,
+§5 (pp. 139-140), or Artin [7], Appendix §1 (pp. 588-589). For the logical ramifications
+of Zorn’s lemma and its equivalence with the axiom of choice, one should consult Schwartz
+[150], (Vol. 1), Chapter I, §6, or a text on set theory such as Enderton [56], Suppes [173], or
+Kuratowski and Mostowski [108].
+Given a set, S, a partial order, ≤, on S is a binary relation on S (i.e., ≤ ⊆ S × S) which
+is
+(1) reflexive, i.e., x ≤ x, for all x ∈ S,
+(2) transitive, i.e, if x ≤ y and y ≤ z, then x ≤ z, for all x, y, z ∈ S, and
+(3) antisymmetric, i.e, if x ≤ y and y ≤ x, then x = y, for all x, y ∈ S.
+A pair (S, ≤), where ≤ is a partial order on S, is called a partially ordered set or poset.
+Given a poset, (S, ≤), a subset, C, of S is totally ordered or a chain if for every pair of
+elements x, y ∈ C, either x ≤ y or y ≤ x. The empty set is trivially a chain. A subset, P,
+(empty or not) of S is bounded if there is some b ∈ S so that x ≤ b for all x ∈ P. Observe
+that the empty subset of S is bounded if and only if S is nonempty. A maximal element of
+P is an element, m ∈ P, so that m ≤ x implies that m = x, for all x ∈ P. Zorn’s lemma
+can be stated as follows:
+Lemma C.1. Given a partially ordered set, (S, ≤), if every chain is bounded, then S has a
+maximal element.
+Proof. See any of Schwartz [150], Enderton [56], Suppes [173], or Kuratowski and Mostowski
+[108].
+2155
+2156 APPENDIX C. ZORN’S LEMMA; SOME APPLICATIONS
+Remark: As we noted, the hypothesis of Zorn’s lemma implies that S is nonempty (since
+the empty set must be bounded). A partially ordered set such that every chain is bounded
+is sometimes called inductive.
+We now give some applications of Zorn’s lemma.
+C.2 Proof of the Existence of a Basis in a Vector Space
+Using Zorn’s lemma, we can prove that Theorem 3.7 holds for arbitrary vector spaces, and
+not just for finitely generated vector spaces, as promised in Chapter 3.
+Theorem C.2. Given any family, S = (ui)i∈I , generating a vector space E and any linearly
+independent subfamily, L = (uj )j∈J , of S (where J ⊆ I), there is a basis, B, of E such that
+L ⊆ B ⊆ S.
+Proof. Consider the set L of linearly independent families, B, such that L ⊆ B ⊆ S. Since
+L ∈ L, this set is nonempty. We claim that L is inductive. Consider any chain, (Bl)l∈Λ, of
+linearly independent families Bl
+in L, and look at B =
+S l∈Λ Bl
+. The family B is of the form
+B = (vh)h∈H, for some index set H, and it must be linearly independent. Indeed, if this was
+not true, there would be some family (λh)h∈H of scalars, of finite support, so that
+X
+h∈H
+λhvh = 0,
+where not all λh are zero. Since B =
+S l∈Λ Bl and only finitely many λh are nonzero, there
+is a finite subset, F, of Λ, so that vh ∈ Bfh
+iff λh 6 = 0. But (Bl)l∈Λ is a chain, and if we let
+f = max{fh | fh ∈ F}, then vh ∈ Bf , for all vh for which λh 6 = 0. Thus,
+X
+h∈H
+λhvh = 0
+would be a nontrivial linear dependency among vectors from Bf , a contradiction. Therefore,
+B ∈ L, and since B is obviously an upper bound for the Bl
+’s, we have proved that L
+is inductive. By Zorn’s lemma (Lemma C.1), the set L has some maximal element, say
+B = (uh)h∈H. The rest of the proof is the same as in the proof of Theorem 3.7, but we
+repeat it for the reader’s convenience. We claim that B generates E. Indeed, if B does not
+generate E, then there is some up ∈ S that is not a linear combination of vectors in B (since
+S generates E), with p /∈ H. Then, by Lemma 3.6, the family B0 = (uh)h∈H∪{p} is linearly
+independent, and since L ⊆ B ⊂ B0 ⊆ S, this contradicts the maximality of B. Thus, B is
+a basis of E such that L ⊆ B ⊆ S.
+Another important application of Zorn’s lemma is the existence of maximal ideals.
+C.3. EXISTENCE OF MAXIMAL PROPER IDEALS 2157
+C.3 Existence of Maximal Ideals Containing a Given
+Proper Ideal
+Let A be a commutative ring with identity element. Recall that an ideal A in A is a proper
+ideal if A 6 = A. The following theorem holds:
+Theorem C.3. Given any proper ideal, A ⊆ A, there is a maximal ideal, B, containing A.
+Proof. Let I be the set of all proper ideals, B, in A that contain A. The set I is nonempty,
+since A ∈ I. We claim that I is inductive. Consider any chain (Ai)i∈I of ideals Ai
+in A.
+One can easily check that B =
+S i∈I Ai
+is an ideal. Furthermore, B is a proper ideal, since
+otherwise, the identity element 1 would belong to B = A, and so, we would have 1 ∈ Ai
+for
+some i, which would imply Ai = A, a contradiction. Also, B is obviously an upper bound
+for all the Ai
+’s. By Zorn’s lemma (Lemma C.1), the set I has a maximal element, say B,
+and B is a maximal ideal containing A.
+2158 APPENDIX C. ZORN’S LEMMA; SOME APPLICATIONS
+

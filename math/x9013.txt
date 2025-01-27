@@ -1,0 +1,1000 @@
+∗
+, w∗
+)
+is also an optimal solution of (Pb). This implies that w
+∗ = 0, since otherwise the objective
+function −(xn+1 + · · · + xn+m) would have a strictly negative value.
+Therefore, (u
+∗
+, 0m) is a basic feasible solution of (Pb), and thus the columns corresponding
+to nonzero components of u
+∗ are linearly independent. Some of the coordinates of u
+∗
+could
+be equal to 0, but since A has rank m we can add columns of A to obtain a basis K associated
+with u
+∗
+, and u
+∗
+is indeed a basic feasible solution of (P).
+The definition of a basic feasible solution can be adapted to linear programs where the
+constraints are of the form Ax ≤ b, x ≥ 0; see Matousek and Gardner [123] (Chapter 4,
+Section 4, Definition 4.4.2).
+The most general type of linear program allows constraints of the form aix ≥ bi or
+aix = bi besides constraints of the form aix ≤ bi
+. The variables xi may also take negative
+values. It is always possible to convert such programs to the type considered in Definition
+45.1. We proceed as follows.
+45.3. SUMMARY 1565
+Every constraint aix ≥ bi
+is replaced by the constraint −aix ≤ −bi
+. Every equality
+constraint aix = bi
+is replaced by the two constraints aix ≤ bi and −aix ≤ −bi
+.
+If there are n variables xi
+, we create n new variables yi and n new variables zi and
+replace every variable xi by yi − zi
+. We also add the 2n constraints yi ≥ 0 and zi ≥ 0. If the
+constraints are given by the inequalities Ax ≤ b, we now have constraints given by
+￾
+A −A
+
+
+y
+z
+
+≤ b, y ≥ 0, z ≥ 0.
+We replace the objective function cx by cy − cz.
+Remark: We also showed that we can replace the inequality constraints Ax ≤ b by equality
+constraints Ax = b, by adding slack variables constrained to be nonnegative.
+45.3 Summary
+The main concepts and results of this chapter are listed below:
+• Linear program.
+• Objective function, constraints.
+• Feasible solution.
+• Bounded and unbounded linear programs.
+• Optimal solution, optimum.
+• Slack variables, linear program in standard form.
+• Basic feasible solution.
+• Basis of a variable.
+• Basic, nonbasic index, basic, nonbasic variable.
+• Vertex, face, edge, facet.
+45.4 Problems
+Problem 45.1. Convert the following program to standard form:
+maximize x1 + x2
+subject to
+x2 − x1 ≤ 1
+x1 + 6x2 ≤ 15
+− 4x1 + x2 ≥ 10.
+1566 CHAPTER 45. LINEAR PROGRAMS
+Problem 45.2. Convert the following program to standard form:
+maximize 3x1 − 2x2
+subject to
+2x1 − x2 ≤ 4
+x1 + 3x2 ≥ 5
+x2 ≥ 0.
+Problem 45.3. The notion of basic feasible solution for linear programs where the con￾straints are of the form Ax ≤ b, x ≥ 0 is defined as follows. A basic feasible solution of
+a (general) linear program with n variables is a feasible solution for which some n linearly
+independent constraints hold with equality.
+Prove that the definition of a basic feasible solution for linear programs in standard form
+is a special case of the above definition.
+Problem 45.4. Consider the linear program
+maximize x1 + x2
+subject to
+x1 + x2 ≤ 1.
+Show that none of the optimal solutions are basic.
+Problem 45.5. The standard n-simplex is the subset ∆n of R
+n+1 given by
+∆
+n = {(x1, . . . , xn+1) ∈ R
+n+1 | x1 + · · · + xn+1 = 1, xi ≥ 0, 1 ≤ i ≤ n + 1}.
+(1) Prove that ∆n
+is convex and that it is the convex hull of the n+ 1 vectors e1, . . . en+1,
+where ei
+is the ith canonical unit basis vector, i = 1, . . . , n + 1.
+(2) Prove that ∆n
+is the intersection of n + 1 half spaces and determine the hyperplanes
+defining these half-spaces.
+Remark: The volume under the standard simplex ∆n
+is 1/(n + 1)!.
+Problem 45.6. The n-dimensional cross-polytope is the subset XPn of R
+n given by
+XPn = {(x1, . . . , xn) ∈ R
+n
+| |x1| + · · · + |xn| ≤ 1}.
+(1) Prove that XPn is convex and that it is the convex hull of the 2n vectors ±ei
+, where
+ei
+is the ith canonical unit basis vector, i = 1, . . . , n.
+(2) Prove that XPn is the intersection of 2n half spaces and determine the hyperplanes
+defining these half-spaces.
+Remark: The volume of XPn is 2n/n!.
+45.4. PROBLEMS 1567
+Problem 45.7. The n-dimensional hypercube is the subset Cn of R
+n given by
+Cn = {(x1, . . . , xn) ∈ R
+n
+| |xi
+| ≤ 1, 1 ≤ i ≤ n}.
+(1) Prove that Cn is convex and that it is the convex hull of the 2n vectors (±1, . . . , ±1),
+i = 1, . . . , n.
+(2) Prove that Cn is the intersection of 2n half spaces and determine the hyperplanes
+defining these half-spaces.
+Remark: The volume of Cn is 2n
+.
+1568 CHAPTER 45. LINEAR PROGRAMS
+Chapter 46
+The Simplex Algorithm
+46.1 The Idea Behind the Simplex Algorithm
+The simplex algorithm, due to Dantzig, applies to a linear program (P) in standard form,
+where the constraints are given by Ax = b and x ≥ 0, with A a m × n matrix of rank
+m, and with an objective function x 7→ cx. This algorithm either reports that (P) has no
+feasible solution, or that (P) is unbounded, or yields an optimal solution. Geometrically,
+the algorithm climbs from vertex to vertex in the polyhedron P(A, b), trying to improve
+the value of the objective function. Since vertices correspond to basic feasible solutions, the
+simplex algorithm actually works with basic feasible solutions.
+Recall that a basic feasible solution x is a feasible solution for which there is a subset
+K ⊆ {1, . . . , n} of size m such that the matrix AK consisting of the columns of A whose
+indices belong to K are linearly independent, and that xj = 0 for all j /∈ K. We also let
+J>(x) be the set of indices
+J>(x) = {j ∈ {1, . . . , n} | xj > 0},
+so for a basic feasible solution x associated with K, we have J>(x) ⊆ K. In fact, by
+Proposition 45.2, a feasible solution x is a basic feasible solution iff the columns of AJ>(x)
+are linearly independent.
+If J>(x) had cardinality m for all basic feasible solutions x, then the simplex algorithm
+would make progress at every step, in the sense that it would strictly increase the value of the
+objective function. Unfortunately, it is possible that |J>(x)| < m for certain basic feasible
+solutions, and in this case a step of the simplex algorithm may not increase the value of the
+objective function. Worse, in rare cases, it is possible that the algorithm enters an infinite
+loop. This phenomenon called cycling can be detected, but in this case the algorithm fails
+to give a conclusive answer.
+Fortunately, there are ways of preventing the simplex algorithm from cycling (for exam￾ple, Bland’s rule discussed later), although proving that these rules work correctly is quite
+involved.
+1569
+1570 CHAPTER 46. THE SIMPLEX ALGORITHM
+The potential “bad” behavior of a basic feasible solution is recorded in the following
+definition.
+Definition 46.1. Given a Linear Program (P) in standard form where the constraints are
+given by Ax = b and x ≥ 0, with A an m × n matrix of rank m, a basic feasible solution x
+is degenerate if |J>(x)| < m, otherwise it is nondegenerate.
+The origin 0n, if it is a basic feasible solution, is degenerate. For a less trivial example,
+x = (0, 0, 0, 2) is a degenerate basic feasible solution of the following linear program in which
+m = 2 and n = 4.
+Example 46.1.
+maximize x2
+subject to
+− x1 + x2 + x3 = 0
+x1 + x4 = 2
+x1 ≥ 0, x2 ≥ 0, x3 ≥ 0, x4 ≥ 0.
+The matrix A and the vector b are given by
+A =
+
+−
+1 0 0 1
+1 1 1 0 , b =
+
+0
+2
+
+,
+and if x = (0, 0, 0, 2), then J>(x) = {4}. There are two ways of forming a set of two linearly
+independent columns of A containing the fourth column.
+Given a basic feasible solution x associated with a subset K of size m, since the columns
+of the matrix AK are linearly independent, by abuse of language we call the columns of AK
+a basis of x.
+If u is a vertex of (P), that is, a basic feasible solution of (P) associated with a basis
+K (of size m), in “normal mode,” the simplex algorithm tries to move along an edge from
+the vertex u to an adjacent vertex v (with u, v ∈ P(A, b) ⊆ R
+n
+) corresponding to a basic
+feasible solution whose basis is obtained by replacing one of the basic vectors Ak with k ∈ K
+by another nonbasic vector Aj
+for some j /∈ K, in such a way that the value of the objective
+function is increased.
+Let us demonstrate this process on an example.
+46.1. THE IDEA BEHIND THE SIMPLEX ALGORITHM 1571
+Example 46.2. Let (P) be the following linear program in standard form.
+maximize x1 + x2
+subject to
+− x1 + x2 + x3 = 1
+x1 + x4 = 3
+x2 + x5 = 2
+x1 ≥ 0, x2 ≥ 0, x3 ≥ 0, x4 ≥ 0, x5 ≥ 0.
+The matrix A and the vector b are given by
+A =
+
+
+−
+1 0 0 1 0
+0 1 0 0 1
+1 1 1 0 0
+ , b =
+
+
+1
+3
+2
+
+ .
+K1 0 1 2 3 4 5
+K1
+1
+2
+3
+u
+u u0 1
+2
+Figure 46.1: The planar H-polyhedron associated with Example 46.2. The initial basic
+feasible solution is the origin. The simplex algorithm first moves along the horizontal orange
+line to feasible solution at vertex u1. It then moves along the vertical red line to obtain the
+optimal feasible solution u2.
+The vector u0 = (0, 0, 1, 3, 2) corresponding to the basis K = {3, 4, 5} is a basic feasible
+solution, and the corresponding value of the objective function is 0 + 0 = 0. Since the
+columns (A3
+, A4
+, A5
+) corresponding to K = {3, 4, 5} are linearly independent we can express
+A1 and A2 as
+A
+1 = −A
+3 + A
+4
+A
+2 = A
+3 + A
+5
+.
+-x +
+1
+x
+=
+2
+1
+1572 CHAPTER 46. THE SIMPLEX ALGORITHM
+Since
+1A
+3 + 3A
+4 + 2A
+5 = Au0 = b,
+for any θ ∈ R, we have
+b = 1A
+3 + 3A
+4 + 2A
+5 − θA1 + θA1
+= 1A
+3 + 3A
+4 + 2A
+5 − θ(−A
+3 + A
+4
+) + θA1
+= θA1 + (1 + θ)A
+3 + (3 − θ)A
+4 + 2A
+5
+,
+and
+b = 1A
+3 + 3A
+4 + 2A
+5 − θA2 + θA2
+= 1A
+3 + 3A
+4 + 2A
+5 − θ(A
+3 + A
+5
+) + θA2
+= θA2 + (1 − θ)A
+3 + 3A
+4 + (2 − θ)A
+5
+.
+In the first case, the vector (θ, 0, 1 + θ, 3 − θ, 2) is a feasible solution iff 0 ≤ θ ≤ 3, and
+the new value of the objective function is θ.
+In the second case, the vector (0, θ, 1 − θ, 3, 2 − θ, 1) is a feasible solution iff 0 ≤ θ ≤ 1,
+and the new value of the objective function is also θ.
+Consider the first case. It is natural to ask whether we can get another vertex and increase
+the objective function by setting to zero one of the coordinates of (θ, 0, 1 +θ, 3−θ, 2), in this
+case the fouth one, by picking θ = 3. This yields the feasible solution (3, 0, 4, 0, 2), which
+corresponds to the basis (A1
+, A3
+, A5
+), and so is indeed a basic feasible solution, with an
+improved value of the objective function equal to 3. Note that A4
+left the basis (A3
+, A4
+, A5
+)
+and A1
+entered the new basis (A1
+, A3
+, A5
+).
+We can now express A2 and A4
+in terms of the basis (A1
+, A3
+, A5
+), which is easy to do
+since we already have A1 and A2
+in term of (A3
+, A4
+, A5
+), and A1 and A4 are swapped. Such
+a step is called a pivoting step. We obtain
+A
+2 = A
+3 + A
+5
+A
+4 = A
+1 + A
+3
+.
+Then we repeat the process with u1 = (3, 0, 4, 0, 2) and the basis (A1
+, A3
+, A5
+). We have
+b = 3A
+1 + 4A
+3 + 2A
+5 − θA2 + θA2
+= 3A
+1 + 4A
+3 + 2A
+5 − θ(A
+3 + A
+5
+) + θA2
+= 3A
+1 + θA2 + (4 − θ)A
+3 + (2 − θ)A
+5
+,
+and
+b = 3A
+1 + 4A
+3 + 2A
+5 − θA4 + θA4
+= 3A
+1 + 4A
+3 + 2A
+5 − θ(A
+1 + A
+3
+) + θA4
+= (3 − θ)A
+1 + (4 − θ)A
+3 + θA4 + 2A
+5
+.
+46.1. THE IDEA BEHIND THE SIMPLEX ALGORITHM 1573
+In the first case, the point (3, θ, 4 − θ, 0, 2 − θ) is a feasible solution iff 0 ≤ θ ≤ 2, and the
+new value of the objective function is 3 +θ. In the second case, the point (3−θ, 0, 4−θ, θ, 2)
+is a feasible solution iff 0 ≤ θ ≤ 3, and the new value of the objective function is 3 − θ. To
+increase the objective function, we must choose the first case and we pick θ = 2. Then we
+get the feasible solution u2 = (3, 2, 2, 0, 0), which corresponds to the basis (A1
+, A2
+, A3
+), and
+thus is a basic feasible solution. The new value of the objective function is 5.
+Next we express A4 and A5
+in terms of the basis (A1
+, A2
+, A3
+). Again this is easy to do
+since we just swapped A5 and A2
+(a pivoting step), and we get
+A
+5 = A
+2 − A
+3
+A
+4 = A
+1 + A
+3
+.
+We repeat the process with u2 = (3, 2, 2, 0, 0) and the basis (A1
+, A2
+, A3
+). We have
+b = 3A
+1 + 2A
+2 + 2A
+3 − θA4 + θA4
+= 3A
+1 + 2A
+2 + 2A
+3 − θ(A
+1 + A
+3
+) + θA4
+= (3 − θ)A
+1 + 2A
+2 + (2 − θ)A
+3 + θA4
+,
+and
+b = 3A
+1 + 2A
+2 + 2A
+3 − θA5 + θA5
+= 3A
+1 + 2A
+2 + 2A
+3 − θ(A
+2 − A
+3
+) + θA5
+= 3A
+1 + (2 − θ)A
+2 + (2 + θ)A
+3 + θA5
+.
+In the first case, the point (3 − θ, 2, 2 − θ, θ, 0) is a feasible solution iff 0 ≤ θ ≤ 2, and the
+value of the objective function is 5 − θ. In the second case, the point (3, 2 − θ, 2 + θ, 0, θ) is
+a feasible solution iff 0 ≤ θ ≤ 2, and the value of the objective function is also 5 − θ. Since
+we must have θ ≥ 0 to have a feasible solution, there is no way to increase the objective
+function. In this situation, it turns out that we have reached an optimal solution, in our
+case u2 = (3, 2, 2, 0, 0), with the maximum of the objective function equal to 5.
+We could also have applied the simplex algorithm to the vertex u0 = (0, 0, 1, 3, 2) and to
+the vector (0, θ, 1 − θ, 3, 2 − θ, 1), which is a feasible solution iff 0 ≤ θ ≤ 1, with new value
+of the objective function θ. By picking θ = 1, we obtain the feasible solution (0, 1, 0, 3, 1),
+corresponding to the basis (A2
+, A4
+, A5
+), which is indeed a vertex. The new value of the
+objective function is 1. Then we express A1 and A3
+in terms the basis (A2
+, A4
+, A5
+) obtaining
+A
+1 = A
+4 − A
+3
+A
+3 = A
+2 − A
+5
+,
+and repeat the process with (0, 1, 0, 3, 1) and the basis (A2
+, A4
+, A5
+). After three more steps
+we will reach the optimal solution u2 = (3, 2, 2, 0, 0).
+1574 CHAPTER 46. THE SIMPLEX ALGORITHM
+Let us go back to the linear program of Example 46.1 with objective function x2 and
+where the matrix A and the vector b are given by
+A =
+
+−
+1 0 0 1
+1 1 1 0 , b =
+
+0
+2
+
+.
+Recall that u0 = (0, 0, 0, 2) is a degenerate basic feasible solution, and the objective function
+has the value 0. See Figure 46.2 for a planar picture of the H-polyhedron associated with
+Example 46.1.
+>>
+K1 0 1 2 3
+K1
+1
+2
+3
+u2
+x1
+x2
+u1
+Figure 46.2: The planar H-polyhedron associated with Example 46.1. The initial basic
+feasible solution is the origin. The simplex algorithm moves along the slanted orange line to
+the apex of the triangle.
+Pick the basis (A3
+, A4
+). Then we have
+A
+1 = −A
+3 + A
+4
+A
+2 = A
+3
+,
+and we get
+b = 2A
+4 − θA1 + θA1
+= 2A
+4 − θ(−A
+3 + A
+4
+) + θA1
+= θA1 + θA3 + (2 − θ)A
+4
+,
+and
+b = 2A
+4 − θA2 + θA2
+= 2A
+4 − θA3 + θA2
+= θA2 − θA3 + 2A
+4
+.
+46.1. THE IDEA BEHIND THE SIMPLEX ALGORITHM 1575
+In the first case, the point (θ, 0, θ, 2 − θ) is a feasible solution iff 0 ≤ θ ≤ 2, and the value of
+the objective function is 0, and in the second case the point (0, θ, −θ, 2) is a feasible solution
+iff θ = 0, and the value of the objective function is θ. However, since we must have θ = 0 in
+the second case, there is no way to increase the objective function either.
+It turns out that in order to make the cases considered by the simplex algorithm as
+mutually exclusive as possible, since in the second case the coefficient of θ in the value of
+the objective function is nonzero, namely 1, we should choose the second case. We must
+pick θ = 0, but we can swap the vectors A3 and A2
+(because A2
+is coming in and A3 has
+the coefficient −θ, which is the reason why θ must be zero), and we obtain the basic feasible
+solution u1 = (0, 0, 0, 2) with the new basis (A2
+, A4
+). Note that this basic feasible solution
+corresponds to the same vertex (0, 0, 0, 2) as before, but the basis has changed. The vectors
+A1 and A3
+can be expressed in terms of the basis (A2
+, A4
+) as
+A
+1 = −A
+2 + A
+4
+A
+3 = A
+2
+.
+We now repeat the procedure with u1 = (0, 0, 0, 2) and the basis (A2
+, A4
+), and we get
+b = 2A
+4 − θA1 + θA1
+= 2A
+4 − θ(−A
+2 + A
+4
+) + θA1
+= θA1 + θA2 + (2 − θ)A
+4
+,
+and
+b = 2A
+4 − θA3 + θA3
+= 2A
+4 − θA2 + θA3
+= −θA2 + θA3 + 2A
+4
+.
+In the first case, the point (θ, θ, 0, 2−θ) is a feasible solution iff 0 ≤ θ ≤ 2 and the value of the
+objective function is θ, and in the second case the point (0, −θ, θ, 2) is a feasible solution iff
+θ = 0 and the value of the objective function is θ. In order to increase the objective function
+we must choose the first case and pick θ = 2. We obtain the feasible solution u2 = (2, 2, 0, 0)
+whose corresponding basis is (A1
+, A2
+) and the value of the objective function is 2.
+The vectors A3 and A4 are expressed in terms of the basis (A1
+, A2
+) as
+A
+3 = A
+2
+A
+4 = A
+1 + A
+3
+,
+and we repeat the procedure with u2 = (2, 2, 0, 0) and the basis (A1
+, A2
+). We get
+b = 2A
+1 + 2A
+2 − θA3 + θA3
+= 2A
+1 + 2A
+2 − θA2 + θA3
+= 2A
+1 + (2 − θ)A
+2 + θA3
+,
+1576 CHAPTER 46. THE SIMPLEX ALGORITHM
+and
+b = 2A
+1 + 2A
+2 − θA4 + θA4
+= 2A
+1 + 2A
+2 − θ(A
+1 + A
+3
+) + θA4
+= (2 − θ)A
+1 + 2A
+2 − θA3 + θA4
+.
+In the first case, the point (2, 2 − θ, 0, θ) is a feasible solution iff 0 ≤ θ ≤ 2 and the value of
+the objective function is 2 − θ, and in the second case, the point (2 − θ, 2, −θ, θ) is a feasible
+solution iff θ = 0 and the value of the objective function is 2. This time there is no way
+to improve the objective function and we have reached an optimal solution u2 = (2, 2, 0, 0)
+with the maximum of the objective function equal to 2.
+Let us now consider an example of an unbounded linear program.
+Example 46.3. Let (P) be the following linear program in standard form.
+maximize x1
+subject to
+x1 − x2 + x3 = 1
+− x1 + x2 + x4 = 2
+x1 ≥ 0, x2 ≥ 0, x3 ≥ 0, x4 ≥ 0.
+The matrix A and the vector b are given by
+A =
+
+−
+1
+1 1 0 1
+−1 1 0 , b =
+
+1
+2
+
+.
+The vector u0 = (0, 0, 1, 2) corresponding to the basis K = {3, 4} is a basic feasible
+solution, and the corresponding value of the objective function is 0. The vectors A1 and A2
+are expressed in terms of the basis (A3
+, A4
+) by
+A
+1 = A
+3 − A
+4
+A
+2 = −A
+3 + A
+4
+.
+Starting with u0 = (0, 0, 1, 2), we get
+b = A
+3 + 2A
+4 − θA1 + θA1
+= A
+3 + 2A
+4 − θ(A
+3 − A
+4
+) + θA1
+= θA1 + (1 − θ)A
+3 + (2 + θ)A
+4
+,
+and
+b = A
+3 + 2A
+4 − θA2 + θA2
+= A
+3 + 2A
+4 − θ(−A
+3 + A
+4
+) + θA2
+= θA2 + (1 + θ)A
+3 + (2 − θ)A
+4
+.
+46.1. THE IDEA BEHIND THE SIMPLEX ALGORITHM 1577
+>>
+:
+inequal x y % 1, xC y % 2, x R 0, y R 0 , x = 1 ..5, y = 1 ..5, color = "Nautical 1"
+K1 0 1 2 3 4 5
+K1
+1
+2
+3
+4
+5
+θ(1,1)
+Figure 46.3: The planar H-polyhedron associated with Example 46.3. The initial basic
+feasible solution is the origin. The simplex algorithm first moves along the horizontal indigo
+line to basic feasible solution at vertex (1, 0). Any optimal feasible solution occurs by moving
+along the boundary line parameterized by the orange arrow θ(1, 1).
+In the first case, the point (θ, 0, 1 − θ, 2 + θ) is a feasible solution iff 0 ≤ θ ≤ 1 and the value
+of the objective function is θ, and in the second case, the point (0, θ, 1 +θ, 2−θ) is a feasible
+solution iff 0 ≤ θ ≤ 2 and the value of the objective function is 0. In order to increase the
+objective function we must choose the first case, and we pick θ = 1. We get the feasible
+solution u1 = (1, 0, 0, 3) corresponding to the basis (A1
+, A4
+), so it is a basic feasible solution,
+and the value of the objective function is 1.
+The vectors A2 and A3 are given in terms of the basis (A1
+, A4
+) by
+A
+2 = −A
+1
+A
+3 = A
+1 + A
+4
+.
+Repeating the process with u1 = (1, 0, 0, 3), we get
+b = A
+1 + 3A
+4 − θA2 + θA2
+= A
+1 + 3A
+4 − θ(−A
+1
+) + θA2
+= (1 + θ)A
+1 + θA2 + 3A
+4
+,
+and
+b = A
+1 + 3A
+4 − θA3 + θA3
+= A
+1 + 3A
+4 − θ(A
+1 + A
+4
+) + θA3
+= (1 − θ)A
+1 + θA3 + (3 − θ)A
+4
+.
+-x1+ x2= 2
+x1- x2
+= 1
+1578 CHAPTER 46. THE SIMPLEX ALGORITHM
+In the first case, the point (1 + θ, θ, 0, 3) is a feasible solution for all θ ≥ 0 and the value
+of the objective function if 1 + θ, and in the second case, the point (1 − θ, 0, θ, 3 − θ) is a
+feasible solution iff 0 ≤ θ ≤ 1 and the value of the objective function is 1 − θ. This time, we
+are in the situation where the points
+(1 + θ, θ, 0, 3) = (1, 0, 0, 3) + θ(1, 1, 0, 0), θ ≥ 0
+form an infinite ray in the set of feasible solutions, and the objective function 1 + θ is
+unbounded from above on this ray. This indicates that our linear program, although feasible,
+is unbounded.
+Let us now describe a step of the simplex algorithm in general.
+46.2 The Simplex Algorithm in General
+We assume that we already have an initial vertex u0 to start from. This vertex corresponds
+to a basic feasible solution with basis K0. We will show later that it is always possible to
+find a basic feasible solution of a Linear Program (P) is standard form, or to detect that (P)
+has no feasible solution.
+The idea behind the simplex algorithm is this: Given a pair (u, K) consisting of a basic
+feasible solution u and a basis K for u, find another pair (u
++, K+) consisting of another basic
+feasible solution u
++ and a basis K+ for u
++, such that K+ is obtained from K by deleting
+some basic index k
+− ∈ K and adding some nonbasic index j
++ ∈/ K, in such a way that the
+value of the objective function increases (preferably strictly). The step which consists in
+swapping the vectors Ak−
+and Aj
++
+is called a pivoting step.
+Let u be a given vertex corresponds to a basic feasible solution with basis K. Since the
+m vectors Ak
+corresponding to indices k ∈ K are linearly independent, they form a basis, so
+for every nonbasic j /∈ K, we write
+A
+j =
+X
+k∈K
+γk
+jA
+k
+. (∗)
+We let γK
+j ∈ R
+m be the vector given by γK
+j = (γk
+j
+)k∈K. Actually, since the vector γK
+j
+depends
+on K, to be very precise we should denote its components by (γK
+j
+)k, but to simplify notation
+we usually write γk
+j
+instead of (γK
+j
+)k (unless confusion arises). We will explain later how the
+coefficients γk
+j
+can be computed efficiently.
+Since u is a feasible solution we have u ≥ 0 and Au = b, that is,
+X
+k∈K
+ukA
+k = b. (∗∗)
+For every nonbasic j /∈ K, a candidate for entering the basis K, we try to find a new vertex
+u(θ) that improves the objective function, and for this we add −θAj + θAj = 0 to b in
+46.2. THE SIMPLEX ALGORITHM IN GENERAL 1579
+Equation (∗∗) and then replace the occurrence of Aj
+in −θAj by the right hand side of
+Equation (∗) to obtain
+b =
+X
+k∈K
+ukA
+k − θAj + θAj
+=
+X
+k∈K
+ukA
+k − θ
+
+X
+k∈K
+γk
+jA
+k
+ + θAj
+=
+X
+k∈K
+
+uk − θγk
+j
+ A
+k + θAj
+.
+Consequently, the vector u(θ) appearing on the right-hand side of the above equation given
+by
+u(θ)i =
+
+
+
+θ
+ui − θγi
+j
+if i ∈ K
+if i = j
+0 if i /∈ K ∪ {j}
+automatically satisfies the constraints Au(θ) = b, and this vector is a feasible solution iff
+θ ≥ 0 and uk ≥ θγk
+j
+for all k ∈ K.
+Obviously θ = 0 is a solution, and if
+θ
+j = min
+u
+γk
+k
+j
+
+
+ 
+γk
+j > 0, k ∈ K
+ > 0,
+then we have a range of feasible solutions for 0 ≤ θ ≤ θ
+j
+. The value of the objective function
+for u(θ) is
+cu(θ) = X
+k∈K
+ck(uk − θγk
+j
+) + θcj = cu + θ
+ cj −
+k
+X∈K
+γk
+j
+ck
+ .
+Since the potential change in the objective function is
+θ
+ cj −
+k
+X∈K
+γk
+j
+ck
+
+and θ ≥ 0, if cj −
+P k∈K γk
+j
+ck ≤ 0, then the objective function can’t be increased.
+However, if cj+ −
+P k∈K γk
+j
++
+ck > 0 for some j
++ ∈/ K, and if θ
+j
++
+> 0, then the objective
+function can be strictly increased by choosing any θ > 0 such that θ ≤ θ
+j
++
+, so it is natural
+to zero at least one coefficient of u(θ) by picking θ = θ
+j
++
+, which also maximizes the increase
+of the objective function. In this case (Case below (B2)), we obtain a new feasible solution
+u
++ = u(θ
+j
++
+).
+Now, if θ
+j
++
+> 0, then there is some index k ∈ K such uk > 0, γ
+j
++
+k > 0, and θ
+j
++
+= uk/γj
++
+k
+,
+so we can pick such an index k
+− for the vector Ak−
+leaving the basis K. We claim that
+1580 CHAPTER 46. THE SIMPLEX ALGORITHM
+K+ = (K − {k
+−}) ∪ {j
++} is a basis. This is because the coefficient γ
+j
++
+k− associated with the
+column Ak−
+is nonzero (in fact, γ
+j
++
+k− > 0), so Equation (∗), namely
+A
+j
++
+= γ
+j
++
+k− A
+k−
++
+X
+k∈K−{k−}
+γk
+j
++
+A
+k
+,
+yields the equation
+A
+k−
+= (γ
+j
++
+k− )
+−1A
+j
++
+−
+X
+k∈K−{k−}
+(γk
+j
++
+− )
+−1
+γk
+j
++
+A
+k
+,
+and these equations imply that the subspaces spanned by the vectors (Ak
+)k∈K and the vectors

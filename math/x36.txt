@@ -1,0 +1,1000 @@
+then every rj
+is a linear combination of the vectors (e1, . . . , ej ), 1 ≤ j ≤ n. Letting R be the
+matrix whose columns are the vectors rj
+, and Hi the matrix associated with hi
+, it is clear
+that
+R = Hn · · · H2H1A,
+13.2. QR-DECOMPOSITION USING HOUSEHOLDER MATRICES 503
+where R is upper triangular and every Hi
+is either a Householder matrix or the identity.
+However, hi ◦ hi = id for all i, 1 ≤ i ≤ n, and so
+vj = h1 ◦ h2 ◦ · · · ◦ hn(rj )
+for all j, 1 ≤ j ≤ n. But ρ = h1 ◦ h2 ◦ · · · ◦ hn is an isometry represented by the orthogonal
+matrix Q = H1H2 · · · Hn. It is clear that A = QR, where R is upper triangular. As we noted
+in Proposition 13.3, the diagonal entries of R can be chosen to be nonnegative.
+Remarks:
+(1) Letting
+Ak+1 = Hk · · · H2H1A,
+with A1 = A, 1 ≤ k ≤ n, the proof of Proposition 13.3 can be interpreted in terms of
+the computation of the sequence of matrices A1, . . . , An+1 = R. The matrix Ak+1 has
+the shape
+Ak+1 =
+
+
+× × ×
+0
+u
+k
+1
++1 × × × ×
+×
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+0 0 × u
+k
+k
++1 × × × ×
+0 0 0 u
+k+1
+k+1 × × × ×
+0 0 0 u
+k+1
+k+2 × × × ×
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+0 0 0 u
+k+1
+n−1 × × × ×
+0 0 0 u
+k+1
+n × × × ×
+
+
+,
+where the (k + 1)th column of the matrix is the vector
+uk+1 = hk ◦ · · · ◦ h2 ◦ h1(vk+1),
+and thus
+u
+0k+1 =
+￾ u
+k
+1
++1, . . . , uk
+k
++1
+and
+u
+00k+1 =
+￾ u
+k
+k
++1
++1, uk
+k
++1
++2, . . . , uk
+n
++1
+.
+If the last n − k − 1 entries in column k + 1 are all zero, there is nothing to do, and we
+let Hk+1 = I. Otherwise, we kill these n − k − 1 entries by multiplying Ak+1 on the
+left by the Householder matrix Hk+1 sending
+￾
+0, . . . , 0, uk
+k
++1
++1, . . . , uk
+n
++1 to (0, . . . , 0, rk+1,k+1, 0, . . . , 0),
+where rk+1,k+1 = k (u
+k
+k
++1
++1, . . . , uk
+n
++1)k .
+504 CHAPTER 13. QR-DECOMPOSITION FOR ARBITRARY MATRICES
+(2) If A is invertible and the diagonal entries of R are positive, it can be shown that Q
+and R are unique.
+(3) If we allow negative diagonal entries in R, the matrix Hn may be omitted (Hn = I).
+(4) The method allows the computation of the determinant of A. We have
+det(A) = (−1)mr1,1 · · · rn,n,
+where m is the number of Householder matrices (not the identity) among the Hi
+.
+(5) The “condition number” of the matrix A is preserved (see Strang [170], Golub and Van
+Loan [80], Trefethen and Bau [176], Kincaid and Cheney [102], or Ciarlet [41]). This
+is very good for numerical stability.
+(6) The method also applies to a rectangular m × n matrix. If m ≥ n, then R is an n × n
+upper triangular matrix and Q is an m × n matrix such that Q> Q = In.
+The following Matlab functions implement the QR-factorization method of a real square
+(possibly singular) matrix A using Householder reflections
+The main function houseqr computes the upper triangular matrix R obtained by applying
+Householder reflections to A. It makes use of the function house, which computes a unit
+vector u such that given a vector x ∈ R
+p
+, the Householder transformation P = I −2uu> sets
+to zero all entries in x but the first entry x1. It only applies if k x(2 : p)k
+1 = |x2|+· · ·+|xp| >
+0. Since computations are done in floating point, we use a tolerance factor tol, and if
+k
+x(2 : p)k
+1 ≤ tol, then we return u = 0, which indicates that the corresponding Householder
+transformation is the identity. To make sure that k P xk is as large as possible, we pick
+uu = x + sign(x1) k xk 2
+e1, where sign(z) = 1 if z ≥ 0 and sign(z) = −1 if z < 0. Note that
+as a result, diagonal entries in R may be negative. We will take care of this issue later.
+function s = signe(x)
+% if x >= 0, then signe(x) = 1
+% else if x < 0 then signe(x) = -1
+%
+if x < 0
+s = -1;
+else
+s = 1;
+end
+end
+13.2. QR-DECOMPOSITION USING HOUSEHOLDER MATRICES 505
+function [uu, u] = house(x)
+% This constructs the unnormalized vector uu
+% defining the Householder reflection that
+% zeros all but the first entries in x.
+% u is the normalized vector uu/||uu||
+%
+tol = 2*10^(-15); % tolerance
+uu = x;
+p = size(x,1);
+% computes l^1-norm of x(2:p,1)
+n1 = sum(abs(x(2:p,1)));
+if n1 <= tol
+u = zeros(p,1); uu = u;
+else
+l = sqrt(x’*x); % l^2 norm of x
+uu(1) = x(1) + signe(x(1))*l;
+u = uu/sqrt(uu’*uu);
+end
+end
+The Householder transformations are recorded in an array u of n − 1 vectors. There are
+more efficient implementations, but for the sake of clarity we present the following version.
+function [R, u] = houseqr(A)
+% This function computes the upper triangular R in the QR factorization
+% of A using Householder reflections, and an implicit representation
+% of Q as a sequence of n - 1 vectors u_i representing Householder
+% reflections
+n = size(A, 1);
+R = A;
+u = zeros(n,n-1);
+for i = 1:n-1
+[~, u(i:n,i)] = house(R(i:n,i));
+if u(i:n,i) == zeros(n - i + 1,1)
+R(i+1:n,i) = zeros(n - i,1);
+else
+R(i:n,i:n) = R(i:n,i:n) - 2*u(i:n,i)*(u(i:n,i)’*R(i:n,i:n));
+end
+end
+end
+506 CHAPTER 13. QR-DECOMPOSITION FOR ARBITRARY MATRICES
+If only R is desired, then houseqr does the job. In order to obtain R, we need to compose
+the Householder transformations. We present a simple method which is not the most efficient
+(there is a way to avoid multiplying explicity the Householder matrices).
+The function buildhouse creates a Householder reflection from a vector v.
+function P = buildhouse(v,i)
+% This function builds a Householder reflection
+% [I 0 ]
+% [0 PP]
+% from a Householder reflection
+% PP = I - 2uu*uu’
+% where uu = v(i:n)
+% If uu = 0 then P - I
+%
+n = size(v,1);
+if v(i:n) == zeros(n - i + 1,1)
+P = eye(n);
+else
+PP = eye(n - i + 1) - 2*v(i:n)*v(i:n)’;
+P = [eye(i-1) zeros(i-1, n - i + 1); zeros(n - i + 1, i - 1) PP];
+end
+end
+The function buildQ builds the matrix Q in the QR-decomposition of A.
+function Q = buildQ(u)
+% Builds the matrix Q in the QR decomposition
+% of an nxn matrix A using Householder matrices,
+% where u is a representation of the n - 1
+% Householder reflection by a list u of vectors produced by
+% houseqr
+n = size(u,1);
+Q = buildhouse(u(:,1),1);
+for i = 2:n-1
+Q = Q*buildhouse(u(:,i),i);
+end
+end
+The function buildhouseQR computes a QR-factorization of A. At the end, if some
+entries on the diagonal of R are negative, it creates a diagonal orthogonal matrix P such that
+P R has nonnegative diagonal entries, so that A = (QP)(P R) is the desired QR-factorization
+of A.
+13.2. QR-DECOMPOSITION USING HOUSEHOLDER MATRICES 507
+function [Q,R] = buildhouseQR(A)
+%
+% Computes the QR decomposition of a square
+% matrix A (possibly singular) using Householder reflections
+n = size(A,1);
+[R,u] = houseqr(A);
+Q = buildQ(u);
+% Produces a matrix R whose diagonal entries are
+% nonnegative
+P = eye(n);
+for i = 1:n
+if R(i,i) < 0
+P(i,i) = -1;
+end
+end
+Q = Q*P; R = P*R;
+end
+Example 13.1. Consider the matrix
+A =
+
+
+1 2 3 4
+2 3 4 5
+3 4 5 6
+4 5 6 7
+
+ .
+Running the function buildhouseQR, we get
+Q =
+
+
+0.1826 0.8165 0.4001 0.3741
+0
+0
+.
+.
+3651 0
+5477 −0
+.4082
+.0000
+−
+−
+0
+0
+.
+.
+2546
+6910 0
+−0
+.4717
+.7970
+0.7303 −0.4082 0.5455 −0.0488
+
+
+and
+R =
+
+
+5.4772 7.3030 9.1287 10.9545
+0 0
+0 −0
+.8165 1
+.0000 0
+.
+.
+6330 2
+0000 0
+.
+.
+4495
+0000
+0 −0.0000 0 0.0000
+
+ .
+Observe that A has rank 2. The reader should check that A = QR.
+Remark: Curiously, running Matlab built-in function qr, the same R is obtained (up to
+column signs) but a different Q is obtained (the last two columns are different).
+508 CHAPTER 13. QR-DECOMPOSITION FOR ARBITRARY MATRICES
+13.3 Summary
+The main concepts and results of this chapter are listed below:
+• Symmetry (or reflection) with respect to F and parallel to G.
+• Orthogonal symmetry (or reflection) with respect to F and parallel to G; reflections,
+flips.
+• Hyperplane reflections and Householder matrices.
+• A key fact about reflections (Proposition 13.2).
+• QR-decomposition in terms of Householder transformations (Theorem 13.4).
+13.4 Problems
+Problem 13.1. (1) Given a unit vector (− sin θ, cos θ), prove that the Householder matrix
+determined by the vector (− sin θ, cos θ) is
+
+cos 2
+sin 2θ
+θ
+−
+sin 2
+cos 2
+θ
+θ
+
+.
+Give a geometric interpretation (i.e., why the choice (− sin θ, cos θ)?).
+(2) Given any matrix
+A =
+
+a b
+c d ,
+Prove that there is a Householder matrix H such that AH is lower triangular, i.e.,
+AH =
+
+a
+0 0
+c
+0 d
+0
+
+for some a
+0 , c0 , d0 ∈ R.
+Problem 13.2. Given a Euclidean space E of dimension n, if h is a reflection about some
+hyperplane orthogonal to a nonzero vector u and f is any isometry, prove that f ◦ h ◦ f
+−1
+is
+the reflection about the hyperplane orthogonal to f(u).
+Problem 13.3. (1) Given a matrix
+A =
+
+a b
+c d ,
+prove that there are Householder matrices G, H such that
+GAH =
+
+cos
+sin θ
+θ
+−
+sin
+cos
+θ
+θ
+ 
+a b
+c d 
+cos
+sin ϕ
+ϕ
+−
+sin
+cos
+ϕ
+ϕ
+
+= D,
+13.4. PROBLEMS 509
+where D is a diagonal matrix, iff the following equations hold:
+(b + c) cos(θ + ϕ) = (a − d) sin(θ + ϕ),
+(c − b) cos(θ − ϕ) = (a + d) sin(θ − ϕ).
+(2) Discuss the solvability of the system. Consider the following cases:
+Case 1: a − d = a + d = 0.
+Case 2a: a − d = b + c = 0, a + d 6 = 0.
+Case 2b: a − d = 0, b + c 6 = 0, a + d 6 = 0.
+Case 3a: a + d = c − b = 0, a − d 6 = 0.
+Case 3b: a + d = 0, c − b 6 = 0, a − d 6 = 0.
+Case 4: a + d 6 = 0, a − d 6 = 0. Show that the solution in this case is
+θ =
+2
+1
+
+arctan 
+a
+b
+−
++ c
+d
+
++ arctan 
+a
+c −
++ d
+b
+
+,
+ϕ =
+1
+2
+
+arctan 
+a
+b
+−
++ c
+d
+
+− arctan 
+a
+c −
++ d
+b
+
+.
+If b = 0, show that the discussion is simpler: basically, consider c = 0 or c 6 = 0.
+(3) Expressing everything in terms of u = cot θ and v = cot ϕ, show that the equations
+in (2) become
+(b + c)(uv − 1) = (u + v)(a − d),
+(c − b)(uv + 1) = (−u + v)(a + d).
+Problem 13.4. Let A be an n × n real invertible matrix.
+(1) Prove that A> A is symmetric positive definite.
+(2) Use the Cholesky factorization A> A = R> R with R upper triangular with positive di￾agonal entries to prove that Q = AR−1
+is orthogonal, so that A = QR is the QR-factorization
+of A.
+Problem 13.5. Modify the function houseqr so that it applies to an m × n matrix with
+m ≥ n, to produce an m × n upper-triangular matrix whose last m − n rows are zeros.
+Problem 13.6. The purpose of this problem is to prove that given any self-adjoint linear
+map f : E → E (i.e., such that f
+∗ = f), where E is a Euclidean space of dimension n ≥ 3,
+given an orthonormal basis (e1, . . . , en), there are n − 2 isometries hi
+, hyperplane reflections
+or the identity, such that the matrix of
+hn−2 ◦ · · · ◦ h1 ◦ f ◦ h1 ◦ · · · ◦ hn−2
+510 CHAPTER 13. QR-DECOMPOSITION FOR ARBITRARY MATRICES
+is a symmetric tridiagonal matrix.
+(1) Prove that for any isometry f : E → E, we have f = f
+∗ = f
+−1
+iff f ◦ f = id.
+Prove that if f and h are self-adjoint linear maps (f
+∗ = f and h
+∗ = h), then h ◦ f ◦ h is
+a self-adjoint linear map.
+(2) Let Vk be the subspace spanned by (ek+1, . . . , en). Proceed by induction. For the
+base case, proceed as follows.
+Let
+f(e1) = a
+0
+1
+e1 + · · · + a
+0
+n
+en,
+and let
+r1, 2 =
+  a
+0
+2
+e2 + · · · + a
+0
+n
+en
+
+ .
+Find an isometry h1 (reflection or id) such that
+h1(f(e1) − a
+0
+1
+e1) = r1, 2 e2.
+Observe that
+w1 = r1, 2 e2 + a
+0
+1
+e1 − f(e1) ∈ V1,
+and prove that h1(e1) = e1, so that
+h1 ◦ f ◦ h1(e1) = a
+0
+1
+e1 + r1, 2 e2.
+Let f1 = h1 ◦ f ◦ h1.
+Assuming by induction that
+fk = hk ◦ · · · ◦ h1 ◦ f ◦ h1 ◦ · · · ◦ hk
+has a tridiagonal matrix up to the kth row and column, 1 ≤ k ≤ n − 3, let
+fk(ek+1) = a
+k
+k
+ek + a
+k
+k+1ek+1 + · · · + a
+k
+n
+en,
+and let
+rk+1, k+2 =
+  a
+k
+k+2ek+2 + · · · + a
+k
+n
+en
+
+ .
+Find an isometry hk+1 (reflection or id) such that
+hk+1(fk(ek+1) − a
+k
+k
+ek − a
+k
+k+1ek+1) = rk+1, k+2 ek+2.
+Observe that
+wk+1 = rk+1, k+2 ek+2 + a
+k
+k
+ek + a
+k
+k+1ek+1 − fk(ek+1) ∈ Vk+1,
+and prove that hk+1(ek) = ek and hk+1(ek+1) = ek+1, so that
+hk+1 ◦ fk ◦ hk+1(ek+1) = a
+k
+k
+ek + a
+k
+k+1ek+1 + rk+1, k+2 ek+2.
+13.4. PROBLEMS 511
+Let fk+1 = hk+1 ◦ fk ◦ hk+1, and finish the proof.
+(3) Prove that given any symmetric n×n-matrix A, there are n−2 matrices H1, . . . , Hn−2,
+Householder matrices or the identity, such that
+B = Hn−2 · · · H1AH1 · · · Hn−2
+is a symmetric tridiagonal matrix.
+(4) Write a computer program implementing the above method.
+Problem 13.7. Recall from Problem 6.6 that an n × n matrix H is upper Hessenberg if
+hjk = 0 for all (j, k) such that j − k ≥ 0. Adapt the proof of Problem 13.6 to prove that
+given any n × n-matrix A, there are n − 2 ≥ 1 matrices H1, . . . , Hn−2, Householder matrices
+or the identity, such that
+B = Hn−2 · · · H1AH1 · · · Hn−2
+is upper Hessenberg.
+Problem 13.8. The purpose of this problem is to prove that given any linear map f : E → E,
+where E is a Euclidean space of dimension n ≥ 2, given an orthonormal basis (e1, . . . , en),
+there are isometries gi
+, hi
+, hyperplane reflections or the identity, such that the matrix of
+gn ◦ · · · ◦ g1 ◦ f ◦ h1 ◦ · · · ◦ hn
+is a lower bidiagonal matrix, which means that the nonzero entries (if any) are on the main
+descending diagonal and on the diagonal below it.
+(1) Let Uk
+0 be the subspace spanned by (e1, . . . , ek) and Uk
+00 be the subspace spanned by
+(ek+1, . . . , en), 1 ≤ k ≤ n − 1. Proceed by induction For the base case, proceed as follows.
+Let v1 = f
+∗
+(e1) and r1, 1 = k v1k . Find an isometry h1 (reflection or id) such that
+h1(f
+∗
+(e1)) = r1, 1e1.
+Observe that h1(f
+∗
+(e1)) ∈ U1
+0
+, so that
+h
+h1(f
+∗
+(e1)), ej i = 0
+for all j, 2 ≤ j ≤ n, and conclude that
+h
+e1, f ◦ h1(ej )i = 0
+for all j, 2 ≤ j ≤ n.
+Next let
+u1 = f ◦ h1(e1) = u
+01 + u
+001
+,
+where u
+01 ∈ U1
+0
+and u
+001 ∈ U1
+00
+, and let r2, 1 = k u
+001k
+. Find an isometry g1 (reflection or id) such
+that
+g1(u
+001
+) = r2, 1e2.
+512 CHAPTER 13. QR-DECOMPOSITION FOR ARBITRARY MATRICES
+Show that g1(e1) = e1,
+g1 ◦ f ◦ h1(e1) = u
+01 + r2, 1e2,
+and that
+h
+e1, g1 ◦ f ◦ h1(ej )i = 0
+for all j, 2 ≤ j ≤ n. At the end of this stage, show that g1 ◦ f ◦ h1 has a matrix such that
+all entries on its first row except perhaps the first are zero, and that all entries on the first
+column, except perhaps the first two, are zero.
+Assume by induction that some isometries g1, . . . , gk and h1, . . . , hk have been found,
+either reflections or the identity, and such that
+fk = gk ◦ · · · ◦ g1 ◦ f ◦ h1 · · · ◦ hk
+has a matrix which is lower bidiagonal up to and including row and column k, where 1 ≤
+k ≤ n − 2.
+Let
+vk+1 = fk
+∗
+(ek+1) = vk
+0+1 + vk
+00+1,
+where vk
+0+1 ∈ Uk
+0
+and vk
+00+1 ∈ Uk
+00
+, and let rk+1, k+1 =
+  vk
+00+1
+ . Find an isometry hk+1 (reflection
+or id) such that
+hk+1(vk
+00+1) = rk+1, k+1ek+1.
+Show that if hk+1 is a reflection, then Uk
+0 ⊆ Hk+1, where Hk+1 is the hyperplane defining the
+reflection hk+1. Deduce that hk+1(vk
+0+1) = vk
+0+1, and that
+hk+1(fk
+∗
+(ek+1)) = vk
+0+1 + rk+1, k+1ek+1.
+Observe that hk+1(fk
+∗
+(ek+1)) ∈ Uk
+0+1, so that
+h
+hk+1(fk
+∗
+(ek+1)), ej i = 0
+for all j, k + 2 ≤ j ≤ n, and thus,
+h
+ek+1, fk ◦ hk+1(ej )i = 0
+for all j, k + 2 ≤ j ≤ n.
+Next let
+uk+1 = fk ◦ hk+1(ek+1) = u
+0k+1 + u
+00k+1,
+where u
+0k+1 ∈ Uk
+0+1 and u
+00k+1 ∈ Uk
+00+1, and let rk+2, k+1 =
+  u
+00k+1
+ . Find an isometry gk+1
+(reflection or id) such that
+gk+1(u
+00k+1) = rk+2, k+1ek+2.
+Show that if gk+1 is a reflection, then Uk
+0+1 ⊆ Gk+1, where Gk+1 is the hyperplane defining
+the reflection gk+1. Deduce that gk+1(ei) = ei
+for all i, 1 ≤ i ≤ k + 1, and that
+gk+1 ◦ fk ◦ hk+1(ek+1) = u
+0k+1 + rk+2, k+1ek+2.
+13.4. PROBLEMS 513
+Since by induction hypothesis,
+h
+ei
+, fk ◦ hk+1(ej )i = 0
+for all i, j, 1 ≤ i ≤ k + 1, k + 2 ≤ j ≤ n, and since gk+1(ei) = ei
+for all i, 1 ≤ i ≤ k + 1,
+conclude that
+h
+ei
+, gk+1 ◦ fk ◦ hk+1(ej )i = 0
+for all i, j, 1 ≤ i ≤ k + 1, k + 2 ≤ j ≤ n. Finish the proof.
+514 CHAPTER 13. QR-DECOMPOSITION FOR ARBITRARY MATRICES
+Chapter 14
+Hermitian Spaces
+14.1 Sesquilinear and Hermitian Forms, Pre-Hilbert
+Spaces and Hermitian Spaces
+In this chapter we generalize the basic results of Euclidean geometry presented in Chapter
+12 to vector spaces over the complex numbers. Such a generalization is inevitable and not
+simply a luxury. For example, linear maps may not have real eigenvalues, but they always
+have complex eigenvalues. Furthermore, some very important classes of linear maps can
+be diagonalized if they are extended to the complexification of a real vector space. This
+is the case for orthogonal matrices and, more generally, normal matrices. Also, complex
+vector spaces are often the natural framework in physics or engineering, and they are more
+convenient for dealing with Fourier series. However, some complications arise due to complex
+conjugation.
+Recall that for any complex number z ∈ C, if z = x + iy where x, y ∈ R, we let < z = x,
+the real part of z, and = z = y, the imaginary part of z. We also denote the conjugate of
+z = x + iy by z = x − iy, and the absolute value (or length, or modulus) of z by |z|. Recall
+that |z|
+2 = zz = x
+2 + y
+2
+.
+There are many natural situations where a map ϕ: E × E → C is linear in its first
+argument and only semilinear in its second argument, which means that ϕ(u, µv) = µϕ(u, v),
+as opposed to ϕ(u, µv) = µϕ(u, v). For example, the natural inner product to deal with
+functions f : R → C, especially Fourier series, is
+h
+f, gi =
+Z
+π
+−π
+f(x)g(x)dx,
+which is semilinear (but not linear) in g. Thus, when generalizing a result from the real case
+of a Euclidean space to the complex case, we always have to check very carefully that our
+proofs do not rely on linearity in the second argument. Otherwise, we need to revise our
+proofs, and sometimes the result is simply wrong!
+515
+516 CHAPTER 14. HERMITIAN SPACES
+Before defining the natural generalization of an inner product, it is convenient to define
+semilinear maps.
+Definition 14.1. Given two vector spaces E and F over the complex field C, a function
+f : E → F is semilinear if
+f(u + v) = f(u) + f(v),
+f(λu) = λf(u),
+for all u, v ∈ E and all λ ∈ C.
+Remark: Instead of defining semilinear maps, we could have defined the vector space E as
+the vector space with the same carrier set E whose addition is the same as that of E, but
+whose multiplication by a complex number is given by
+(λ, u) 7→ λu.
+Then it is easy to check that a function f : E → C is semilinear iff f : E → C is linear.
+We can now define sesquilinear forms and Hermitian forms.
+Definition 14.2. Given a complex vector space E, a function ϕ: E×E → C is a sesquilinear
+form if it is linear in its first argument and semilinear in its second argument, which means
+that
+ϕ(u1 + u2, v) = ϕ(u1, v) + ϕ(u2, v),
+ϕ(u, v1 + v2) = ϕ(u, v1) + ϕ(u, v2),
+ϕ(λu, v) = λϕ(u, v),
+ϕ(u, µv) = µϕ(u, v),
+for all u, v, u1, u2, v1, v2 ∈ E, and all λ, µ ∈ C. A function ϕ: E × E → C is a Hermitian
+form if it is sesquilinear and if
+ϕ(v, u) = ϕ(u, v)
+for all all u, v ∈ E.
+Obviously, ϕ(0, v) = ϕ(u, 0) = 0. Also note that if ϕ: E × E → C is sesquilinear, we
+have
+ϕ(λu + µv, λu + µv) = |λ|
+2ϕ(u, u) + λµϕ(u, v) + λµϕ(v, u) + |µ|
+2ϕ(v, v),
+and if ϕ: E × E → C is Hermitian, we have
+ϕ(λu + µv, λu + µv) = |λ|
+2ϕ(u, u) + 2< (λµϕ(u, v)) + |µ|
+2ϕ(v, v).
+Note that restricted to real coefficients, a sesquilinear form is bilinear (we sometimes say
+R-bilinear).
+14.1. HERMITIAN SPACES, PRE-HILBERT SPACES 517
+Definition 14.3. Given a sesquilinear form ϕ: E ×E → C, the function Φ: E → C defined
+such that Φ(u) = ϕ(u, u) for all u ∈ E is called the quadratic form associated with ϕ.
+The standard example of a Hermitian form on C
+n
+is the map ϕ defined such that
+ϕ((x1, . . . , xn),(y1, . . . , yn)) = x1y1 + x2y2 + · · · + xnyn.
+This map is also positive definite, but before dealing with these issues, we show the following
+useful proposition.
+Proposition 14.1. Given a complex vector space E, the following properties hold:
+(1) A sesquilinear form ϕ: E ×E → C is a Hermitian form iff ϕ(u, u) ∈ R for all u ∈ E.
+(2) If ϕ: E × E → C is a sesquilinear form, then
+4ϕ(u, v) = ϕ(u + v, u + v) − ϕ(u − v, u − v)
++ iϕ(u + iv, u + iv) − iϕ(u − iv, u − iv),
+and
+2ϕ(u, v) = (1 + i)(ϕ(u, u) + ϕ(v, v)) − ϕ(u − v, u − v) − iϕ(u − iv, u − iv).
+These are called polarization identities.
+Proof. (1) If ϕ is a Hermitian form, then
+ϕ(v, u) = ϕ(u, v)
+implies that
+ϕ(u, u) = ϕ(u, u),
+and thus ϕ(u, u) ∈ R. If ϕ is sesquilinear and ϕ(u, u) ∈ R for all u ∈ E, then
+ϕ(u + v, u + v) = ϕ(u, u) + ϕ(u, v) + ϕ(v, u) + ϕ(v, v),
+which proves that
+ϕ(u, v) + ϕ(v, u) = α,
+where α is real, and changing u to iu, we have
+i(ϕ(u, v) − ϕ(v, u)) = β,
+where β is real, and thus
+ϕ(u, v) = α − iβ
+2
+and ϕ(v, u) = α + iβ
+2
+,
+proving that ϕ is Hermitian.
+(2) These identities are verified by expanding the right-hand side, and we leave them as
+an exercise.
+518 CHAPTER 14. HERMITIAN SPACES
+Proposition 14.1 shows that a sesquilinear form is completely determined by the quadratic
+form Φ(u) = ϕ(u, u), even if ϕ is not Hermitian. This is false for a real bilinear form, unless
+it is symmetric. For example, the bilinear form ϕ: R
+2 × R
+2 → R defined such that
+ϕ((x1, y1),(x2, y2)) = x1y2 − x2y1
+is not identically zero, and yet it is null on the diagonal. However, a real symmetric bilinear
+form is indeed determined by its values on the diagonal, as we saw in Chapter 12.
+As in the Euclidean case, Hermitian forms for which ϕ(u, u) ≥ 0 play an important role.
+Definition 14.4. Given a complex vector space E, a Hermitian form ϕ: E × E → C is
+positive if ϕ(u, u) ≥ 0 for all u ∈ E, and positive definite if ϕ(u, u) > 0 for all u 6 = 0. A
+pair h E, ϕi where E is a complex vector space and ϕ is a Hermitian form on E is called a
+pre-Hilbert space if ϕ is positive, and a Hermitian (or unitary) space if ϕ is positive definite.
+We warn our readers that some authors, such as Lang [111], define a pre-Hilbert space as
+what we define as a Hermitian space. We prefer following the terminology used in Schwartz
+[150] and Bourbaki [27]. The quantity ϕ(u, v) is usually called the Hermitian product of u
+and v. We will occasionally call it the inner product of u and v.
+Given a pre-Hilbert space h E, ϕi , as in the case of a Euclidean space, we also denote
+ϕ(u, v) by
+u · v or h u, vi or (u|v),
+and p Φ(u) by k uk .
+Example 14.1. The complex vector space C
+n under the Hermitian form
+ϕ((x1, . . . , xn),(y1, . . . , yn)) = x1y1 + x2y2 + · · · + xnyn
+is a Hermitian space.
+Example 14.2. Let ` 2 denote the set of all countably infinite sequences x = (xi)i∈N of
+complex numbers such that P ∞
+i=0 |xi
+|
+2
+is defined (i.e., the sequence P n
+i=0 |xi
+|
+2
+converges as
+n → ∞). It can be shown that the map ϕ: `
+2 × ` 2 → C defined such that
+ϕ ((xi)i∈N,(yi)i∈N) =
+∞X
+i=0
+xiyi
+is well defined, and ` 2
+is a Hermitian space under ϕ. Actually, ` 2
+is even a Hilbert space.
+Example 14.3. Let Cpiece[a, b] be the set of bounded piecewise continuous functions
+f : [a, b] → C under the Hermitian form
+h
+f, gi =
+Z
+b
+a
+f(x)g(x)dx.
+It is easy to check that this Hermitian form is positive, but it is not definite. Thus, under
+this Hermitian form, Cpiece[a, b] is only a pre-Hilbert space.
+14.1. HERMITIAN SPACES, PRE-HILBERT SPACES 519
+Example 14.4. Let C[a, b] be the set of complex-valued continuous functions f : [a, b] → C
+under the Hermitian form
+h
+f, gi =
+Z
+b
+a
+f(x)g(x)dx.
+It is easy to check that this Hermitian form is positive definite. Thus, C[a, b] is a Hermitian
+space.
+Example 14.5. Let E = Mn(C) be the vector space of complex n × n matrices. If we
+view a matrix A ∈ Mn(C) as a “long” column vector obtained by concatenating together its
+columns, we can define the Hermitian product of two matrices A, B ∈ Mn(C) as
+h
+A, Bi =
+nX
+i,j=1
+aij bij ,
+which can be conveniently written as
+h
+A, Bi = tr(A
+> B) = tr(B
+∗A).
+Since this can be viewed as the standard Hermitian product on C
+n
+2
+, it is a Hermitian product
+on Mn(C). The corresponding norm
+k
+Ak F =
+p tr(A∗A)
+is the Frobenius norm (see Section 9.2).
+If E is finite-dimensional and if ϕ: E × E → R is a sequilinear form on E, given any
+basis (e1, . . . , en) of E, we can write x =
+P
+n
+i=1 xiei and y =
+P
+n
+j=1 yjej
+, and we have
+ϕ(x, y) = ϕ
+
+nX
+i=1
+xiei
+,
+nX
+j=1
+yjej
+ =
+X
+n
+i,j=1
+xiyjϕ(ei
+, ej ).
+If we let G = (gij ) be the matrix given by gij = ϕ(ej
+, ei), and if x and y are the column
+vectors associated with (x1, . . . , xn) and (y1, . . . , yn), then we can write
+ϕ(x, y) = x
+> G
+> y = y
+∗Gx,
+where y corresponds to (y1
+, . . . , yn
+). As in Section 12.1, we are committing the slight abuse of
+notation of letting x denote both the vector x =
+P
+n
+i=1 xiei and the column vector associated
+with (x1, . . . , xn) (and similarly for y). The “correct” expression for ϕ(x, y) is
+ϕ(x, y) = y
+∗Gx = x
+> G
+> y.
+
+Observe that in ϕ(x, y) = y
+∗Gx, the matrix involved is the transpose of the matrix
+(ϕ(ei
+, ej )). The reason for this is that we want G to be positive definite when ϕ is
+positive definite, not G> .
+520 CHAPTER 14. HERMITIAN SPACES
+Furthermore, observe that ϕ is Hermitian iff G = G∗
+, and ϕ is positive definite iff the
+matrix G is positive definite, that is,
+(Gx)
+> x = x
+∗Gx > 0 for all x ∈ C
+n
+, x 6 = 0.
+Definition 14.5. The matrix G associated with a Hermitian product is called the Gram
+matrix of the Hermitian product with respect to the basis (e1, . . . , en).
+Conversely, if A is a Hermitian positive definite n × n matrix, it is easy to check that the
+Hermitian form
+h
+x, yi = y
+∗Ax
+is positive definite. If we make a change of basis from the basis (e1, . . . , en) to the basis
+(f1, . . . , fn), and if the change of basis matrix is P (where the jth column of P consists of
+the coordinates of fj over the basis (e1, . . . , en)), then with respect to coordinates x
+0 and y
+0
+over the basis (f1, . . . , fn), we have
+y
+∗Gx = (y
+0 )
+∗P
+∗GP x0 ,
+so the matrix of our inner product over the basis (f1, . . . , fn) is P
+∗GP. We summarize these
+facts in the following proposition.
+Proposition 14.2. Let E be a finite-dimensional vector space, and let (e1, . . . , en) be a basis
+of E.
+1. For any Hermitian inner product h−, −i on E, if G = (gij ) with gij = h ej
+, eii is the
+Gram matrix of the Hermitian product h−, −i w.r.t. the basis (e1, . . . , en), then G is
+Hermitian positive definite.
+2. For any change of basis matrix P, the Gram matrix of h−, −i with respect to the new
+basis is P
+∗GP.
+3. If A is any n × n Hermitian positive definite matrix, then
+h
+x, yi = y
+∗Ax
+is a Hermitian product on E.

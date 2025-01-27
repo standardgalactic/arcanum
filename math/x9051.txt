@@ -1,0 +1,1000 @@
+For example, for m = 3 we have the 8 × 13 matrix
+
+
+1 1 1
+1 1 1 1 1 1 0 0 0 0 0 0 1
+−1 −1 −1 0 0 0 0 0 0 0
+1 0 0 0 0 0 1 0 0 0 0 0 0
+0 1 0 0 0 0 0 1 0 0 0 0 0
+0 0 1 0 0 0 0 0 1 0 0 0 0
+0 0 0 1 0 0 0 0 0 1 0 0 0
+0 0 0 0 1 0 0 0 0 0 1 0 0
+0 0 0 0 0 1 0 0 0 0 0 1 0
+
+
+.
+We leave it as an exercise to show that A has rank 2m + 2. Recall that
+q =
+
+−
+y
+y
+
+and we also define the vector c (of dimension 2m + 2) as
+c =
+
+
+0
+Cν
+C
+m
+12m
+
+ .
+The constraints are given by the system of affine equations Ax = c, where
+x =
+￾ λ
+> µ
+> α
+> β
+> γ
+
+> .
+2092 CHAPTER 56. ν-SV REGRESSION
+Since there are 4m + 1 Lagrange multipliers (λ, µ, α, β, γ), we need to pad the 2m × 2m
+matrix P with zeros to make it into a (4m + 1) × (4m + 1) matrix
+Pa =
+
+P 02m,2m+1
+02m+1,2m 02m+1,2m+1
+.
+Similarly, we pad q with zeros to make it a vector qa of dimension 4m + 1,
+qa =
+
+02m
+q
++1
+.
+In order to solve our dual program, we apply ADMM to the quadractic functional
+1
+2
+x
+> Pax + qa
+> x,
+subject to the constraints
+Ax = c, x ≥ 0,
+with Pa, qa, A, b and x, as above.
+Since for an optimal solution with  > 0 we must have γ = 0 (from the KKT condi￾tions), we can solve the dual problem with the following set of constraints only involving the
+Lagrange multipliers (λ, µ, α, β),
+mX
+i=1
+λi −
+mX
+i=1
+µi = 0
+mX
+i=1
+λi +
+mX
+i=1
+µi = Cν
+λ + α =
+C
+m
+, µ + β =
+C
+m
+,
+which corresponds to the (2m + 2) × 4m A2 given by
+A2 =
+
+
+1
+>m −1
+>m 0
+>m 0
+>m
+1
+>m 1
+>m 0
+>m 0
+>m
+Im 0m,m Im 0m,m
+0m,m Im 0m,m Im
+
+
+.
+We leave it as an exercise to show that A2 has rank 2m + 2. We define the vector c2 (of
+dimension 2m + 2) as
+c2 = c =
+
+
+0
+Cν
+C
+m
+12m
+
+ .
+56.3. SOLVING ν-REGRESSION USING ADMM 2093
+Since there are 4m Lagrange multipliers (λ, µ, α, β), we need to pad the 2m × 2m matrix
+P with zeros to make it into a 4m × 4m matrix
+P2a =
+
+P 02m,2m
+02m,2m 02m,2m
+
+.
+Similarly, we pad q with zeros to make it a vector q2a of dimension 4m,
+q2a =
+
+02
+q
+m
+
+.
+We implemented the above methods in Matlab; see Appendix B, Section B.4. Choosing
+C = m is typically a good choice because then the values of λi and µj are not too small
+(C/m = 1). If C is chosen too small, we found that numerical instability increases drastically
+and very poor results are obtained. Increasing C tends to encourage sparsity.
+We ran our Matlab implementation of the above method on the set of 50 points generated
+at random by the program shown below with C = 50 and various values of ν starting with
+ν = 0.03:
+X13 = 15*randn(50,1);
+ww13 = 1;
+y13 = X13*ww13 + 10*randn(50,1) + 20;
+[~,~,~,~,~,~,~,~,w1] = runuregb(rho,0.03,X13,y13,50)
+Figure 56.11 shows the result of running the program with ν = 0.03. We have pf =
+0, qf = 0, pm = 2 and qm = 1. There are 47 points strictly inside the slab. The slab is large
+enough to contain all the data points, so none of them is considered an error.
+The next value of ν is ν = 0.21, see Figure 56.12. We have pf = 4, qf = 5, pm = 6 and
+qm = 6. There are 38 points strictly inside the slab.
+2094 CHAPTER 56. ν-SV REGRESSION
+-40 -30 -20 -10 0 10 20 30 40 50 60
+-40
+-20
+0
+20
+40
+60
+80
+Figure 56.11: Running ν-SV regression on a set of 50 points; ν = 0.03.
+-40 -30 -20 -10 0 10 20 30 40 50 60
+-40
+-20
+0
+20
+40
+60
+80
+Figure 56.12: Running ν-SV regression on a set of 50 points; ν = 0.21.
+The next value of ν is ν = 0.5, see Figure 56.13. We have pf = 12, qf = 12, pm = 13 and
+56.3. SOLVING ν-REGRESSION USING ADMM 2095
+qm = 14. There are 23 points strictly inside the slab.
+-40 -30 -20 -10 0 10 20 30 40 50 60
+-40
+-20
+0
+20
+40
+60
+80
+Figure 56.13: Running ν-SV regression on a set of 50 points; ν = 0.5.
+-40 -30 -20 -10 0 10 20 30 40 50 60
+-40
+-20
+0
+20
+40
+60
+80
+Figure 56.14: Running ν-SV regression on a set of 50 points; ν = 0.7.
+The next value of ν is ν = 0.7, see Figure 56.14. We have pf = 17, qf = 17, pm = 18 and
+2096 CHAPTER 56. ν-SV REGRESSION
+qm = 19. There are 13 points strictly inside the slab.
+The last value of ν is ν = 0.97, see Figure 56.15. We have pf = 23, qf = 24, pm = 25
+and qm = 25. There are 0 points strictly inside the slab. The slab is so narrow that it does
+not contain any of the points xi
+in it. Running the program with any value ν > 0.97 yields
+
+= 0.
+-40 -30 -20 -10 0 10 20 30 40 50 60
+-40
+-20
+0
+20
+40
+60
+80
+Figure 56.15: Running ν-SV regression on a set of 50 points; ν = 0.97.
+56.4 Kernel ν-SV Regression
+Since the formulae for w, b, and f(x),
+w =
+mX
+i=1
+(µi − λi)xi
+b =
+1
+2
+￾
+yi0 + yj0 − w
+> (xi0 + xj0
+)
+
+f(x) =
+mX
+i=1
+(µi − λi)x
+>i x + b,
+only involve inner products among the data points xi and x, and since the objective function
+we can kernelize the
+−G(α, µ) of the dual program also only involves inner products among the data points
+ν-SV regression method.
+xi
+,
+56.4. KERNEL ν-SV REGRESSION 2097
+As in the previous section, we assume that our data points {x1, . . . , xm} belong to a set X
+and we pretend that we have feature space (F,h−, −i) and a feature embedding map ϕ: X →
+F, but we only have access to the kernel function κ(xi
+, xj ) = h ϕ(xi), ϕ(xj )i . We wish to
+perform ν-SV regression in the feature space F on the data set {(ϕ(x1), y1), . . . ,(ϕ(xm), ym)}.
+Going over the previous computation, we see that the primal program is given by
+Program kernel ν-SV Regression:
+minimize
+1
+2
+h
+w, wi + C
+ ν +
+m
+1
+mX
+i=1
+(ξi + ξi
+0
+)
+
+subject to
+h
+w, ϕ(xi)i + b − yi ≤  + ξi
+, ξi ≥ 0 i = 1, . . . , m
+− hw, ϕ(xi)i − b + yi ≤  + ξi
+0
+, ξi
+0 ≥ 0 i = 1, . . . , m
+
+≥ 0,
+minimizing over the variables w, , b, ξ, and ξ
+0 .
+The Lagrangian is given by
+L(w, b, λ, µ, γ, ξ, ξ0 , , α, β) = 1
+2
+h
+w, wi +
+* w,
+mX
+i=1
+(λi − µi)ϕ(xi)
++
++ 
+ Cν − γ −
+mX
+i=1
+(λi + µi)
+! +
+mX
+i=1
+ξi
+
+m
+C
+− λi − αi
+
++
+mX
+i=1
+ξi
+0
+ m
+C
+− µi − βi
+ + b
+ 
+mX
+i=1
+(λi − µi)
+! −
+mX
+i=1
+(λi − µi)yi
+.
+Setting the gradient ∇Lw,,b,ξ,ξ0 of the Lagrangian to zero, we also obtain the equations
+w =
+mX
+i=1
+(µi − λi)ϕ(xi), (∗w)
+mX
+i=1
+λi −
+mX
+i=1
+µi = 0
+mX
+i=1
+λi +
+mX
+i=1
+µi + γ = Cν
+λ + α =
+C
+m
+, µ + β =
+C
+m
+.
+Using the above equations, we find that the dual function G is independent of the variables
+β, α, β, and we obtain the following dual program:
+2098 CHAPTER 56. ν-SV REGRESSION
+Dual Program kernel ν-SV Regression:
+minimize
+1
+2
+mX
+i,j=1
+(λi − µi)(λj − µj )κ(xi
+, xj ) +
+mX
+i=1
+(λi − µi)yi
+subject to
+mX
+i=1
+λi −
+mX
+i=1
+µi = 0
+mX
+i=1
+λi +
+mX
+i=1
+µi ≤ Cν
+0 ≤ λi ≤
+C
+m
+, 0 ≤ µi ≤
+C
+m
+, i = 1, . . . , m,
+minimizing over α and µ.
+Everything we said before also applies to the kernel ν-SV regression method, except that
+xi
+is replaced by ϕ(xi) and that the inner product h−, −i must be used, and we have the
+formulae
+w =
+mX
+i=1
+(µi − λi)ϕ(xi)
+b =
+1
+2
+ 
+yi0 + yj0 −
+mX
+i=1
+(µi − λi)(κ(xi
+, xi0
+) + κ(xi
+, xj0
+))!
+f(x) =
+mX
+i=1
+(µi − λi)κ(xi
+, x) + b,
+expressions that only involve κ.
+Remark: There is a variant of ν-SV regression obtained by setting ν = 0 and holding  > 0
+fixed. This method is called  -SV regression or (linear)  -insensitive SV regression. The
+corresponding optimization program is
+Program  -SV Regression:
+minimize
+1
+2
+w
+> w +
+m
+C
+mX
+i=1
+(ξi + ξi
+0
+)
+subject to
+w
+> xi + b − yi ≤  + ξi
+, ξi ≥ 0 i = 1, . . . , m
+− w
+> xi − b + yi ≤  + ξi
+0
+, ξi
+0 ≥ 0 i = 1, . . . , m,
+minimizing over the variables w, b, ξ, and ξ
+0 , holding  fixed.
+It is easy to see that the dual program is
+56.5. ν-REGRESSION VERSION 2; PENALIZING b 2099
+Dual Program  -SV Regression:
+minimize
+2
+1
+mX
+i,j=1
+(λi − µi)(λj − µj )x
+>i xj +
+mX
+i=1
+(λi − µi)yi + 
+mX
+i=1
+(λi + µi)
+subject to
+mX
+i=1
+λi −
+mX
+i=1
+µi = 0
+0 ≤ λi ≤
+C
+m
+, 0 ≤ µi ≤
+C
+m
+, i = 1, . . . , m,
+minimizing over α and µ.
+The constraint
+mX
+i=1
+λi +
+mX
+i=1
+µi ≤ Cν
+is gone but the extra term  P m
+i=1(λi + µi) has been added to the dual function, to prevent
+λi and µi
+from blowing up.
+There is an obvious kernelized version of  -SV regression. It is easy to show that ν-SV
+regression subsumes  -SV regression, in the sense that if ν-SV regression succeeds and yields
+w, b,  > 0, then  -SV regression with the same C and the same value of  also succeeds
+and returns the same pair (w, b). For more details on these methods, see Sch¨olkopf, Smola,
+Williamson, and Bartlett [147].
+Remark: The linear penalty function P m
+i=1(ξi+ξi
+0
+) can be replaced by the quadratic penalty
+function P m
+i=1(ξi
+2 + ξi
+0
+2
+); see Shawe–Taylor and Christianini [159] (Chapter 7). In this case,
+it is easy to see that for an optimal solution we must have ξi ≥ 0 and ξi
+0 ≥ 0, so we may
+omit the constraints ξi ≥ 0 and ξi
+0 ≥ 0. We must also have γ = 0 so we omit the variable γ
+as well. It can be shown that ξ = (m/2C)λ and ξ
+0 = (m/2C)µ. This problem is very similar
+to the Soft Margin SVM (SVMs4) discussed in Section 54.13.
+56.5 ν-Regression Version 2; Penalizing b
+Yet another variant of ν-SV regression is to add the term 2
+1
+b
+2
+to the objective function.
+We will see that solving the dual not only determines w but also b and  (provided a mild
+condition on ν). We wish to solve the following program:
+2100 CHAPTER 56. ν-SV REGRESSION
+Program ν-SV Regression Version 2
+minimize
+1
+2
+w
+> w +
+1
+2
+b
+2 + C
+ ν +
+m
+1
+mX
+i=1
+(ξi + ξi
+0
+)
+
+subject to
+w
+> xi + b − yi ≤  + ξi
+, ξi ≥ 0 i = 1, . . . , m
+− w
+> xi − b + yi ≤  + ξi
+0
+, ξi
+0 ≥ 0 i = 1, . . . , m,
+minimizing over the variables w, b, , ξ, and ξ
+0 . The constraint  ≥ 0 is omitted since the
+problem has no solution if  < 0.
+We leave it as an exercise to show that the new Lagrangian is
+L(w, b, λ, µ, ξ, ξ0 , , α, β) = 1
+2
+w
+> w + w
+>
+ 
+mX
+i=1
+(λi − µi)xi
+!
++ 
+ Cν −
+mX
+i=1
+(λi + µi)
+! +
+mX
+i=1
+ξi
+
+m
+C
+− λi − αi
+
++
+mX
+i=1
+ξi
+0
+ m
+C
+− µi − βi
+ +
+1
+2
+b
+2 + b
+ 
+mX
+i=1
+(λi − µi)
+! −
+mX
+i=1
+(λi − µi)yi
+.
+If we set the Laplacian ∇Lw,,b,ξ,ξ0 to zero we obtain the equations
+w =
+mX
+i=1
+(µi − λi)xi = X
+> (µ − λ) (∗w)
+Cν −
+mX
+i=1
+(λi + µi) = 0
+b +
+mX
+i=1
+(λi − µi) = 0
+C
+m
+− λ − α = 0,
+C
+m
+− µ − β = 0.
+We obtain the new equation
+b = −
+mX
+i=1
+(λi − µi) = −(1
+>mλ − 1
+>mµ) (∗b)
+determining b, which replaces the equation
+mX
+i=1
+λi −
+mX
+i=1
+µi = 0.
+56.5. ν-REGRESSION VERSION 2; PENALIZING b 2101
+Plugging back w from (∗w) and b from (∗b) into the Lagrangian we get
+G(λ, µ, α, β) = −
+1
+2
+￾
+λ
+> µ
+>
+ P
+
+µ
+λ
+
+− q
+>
+
+µ
+λ
+
++
+1
+2
+b
+2 − b
+2
+= −
+1
+2
+￾
+λ
+> µ
+>
+ P
+
+µ
+λ
+
+− q
+>
+
+µ
+λ
+
+−
+1
+2
+b
+2
+= −
+1
+2
+￾
+λ
+> µ
+>
+
+ P +
+
+1m1
+>m −1m1
+>m
+−1m1
+>m 1m1
+>m
+  µ
+λ
+
+− q
+>
+
+µ
+λ
+
+,
+with
+P =
+
+XX> −XX>
+−XX> XX>  =
+
+−
+K
+K K
+−K
+
+and
+q =
+
+−
+y
+y
+
+.
+The new dual program is
+Dual Program ν-SV Regression Version 2
+minimize
+1
+2
+￾
+λ
+> µ
+>
+
+ P +
+
+1m1
+>m −1m1
+>m
+−1m1
+>m 1m1
+>m
+  µ
+λ
+
++ q
+>
+
+µ
+λ
+
+subject to
+mX
+i=1
+λi +
+mX
+i=1
+µi = Cν
+0 ≤ λi ≤
+C
+m
+, 0 ≤ µi ≤
+C
+m
+, i = 1, . . . , m.
+Definition 56.1 and Definition 56.2 are unchanged. We have the following version of
+Proposition 56.2 showing that pf , qf , pm an qm have direct influence on the choice of ν.
+Proposition 56.7. (1) Let pf be the number of points xi such that λi = C/m, and let qf
+be the number of points xi such that µi = C/m. We have pf + qf ≤ mν.
+(2) Let pm be the number of points xi such that λi > 0, and let qm be the number of points
+xi such that µi > 0. We have pm + qm ≥ mν.
+(3) If pf ≥ 1 or qf ≥ 1, then ν ≥ 1/m.
+Proof. (1) Let Kλ and Kµ be the sets of indices corresponding to points failing the margin,
+Kλ = {i ∈ {1, . . . , m} | λi = C/m}
+Kµ = {i ∈ {1, . . . , m} | µi = C/m}.
+2102 CHAPTER 56. ν-SV REGRESSION
+By definition pf = |Kλ|, qf = |Kµ|. Since the equation
+mX
+i=1
+λi +
+mX
+j=1
+µj = Cν
+holds, by definition of Kλ and Kµ we have
+(pf + qf )
+C
+m
+=
+X
+i∈Kλ
+λi +
+X
+j∈Kµ
+µj ≤
+mX
+i=1
+λi +
+mX
+j=1
+µj = Cν,
+which implies that
+pf + qf ≤ mν.
+(2) Let Iλ>0 and Iµ>0 be the sets of indices
+Iλ>0 = {i ∈ {1, . . . , m} | λi > 0}
+Iµ>0 = {i ∈ {1, . . . , m} | µi > 0}.
+By definition pm = |Iλ>0|, qm = |Iµ>0|. We have
+mX
+i=1
+λi +
+mX
+j=1
+µj =
+X
+i∈Iλ>0
+λi +
+X
+j∈Iµ>0
+µj = Cν.
+Since λi ≤ C/m and µj ≤ C/m, we obtain
+Cν ≤ (pm + qm)
+C
+m
+,
+that is, pm + qm ≥ mν.
+(3) follows immediately from (1).
+Proposition 56.7 yields the following bounds on ν:
+pf + qf
+m
+≤ ν ≤
+pm + qm
+m
+.
+Again, the smaller ν is, the wider the  -slab is, and the larger ν is, the narrower the  -slab
+is.
+Remark: It can be shown that for any optimal solution with w 6 = 0 and  > 0, if the
+inequalities (pf + qf )/m < ν < 1 hold, then some point xi
+is a support vector. The proof is
+essentially Case 1b in the proof of Proposition 56.4. We leave the details as an exercise.
+56.5. ν-REGRESSION VERSION 2; PENALIZING b 2103
+The new dual program is solved using ADMM. The (2m+1)×4m matrix A3 corresponding
+to the equational constraints
+mX
+i=1
+λi +
+mX
+i=1
+µi = Cν
+λ + α =
+C
+m
+, µ + β =
+C
+m
+,
+is given by
+A3 =
+
+
+1
+Im
+>
+m 1
+>m 0
+>m 0
+>m
+0m,m Im 0m,m
+0m,m Im 0m,m Im
+
+ .
+We leave it as an exercise to show that A3 has rank 2m + 1. We define the vector c3 (of
+dimension 2m + 1) as
+c3 =
+
+Cν
+C
+m
+12m
+
+.
+Since there are 4m Lagrange multipliers (λ, µ, α, β), we need to pad the 2m × 2m matrix
+P3 = P +
+
+1m1
+>m −1m1
+>m
+−1m1
+>m 1m1
+>m
+
+with zeros to make it into a 4m × 4m matrix
+P3a =
+
+P3 02m,2m
+02m,2m 02m,2m
+
+.
+Similarly, we pad q with zeros to make it a vector q3a of dimension 4m,
+q3a =
+
+02
+q
+m
+
+.
+It remains to compute  . Ther are two methods to do this.
+The first method assumes the Standard Margin Hypothesis, which is that there is
+some i0 such that 0 < λi0 < C/m or there is some j0 such that 0 < µj0 < C/m; in other
+words, there is some support vector of type 1. By the complementary slackness conditions,
+ξi0 = 0 or ξj
+00 = 0, so we have either w
+> xi0 + b − yi0 =  or −w
+> xj0 − b + yj0 =  , which
+determines  .
+Due to numerical instability, when writing a computer program it is preferable to compute
+the lists of indices Iλ and Iµ given by
+Iλ = {i ∈ {1, . . . , m} | 0 < λi < C/m}
+Iµ = {j ∈ {1, . . . , m} | 0 < µj < C/m}.
+2104 CHAPTER 56. ν-SV REGRESSION
+Then it is easy to see that we can compute  using the following averaging formulae: if
+Iλ 6 = ∅, then
+
+= w
+>
+
+X
+i∈Iλ
+xi
+ /|Iλ| + b −
+
+X
+i∈Iλ
+yi
+ /|Iλ|,
+and if Iµ 6 = ∅, then
+
+= −w
+>
+
+X
+j∈Iµ
+xj
+ /|Iµ| − b +
+
+X
+i∈Iµ
+yi
+ /|Iµ|.
+The second method uses duality. Under a mild condition, expressing that the duality
+gap is zero, we can determine  in terms of λ, µ and b. This is because points xi that fail the
+margin, which means that λi = C/m or µi = C/m, are the only points for which ξi > 0 or
+ξi
+0 > 0. But in this case we have an active constraint
+w
+> xi + b − yi =  + ξi (∗ξ)
+or
+−w
+> xi − b + yi =  + ξi
+0
+, (∗ξ
+0 )
+so ξi and ξi
+0
+can be expressed in terms of w and b. Since the duality gap is zero for an optimal
+solution, the optimal value of the primal is equal to the optimal value of the dual. Using the
+fact that
+w = X
+> (µ − λ)
+b = −(1
+>mλ − 1
+>mµ) = ￾ λ
+> µ
+>
+
+
+−1m
+1m
+
+we obtain an expression for the optimal value of the primal. First we have
+1
+2
+w
+> w +
+1
+2
+b
+2 =
+1
+2
+(λ
+> − µ
+> )XX> (λ − µ) + 1
+2
+￾
+λ
+> µ
+>
+
+
+1m1
+>m −1m1
+>m
+−1m1
+>m 1m1
+>m
+  µ
+λ
+
+=
+1
+2
+￾
+λ
+> µ
+>
+
+ P +
+
+1m1
+>m −1m1
+>m
+−1m1
+>m 1m1
+>m

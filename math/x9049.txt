@@ -1,0 +1,1000 @@
+β+
+β−
+µ+
+µ−
+
+ − Kq>
+
+
+β+
+β−
+µ+
+µ−
+
+
+with
+P = Q + K
+
+
+0n,n 0n,n 0n,m 0n,m
+0n,n 0n,n 0n,m 0n,m
+0m,n 0m,n Im −Im
+0m,n 0m,n −Im Im
+
+
+=
+
+
+In −In −X> X>
+−In In X> −X>
+−X X XX> + KIm −XX> − KIm
+X −X −XX> − KIm XX> + KIm
+
+ ,
+and
+q =
+
+
+0n
+−
+0n
+y
+y
+
+ .
+The constraints are the equations
+β+ + β− =
+τ
+K
+1n
+1
+>mµ+ − 1
+>mµ− = 0,
+which correspond to the (n + 1) × 2(n + m) matrix
+A =
+
+In In 0n,m 0n,m
+0
+>n
+0
+>n 1
+>m −1
+>m
+
+and the right-hand side
+c =
+
+τ
+K
+1n
+0
+
+.
+Since K > 0, the dual of elastic net is equivalent to
+2064 CHAPTER 55. RIDGE REGRESSION, LASSO, ELASTIC NET
+Program (Dual Elastic Net):
+minimize
+1
+2
+￾
+β+
+> β−
+> µ
+>+ µ
+>−
+ P
+
+
+β+
+β−
+µ+
+µ−
+
+
++ q
+>
+
+
+β+
+β−
+µ+
+µ−
+
+
+subject to
+A
+
+
+β+
+β−
+µ+
+µ−
+
+ = c,
+β+, β− ∈ R
+n
++, µ+, µ− ∈ R
+m
++ .
+Once ξ = Kµ = K(µ+ − µ−) and w are determined by (∗w), we obtain b using the
+equation
+b1m = y − Xw − ξ,
+which as in Section 55.5 yields
+b = y −
+nX
+j=1
+Xjwj
+,
+where y is the mean of y and Xj
+is the mean of the jth column of X.
+We leave it as an easy exercise to show that A has rank n + 1. Then we can solve the
+above program using ADMM, and we have done so. This very similar to what is done in
+Section 56.3, and hence the details are left as an exercise.
+Observe that when τ = 0, the elastic net method reduces to ridge regression. As K tends
+to 0 the elastic net method tends to lasso, but K = 0 is not an allowable value since τ/0 is
+undefined. Anyway, if we get rid of the constraint
+β+ + β− =
+τ
+K
+1n
+the corresponding optimization program not does determine w. Experimenting with our
+program we found that convergence becomes very slow for K < 10−3
+. What we can do if K
+is small, say K < 10−3
+, is to run lasso. A nice way to “blend” ridge regression and lasso is
+to call the elastic net method with K = C(1 − θ) and τ = Cθ, where 0 ≤ θ < 1 and C > 0.
+Running the elastic net method on the data set (X14, y14) of Section 55.5 with K =
+τ = 0.5 shows absolutely no difference, but the reader should conduct more experiments
+to see how elastic net behaves as K and τ are varied (the best way to do this is to use θ
+as explained above). Here is an example involving a data set (X20, y20) where X20 is a
+200 × 30 matrix generated as follows:
+55.6. ELASTIC NET REGRESSION 2065
+X20 = randn(50,30);
+ww20 = [0; 2; 0; -3; 0; -4; 1; 0; 2; 0; 2; 3; 0; -5; 6; 0; 1; 2; 0; 10;
+0; 0; 3; 4; 5; 0; 0; -6; -8; 0];
+y20 = X20*ww20 + randn(50,1)*0.1 + 5;
+Running our program with K = 0.01 and K = 0.99, and then with K = 0.99 and
+K = 0.01, we get the following weight vectors (in the left column is the weight vector
+corresponding to K = 0.01 and K = 0.99):
+0.0254 0.2007
+1.9193 2.0055
+0.0766 0.0262
+-3.0014 -2.8008
+0.0512 0.0089
+-3.8815 -3.7670
+0.9591 0.8552
+-0.0086 -0.3243
+1.9576 1.9080
+-0.0077 -0.1041
+1.9881 2.0566
+2.9223 2.8346
+-0.0046 -0.0832
+-4.9989 -4.8332
+5.8640 5.4598
+-0.0207 -0.2141
+0.8285 0.8585
+1.9310 1.8559
+0.0046 0.0413
+9.9232 9.4836
+-0.0216 0.0303
+0.0453 -0.0193
+2.9384 3.0004
+4.0525 3.9753
+4.8723 4.6530
+0.0767 0.1192
+0.0132 -0.0203
+-5.9750 -5.7537
+-7.9764 -7.7594
+-0.0054 0.0528
+Generally, the numbers in the left column, which are more “lasso-like,” have clearer zeros
+and nonzero values closer to those of the weight vector ww20 that was used to create the
+data set. The value of b corresponding to the first call is b = 5.1372, and the value of b
+corresponding to the second call is b = 5.208.
+2066 CHAPTER 55. RIDGE REGRESSION, LASSO, ELASTIC NET
+We have observed that lasso seems to converge much faster than elastic net when K <
+10−3
+. For example, running the above data set with K = 10−3 and τ = 0.999 requires 140520
+steps to achieve primal and dual residuals less than 10−7
+, but lasso only takes 86 steps to
+achieve the same degree of convergence. We observed that the larger K is the faster is the
+convergence. This could be attributed to the fact that the matrix P becomes more “positive
+definite.” Another factor is that ADMM for lasso solves an n× n linear system, but ADMM
+for elastic net solves a 2(n + m) × 2(n + m) linear system. So even though elastic net does
+not suffer from some of the undesirable properties of ridge regression and lasso, it appears to
+have a slower convergence rate, in fact much slower when K is small (say K < 10−3
+). It also
+appears that elastic net may be too expensive a choice if m is much larger than n. Further
+investigations are required to gain a better understanding of the convergence issue.
+55.7 Summary
+The main concepts and results of this chapter are listed below:
+• Ridge regression.
+• Kernel ridge regression.
+• Kernel functions.
+• Lasso regression.
+• Elastic net regression.
+55.8 Problems
+Problem 55.1. Check the formula
+(X
+> X + KIn)
+−1X
+> = X
+> (XX> + KIm)
+−1
+,
+stated in Section 55.1.
+Problem 55.2. Implement the ridge regression method described in Section 55.1 in Matlab.
+Also implement ridge regression with intercept and compare solving Program (DRR3) and
+Program (RR60 ) using centered data.
+Problem 55.3. Implement the ridge regression with intercept method (RR3b) in Matlab
+and compare it with solving (RR60 ) using centered data.
+Problem 55.4. Verify that (lasso3) is equivalent to (lasso2) applied to the centered data
+yb = y − y1 and Xb = X − X.
+Problem 55.5. Verify the fomulae obtained for the kernel ridge regression program (KRR60 ).
+55.8. PROBLEMS 2067
+Problem 55.6. Implement in Matlab and test (lasso3) for various values of ρ and τ . Write
+a program to plot the coordinates of w as a function of τ . Compare the behavior of lasso
+with ridge regression (RR60 ), (RR3b) (b penalized), and with least squares.
+Problem 55.7. Check the details of the derivation of the dual of elastic net.
+Problem 55.8. Write a Matlab program, solving the dual of elastic net; use inspiration
+from Section 56.3. Run tests to compare the behavior of ridge regression, lasso, and elastic
+net.
+Problem 55.9. Prove that if an optimal solution exists for the elastic net method, then it
+is unique.
+Problem 55.10. Prove that the matrix
+P =
+
+
+In −In −X> X>
+−In In X> −X>
+−X X XX> + KIm −XX> − KIm
+X −X −XX> − KIm XX> + KIm
+
+
+is almost positive definite, in the sense that
+￾
+β+
+> β−
+> µ
+>+ µ
+>−
+ P
+
+
+β+
+β−
+µ+
+µ−
+
+
+= 0
+if and only if β+ = β− and µ+ = µ−, that is, β = 0 and µ = 0.
+2068 CHAPTER 55. RIDGE REGRESSION, LASSO, ELASTIC NET
+Chapter 56
+ν-SV Regression
+56.1 ν-SV Regression; Derivation of the Dual
+Let {(x1, y1), . . . ,(xm, ym)} be a set of observed data usually called a set of training data,
+with xi ∈ R
+n and yi ∈ R. As in Chapter 55, we form the m × n matrix X where the
+row vectors x
+>i
+are the rows of X. Our goal is to learn an affine function f of the form
+f(x) = x
+> w + b that fits the set of training data, but does not penalize errors below some
+given  ≥ 0. Geometrically, we view the pairs (xi
+, yi) are points in R
+n+1, and we try to fit a
+hyperplane Hw,b of equation
+(w
+> − 1)  x
+z
+
++ b = w
+> x − z + b = 0
+that best fits the set of points (xi
+, yi) (where (x, z) ∈ R
+n+1). We seek an  > 0 such that
+most points (xi
+, yi) are inside the slab (or tube) of width 2 bounded by the hyperplane
+Hw,b− of equation
+(w
+> − 1)  x
+z
+
++ b −  = w
+> x − z + b −  = 0
+and the hyperplane Hw,b+ of equation
+(w
+> − 1)  x
+z
+
++ b +  = w
+> x − z + b +  = 0.
+Observe that the hyperplanes Hw,b− , Hw,b and Hw,b+ intersect the z-axis when x = 0 for
+the values (b − , b, b +  ). Since  ≥ 0, the hyperplane Hw,b− is below the hyperplane Hw,b
+which is below the hyperplane Hw,b+ . We refer to the lower hyperplane Hw,b− as the blue
+margin, to the upper hyperplane Hw,b+ as the red margin, and to the hyperplane Hw,b as
+the best fit hyperplane. Also note that since the term −z appears in the equations of these
+hyperplanes, points for which w
+> x − z + b ≤ 0 are above the hyperplane Hw,b, and points
+for which w
+> x − z + b ≥ 0 are below the hyperplane Hw,b (and similarly for Hw,b− and
+2069
+2070 CHAPTER 56. ν-SV REGRESSION
+Hb+ ). The region bounded by the hyperplanes Hw,b− and Hb+ (which contains the best fit
+hyperplane Hw,b) is called the  -slab.
+We also allow errors by allowing the point (xi
+, yi) to be outside of the  -slab but in the
+slab between the hyperplane Hw,b− −ξi
+of equation
+(w
+> − 1)  x
+z
+
++ b −  − ξi = w
+> x − z + b −  − ξi = 0
+for some ξi > 0 (which is below the blue margin hyperplane Hw,b− ) and the hyperplane
+Hw,b+ +ξ
+0i
+of equation
+(w
+> − 1)  x
+z
+
++ b +  + ξi
+0 = w
+> xi − z + b +  + ξi
+0 = 0
+for some ξi
+0 > 0 (which is above the red margin hyperplane Hw,b+ ),
+so that w
+> xi − yi + b −  − ξi ≤ 0 and w
+> xi − yi + b +  + ξi
+0 ≥ 0, that is,
+f(x) − yi = w
+> xi + b − yi ≤  + ξi
+,
+−(f(x) − yi) = −w
+> xi − b + yi ≤  + ξi
+0
+.
+Our goal is to minimize  and the errors ξi and ξi
+0
+. See Figure 56.1. The trade off between
+є
+є
+ξ
+ξi
+i
+‘
+Figure 56.1: The  -slab around the graph of the best fit affine function f(x) = x
+> w + b.
+the size of  and the size of the slack variables ξi and ξi
+0
+is achieved by using two constants
+ν ≥ 0 and C > 0. The method of ν-support vector regression, for short ν-SV regression, is
+specified by the following minimization problem:
+w x -z + b + є = 0
+T
+T
+T
+w x -z + b - є = 0
+w x -z + b = 0
+56.1. ν-SV REGRESSION; DERIVATION OF THE DUAL 2071
+Program ν-SV Regression:
+minimize
+1
+2
+w
+> w + C
+ ν +
+m
+1
+mX
+i=1
+(ξi + ξi
+0
+)
+
+subject to
+w
+> xi + b − yi ≤  + ξi
+, ξi ≥ 0 i = 1, . . . , m
+− w
+> xi − b + yi ≤  + ξi
+0
+, ξi
+0 ≥ 0 i = 1, . . . , m
+
+≥ 0,
+minimizing over the variables w, b, , ξ, and ξ
+0 . The constraints are affine. The problem is to
+minimize  and the errors ξi
+, ξi
+0
+so that the ` 1
+-error is “squeezed down” to zero as much as
+possible, in the sense that the right-hand side of the inequality
+mX
+i=1
+|yi − x
+>i w − b| ≤ m +
+mX
+i=1
+ξi +
+mX
+i=1
+ξi
+0
+is as small as possible. As shown by Figure 56.2, the region associated with the constraint
+w
+> xi − z + b ≤  contains the  -slab. Similarly, as illustrated by Figure 56.3, the region
+associated with the constraint w
+> xi − z + b ≥ − , equivalently −w
+> xi + z − b ≤  , also
+contains the  -slab.
+w x -z + b > T є
+ξi
+ξi
+w x -z + b < T є
+Figure 56.2: The two blue half spaces associated with the hyperplane w
+> xi − z + b =  .
+Observe that if we require  = 0, then the problem is equivalent to minimizing
+k
+y − Xw − b1k 1 +
+1
+2
+w
+> w.
+z = wTx + b
+w x -z + b + є = 0
+w x -z + b - є = 0
+w x -z + b - є = 0
+T
+T
+T
+2072 CHAPTER 56. ν-SV REGRESSION
+ξ i
+w x - z + b > - T є
+ξ i
+‘
+‘
+w x - z + b < - T є
+Figure 56.3: The two red half spaces associated with the hyperplane w
+> xi − z + b = − .
+Thus it appears that the above problem is the version of Program (RR3) (see Section 55.2)
+in which the ` 2
+-norm of y−Xw−b1 is replaced by its ` 1
+-norm. This a sort of “dual” of lasso
+(see Section 55.5) where (1/2)w
+> w = (1/2) k wk
+2
+2
+is replaced by τ k wk 1
+, and k y − Xw − b1k 1
+is replaced by k y − Xw − b1k
+2
+2
+.
+Proposition 56.1. For any optimal solution, the equations
+ξiξi
+0 = 0, i = 1, . . . , m (ξξ0 )
+hold. If  > 0, then the equations
+w
+> xi + b − yi =  + ξi
+−w
+> xi − b + yi =  + ξi
+0
+cannot hold simultaneously.
+Proof. For an optimal solution we have
+− − ξi
+0 ≤ w
+> xi + b − yi ≤  + ξi
+.
+If w
+> xi + b − yi ≥ 0, then ξi
+0 = 0 since the inequality
+− − ξi
+0 ≤ w
+> xi + b − yi
+is trivially satisfied (because , ξi
+0 ≥ 0), and if w
+> xi + b − yi ≤ 0, then similarly ξi = 0. See
+Figure 56.4.
+w x -z + b + є = 0
+w x -z + b - є = 0
+w x -z + b + є = 0
+T
+T
+T
+56.1. ν-SV REGRESSION; DERIVATION OF THE DUAL 2073
+w x -z +b < 0 T
+ξi
+‘
+ξi
+ξ i
+ξi
+w x -z + b > 0 T
+‘
+Figure 56.4: The two pink open half spaces associated with the hyperplane w
+> xi −z +b = 0.
+Note, ξi > 0 is outside of the half space w
+> xi − z + b −  < 0, and ξi
+0 > 0 is outside of the
+half space w
+> xi − z + b +  > 0.
+Observe that the equations
+w
+> xi + b − yi =  + ξi
+−w
+> xi − b + yi =  + ξi
+0
+can only hold simultaneously if
+
++ ξi = − − ξ
+0 ,
+that is,
+2 + ξi + ξi
+0 = 0,
+and since , ξi
+, ξi
+0 ≥ 0, this can happen only if  = ξi = ξi
+0 = 0, and then
+w
+> xi + b = yi
+.
+In particular, if  > 0, then the equations
+w
+> xi + b − yi =  + ξi
+−w
+> xi − b + yi =  + ξi
+0
+cannot hold simultaneously.
+z = w x + b
+z = wTx + b
+T
+w x -z + b + є = 0
+w x -z + b - є = 0
+w x -z + b - є = 0
+w x -z + b + є = 0
+T
+T
+T
+T
+2074 CHAPTER 56. ν-SV REGRESSION
+Observe that if ν > 1, then an optimal solution of the above program must yield  = 0.
+Indeed, if  > 0, we can reduce it by a small amount δ > 0 and increase ξi + ξi
+0 by δ to still
+satisfy the constraints, but the objective function changes by the amount −νδ + δ, which is
+negative since ν > 1, so  > 0 is not optimal.
+Driving  to zero is not the intended goal, because typically the data is not noise free so
+very few pairs (xi
+, yi) will satisfy the equation w
+> xi + b = yi
+, and then many pairs (xi
+, yi)
+will correspond to an error (ξi > 0 or ξi
+0 > 0). Thus, typically we assume that 0 < ν ≤ 1.
+To construct the Lagrangian, we assign Lagrange multipliers λi ≥ 0 to the constraints
+w
+> xi +b−yi ≤  +ξi
+, Lagrange multipliers µi ≥ 0 to the constraints −w
+> xi −b+yi ≤  +ξi
+0
+,
+Lagrange multipliers αi ≥ 0 to the constraints ξi ≥ 0, Lagrange multipliers βi ≥ 0 to
+the constraints ξi
+0 ≥ 0, and the Lagrange multiplier γ ≥ 0 to the constraint  ≥ 0. The
+Lagrangian is
+L(w, b, λ, µ, γ, ξ, ξ0 , , α, β) = 1
+2
+w
+> w + C
+ ν +
+m
+1
+mX
+i=1
+(ξi + ξi
+0
+)
+ − γ −
+mX
+i=1
+(αiξi + βiξi
+0
+)
++
+mX
+i=1
+λi(w
+> xi + b − yi −  − ξi) +
+mX
+i=1
+µi(−w
+> xi − b + yi −  − ξi
+0
+).
+The Lagrangian can also be written as
+L(w, b, λ, µ, γ, ξ, ξ0 , , α, β) = 1
+2
+w
+> w + w
+>
+ 
+mX
+i=1
+(λi − µi)xi
+! + 
+ Cν − γ −
+mX
+i=1
+(λi + µi)
+!
++
+mX
+i=1
+ξi
+
+m
+C
+− λi − αi
+ +
+mX
+i=1
+ξi
+0
+ m
+C
+− µi − βi
+ + b
+ 
+mX
+i=1
+(λi − µi)
+! −
+mX
+i=1
+(λi − µi)yi
+.
+To find the dual function G(λ, µ, γ, α, β), we minimize L(w, b, λ, µ, γ, ξ, ξ0 , , α, β) with
+respect to the primal variables w, , b, ξ and ξ
+0 . Observe that the Lagrangian is convex, and
+since (w, , ξ, ξ0 , b) ∈ R
+n × R × R
+m × R
+m × R, a convex open set, by Theorem 40.13, the
+Lagrangian has a minimum iff ∇Lw,,b,ξ,ξ0 = 0, so we compute the gradient ∇Lw,,b,ξ,ξ0 . We
+obtain
+∇Lw,,b,ξ,ξ0 =
+
+
+w +
+P
+m
+i=1(λi − µi)xi
+Cν − γ −
+P
+m
+i=1(λi + µi)
+P
+m
+i=1(λi − µi)
+C
+m − λ − α
+C
+m − µ − β
+
+
+,
+where
+
+m
+C
+− λ − α
+
+i
+=
+C
+m
+− λi − αi
+, and 
+m
+C
+− µ − β
+
+i
+=
+C
+m
+− µi − βi
+.
+56.1. ν-SV REGRESSION; DERIVATION OF THE DUAL 2075
+Consequently, if we set ∇Lw,,b,ξ,ξ0 = 0, we obtain the equations
+w =
+mX
+i=1
+(µi − λi)xi = X
+> (µ − λ), (∗w)
+Cν − γ −
+mX
+i=1
+(λi + µi) = 0
+mX
+i=1
+(λi − µi) = 0
+C
+m
+− λ − α = 0,
+C
+m
+− µ − β = 0.
+Substituting the above equations in the second expression for the Lagrangian, we find
+that the dual function G is independent of the variables γ, α, β and is given by
+G(λ, µ) = −
+2
+1
+mX
+i,j=1
+(λi − µi)(λj − µj )x
+>i xj −
+mX
+i=1
+(λi − µi)yi
+if
+mX
+i=1
+λi −
+mX
+i=1
+µi = 0
+mX
+i=1
+λi +
+mX
+i=1
+µi + γ = Cν
+λ + α =
+C
+m
+, µ + β =
+C
+m
+,
+and −∞ otherwise.
+The dual program is obtained by maximizing G(α, µ) or equivalently by minimizing
+−
+the following dual program:
+G(α, µ), over α, µ ∈ R
+m
++ . Taking into account the fact that α, β ≥ 0 and γ ≥ 0, we obtain
+Dual Program for ν-SV Regression:
+minimize
+1
+2
+mX
+i,j=1
+(λi − µi)(λj − µj )x
+>i xj +
+mX
+i=1
+(λi − µi)yi
+subject to
+mX
+i=1
+λi −
+mX
+i=1
+µi = 0
+mX
+i=1
+λi +
+mX
+i=1
+µi ≤ Cν
+0 ≤ λi ≤
+C
+m
+, 0 ≤ µi ≤
+C
+m
+, i = 1, . . . , m,
+2076 CHAPTER 56. ν-SV REGRESSION
+minimizing over α and µ.
+Solving the dual program (for example, using ADMM, see Section 56.3) does not de￾termine b, and for this we use the KKT conditions. The KKT conditions (for the primal
+program) are
+λi(w
+> xi + b − yi −  − ξi) = 0, i = 1, . . . , m
+µi(−w
+> xi − b + yi −  − ξi
+0
+) = 0, i = 1, . . . , m
+γ = 0
+αiξi = 0, i = 1, . . . , m
+βiξi
+0 = 0, i = 1, . . . , m.
+If  > 0, since the equations
+w
+> xi + b − yi =  + ξi
+−w
+> xi − b + yi =  + ξi
+0
+cannot hold simultaneously, we must have
+λiµi = 0, i = 1, . . . , m. (λµ)
+From the equations
+λi + αi =
+C
+m
+, µi + βi =
+C
+m
+, αiξi = 0, βiξi
+0 = 0,
+we get the equations
+
+m
+C
+− λi
+ ξi = 0,
+
+m
+C
+− µi
+ ξi
+0 = 0, i = 1, . . . , m. (∗)
+Suppose we have optimal solution with  > 0. Using the above equations and the fact
+that λiµi = 0 we obtain the following classification of the points xi
+in terms of λ and µ.
+(1) 0 < λi < C/m. By (∗), ξi = 0, so the equation w
+> xi + b − yi =  holds and xi
+is on
+the blue margin hyperplane Hw,b− . See Figure 56.5.
+(2) 0 < µi < C/m. By (∗), ξi
+0 = 0, so the equation −w
+> xi − b + yi =  holds and xi
+is on
+the red margin hyperplane Hw,b+ . See Figure 56.5.
+(3) λi = C/m. By (λµ), µi = 0, and by (∗), ξi
+0 = 0. Thus we have
+w
+> xi + b − yi =  + ξi
+−w
+> xi − b + yi ≤ .
+The second inequality is equivalent to − ≤ w
+> xi + b − yi
+, and since  > 0 and ξi ≥ 0
+it is trivially satisfied. If ξi = 0, then xi
+is on the blue margin Hw,b− , else xi
+is an
+error and it lies in the open half-space bounded by the blue margin Hw,b− and not
+containing the best fit hyperplane Hw,b (it is outside of the  -slab). See Figure 56.5.
+56.1. ν-SV REGRESSION; DERIVATION OF THE DUAL 2077
+(4) µi = C/m. By (λµ), λi = 0, and by (∗), ξi = 0. Thus we have
+w
+> xi + b − yi ≤ 
+−w
+> xi − b + yi =  + ξi
+0
+.
+The second equation is equivalent to w
+> xi + b − yi = − − ξi
+0
+, and since  > 0 and
+ξi
+0 ≥ 0, the first inequality it is trivially satisfied. If ξi
+0 = 0, then xi
+is on the red margin
+Hw,b+ , else xi
+is an error and it lies in the open half-space bounded by the red margin
+Hw,b− and not containing the best fit hyperplane Hw,b (it is outside of the  -slab). See
+Figure 56.5.
+(5) λi = 0 and µi = 0. By (∗), ξi = 0 and ξi
+0 = 0, so we have
+w
+> xi + b − yi ≤ 
+−w
+> xi − b + yi ≤ ,
+that is
+− ≤ w
+> xi + b − yi ≤ .
+If w
+> xi + b − yi =  , then xi
+is on the blue margin, and if w
+> xi + b − yi = − , then xi
+is on the red margin. If − < w> xi + b − yi < , then xi
+is strictly inside of the  -slab
+(bounded by the blue margin and the red margin). See Figure 56.6.
+The above classification shows that the point xi
+is an error iff λi = C/m and ξi > 0 or
+or µi = C/m and ξi
+0 > 0.
+As in the case of SVM (see Section 50.6) we define support vectors as follows.
+Definition 56.1. A vector xi such that either w
+> xi + b − yi =  (which implies ξi = 0) or
+−
+that 0
+w
+> xi
+< λ
+−b+
+i < C/m
+yi =  (which implies
+and support vectors
+ξi
+0 = 0) is called a
+xj such that 0
+support vector
+< µj < C/m
+. Support vectors
+are support vectors
+xi such
+of type 1 . Support vectors of type 1 play a special role so we denote the sets of indices
+associated with them by
+Iλ = {i ∈ {1, . . . , m} | 0 < λi < C/m}
+Iµ = {j ∈ {1, . . . , m} | 0 < µj < C/m}.
+We denote their cardinalities by numsvl1 = |Iλ| and numsvm1 = |Iµ|. Support vectors xi
+such that λi = C/m and support vectors xj such that µj = C/m are support vectors of type
+2 . Support vectors for which λi = µi = 0 are called exceptional support vectors.
+The following definition also gives a useful classification criterion.
+Definition 56.2. A point xi such that either λi = C/m or µi = C/m is said to fail the
+margin. The sets of indices associated with the vectors failing the margin are denoted by
+Kλ = {i ∈ {1, . . . , m} | λi = C/m}
+Kµ = {j ∈ {1, . . . , m} | µj = C/m}.
+2078 CHAPTER 56. ν-SV REGRESSION
+0 < < C/m λi
+(x , y )
+ 
+i i
+Case (1)
+λi = C/m
+ξ
+i
+= 0
+Case (3)
+λi = C/m
+ξ
+i
+> 0
+ 
+(x , y ) i i
+ξ
+i
+ 
+(x , y ) i i
+w x -z +b - T є = 0
+w x -z +b + T є = 0 w x -z +b + T є = 0
+w x -z + b - T є = 0
+w x -z + b - T є = 0
+w x -z + b + T є = 0
+(x , y ) i i
+ 
+ 
+(x , y ) i i
+ξ
+i
+i = C/m
+ξ
+i
+μ
+i = C/m
+ξ
+i
+> 0
+μ = 0
+Case (4)
+w x -z + b - є = 0
+w x -z +b + T є = 0
+w x -z +b + T є = 0
+T
+w x -z + b - T є = 0
+‘ ‘
+‘
+(x , y ) i
+ 
+i
+0 < < C/m μ i
+Case (2)
+w x -z +b - T є = 0
+w x -z + b + T є = 0
+Figure 56.5: Classifying xi
+in terms of nonzero λ and µ.
+We denote their cardinalities by pf = |Kλ| and qf = |Kµ|.

@@ -1,0 +1,1000 @@
+the ` 2
+-norm replaced by the ` 1
+-norm.
+This method was first proposed by Tibshirani around 1996, under the name lasso, which
+stands for “least absolute selection and shrinkage operator.” This method is also known as
+`
+1
+-regularized regression, but this is not as cute as “lasso,” which is used predominantly.
+Given a set of training data {(x1, y1), . . . ,(xm, ym)}, with xi ∈ R
+n and yi ∈ R, if X is the
+m × n matrix
+X =
+
+
+x
+>1
+.
+.
+x
+.
+>
+m
+
+ ,
+in which the row vectors x
+>i
+are the rows of X, then lasso regression is the following opti￾mization problem
+Program (lasso1):
+minimize
+1
+2
+ξ
+> ξ + τ k wk 1
+subject to
+y − Xw = ξ,
+minimizing over ξ and w, where τ > 0 is some constant determining the influence of the
+regularizing term k wk 1
+.
+The difficulty with the regularizing term k wk 1 = |w1| + · · · + |wn| is that the map w 7→
+k
+wk 1
+is not differentiable for all w. This difficulty can be overcome by using subgradients,
+but the dual of the above program can also be obtained in an elementary fashion by using
+a trick that we already used, which is that if x ∈ R, then
+|x| = max{x, −x}.
+Using this trick, by introducing a vector  ∈ R
+n of nonnegative variables, we can rewrite
+lasso minimization as follows:
+55.4. LASSO REGRESSION (` 1
+-REGULARIZED REGRESSION) 2051
+Program lasso regularization (lasso2):
+minimize
+1
+2
+ξ
+> ξ + τ1
+>n
+
+subject to
+y − Xw = ξ
+w ≤ 
+− w ≤ .
+minimizing over ξ, w and  , with y, ξ ∈ R
+m, and w, , 1n ∈ R
+n
+.
+The constraints w ≤  and −w ≤  are equivalent to |wi
+| ≤  i
+for i = 1, . . . , n, so for an
+optimal solution we must have  ≥ 0 and |wi
+| =  i
+, that is, k wk 1 =  1 + · · · +  n.
+The Lagrangian L(ξ, w, , λ, α+, α−) is given by
+L(ξ, w, , λ, α+, α−) = 1
+2
+ξ
+> ξ + τ1
+>n
+ + λ
+> (y − Xw − ξ)
++ α+
+>(w −  ) + α−
+>(−w −  )
+=
+1
+2
+ξ
+> ξ − ξ
+> λ + λ
+> y
++ 
+> (τ1n − α+ − α−) + w
+> (α+ − α− − X
+> λ),
+with λ ∈ R
+m and α+, α− ∈ R
+n
++. Since the objective function is convex and the constraints
+are affine (and thus qualified), the Lagrangian L has a minimum with respect to the primal
+variables, ξ, w,  iff ∇Lξ,w, = 0. Since the gradient ∇Lξ,w, is given by
+∇Lξ,w, =
+
+
+ξ − λ
+α+ − α− − X> λ
+τ1n − α+ − α−
+
+ ,
+we obtain the equations
+ξ = λ
+α+ − α− = X
+> λ
+α+ + α− = τ1n.
+Using these equations, the dual function G(λ, α+, α−) = minξ,w, L is given by
+G(λ, α+, α−) = 1
+2
+ξ
+> ξ − ξ
+> λ + λ
+> y =
+1
+2
+λ
+> λ − λ
+> λ + λ
+> y
+= −
+1
+2
+λ
+> λ + λ
+> y = −
+1
+2
+￾
+k
+y − λk
+2
+2 − kyk
+2
+2
+
+,
+so
+G(λ, α+, α−) = −
+1
+2
+￾
+k
+y − λk
+2
+2 − kyk
+2
+2
+
+.
+2052 CHAPTER 55. RIDGE REGRESSION, LASSO, ELASTIC NET
+Since α+, α− ≥ 0, for any i ∈ {1, . . . , n} the minimum of (α+)i − (α−)i
+is −τ , and the
+maximum is τ . If we recall that for any z ∈ R
+n
+,
+k
+zk ∞ = max
+1≤i≤n
+|zi
+|,
+it follows that the constraints
+α+ + α− = τ1n
+X
+> λ = α+ − α−
+are equivalent to
+
+
+X
+> λ
+ ∞
+≤ τ.
+The above is equivalent to the 2n constraints
+−τ ≤ (X
+> λ)i ≤ τ, 1 ≤ i ≤ n.
+Therefore, the dual lasso program is given by
+maximize −
+1
+2
+￾
+k
+y − λk
+2
+2 − kyk
+2
+2
+
+subject to
+
+
+X
+> λ
+ ∞
+≤ τ,
+which (since k yk
+2
+2
+is a constant term) is equivalent to
+Program (Dlasso2):
+minimize
+1
+2
+k
+y − λk
+2
+2
+subject to
+
+
+X
+> λ
+ ∞
+≤ τ,
+minimizing over λ ∈ R
+m.
+One way to solve lasso regression is to use the dual program to find λ = ξ, and then to
+use linear programming to find w by solving the linear program arising from the lasso primal
+by holding ξ constant. The best way is to use ADMM as explained in Section 52.8(4). There
+are also a number of variations of gradient descent; see Hastie, Tibshirani, and Wainwright
+[89].
+In theory, if we know the support of w and the signs of its components, then w is
+determined as we now explain.
+In view of the constraint y − Xw = ξ and the fact that for an optimal solution we must
+have ξ = λ, the following condition must hold:
+
+
+X
+> (Xw − y)
+ ∞
+≤ τ. (∗)
+55.4. LASSO REGRESSION (` 1
+-REGULARIZED REGRESSION) 2053
+Also observe that for an optimal solution, we have
+1
+2
+k
+y − Xwk 2
+2 + w
+> X
+> (y − Xw) = 1
+2
+k
+yk
+2 − w
+> X
+> y +
+1
+2
+w
+> X
+> Xw + w
+> X
+> y − w
+> X
+> Xw
+=
+1
+2
+￾
+k
+yk
+2
+2 − kXwk 2
+2
+
+=
+1
+2
+￾
+k
+yk
+2
+2 − ky − λk
+2
+2
+ = G(λ).
+Since the objective function is convex and the constaints are qualified, by Theorem
+50.19(2) the duality gap is zero, so for optimal solutions of the primal and the dual, G(λ) =
+L(ξ, w, ), that is
+1
+2
+k
+y − Xwk 2
+2 + w
+> X
+> (y − Xw) = 1
+2
+k
+ξk
+2
+2 + τ k wk 1 =
+1
+2
+k
+y − Xwk 2
+2 + τ k wk 1
+,
+which yields the equation
+w
+> X
+> (y − Xw) = τ k wk 1
+. (∗∗1)
+The above is the inner product of w and X> (y − Xw), so whenever wi 6 = 0, since
+k
+wk 1 = |w1| + · · · + |wn|, in view of (∗), we must have (X> (y − Xw))i = τ sgn(wi). If
+S = {i ∈ {1, . . . , n} | wi 6 = 0}, (†)
+if XS denotes the matrix consisting of the columns of X indexed by S, and if wS denotes
+the vector consisting of the nonzero components of w, then we have
+XS
+>
+(y − XSwS) = τ sgn(wS). (∗∗2)
+We also have
+
+
+XS
+>
+(y − XSwS)
+ ∞
+≤ τ, (∗∗3)
+where S is the complement of S.
+Equation (∗∗2) yields
+XS
+> XSwS = XS
+>
+y − τ sgn(wS),
+so if XS
+> XS is invertible (which will be the case if the columns of X are linearly independent),
+we get
+wS = (XS
+> XS)
+−1
+(XS
+>
+y − τ sgn(wS)). (∗∗4)
+In theory, if we know the support of w and the signs of its components, then wS is
+determined, but in practice this is useless since the problem is to find the support and the
+sign of the solution.
+2054 CHAPTER 55. RIDGE REGRESSION, LASSO, ELASTIC NET
+55.5 Lasso Regression; Learning an Affine Function
+In the preceding section we made the simplifying assumption that we were trying to learn
+a linear function f(x) = x
+> w. To learn an affine function f(x) = x
+> w + b, we solve the
+following optimization problem
+Program (lasso3):
+minimize
+1
+2
+ξ
+> ξ + τ1
+>n
+
+subject to
+y − Xw − b1m = ξ
+w ≤ 
+− w ≤ .
+Observe that as in the case of ridge regression, minimization is performed over ξ, w,  and
+b, but b is not penalized in the objective function.
+The Lagrangian associated with this optimization problem is
+L(ξ, w, , b, λ, α+, α−) = 1
+2
+ξ
+> ξ − ξ
+> λ + λ
+> y − b1
+>mλ
++ 
+> (τ1n − α+ − α−) + w
+> (α+ − α− − X
+> λ),
+so by setting the gradient ∇Lξ,w,,b to zero we obtain the equations
+ξ = λ
+α+ − α− = X
+> λ
+α+ + α− = τ1n
+1
+>mλ = 0.
+Using these equations, we find that the dual function is also given by
+G(λ, α+, α−) = −
+1
+2
+￾
+k
+y − λk
+2
+2 − kyk
+2
+2
+
+,
+and the dual lasso program is given by
+maximize −
+1
+2
+￾
+k
+y − λk
+2
+2 − kyk
+2
+2
+
+subject to
+
+
+X
+> λ
+ ∞
+≤ τ
+1
+>mλ = 0,
+which is equivalent to
+55.5. LASSO REGRESSION; LEARNING AN AFFINE FUNCTION 2055
+Program (Dlasso3):
+minimize
+1
+2
+k
+y − λk
+2
+2
+subject to
+
+
+X
+> λ
+ ∞
+≤ τ
+1
+>mλ = 0,
+minimizing over λ ∈ R
+m.
+Once λ = ξ and w are determined, we obtain b using the equation
+b1m = y − Xw − ξ,
+and since 1
+>m1m = m and 1
+>mξ = 1
+>mλ = 0, the above yields
+b =
+1
+m
+1
+>my −
+1
+m
+1
+>mXw −
+1
+m
+1
+>mξ = y −
+nX
+j=1
+Xjwj
+,
+where y is the mean of y and Xj
+is the mean of the jth column of X.
+The equation
+b = b b + y −
+nX
+j=1
+Xjwj = b b + y − (X1
+· · · Xn)w,
+can be used as in ridge regression, (see Section 55.2), to show that the Program (lasso3) is
+equivalent to applying lasso regression (lasso2) without an intercept term to the centered
+data, by replacing y by yb = y − y1 and X by b X = X − X. Then b is given by
+b = y − (X1
+· · · Xn)w, b
+where wb is the solution given by (lasso2). This is the method described by Hastie, Tibshirani,
+and Wainwright [89] (Section 2.2).
+Example 55.3. We can create a data set (X, y) where X a 100×5 matrix and y is a 100×1
+vector using the following Matlab program in which the command randn creates an array of
+normally distributed numbers.
+X = randn(100,5);
+ww = [0; 2; 0; -3; 0];
+y = X*ww + randn(100,1)*0.1;
+The purpose of the third line is to add some small noise to the “output” X ∗ ww. The first
+five rows of X are
+
+
+−1.1658 −0.0679 −1.6118 0.3199 0.4400
+−1.1480 −0.1952 −0.0245 −0.5583 −0.6169
+0.1049 −0.2176 −1.9488 −0.3114 0.2748
+0
+2
+.
+.
+7223
+5855 0
+−0
+.0230 0
+.3031 1.
+.
+0205
+8617
+−
+−
+0
+1
+.
+.
+5700 0
+0257 0
+.
+.
+6011
+0923
+
+
+,
+2056 CHAPTER 55. RIDGE REGRESSION, LASSO, ELASTIC NET
+and the first five rows of y are
+y =
+
+
+−
+1
+0
+1
+.
+.
+2155
+4324
+.0965
+1
+3
+.
+.
+1902
+1346
+
+
+.
+We ran the program for lasso using ADMM (see Problem 52.7) with various values of ρ and
+τ , including ρ = 1 and ρ = 10. We observed that the program converges a lot faster for
+ρ = 10 than for ρ = 1. We plotted the values of the five components of w(τ ) for values of
+τ from τ = 0 to τ = 0.5 by increment of 0.02, and observed that the first, third, and fifth
+coordinate drop basically linearly to zero (a value less that 10−4
+) around τ = 0.2. See Figures
+55.7, 55.8, and 55.9. This behavior is also observed in Hastie, Tibshirani, and Wainwright
+[89] (Section 2.2).
+0 0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5
+-20
+-15
+-10
+-5
+0
+5 #10-3
+0 0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5
+1.82
+1.84
+1.86
+1.88
+1.9
+1.92
+1.94
+1.96
+1.98
+2
+2.02
+Figure 55.7: First and second component of w.
+0 0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5
+-0.005
+0
+0.005
+0.01
+0.015
+0.02
+0.025
+0.03
+0.035
+0.04
+0.045
+0 0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5
+-3
+-2.95
+-2.9
+-2.85
+-2.8
+-2.75
+-2.7
+-2.65
+-2.6
+Figure 55.8: Third and fourth component of w.
+55.5. LASSO REGRESSION; LEARNING AN AFFINE FUNCTION 2057
+For τ = 0.02, we have
+w =
+
+
+−
+0
+2
+0
+.
+.
+00003
+01056
+.00004
+−
+0
+2
+.00000
+.99821
+
+
+, b = 0.00135.
+0 0.05 0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5
+-10
+-8
+-6
+-4
+-2
+0
+2
+#10-3
+Figure 55.9: Fifth component of w.
+This weight vector w is very close to the original vector ww = [0; 2; 0; −3; 0] that we
+used to create y. For large values of τ , the weight vector is essentially the zero vector. This
+happens for τ = 235, where every component of w is less than 10−5
+.
+Another way to find b is to add the term (C/2)b
+2
+to the objective function, for some
+positive constant C, obtaining the program
+Program(lasso4):
+minimize
+1
+2
+ξ
+> ξ + τ1
+>n
+ +
+1
+2
+Cb2
+subject to
+y − Xw − b1m = ξ
+w ≤ 
+− w ≤ ,
+minimizing over ξ, w,  and b.
+This time the Lagrangian is
+L(ξ, w, , b, λ, α+, α−) = 1
+2
+ξ
+> ξ − ξ
+> λ + λ
+> y +
+C
+2
+b
+2 − b1
+>mλ
++ 
+> (τ1n − α+ − α−) + w
+> (α+ − α− − X
+> λ),
+2058 CHAPTER 55. RIDGE REGRESSION, LASSO, ELASTIC NET
+so by setting the gradient ∇Lξ,w,,b to zero we obtain the equations
+ξ = λ
+α+ − α− = X
+> λ
+α+ + α− = τ1n
+Cb = 1
+>mλ.
+Thus b is also determined, and the dual lasso program is identical to the first lasso dual
+(Dlasso2), namely
+minimize
+1
+2
+k
+y − λk
+2
+2
+subject to
+
+
+X
+> λ
+ ∞
+≤ τ,
+minimizing over λ.
+Since the equations ξ = λ and
+y − Xw − b1m = ξ
+hold, from Cb = 1
+>mλ we get
+1
+m
+1
+>my −
+1
+m
+1
+>mXw − b
+1
+m
+1
+>m1 =
+1
+m
+1
+>mλ,
+that is
+y − (X1
+· · · Xn)w − b =
+C
+m
+b,
+which yields
+b =
+m
+m + C
+(y − (X1
+· · · Xn)w).
+As in the case of ridge regression, a defect of the approach where b is also penalized is that
+the solution for b is not invariant under adding a constant c to each value yi
+It is interesting to compare the behavior of the methods:
+1. Ridge regression (RR60 ) (which is equivalent to (RR3)).
+2. Ridge regression (RR3b), with b penalized (by adding the term Kb2
+to the objective
+function).
+3. Least squares applied to [X 1].
+4. (lasso3).
+55.5. LASSO REGRESSION; LEARNING AN AFFINE FUNCTION 2059
+When n ≤ 2 and K and τ are small and of the same order of magnitude, say 0.1 or
+0.01, there is no noticeable difference. We ran out programs on the data set of 200 points
+generated by the following Matlab program:
+X14 = 15*randn(200,1);
+ww14 = 1;
+y14 = X14*ww14 + 10*randn(200,1) + 20;
+The result is shown in Figure 55.10, with the following colors: Method (1) in magenta,
+Method (2) in red, Method (3) in blue, and Method (4) in cyan. All four lines are identical.
+-60 -40 -20 0 20 40 60
+-30
+-20
+-10
+0
+10
+20
+30
+40
+50
+60
+70
+Figure 55.10: Comparison of the four methods with K = τ = 0.1.
+In order to see a difference we also ran our programs with K = 1000 and τ = 10000; see
+Figure 55.11.
+As expected, due to the penalization of b, Method (3) yields a significantly lower line (in
+red), and due to the large value of τ , the line corresponding to lasso (in cyan) has a smaller
+slope. Method (1) (in magenta) also has a smaller slope but still does not deviate that much
+from least squares (in blue). It is also interesting to experiment on data sets where n is
+larger (say 20, 50).
+2060 CHAPTER 55. RIDGE REGRESSION, LASSO, ELASTIC NET
+-60 -40 -20 0 20 40 60
+-30
+-20
+-10
+0
+10
+20
+30
+40
+50
+60
+70
+Figure 55.11: Comparison of the four methods with K = 1000, τ = 10000.
+55.6 Elastic Net Regression
+The lasso method is unsatisfactory when n (the dimension of the data) is much larger than
+the number m of data, because it only selects m coordinates and sets the others to values
+close to zero. It also has problems with groups of highly correlated variables. A way to
+overcome this problem is to add a “ridge-like” term (1/2)Kw> w to the objective function.
+This way we obtain a hybrid of lasso and ridge regression called the elastic net method and
+defined as follows:
+Program (elastic net):
+minimize
+1
+2
+ξ
+> ξ +
+1
+2
+Kw> w + τ1
+>n
+
+subject to
+y − Xw − b1m = ξ
+w ≤ 
+− w ≤ ,
+where K > 0 and τ ≥ 0 are two constants controlling the influence of the ` 2
+-regularization
+and the ` 1
+-regularization.1 Observe that as in the case of ridge regression, minimization is
+performed over ξ, w,  and b, but b is not penalized in the objective function. The objective
+1Some of the literature denotes K by λ2 and τ by λ1, but we prefer not to adopt this notation since we
+use λ, µ etc. to denote Lagrange multipliers.
+55.6. ELASTIC NET REGRESSION 2061
+function is strictly convex so if an optimal solution exists, then it is unique; the proof is left
+as an exercise.
+The Lagrangian associated with this optimization problem is
+L(ξ, w, , b, λ, α+, α−) = 1
+2
+ξ
+> ξ − ξ
+> λ + λ
+> y − b1
+>mλ
++ 
+> (τ1n − α+ − α−) + w
+> (α+ − α− − X
+> λ) + 1
+2
+Kw> w,
+so by setting the gradient ∇Lξ,w,,b to zero we obtain the equations
+ξ = λ
+Kw = −(α+ − α− − X
+> λ) (∗w)
+α+ + α− − τ1n = 0
+1
+>mλ = 0.
+We find that (∗w) determines w. Using these equations, we can find the dual function
+but in order to solve the dual using ADMM, since λ ∈ R
+m, it is more convenient to write
+λ = λ+ − λ−, with λ+, λ− ∈ R
+m
++ (recall that α+, α− ∈ R
+n
++). As in the derivation of the dual
+of ridge regression, we rescale our variables by defining β+, β−, µ+, µ− such that
+α+ = Kβ+, α− = Kβ−, λ+ = Kµ+, λ− = Kµ−.
+We also let µ = µ+ − µ− so that λ = Kµ. Then 1
+>mλ = 0 is equivalent to
+1
+>mµ+ − 1
+>mµ− = 0,
+and since ξ = λ = Kµ, we have
+ξ = K(µ+ − µ−)
+β+ + β− =
+τ
+K
+1n.
+Using (∗w) we can write
+w = −(β+ − β− − X
+> µ) = −β+ + β− + X
+> µ+ − X
+> µ−
+=
+￾ −In In X> −X>
+
+
+
+β+
+β−
+µ+
+µ−
+
+ .
+2062 CHAPTER 55. RIDGE REGRESSION, LASSO, ELASTIC NET
+Then we have
+￾
+−In In X> −X>
+
+>
+￾ −In In X> −X>
+ =
+
+
+−In
+In
+X
+−X
+
+
+￾ −In In X> −X>
+
+=
+
+
+In −In −X> X>
+−In In X> −X>
+−X X XX> −XX>
+X −X −XX> XX>
+
+ .
+If we define the symmetric positive semidefinite 2(n + m) × 2(n + m) matrix Q as
+Q =
+
+
+In −In −X> X>
+−In In X> −X>
+−X X XX> −XX>
+X −X −XX> XX>
+
+ ,
+then
+1
+2
+w
+> w =
+1
+2
+￾
+β+
+> β−
+> µ
+>+ µ
+>−
+ Q
+
+
+β+
+β−
+µ+
+µ−
+
+ .
+As a consequence, using (∗w) and the fact that ξ = Kµ, we find that the dual function is
+given by
+G(µ, β+, β−) = 1
+2
+ξ
+> ξ − ξ
+> λ + λ
+> y + w
+> (α+ − α− − X
+> λ) + 1
+2
+Kw> w
+=
+1
+2
+ξ
+> ξ − Kξ> µ + Kµ> y + Kw> (β+ − β− − X
+> µ) + 1
+2
+Kw> w
+=
+1
+2
+K2µ
+> µ − K2µ
+> µ + Ky> µ − Kw> w +
+1
+2
+Kw> w
+= −
+1
+2
+K2µ
+> µ −
+1
+2
+Kw> w + Ky> µ.
+But
+µ =
+￾ Im −Im
+
+
+µ+
+µ−
+
+,
+so
+1
+2
+µ
+> µ =
+1
+2
+￾
+µ
+>+ µ
+>−
+
+
+Im −Im
+−Im Im
+ 
+µ+
+µ−
+
+,
+55.6. ELASTIC NET REGRESSION 2063
+so we get
+G(β+, β−, µ+, µ−) = −
+1
+2
+K
+￾ β+
+> β−
+> µ
+>+ µ
+>−
+ P
+
+

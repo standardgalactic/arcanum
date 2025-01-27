@@ -1,0 +1,1000 @@
+stable (see Trefethen and Bau [176], Lecture 23). In Matlab the function chol returns the
+lower-triangular matrix B such that A = BB> using the call B = chol(A, ‘lower’).
+Remark: If A = BB> , where B is any invertible matrix, then A is symmetric positive
+definite.
+Proof. Obviously, BB> is symmetric, and since B is invertible, B> is invertible, and from
+x
+> Ax = x
+> BB> x = (B
+> x)
+> B
+> x,
+it is clear that x
+> Ax > 0 if x 6 = 0.
+We now give three more criteria for a symmetric matrix to be positive definite.
+288 CHAPTER 8. GAUSSIAN ELIMINATION, LU, CHOLESKY, ECHELON FORM
+Proposition 8.11. Let A be any n×n real symmetric matrix. The following conditions are
+equivalent:
+(a) A is positive definite.
+(b) All principal minors of A are positive; that is: det(A(1 : k, 1 : k)) > 0 for k = 1, . . . , n
+(Sylvester’s criterion).
+(c) A has an LU-factorization and all pivots are positive.
+(d) A has an LDL> -factorization and all pivots in D are positive.
+Proof. By Proposition 8.9, if A is symmetric positive definite, then each matrix A(1 : k, 1 : k)
+is symmetric positive definite for k = 1, . . . , n. By the Cholesky decomposition, A(1 : k, 1 :
+k) = Q> Q for some invertible matrix Q, so det(A(1 : k, 1 : k)) = det(Q)
+2 > 0. This shows
+that (a) implies (b).
+If det(A(1 : k, 1 : k)) > 0 for k = 1, . . . , n, then each A(1 : k, 1 : k) is invertible. By
+Proposition 8.2, the matrix A has an LU-factorization, and since the pivots πk are given by
+πk =
+
+
+
+a11 = det(A(1 : 1, 1 : 1)) if k = 1
+det(A(1 : k, 1 : k))
+det(A(1 : k − 1, 1 : k − 1)) if k = 2, . . . , n,
+we see that πk > 0 for k = 1, . . . , n. Thus (b) implies (c).
+Assume A has an LU-factorization and that the pivots are all positive. Since A is
+symmetric, this implies that A has a factorization of the form
+A = LDL> ,
+with L lower-triangular with 1s on its diagonal, and where D is a diagonal matrix with
+positive entries on the diagonal (the pivots). This shows that (c) implies (d).
+Given a factorization A = LDL> with all pivots in D positive, if we form the diagonal
+matrix
+√
+D = diag(√
+π1, . . . , √
+πn)
+and if we let B = L
+√
+D, then we have
+A = BB> ,
+with B lower-triangular and invertible. By the remark before Proposition 8.11, A is positive
+definite. Hence, (d) implies (a).
+Criterion (c) yields a simple computational test to check whether a symmetric matrix is
+positive definite. There is one more criterion for a symmetric matrix to be positive definite:
+8.10. REDUCED ROW ECHELON FORM 289
+its eigenvalues must be positive. We will have to learn about the spectral theorem for
+symmetric matrices to establish this criterion (see Proposition 22.3).
+Proposition 8.11 also holds for complex Hermitian positive definite matrices, where in
+(d), the factorization LDL> is replaced by LDL∗
+.
+For more on the stability analysis and efficient implementation methods of Gaussian
+elimination, LU-factoring and Cholesky factoring, see Demmel [48], Trefethen and Bau [176],
+Ciarlet [41], Golub and Van Loan [80], Meyer [125], Strang [169, 170], and Kincaid and
+Cheney [102].
+8.10 Reduced Row Echelon Form (RREF)
+Gaussian elimination described in Section 8.2 can also be applied to rectangular matrices.
+This yields a method for determining whether a system Ax = b is solvable and a description
+of all the solutions when the system is solvable, for any rectangular m × n matrix A.
+It turns out that the discussion is simpler if we rescale all pivots to be 1, and for this we
+need a third kind of elementary matrix. For any λ 6 = 0, let Ei,λ be the n×n diagonal matrix
+Ei,λ =
+
+
+1
+.
+.
+.
+1
+λ
+1
+.
+.
+.
+1
+
+
+,
+with (Ei,λ)ii = λ (1 ≤ i ≤ n). Note that Ei,λ is also given by
+Ei,λ = I + (λ − 1)ei i,
+and that Ei,λ is invertible with
+Ei,λ
+−1 = Ei,λ−1 .
+Now after k − 1 elimination steps, if the bottom portion
+(a
+(
+kk
+k)
+, a
+(
+k
+k
++1
+)
+k
+, . . . , a
+(
+mk
+k)
+)
+of the kth column of the current matrix Ak is nonzero so that a pivot πk can be chosen,
+after a permutation of rows if necessary, we also divide row k by πk to obtain the pivot 1,
+and not only do we zero all the entries i = k + 1, . . . , m in column k, but also all the entries
+i = 1, . . . , k − 1, so that the only nonzero entry in column k is a 1 in row k. These row
+operations are achieved by multiplication on the left by elementary matrices.
+If a
+(
+kk
+k) = a
+(
+k
+k
++1
+)
+k = · · · = a
+(
+mk
+k) = 0, we move on to column k + 1.
+290 CHAPTER 8. GAUSSIAN ELIMINATION, LU, CHOLESKY, ECHELON FORM
+When the kth column contains a pivot, the kth stage of the procedure for converting a
+matrix to rref consists of the following three steps illustrated below:
+
+
+0 0 1
+1 × 0 × × × ×
+× × × ×
+0 0 0 × × × ×
+0 0 0 × × × ×
+0 0 0
+0 0 0
+a
+× × × ×
+(
+ik
+k) × × ×
+
+
+pivot
+=⇒
+
+
+1
+0 0 1
+× 0 × × × ×
+× × × ×
+0 0 0 a
+(k)
+ik × × ×
+0 0 0 × × × ×
+0 0 0
+0 0 0
+×
+× × × ×
+× × ×
+
+
+rescale =⇒
+
+
+1
+0 0 1
+× 0 × × × ×
+× × × ×
+0 0 0 1 × × ×
+0 0 0 × × × ×
+0 0 0
+0 0 0
+×
+× × × ×
+× × ×
+
+
+elim=⇒
+
+
+1
+0 0 1
+× 0 0
+0
+× × ×
+× × ×
+0 0 0
+0 0 0
+1
+0 × × ×
+× × ×
+0 0 0
+0 0 0
+0
+0
+× × ×
+× × ×
+
+
+.
+If the kth column does not contain a pivot, we simply move on to the next column.
+The result is that after performing such elimination steps, we obtain a matrix that has a
+special shape known as a reduced row echelon matrix , for short rref.
+Here is an example illustrating this process: Starting from the matrix
+A1 =
+
+
+1 0 2 1 5
+1 1 5 2 7
+1 2 8 4 12
+
+ ,
+we perform the following steps
+A1 −→ A2 =
+
+
+1 0 2 1 5
+0 1 3 1 2
+0 2 6 3 7
+
+ ,
+by subtracting row 1 from row 2 and row 3;
+A2 −→
+
+
+1 0 2 1 5
+0 2 6 3 7
+0 1 3 1 2
+
+ −→
+
+
+1 0 2 1 5
+0 1 3 3
+0 1 3 1 2
+/2 7/2
+
+ −→ A3 =
+
+
+1 0 2 1 5
+0 1 3 3
+0 0 0 −1
+/
+/
+2 7
+2 −3
+/
+/
+2
+2
+
+ ,
+after choosing the pivot 2 and permuting row 2 and row 3, dividing row 2 by 2, and sub￾tracting row 2 from row 3;
+A3 −→
+
+
+1 0 2 1 5
+0 1 3 3
+0 0 0 1 3
+/2 7/2
+
+ −→ A4 =
+
+
+1 0 2 0 2
+0 1 3 0
+0 0 0 1 3
+−1
+
+ ,
+8.10. REDUCED ROW ECHELON FORM 291
+after dividing row 3 by −1/2, subtracting row 3 from row 1, and subtracting (3/2) × row 3
+from row 2.
+It is clear that columns 1, 2 and 4 are linearly independent, that column 3 is a linear
+combination of columns 1 and 2, and that column 5 is a linear combination of columns
+1, 2, 4.
+In general, the sequence of steps leading to a reduced echelon matrix is not unique. For
+example, we could have chosen 1 instead of 2 as the second pivot in matrix A2. Nevertheless,
+the reduced row echelon matrix obtained from any given matrix is unique; that is, it does not
+depend on the the sequence of steps that are followed during the reduction process. This
+fact is not so easy to prove rigorously, but we will do it later.
+If we want to solve a linear system of equations of the form Ax = b, we apply elementary
+row operations to both the matrix A and the right-hand side b. To do this conveniently, we
+form the augmented matrix (A, b), which is the m × (n + 1) matrix obtained by adding b as
+an extra column to the matrix A. For example if
+A =
+
+
+1 0 2 1
+1 1 5 2
+1 2 8 4
+
+ and b =
+
+
+12
+5
+7
+
+ ,
+then the augmented matrix is
+(A, b) =
+
+
+1 0 2 1 5
+1 1 5 2 7
+1 2 8 4 12
+
+ .
+Now for any matrix M, since
+M(A, b) = (MA, M b),
+performing elementary row operations on (A, b) is equivalent to simultaneously performing
+operations on both A and b. For example, consider the system
+x1 + 2x3 + x4 = 5
+x1 + x2 + 5x3 + 2x4 = 7
+x1 + 2x2 + 8x3 + 4x4 = 12.
+Its augmented matrix is the matrix
+(A, b) =
+
+
+1 0 2 1 5
+1 1 5 2 7
+1 2 8 4 12
+
+
+considered above, so the reduction steps applied to this matrix yield the system
+x1 + 2x3 = 2
+x2 + 3x3 = −1
+x4 = 3.
+292 CHAPTER 8. GAUSSIAN ELIMINATION, LU, CHOLESKY, ECHELON FORM
+This reduced system has the same set of solutions as the original, and obviously x3 can be
+chosen arbitrarily. Therefore, our system has infinitely many solutions given by
+x1 = 2 − 2x3, x2 = −1 − 3x3, x4 = 3,
+where x3 is arbitrary.
+The following proposition shows that the set of solutions of a system Ax = b is preserved
+by any sequence of row operations.
+Proposition 8.12. Given any m × n matrix A and any vector b ∈ R
+m, for any sequence
+of elementary row operations E1, . . . , Ek, if P = Ek · · · E1 and (A0 , b0 ) = P(A, b), then the
+solutions of Ax = b are the same as the solutions of A0 x = b
+0 .
+Proof. Since each elementary row operation Ei
+is invertible, so is P, and since (A0 , b0 ) =
+P(A, b), then A0 = P A and b
+0 = P b. If x is a solution of the original system Ax = b, then
+multiplying both sides by P we get P Ax = P b; that is, A0 x = b
+0 , so x is a solution of the
+new system. Conversely, assume that x is a solution of the new system, that is A0 x = b
+0 .
+Then because A0 = P A, b
+0 = P b, and P is invertible, we get
+Ax = P
+−1A
+0 x = P
+−1
+b
+0 = b,
+so x is a solution of the original system Ax = b.
+Another important fact is this:
+Proposition 8.13. Given an m×n matrix A, for any sequence of row operations E1, . . . , Ek,
+if P = Ek · · · E1 and B = P A, then the subspaces spanned by the rows of A and the rows of
+B are identical. Therefore, A and B have the same row rank. Furthermore, the matrices A
+and B also have the same (column) rank.
+Proof. Since B = P A, from a previous observation, the rows of B are linear combinations
+of the rows of A, so the span of the rows of B is a subspace of the span of the rows of A.
+Since P is invertible, A = P
+−1B, so by the same reasoning the span of the rows of A is a
+subspace of the span of the rows of B. Therefore, the subspaces spanned by the rows of A
+and the rows of B are identical, which implies that A and B have the same row rank.
+Proposition 8.12 implies that the systems Ax = 0 and Bx = 0 have the same solutions.
+Since Ax is a linear combinations of the columns of A and Bx is a linear combinations of
+the columns of B, the maximum number of linearly independent columns in A is equal to
+the maximum number of linearly independent columns in B; that is, A and B have the same
+rank.
+Remark: The subspaces spanned by the columns of A and B can be different! However,
+their dimension must be the same.
+We will show in Section 8.14 that the row rank is equal to the column rank. This will also
+be proven in Proposition 11.15 Let us now define precisely what is a reduced row echelon
+matrix.
+8.10. REDUCED ROW ECHELON FORM 293
+Definition 8.6. An m × n matrix A is a reduced row echelon matrix iff the following con￾ditions hold:
+(a) The first nonzero entry in every row is 1. This entry is called a pivot.
+(b) The first nonzero entry of row i + 1 is to the right of the first nonzero entry of row i.
+(c) The entries above a pivot are zero.
+If a matrix satisfies the above conditions, we also say that it is in reduced row echelon form,
+for short rref .
+Note that Condition (b) implies that the entries below a pivot are also zero. For example,
+the matrix
+A =
+
+
+1 6 0 1
+0 0 1 2
+0 0 0 0
+
+
+is a reduced row echelon matrix. In general, a matrix in rref has the following shape:
+
+
+1
+0
+0 0
+1 0
+× ×
+× ×
+0 0
+0 0
+×
+×
+0 0 1 × × 0 0 ×
+0 0 0 0 0 1 0 ×
+0 0 0 0 0 0 1 ×
+0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+
+
+if the last row consists of zeros, or
+
+
+1
+0
+0 0
+1 0
+× ×
+× ×
+0 0
+0 0
+×
+×
+0
+0
+×
+×
+0 0 1 × × 0 0 × 0 ×
+0 0 0 0 0 1 0 × 0 ×
+0 0 0 0 0 0
+0 0 0 0 0 0 0 0
+1 × ×
+1 ×
+0
+
+
+if the last row contains a pivot.
+The following proposition shows that every matrix can be converted to a reduced row
+echelon form using row operations.
+Proposition 8.14. Given any m × n matrix A, there is a sequence of row operations
+E1, . . . , Ek such that if P = Ek · · · E1, then U = P A is a reduced row echelon matrix.
+294 CHAPTER 8. GAUSSIAN ELIMINATION, LU, CHOLESKY, ECHELON FORM
+Proof. We proceed by induction on m. If m = 1, then either all entries on this row are zero,
+so A = 0, or if aj
+is the first nonzero entry in A, let P = (a
+−
+j
+1
+) (a 1 × 1 matrix); clearly, P A
+is a reduced row echelon matrix.
+Let us now assume that m ≥ 2. If A = 0, we are done, so let us assume that A 6 = 0.
+Since A 6 = 0, there is a leftmost column j which is nonzero, so pick any pivot π = aij in the
+jth column, permute row i and row 1 if necessary, multiply the new first row by π
+−1
+, and
+clear out the other entries in column j by subtracting suitable multiples of row 1. At the
+end of this process, we have a matrix A1 that has the following shape:
+A1 =
+
+
+0 · · · 0 1 ∗ · · · ∗
+0
+.
+· · · 0 0 ∗ · · · ∗
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+0 · · · 0 0 ∗ · · · ∗
+.
+.
+
+
+,
+where ∗ stands for an arbitrary scalar, or more concisely
+A1 =
+
+0 1
+0 0 D
+B
+
+,
+where D is a (m − 1) × (n − j) matrix (and B is a 1 × n − j matrix). If j = n, we are done.
+Otherwise, by the induction hypothesis applied to D, there is a sequence of row operations
+that converts D to a reduced row echelon matrix R0 , and these row operations do not affect
+the first row of A1, which means that A1 is reduced to a matrix of the form
+R =
+
+0 1
+0 0 R
+B
+0
+
+.
+Because R0 is a reduced row echelon matrix, the matrix R satisfies Conditions (a) and (b) of
+the reduced row echelon form. Finally, the entries above all pivots in R0 can be cleared out
+by subtracting suitable multiples of the rows of R0 containing a pivot. The resulting matrix
+also satisfies Condition (c), and the induction step is complete.
+Remark: There is a Matlab function named rref that converts any matrix to its reduced
+row echelon form.
+If A is any matrix and if R is a reduced row echelon form of A, the second part of
+Proposition 8.13 can be sharpened a little, since the structure of a reduced row echelon
+matrix makes it clear that its rank is equal to the number of pivots.
+Proposition 8.15. The rank of a matrix A is equal to the number of pivots in its rref R.
+8.11. RREF, FREE VARIABLES, HOMOGENEOUS SYSTEMS 295
+8.11 RREF, Free Variables, and Homogenous Linear
+Systems
+Given a system of the form Ax = b, we can apply the reduction procedure to the augmented
+matrix (A, b) to obtain a reduced row echelon matrix (A0 , b0 ) such that the system A0 x = b
+0
+has the same solutions as the original system Ax = b. The advantage of the reduced system
+A0 x = b
+0 is that there is a simple test to check whether this system is solvable, and to find
+its solutions if it is solvable.
+Indeed, if any row of the matrix A0 is zero and if the corresponding entry in b
+0 is nonzero,
+then it is a pivot and we have the “equation”
+0 = 1,
+which means that the system A0 x = b
+0 has no solution. On the other hand, if there is no
+pivot in b
+0 , then for every row i in which b
+0i 6 = 0, there is some column j in A0 where the
+entry on row i is 1 (a pivot). Consequently, we can assign arbitrary values to the variable
+xk if column k does not contain a pivot, and then solve for the pivot variables.
+For example, if we consider the reduced row echelon matrix
+(A
+0 , b0 ) =
+
+
+1 6 0 1 0
+0 0 1 2 0
+0 0 0 0 1
+
+ ,
+there is no solution to A0 x = b
+0 because the third equation is 0 = 1. On the other hand, the
+reduced system
+(A
+0 , b0 ) =
+
+
+1 6 0 1 1
+0 0 1 2 3
+0 0 0 0 0
+
+
+has solutions. We can pick the variables x2, x4 corresponding to nonpivot columns arbitrarily,
+and then solve for x3 (using the second equation) and x1 (using the first equation).
+The above reasoning proves the following theorem:
+Theorem 8.16. Given any system Ax = b where A is a m × n matrix, if the augmented
+matrix (A, b) is a reduced row echelon matrix, then the system Ax = b has a solution iff there
+is no pivot in b. In that case, an arbitrary value can be assigned to the variable xj
+if column
+j does not contain a pivot.
+Definition 8.7. Nonpivot variables are often called free variables.
+Putting Proposition 8.14 and Theorem 8.16 together we obtain a criterion to decide
+whether a system Ax = b has a solution: Convert the augmented system (A, b) to a row
+reduced echelon matrix (A0 , b0 ) and check whether b
+0 has no pivot.
+296 CHAPTER 8. GAUSSIAN ELIMINATION, LU, CHOLESKY, ECHELON FORM
+Remark: When writing a program implementing row reduction, we may stop when the last
+column of the matrix A is reached. In this case, the test whether the system Ax = b is
+solvable is that the row-reduced matrix A0 has no zero row of index i > r such that b
+0i 6 = 0
+(where r is the number of pivots, and b
+0 is the row-reduced right-hand side).
+If we have a homogeneous system Ax = 0, which means that b = 0, of course x = 0 is
+always a solution, but Theorem 8.16 implies that if the system Ax = 0 has more variables
+than equations, then it has some nonzero solution (we call it a nontrivial solution).
+Proposition 8.17. Given any homogeneous system Ax = 0 of m equations in n variables,
+if m < n, then there is a nonzero vector x ∈ R
+n
+such that Ax = 0.
+Proof. Convert the matrix A to a reduced row echelon matrix A0 . We know that Ax = 0 iff
+A0 x = 0. If r is the number of pivots of A0 , we must have r ≤ m, so by Theorem 8.16 we may
+assign arbitrary values to n − r > 0 nonpivot variables and we get nontrivial solutions.
+Theorem 8.16 can also be used to characterize when a square matrix is invertible. First,
+note the following simple but important fact:
+If a square n × n matrix A is a row reduced echelon matrix, then either A is the identity
+or the bottom row of A is zero.
+Proposition 8.18. Let A be a square matrix of dimension n. The following conditions are
+equivalent:
+(a) The matrix A can be reduced to the identity by a sequence of elementary row operations.
+(b) The matrix A is a product of elementary matrices.
+(c) The matrix A is invertible.
+(d) The system of homogeneous equations Ax = 0 has only the trivial solution x = 0.
+Proof. First we prove that (a) implies (b). If (a) can be reduced to the identity by a sequence
+of row operations E1, . . . , Ep, this means that Ep · · · E1A = I. Since each Ei
+is invertible,
+we get
+A = E1
+−1
+· · · Ep
+−1
+,
+where each Ei
+−1
+is also an elementary row operation, so (b) holds. Now if (b) holds, since
+elementary row operations are invertible, A is invertible and (c) holds. If A is invertible, we
+already observed that the homogeneous system Ax = 0 has only the trivial solution x = 0,
+because from Ax = 0, we get A−1Ax = A−10; that is, x = 0. It remains to prove that (d)
+implies (a) and for this we prove the contrapositive: if (a) does not hold, then (d) does not
+hold.
+Using our basic observation about reducing square matrices, if A does not reduce to the
+identity, then A reduces to a row echelon matrix A0 whose bottom row is zero. Say A0 = P A,
+8.11. RREF, FREE VARIABLES, HOMOGENEOUS SYSTEMS 297
+where P is a product of elementary row operations. Because the bottom row of A0 is zero,
+the system A0 x = 0 has at most n − 1 nontrivial equations, and by Proposition 8.17, this
+system has a nontrivial solution x. But then, Ax = P
+−1A0 x = 0 with x 6 = 0, contradicting
+the fact that the system Ax = 0 is assumed to have only the trivial solution. Therefore, (d)
+implies (a) and the proof is complete.
+Proposition 8.18 yields a method for computing the inverse of an invertible matrix A:
+reduce A to the identity using elementary row operations, obtaining
+Ep · · · E1A = I.
+Multiplying both sides by A−1 we get
+A
+−1 = Ep · · · E1.
+From a practical point of view, we can build up the product Ep · · · E1 by reducing to row
+echelon form the augmented n × 2n matrix (A, In) obtained by adding the n columns of the
+identity matrix to A. This is just another way of performing the Gauss–Jordan procedure.
+Here is an example: let us find the inverse of the matrix
+A =
+
+5 4
+6 5 .
+We form the 2 × 4 block matrix
+(A, I) =  5 4 1 0
+6 5 0 1
+and apply elementary row operations to reduce A to the identity. For example:
+(A, I) =  5 4 1 0
+6 5 0 1 −→ 
+5 4 1 0
+1 1 −1 1
+by subtracting row 1 from row 2,
+
+5 4 1 0
+1 1 −1 1 −→ 
+1 0 5
+1 1 −1 1
+−4
+
+by subtracting 4 × row 2 from row 1,
+
+1 0 5
+1 1 −1 1
+−4
+
+−→ 
+1 0 5
+0 1 −6 5
+−4
+
+= (I, A−1
+),
+by subtracting row 1 from row 2. Thus
+A
+−1 =
+
+−
+5
+6 5
+−4
+
+.
+Proposition 8.18 can also be used to give an elementary proof of the fact that if a square
+matrix A has a left inverse B (resp. a right inverse B), so that BA = I (resp. AB = I),
+then A is invertible and A−1 = B. This is an interesting exercise, try it!
+298 CHAPTER 8. GAUSSIAN ELIMINATION, LU, CHOLESKY, ECHELON FORM
+8.12 Uniqueness of RREF Form
+For the sake of completeness, we prove that the reduced row echelon form of a matrix is
+unique. The neat proof given below is borrowed and adapted from W. Kahan.
+Proposition 8.19. Let A be any m × n matrix. If U and V are two reduced row echelon
+matrices obtained from A by applying two sequences of elementary row operations E1, . . . , Ep
+and F1, . . . , Fq, so that
+U = Ep · · · E1A and V = Fq · · · F1A,
+then U = V . In other words, the reduced row echelon form of any matrix is unique.
+Proof. Let
+C = Ep · · · E1F1
+−1
+· · · Fq
+−1
+so that
+U = CV and V = C
+−1U.
+Recall from Proposition 8.13 that U and V have the same row rank r, and since U and V
+are in rref, this is the number of nonzero rows in both U and V . We prove by induction on
+n that U = V (and that the first r columns of C are the first r columns in Im). If r = 0
+then A = U = V = 0 and the result is trivial. We now assume that r ≥ 1.
+Let ` n
+j denote the jth column of the identity matrix In, and let uj = U `n
+j
+, vj = V `n
+j
+,
+cj = C`m
+j
+, and aj = A`n
+j
+, be the jth column of U, V , C, and A respectively.
+First I claim that uj = 0 iff vj = 0 iff aj = 0.
+Indeed, if vj = 0, then (because U = CV ) uj = Cvj = 0, and if uj = 0, then vj =
+C
+−1uj = 0. Since U = Ep · · · E1A, we also get aj = 0 iff uj = 0.
+Therefore, we may simplify our task by striking out columns of zeros from U, V , and A,
+since they will have corresponding indices. We still use n to denote the number of columns of
+A. Observe that because U and V are reduced row echelon matrices with no zero columns,
+we must have u1 = v1 = ` m
+1
+.
+Claim. If U and V are reduced row echelon matrices without zero columns such that
+U = CV , for all k ≥ 1, if k ≤ m, then ` m
+k
+occurs in U iff ` m
+k
+occurs in V , and if ` m
+k does
+occur in U, then
+1. ` m
+k
+occurs for the same column index jk in both U and V ;
+2. the first jk columns of U and V match;
+3. the subsequent columns in U and V (of column index > jk) whose coordinates of index
+k + 1 through m are all equal to 0 also match. Let nk be the rightmost index of such
+a column, with nk = jk if there is none.
+8.12. UNIQUENESS OF RREF 299
+4. the first k columns of C match the first k columns of Im.
+We prove this claim by induction on k.
+For the base case k = 1, we already know that u1 = v1 = ` m
+1
+. We also have
+c1 = C`m
+1 = Cv1 = u1 = `
+m
+1
+.
+If vj = λ`m
+1
+for some λ ∈ R, then
+uj = U `n
+j = CV `n
+j = Cvj = λC`m
+1 = λc1 = λ`m
+1 = vj
+.
+A similar argument using C
+−1
+shows that if uj = λ`m
+1
+, then vj = uj
+. Therefore, all the
+columns of U and V proportional to ` m
+1 match, which establishes the base case. Observe
+that if ` m
+2
+appears in U, then it must appear in both U and V for the same index, and if not
+then n1 = n and U = V .
+Next us now prove the induction step. If nk = n, then U = V and we are done. If k = r,
+then C is a block matrix of the form
+C =
+
+Ir B
+0m−r,r C
+
+and since the last m − r rows of both U and V are zero rows, C acts as the identity on the
+first r rows, and so U = V . Otherwise k < r, nk < n, and ` m
+k+1 appears in both U and V , in
+which case, by (2) and (3) of the induction hypothesis, it appears in both U and V for the
+same index, say jk+1. Thus, ujk+1 = vjk+1 = ` m
+k+1. It follows that
+ck+1 = C`m
+k+1 = Cvjk+1 = ujk+1 = `
+m
+k+1,
+so the first k + 1 columns of C match the first k + 1 columns of Im.
+Consider any subsequent column vj (with j > jk+1) whose elements beyond the (k + 1)th
+all vanish. Then vj
+is a linear combination of columns of V to the left of vj
+, so
+uj = Cvj = vj
+.
+because the first k + 1 columns of C match the first k + 1 column of Im. Similarly, any
+subsequent column uj (with j > jk+1) whose elements beyond the (k+1)th all vanish is equal
+to vj
+. Therefore, all the subsequent columns in U and V (of index > jk+1) whose elements
+beyond the (k + 1)th all vanish also match, which completes the induction hypothesis.
+Remark: Observe that C = Ep · · · E1F1
+−1
+· · · Fq
+−1
+is not necessarily the identity matrix Im.
+However, C = Im if r = m (A has row rank m).
+The reduction to row echelon form also provides a method to describe the set of solutions
+of a linear system of the form Ax = b.
+300 CHAPTER 8. GAUSSIAN ELIMINATION, LU, CHOLESKY, ECHELON FORM
+8.13 Solving Linear Systems Using RREF
+First we have the following simple result.
+Proposition 8.20. Let A be any m × n matrix and let b ∈ R
+m be any vector. If the system
+Ax = b has a solution, then the set Z of all solutions of this system is the set
+Z = x0 + Ker (A) = {x0 + x | Ax = 0},
+where x0 ∈ R
+n
+is any solution of the system Ax = b, which means that Ax0 = b (x0 is called
+a special solution or a particular solution), and where Ker (A) = {x ∈ R
+n
+| Ax = 0}, the set
+of solutions of the homogeneous system associated with Ax = b.
+Proof. Assume that the system Ax = b is solvable and let x0 and x1 be any two solutions so
+that Ax0 = b and Ax1 = b. Subtracting the first equation from the second, we get
+A(x1 − x0) = 0,
+which means that x1 − x0 ∈ Ker (A). Therefore, Z ⊆ x0 + Ker (A), where x0 is a special
+solution of Ax = b. Conversely, if Ax0 = b, then for any z ∈ Ker (A), we have Az = 0, and
+so
+A(x0 + z) = Ax0 + Az = b + 0 = b,
+which shows that x0 + Ker (A) ⊆ Z. Therefore, Z = x0 + Ker (A).
+Given a linear system Ax = b, reduce the augmented matrix (A, b) to its row echelon
+form (A0 , b0 ). As we showed before, the system Ax = b has a solution iff b
+0 contains no pivot.
+Assume that this is the case. Then, if (A0 , b0 ) has r pivots, which means that A0 has r pivots
+since b
+0 has no pivot, we know that the first r columns of Im appear in A0 .
+We can permute the columns of A0 and renumber the variables in x correspondingly so
+that the first r columns of Im match the first r columns of A0 , and then our reduced echelon
+matrix is of the form (R, b0 ) with
+R =
+
+Ir F
+0m−r,r 0m−r,n−r
+
+and
+b
+0 =
+
+0m
+d
+−r
+
+,
+where F is a r × (n − r) matrix and d ∈ R
+r
+. Note that R has m − r zero rows.
+Then because
+
+Ir F
+0m−r,r 0m−r,n−r
+  0n
+d
+−r
+
+=
+
+0m
+d
+−r
+
+= b
+0 ,
+8.13. SOLVING LINEAR SYSTEMS USING RREF 301
+we see that
+x0 =
+
+0n
+d
+−r
+
+is a special solution of Rx = b
+0 , and thus to Ax = b. In other words, we get a special solution
+by assigning the first r components of b
+0 to the pivot variables and setting the nonpivot
+variables (the free variables) to zero.
+Here is an example of the preceding construction taken from Kumpel and Thorpe [107].
+The linear system
+x1 − x2 + x3 + x4 − 2x5 = −1
+−2x1 + 2x2 − x3 + x5 = 2
+x1 − x2 + 2x3 + 3x4 − 5x5 = −1,
+is represented by the augmented matrix
+(A, b) =
+
+−
+1
+1
+2 2
+−
+−
+1 1 1
+1 2 3
+−1 0 1 2
+−
+−
+2
+5
+−
+−
+1
+1
+
+ ,
+where A is a 3 × 5 matrix. The reader should find that the row echelon form of this system
+is
+(A
+0 , b0 ) =
+
+
+1
+0 0 1 2
+0 0 0 0 0 0
+−1 0 −1 1
+−3 0
+−1
+
+ .
+The 3 × 5 matrix A0 has rank 2. We permute the second and third columns (which is
+equivalent to interchanging variables x2 and x3) to form
+R =
+
+I2 F
+01,2 01,3
+
+, F =
+
+−
+0 2
+1 −1 1
+−3
+
+.
+Then a special solution to this linear system is given by
+x0 =
+
+0
+d
+3
+
+=
+
+
+−1
+0
+0
+3
+
+ .
+We can also find a basis of the kernel (nullspace) of A using F. If x = (u, v) is in the
+kernel of A, with u ∈ R
+r and v ∈ R
+n−r
+, then x is also in the kernel of R, which means that
+Rx = 0; that is,
+
+Ir F
+0m−r,r 0m−r,n−r
+ 
+u
+v
+
+=
+
+u + F v
+0m−r
+
+=
+
+0m
+0r
+−r
+
+.
+Therefore, u = −F v, and Ker (A) consists of all vectors of the form
+
+−
+v
+F v
+=
+
+−F
+In−r
+

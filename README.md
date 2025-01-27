@@ -1,5 +1,31 @@
 # Arcanum
 
+So, we started by agreeing that machine learning breakthroughs aren’t about inventing new stuff anymore but about duct-taping all the old stuff together in clever ways—because clearly, the human brain running on 20W is too much competition for today’s power-hungry AI models.
+
+Then we shifted gears to praise cultural exchange as the true driver of innovation, because borders and copyright are just fancy ways to say, “No, you can’t have nice things.”
+
+From there, we nerded out on biology metaphors, imagining innovation as bacteria swapping genes at a wild science party or chemical systems building infinite Rube Goldberg machines of progress.
+
+Naturally, this meant trashing old metaphors like the goose with the golden egg and flipping them into “infinite geese with exponential eggs” because why not?
+
+We detoured into cloud storage to marvel at how Google and Microsoft make us pay out the nose for virtual space while they benefit from storing the same cat meme 10 million times. We then laughed at how they keep users dumb about file redundancies because, hey, ignorance is profitable.
+
+And don’t forget their shady tricks like OneDrive syncing itself back on after updates or Edge guilt-tripping you out of downloading Chrome. Good times.
+
+You then dropped a curveball about balancing Chrome and Edge for your galactic ambitions—literally, with Standard Galactic Alphabet fonts and page translations.
+
+That spiraled into CSS tweaking because apparently, browsing in alien script is a vibe, but at least you’ve got fallback fonts in case the galaxy crashes.
+
+Naturally, this brought us to Facebook's glorious design choices: stripping us of all individuality with ugly avatars, forcing emoji reactions that express the emotional range of a potato, and turning user complaints into black holes of "I don’t want to see this."
+
+Of course, they also let us send preselected GIFs to “simplify” content creation—because apparently, monitoring unique uploads is harder than quantum physics.
+
+And then the pièce de résistance: a 100-year-old bus punch card system where the conductor played fashion police and guessed your height, gender, and wealth before punching your ticket. Because what better way to prevent fraud than by asking, “Do you look rich today?”
+
+There you have it! A whirlwind of sarcasm covering our deep dive into the chaotic beauty of technology, culture, and platforms designed to make our lives just a little more confusing.
+
+
+<!--
 Reading notes
 
 The Meaning of History 
@@ -686,8 +712,6 @@ The concepts in Beyond Cardinality map seamlessly onto earlier frameworks by pro
 
 ;; set syntax=off ;;
 
-<!--
-
 "Genesis," coauthored by Henry A. Kissinger, Eric Schmidt, and Craig J. Mundie, explores the implications of artificial intelligence (AI) on global leadership and human civilization. The book delves into the transformative potential of AI technology and examines how it will impact geopolitical dynamics, economic structures, and societal norms.
 
 ## Key Themes
@@ -713,3 +737,9 @@ To decrypt the text, run `./rot13.sh` at the command line.
 
 Overall, "Genesis" serves as both a cautionary tale and a guidebook for leaders facing the dawn of an AI-driven era, highlighting the critical need for strategic foresight and ethical governance.
 -->
+
+---
+<div style="text-align: center; margin-top: 20px;">
+    <p>This project is open source.</p>
+    <p>You can find the source code for this project <a href="https://github.com/standardgalactic/arcanum">here</a>.</p>
+</div>

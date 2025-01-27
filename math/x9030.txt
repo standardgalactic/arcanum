@@ -1,0 +1,1000 @@
+f
+∗
+(µ) = (
+P
+n
+i=1 µi
+log µi
+if 1
+> µ = 1 and µ ≥ 0
+∞ otherwise,
+50.12. SOME TECHNIQUES TO OBTAIN A MORE USEFUL DUAL PROGRAM 1809
+the dual of the reformulated problem can be expressed as
+maximize b
+> µ − log
+nX
+i=1
+µi
+log µi
+
+subject to
+1
+> µ = 1
+A
+> µ = 0
+µ ≥ 0,
+an entropy maximization problem.
+Example 50.13. Similarly the unconstrained norm minimization problem
+minimize k Ax − bk ,
+where k k is any norm on R
+m, has a dual function which is a constant, and is not useful.
+This problem can be reformulated as
+minimize k yk
+subject to
+Ax − b = y.
+By Example 50.8(6), the conjugate of the norm is given by
+k
+yk
+∗ =
+(
+0 if
++∞ otherwise
+k
+yk
+D ≤
+,
+1
+so the dual of the reformulated program is:
+maximize b
+> µ
+subject to
+k
+µk
+D ≤ 1
+A
+> µ = 0.
+Here is now an example of (2), replacing the objective function with an increasing function
+of the the original function.
+Example 50.14. The norm minimization of Example 50.13 can be reformulated as
+minimize
+1
+2
+k
+yk
+2
+subject to
+Ax − b = y.
+1810 CHAPTER 50. INTRODUCTION TO NONLINEAR OPTIMIZATION
+This program is obviously equivalent to the original one. By Example 50.8(7), the conjugate
+of the square norm is given by
+1
+2
+
+k
+yk
+D
+
+2
+,
+so the dual of the reformulated program is
+maximize −
+1
+2
+
+k
+µk
+D
+
+2
++ b
+> µ
+subject to
+A
+> µ = 0.
+Note that this dual is different from the dual obtained in Example 50.13.
+The objective function of the dual program in Example 50.13 is linear, but we have
+the nonlinear constraint k µk
+D ≤ 1. On the other hand, the objective function of the dual
+program of Example 50.14 is quadratic, whereas its constraints are affine. We have other
+examples of this trade-off with the Programs (SVMh2) (quadratic objective function, affine
+constraints), and (SVMh1) (linear objective function, one nonlinear constraint).
+Sometimes, it is also helpful to replace a constraint by an increasing function of this
+constraint; for example, to use the constraint k wk
+2
+2
+(= w
+> w) ≤ 1 instead of k wk 2 ≤ 1.
+In Chapter 55 we revisit the problem of solving an overdetermined or underdetermined
+linear system Ax = b considered in Section 23.1, from a different point of view.
+50.13 Uzawa’s Method
+Let us go back to our Minimization Problem
+minimize J(v)
+subject to ϕi(v) ≤ 0, i = 1, . . . , m,
+where the functions J and ϕi are defined on some open subset Ω of a finite-dimensional
+Euclidean vector space V (more generally, a real Hilbert space V ). As usual, let
+U = {v ∈ V | ϕi(v) ≤ 0, 1 ≤ i ≤ m}.
+If the functional J satisfies the inequalities of Proposition 49.18 and if the functions ϕi are
+convex, in theory, the projected-gradient method converges to the unique minimizer of J
+over U. Unfortunately, it is usually impossible to compute the projection map pU : V → U.
+On the other hand, the domain of the Lagrange dual function G: R
+m
++ → R given by
+G(µ) = inf
+v∈Ω
+L(v, µ) µ ∈ R
+m
++ ,
+50.13. UZAWA’S METHOD 1811
+is R
+m
++ , where
+L(v, µ) = J(v) +
+mX
+i=1
+µiϕi(v)
+is the Lagrangian of our problem. Now the projection p+ from R
+m to R
+m
++ is very simple,
+namely
+(p+(λ))i = max{λi
+, 0}, 1 ≤ i ≤ m.
+It follows that the projection-gradient method should be applicable to the Dual Problem
+(D):
+maximize G(µ)
+subject to µ ∈ R
+m
++ .
+If the hypotheses of Theorem 50.17 hold, then a solution λ of the Dual Program (D) yields
+a solution uλ of the primal problem.
+Uzawa’s method is essentially the gradient method with fixed stepsize applied to the Dual
+Problem (D). However, it is designed to yield a solution of the primal problem.
+Uzawa’s method:
+Given an arbitrary initial vector λ
+0 ∈ R
+m
++ , two sequences (λ
+k
+)k≥0 and (u
+k
+)k≥0 are con￾structed, with λ
+k ∈ R
+m
++ and u
+k ∈ V .
+Assuming that λ
+0
+, λ1
+, . . . , λk are known, u
+k and λ
+k+1 are determined as follows:
+u
+k
+is the unique solution of the minimization problem, find u
+k ∈ V such that
+(UZ)
+
+
+
+J(u
+k
+) +
+mX
+i=1
+λ
+k
+i ϕi(u
+k
+) = inf
+v∈V
+
+J(v) +
+mX
+i=1
+λ
+k
+i ϕi(v)
+ ; and
+λ
+k
+i
++1 = max{λ
+k
+i + ρϕi(u
+k
+), 0}, 1 ≤ i ≤ m,
+where ρ > 0 is a suitably chosen parameter.
+Recall that in the proof of Theorem 50.17 we showed (∗deriv), namely
+G
+0λk (ξ) = h∇Gλk , ξi =
+mX
+i=1
+ξiϕi(u
+k
+),
+which means that (∇Gλk )i = ϕi(u
+k
+). Then the second equation in (UZ) corresponds to the
+gradient-projection step
+λ
+k+1 = p+(λ
+k + ρ∇Gλk ).
+Note that because the problem is a maximization problem we use a positive sign instead of
+a negative sign. Uzawa’s method is indeed a gradient method.
+Basically, Uzawa’s method replaces a constrained optimization problem by a sequence of
+unconstrained optimization problems involving the Lagrangian of the (primal) problem.
+1812 CHAPTER 50. INTRODUCTION TO NONLINEAR OPTIMIZATION
+Interestingly, under certain hypotheses, it is possible to prove that the sequence of ap￾proximate solutions (u
+k
+)k≥0 converges to the minimizer u of J over U, even if the sequence
+(λ
+k
+)k≥0 does not converge. We prove such a result when the constraints ϕi are affine.
+Theorem 50.21. Suppose J : R
+n → R is an elliptic functional, which means that J is
+continuously differentiable on R
+n
+, and there is some constant α > 0 such that
+h∇Jv − ∇Ju, v − ui ≥ α k v − uk
+2
+for all u, v ∈ R
+n
+,
+and that U is a nonempty closed convex subset given by
+U = {v ∈ R
+n
+| Cv ≤ d},
+where C is a real m × n matrix and d ∈ R
+m. If the scalar ρ satisfies the condition
+0 < ρ <
+2α
+k
+Ck
+2
+2
+,
+where k Ck 2
+is the spectral norm of C, then the sequence (u
+k
+)k≥0 computed by Uzawa’s method
+converges to the unique minimizer u ∈ U of J.
+Furthermore, if C has rank m, then the sequence (λ
+k
+)k≥0 converges to the unique maxi￾mizer of the Dual Problem (D).
+Proof.
+Step 1 . We establish algebraic conditions relating the unique minimizer u ∈ U of J over
+U and some λ ∈ R
+m
++ such that (u, λ) is a saddle point.
+Since J is elliptic and U is nonempty closed and convex, by Theorem 49.8, the functional
+J is strictly convex, so it has a unique minimizer u ∈ U. Since J is convex and the constraints
+are affine, by Theorem 50.17(2) the Dual Problem (D) has at least one solution. By Theorem
+50.15(2), there is some λ ∈ R
+m
++ such that (u, λ) is a saddle point of the Lagrangian L.
+If we define the affine function ϕ by
+ϕ(v) = (ϕ1(v), . . . , ϕm(v)) = Cv − d,
+then the Lagrangian L(v, µ) can be written as
+L(v, µ) = J(v) +
+mX
+i=1
+µiϕi(v) = J(v) + h C
+> µ, vi − hµ, di .
+Since
+L(u, λ) = inf
+v∈Rn
+L(v, λ),
+by Theorem 40.13(4) we must have
+∇Ju + C
+> λ = 0, (∗1)
+50.13. UZAWA’S METHOD 1813
+and since
+G(λ) = L(u, λ) = sup
+µ∈Rm
++
+L(u, µ),
+by Theorem 40.13(3) (and since maximing a function g is equivalent to minimizing −g), we
+must have
+G
+0λ
+(µ − λ) ≤ 0 for all µ ∈ R
+m
++ ,
+and since as noted earlier ∇Gλ = ϕ(u), we get
+h
+ϕ(u), µ − λi ≤ 0 for all µ ∈ R
+m
++ . (∗2)
+As in the proof of Proposition 49.18, (∗2) can be expressed as follows for every ρ > 0:
+h
+λ − (λ + ρϕ(u)), µ − λi ≥ 0 for all µ ∈ R
+m
++ , (∗∗2)
+which shows that λ can be viewed as the projection onto R
+m
++ of the vector λ + ρϕ(u). In
+summary we obtain the equations
+(†1)
+(
+∇Ju + C
+> λ = 0
+λ = p+(λ + ρϕ(u)).
+Step 2 . We establish algebraic conditions relating the unique solution uk of the mini￾mization problem arising during an iteration of Uzawa’s method in (UZ) and λ
+k
+.
+Observe that the Lagrangian L(v, µ) is strictly convex as a function of v (as the sum of
+a strictly convex function and an affine function). As in the proof of Theorem 49.8(1) and
+using Cauchy–Schwarz, we have
+J(v) + h C
+> µ, vi ≥ J(0) + h∇J0, vi +
+α
+2
+k
+vk
+2 + h C
+> µ, vi
+≥ J(0) − k∇J0k k vk −
+  C
+> µ
+ k vk +
+α
+2
+k
+vk
+2
+,
+and the term (− k∇J0k −
+  C
+> µ
+ k vk +
+α
+2
+k
+vk ) k vk goes to +∞ when k vk tends to +∞, so
+L(v, µ) is coercive as a function of v. Therefore, the minimization problem find u
+k
+such that
+J(u
+k
+) +
+mX
+i=1
+λ
+k
+i ϕi(u
+k
+) = inf
+v∈Rn
+
+J(v) +
+mX
+i=1
+λ
+k
+i ϕi(v)
+
+has a unique solution u
+k ∈ R
+n
+. It follows from Theorem 40.13(4) that the vector u
+k must
+satisfy the equation
+∇Juk + C
+> λ
+k = 0, (∗3)
+and since by definition of Uzawa’s method
+λ
+k+1 = p+(λ
+k + ρϕ(u
+k
+)), (∗4)
+1814 CHAPTER 50. INTRODUCTION TO NONLINEAR OPTIMIZATION
+we obtain the equations
+(†2)
+(
+∇Juk + C
+> λ
+k = 0
+λ
+k+1 = p+(λ
+k + ρϕ(u
+k
+)).
+Step 3 . By subtracting the first of the two equations of (†1) and (†2) we obtain
+∇Juk − ∇Ju + C
+> (λ
+k − λ) = 0,
+and by subtracting the second of the two equations of (†1) and (†2) and using Proposition
+48.6, we obtain
+
+
+λ
+k+1 − λ
+ ≤
+  λ
+k − λ + ρC(u
+k − u)
+ .
+In summary, we proved
+(†)
+(
+∇Juk − ∇Ju + C
+> (λ
+k − λ) = 0
+
+
+λ
+k+1 − λ
+ ≤
+  λ
+k − λ + ρC(u
+k − u)
+ .
+Step 4 . Convergence of the sequence (u
+k
+)k≥0 to u.
+Squaring both sides of the inequality in (†) we obtain
+Using the equation in (
+
+
+λ
+k+1 − λ
+
+2
+≤
+†) and the inequality
+
+
+λ
+k − λ
+
+2
++ 2ρh C
+> (λ
+k − λ), uk − ui + ρ
+2
+
+ C(u
+k − u)
+
+2
+.
+h∇Juk − ∇Ju, uk − ui ≥ α
+  u
+k − u
+
+2
+,
+we get
+
+
+λ
+k+1 − λ
+
+2
+≤
+  λ
+k − λ
+
+2
+− 2ρh∇Juk − ∇Ju, uk − ui + ρ
+2
+
+ C(u
+k − u)
+
+2
+≤
+  λ
+k − λ
+
+2
+− ρ(2α − ρ k Ck
+2
+2
+)
+  u
+k − u
+
+2
+.
+Consequently, if
+0 ≤ ρ ≤
+2α
+k
+Ck
+2
+2
+,
+we have
+
+
+λ
+k+1 − λ
+ ≤
+  λ
+k − λ
+ , for all k ≥ 0. (∗5)
+By (∗5), the sequence (
+ λ
+k − λ
+ )k≥0 is nonincreasing and bounded below by 0, so it con￾verges, which implies that
+lim
+k7→∞
+
+
+λ
+k+1 − λ
+ −
+  λ
+k − λ
+
+ = 0,
+and since
+
+
+λ
+k+1 − λ
+
+2
+≤
+  λ
+k − λ
+
+2
+− ρ(2α − ρ k Ck
+2
+2
+)
+  u
+k − u
+
+2
+,
+50.13. UZAWA’S METHOD 1815
+we also have
+ρ(2α − ρ k Ck
+2
+2
+)
+  u
+k − u
+
+2
+≤
+  λ
+k − λ
+
+2
+−
+  λ
+k+1 − λ
+
+2
+.
+So if
+0 < ρ <
+2α
+k
+Ck
+2
+2
+,
+then ρ(2α − ρ k Ck
+2
+2
+) > 0, and we conclude that
+lim
+k7→∞
+
+
+u
+k − u
+ = 0,
+that is, the sequence (u
+k
+)k≥0 converges to u.
+Step 5 . Convergence of the sequence (λ
+k
+)k≥0 to λ if C has rank m.
+Since the sequence (
+ λ
+k − λ
+ )k≥0 is nonincreasing, the sequence (λ
+k
+)k≥0 is bounded, and
+thus it has a convergent subsequence (λ
+i(k)
+)i≥0 whose limit is some λ
+0 ∈ R
+m
++ . Since J
+0 is
+continuous, by (†2) we have
+∇Ju + C
+> λ
+0 = lim
+i7→∞
+(∇Jui(k) + C
+> λ
+i(k)
+) = 0. (∗6)
+If C has rank m, then Im(C) = R
+m, which is equivalent to Ker (C
+> ) = (0), so C
+> is
+injective and since by (†1) we also have ∇Ju +C
+> λ = 0, we conclude that λ
+0 = λ. The above
+reasoning applies to any subsequence of (λ
+k
+)k≥0, so (λ
+k
+)k≥0 converges to λ.
+In the special case where J is an elliptic quadratic functional
+J(v) = 1
+2
+h
+Av, vi − hb, vi ,
+where A is symmetric positive definite, by (†2) an iteration of Uzawa’s method gives
+Auk − b + C
+> λ
+k = 0
+λ
+k
+i
++1 = max{(λ
+k + ρ(Cuk − d))i
+, 0}, 1 ≤ i ≤ m.
+Theorem 50.21 implies that Uzawa’s method converges if
+0 < ρ <
+2λ1
+k
+Ck
+2
+2
+,
+where λ1 is the smallest eigenvalue of A.
+If we solve for u
+k using the first equation, we get
+λ
+k+1 = p+(λ
+k + ρ(−CA−1C
+> λ
+k + CA−1
+b − d)). (∗7)
+In Example 50.7 we showed that the gradient of the dual function G is given by
+∇Gµ = Cuµ − d = −CA−1C
+> µ + CA−1
+b − d,
+so (∗7) can be written as
+λ
+k+1 = p+(λ
+k + ρ∇Gλk );
+this shows that Uzawa’s method is indeed the gradient method with fixed stepsize applied
+to the dual program.
+1816 CHAPTER 50. INTRODUCTION TO NONLINEAR OPTIMIZATION
+50.14 Summary
+The main concepts and results of this chapter are listed below:
+• The cone of feasible directions.
+• Cone with apex.
+• Active and inactive constraints.
+• Qualified constraint at u.
+• Farkas lemma.
+• Farkas–Minkowski lemma.
+• Karush–Kuhn–Tucker optimality conditions (or KKT-conditions).
+• Complementary slackness conditions.
+• Generalized Lagrange multipliers.
+• Qualified convex constraint.
+• Lagrangian of a minimization problem.
+• Equality constrained minimization.
+• KKT matrix.
+• Newton’s method with equality constraints (feasible start and infeasible start).
+• Hard margin support vector machine
+• Training data
+• Linearly separable sets of points.
+• Maximal margin hyperplane.
+• Support vectors
+• Saddle points.
+• Lagrange dual function.
+• Lagrange dual program.
+• Duality gap.
+50.15. PROBLEMS 1817
+• Weak duality.
+• Strong duality.
+• Handling equality constraints in the Lagrangian.
+• Dual of the Hard Margin SVM (SVMh2).
+• Conjugate functions and Legendre dual functions.
+• Dual of the Hard Margin SVM (SVMh1).
+• Uzawa’s Method.
+50.15 Problems
+Problem 50.1. Prove (3) and (4) of Proposition 50.11.
+Problem 50.2. Assume that in Theorem 50.17, V = R
+n
+, J is elliptic and the constraints
+ϕi are of the form
+nX
+j=1
+cijvj ≤ di
+,
+that is, affine. Prove that the Problem (Pµ) has a unique solution which is continuous in µ.
+Problem 50.3. (1) Prove that the set of saddle points of a function L: Ω × M → R is of
+the form V0 × M0, for some V0 ⊆ Ω and some M0 ⊆ M.
+(2) Assume that Ω and M are convex subsets of some normed vector spaces, assume that
+for any fixed v ∈ Ω the map
+µ 7→ L(v, µ) is concave,
+and for any fixed µ ∈ M the map
+v 7→ L(v, µ) is convex.
+Prove that V0 × M0 is convex.
+(3) Prove that if for every fixed µ ∈ M the map
+v 7→ L(v, µ) is strictly convex,
+then V0 has a most one element.
+Problem 50.4. Prove that the conjugate of the function f given by f(X) = log det(X−1
+),
+where X is an n × n symmetric positive definite matrix, is
+f
+∗
+(Y ) = log det((−Y )
+−1
+) − n,
+where Y is an n × n symmetric negative definite matrix.
+1818 CHAPTER 50. INTRODUCTION TO NONLINEAR OPTIMIZATION
+Problem 50.5. (From Boyd and Vandenberghe [29], Problem 5.12) Given an m × n matrix
+A and any vector b ∈ R
+n
+, consider the problem
+minimize −
+mX
+i=1
+log(bi − aix)
+subject to Ax < b,
+where ai
+is the ith row of A. This is called the analytic centering problem. It can be shown
+that the problem has a unique solution iff the open polyhedron {x ∈ R
+n
+| Ax < b} is
+nonempty and bounded.
+(1) Prove that necessary and sufficient conditions for the problem to have an optimal
+solution are
+Ax < b,
+mX
+i=1
+bi −
+a
+>i
+axx
+= 0.
+(2) Derive a dual program for the above program.
+Hint. First introduce new variables yi and equations yi = bi − aix.
+Problem 50.6. (From Boyd and Vandenberghe [29], Problem 5.13) A Boolean linear pro￾gram is the following optimization problem:
+minimize c
+> x
+subject to Ax ≤ b
+xi ∈ {0, 1}, i = 1, . . . , n,
+where A is an m × n matrix, c ∈ R
+n and b ∈ R
+m. The fact that the solutions x ∈ R
+n are
+constrained to have coordinates xi taking the values 0 or 1 makes it a hard problem. The
+above problem can be stated as a program with quadratic constraints:
+minimize c
+> x
+subject to Ax ≤ b
+xi(1 − xi) = 0, i = 1, . . . , n.
+(1) Derive the Lagrangian dual of the above program.
+(2) A way to approximate a solution of the Boolean linear program is to consider its
+linear relaxation where the constraints xi ∈ {0, 1} are replaced by the linear constraints
+0 ≤ xi ≤ 1:
+minimize c
+> x
+subject to Ax ≤ b
+0 ≤ xi ≤ 1, i = 1, . . . , n.
+Find the dual linear program of the above linear program. Show that the maxima of the
+dual programs in (1) and (2) are the same.
+Chapter 51
+Subgradients and Subdifferentials of
+Convex Functions ~
+In this chapter we consider some deeper aspects of the theory of convex functions that are
+not necessarily differentiable at every point of their domain. Some substitute for the gradient
+is needed. Fortunately, for convex functions, there is such a notion, namely subgradients.
+Geometrically, given a (proper) convex function f, the subgradients at x are vectors normal
+to supporting hyperplanes to the epigraph of the function at (x, f(x)). The subdifferential
+∂f(x) to f at x is the set of all subgradients at x. A crucial property is that f is differentiable
+at x iff ∂f(x) = {∇fx}, where ∇fx is the gradient of f at x. Another important property is
+that a (proper) convex function f attains its minimum at x iff 0 ∈ ∂f(x). A major motivation
+for developing this more sophisticated theory of “differentiation” of convex functions is to
+extend the Lagrangian framework to convex functions that are not necessarily differentiable.
+Experience shows that the applicability of convex optimization is significantly increased
+by considering extended real-valued functions, namely functions f : S → R ∪ {−∞, +∞},
+where S is some subset of R
+n
+(usually convex). This is reminiscent of what happens in
+measure theory, where it is natural to consider functions that take the value +∞. We
+already encountered functions that take the value −∞ as a result of a minimization that
+does not converge. For example, if J(u, v) = u, and we have the affine constraint v = 0, for
+any fixed λ, the minimization problem
+minimize u + λv
+subject to v = 0,
+yields the solution u = −∞ and v = 0.
+Until now, we chose not to consider functions taking the value −∞, and instead we
+considered partial functions, but it turns out to be convenient to admit functions taking the
+value −∞.
+Allowing functions to take the value +∞ is also a convenient alternative to dealing with
+partial functions. This situation is well illustrated by the indicator function of a convex set.
+1819
+1820 CHAPTER 51. SUBGRADIENTS AND SUBDIFFERENTIALS ~
+Definition 51.1. Let C ⊆ R
+n be any subset of R
+n
+. The indicator function IC of C is the
+function given by
+IC(u) = ( 0 if
++∞ if
+u
+u /
+∈
+∈
+C
+C.
+The indicator function IC is a variant of the characteristic function χC of the set C
+(defined such that χC(u) = 1 if u ∈ C and χC(u) = 0 if u /∈ C). Rockafellar denotes the
+indicator function IC by δ(−|C); that is, δ(u|C) = IC(u); see Rockafellar [138], Page 28.
+Given a partial function f : R
+n → R ∪ {−∞}, by setting f(u) = +∞ if u /∈ dom(f), we
+convert the partial function f into a total function with values in R ∪ {−∞, +∞}. Still,
+one has to remember that such functions are really partial functions, but −∞ and +∞ play
+different roles. The value f(x) = −∞ indicates that computing f(x) using a minimization
+procedure did not terminate, but f(x) = +∞ means that the function f is really undefined
+at x.
+The definition of a convex function f : S → R∪ {−∞, +∞} needs to be slightly modified
+to accommodate the infinite values ±∞. The cleanest definition uses the notion of epigraph.
+A remarkable and very useful fact is that the optimization problem
+minimize J(u)
+subject to u ∈ C,
+where C is a closed convex set in R
+n and J is a convex function can be rewritten in term of
+the indicator function IC of C, as
+minimize J(u) + IC(z)
+subject to u − z = 0.
+But J(u) + IC(z) is not differentiable, even if J is, which forces us to deal with convex
+functions which are not differentiable
+Convex functions are not necessarily differentiable, but if a convex function f has a finite
+value f(u) at u (which means that f(u) ∈ R), then it has a one-sided directional derivative
+at u. Another crucial notion is the notion of subgradient, which is a substitute for the notion
+of gradient when the function f is not differentiable at u.
+In Section 51.1, we introduce extended real-valued functions, which are functions that
+may also take the values ±∞. In particular, we define proper convex functions, and the
+closure of a convex function. Subgradients and subdifferentials are defined in Section 51.2.
+We discuss some properties of subgradients in Section 51.3 and Section 51.4. In particular,
+we relate subgradients to one-sided directional derivatives. In Section 51.5, we discuss the
+problem of finding the minimum of a proper convex function and give some criteria in terms
+of subdifferentials. In Section 51.6, we sketch the generalization of the results presented in
+Chapter 50 about the Lagrangian framework to programs allowing an objective function and
+51.1. EXTENDED REAL-VALUED CONVEX FUNCTIONS 1821
+inequality constraints which are convex but not necessarily differentiable. In fact, it is fair to
+say that the theory of extended real-valued convex functions and the notions of subgradient
+and subdifferential developed in this chapter constitute the machinery needed to extend the
+Lagrangian framework to convex functions that are not necessarily differentiable.
+This chapter relies heavily on Rockafellar [138]. Some of the results in this chapter are
+also discussed in Bertsekas [16, 19, 17]. It should be noted that Bertsekas has developed a
+framework to discuss duality that he refers to as the min common/max crossing framework,
+for short MC/MC. Although this framework is elegant and interesting in its own right, the
+fact that Bertsekas relies on it to prove properties of subdifferentials makes it little harder
+for a reader to “jump in.”
+51.1 Extended Real-Valued Convex Functions
+We extend the ordering on R by setting
+−∞ < x < +∞, for all x ∈ R.
+Definition 51.2. A (total) function f : R
+n → R ∪ {−∞, +∞} is called an extended real￾valued function. For any x ∈ R
+n
+, we say that f(x) is finite if f(x) ∈ R (equivalently,
+f(x) 6 = ±∞). The function f is finite if f(x) is finite for all x ∈ R
+n
+.
+Adapting slightly Definition 40.8, given a function f : R
+n → R∪{−∞, +∞}, the epigraph
+of f is the subset of R
+n+1 given by
+epi(f) = {(x, y) ∈ R
+n+1 | f(x) ≤ y}.
+See Figure 51.1.
+If S is a nonempty subset of R
+n
+, the epigraph of the restriction of f to S is defined as
+epi(f|S) = {(x, y) ∈ R
+n+1 | f(x) ≤ y, x ∈ S}.
+Observe the following facts:
+1. For any x ∈ S, if f(x) = −∞, then epi(f) contains the “vertical line” {(x, y) | y ∈ R}
+in R
+n+1
+.
+2. For any x ∈ S, if f(x) ∈ R, then epi(f) contains the ray {(x, y)} | f(x) ≤ y} in R
+n+1
+.
+3. For any x ∈ S, if f(x) = +∞, then epi(f) does not contain any point (x, y), with
+y ∈ R.
+4. We have epi(f) = ∅ iff f corresponds to the partial function undefined everywhere;
+that is, f(x) = +∞ for all x ∈ R
+n
+.
+1822 CHAPTER 51. SUBGRADIENTS AND SUBDIFFERENTIALS ~
+>>
+(x, x ) 3
+Figure 51.1: Let f : R → R ∪ {−∞, +∞} be given by f(x) = x
+3
+for x ∈ R. Its graph in R
+2
+is the magenta curve, and its epigraph is the union of the magenta curve and blue region
+“above” this curve. For any point x ∈ R, epi(f) contains the ray which starts at (x, x3
+) and
+extends upward.
+Definition 51.3. Given a nonempty subset S of R
+n
+, a (total) function f : R
+n → R ∪
+{−∞, +∞} is convex on S if its epigraph epi(f|S) is convex as a subset of R
+n+1. See Figure
+51.2. The function f is concave on S if −f is convex on S. The function f is affine on S if
+it is finite, convex, and concave. If S = R
+n
+, we simply that f is convex (resp. concave, resp.
+affine).
+Definition 51.4. Given any function f : R
+n → R∪{−∞, +∞}, the effective domain dom(f)
+of f is given by
+dom(f) = {x ∈ R
+n
+| (∃y ∈ R)((x, y) ∈ epi(f))} = {x ∈ R
+n
+| f(x) < +∞}.
+Observe that the effective domain of f contains the vectors x ∈ R
+n
+such that f(x) = −∞,
+but excludes the vectors x ∈ R
+n
+such that f(x) = +∞.
+Example 51.1. The above fact is illustrated by the function f : R → R∪ {−∞, +∞} where
+f(x) = ( −x
+2
+if x ≥ 0
++∞ if x < 0.
+The epigraph of this function is illustrated Figure 51.3. By definition dom(f) = [0,∞).
+If f is a convex function, since dom(f) is the image of epi(f) by a linear map (a projec￾tion), it is convex .
+By definition, epi(f|S) is convex iff for any (x1, y1) and (x2, y2) with x1, x2 ∈ S and
+y1, y2 ∈ R such that f(x1) ≤ y1 and f(x2) ≤ y2, for every λ such that 0 ≤ λ ≤ 1, we have
+(1 − λ)(x1, y1) + λ(x2, y2) = ((1 − λ)x1 + λx2,(1 − λ)y1 + λy2) ∈ epi(f|S),
+51.1. EXTENDED REAL-VALUED CONVEX FUNCTIONS 1823
+, ;
+Figure 51.2: Let f : R → R ∪ {−∞, +∞} be given by f(x) = x
+2
+for x ∈ R. Its graph in R
+2
+is the magenta curve, and its epigraph is the union of the magenta curve and blue region
+“above” this curve. Observe that epi(f) is a convex set of R
+2
+since the aqua line segment
+connecting any two points is contained within the epigraph.
+which means that (1 − λ)x1 + λx2 ∈ S and
+f((1 − λ)x1 + λx2) ≤ (1 − λ)y1 + λy2. (∗)
+Thus S must be convex and f((1 − λ)x1 + λx2) < +∞. Condition (∗) is a little awkward,
+since it does not refer explicitly to f(x1) and f(x2), as these values may be −∞, in which
+case it is not clear what the expression (1 − λ)f(x1) + λf(x2) means.
+In order to perform arithmetic operations involving −∞ and +∞, we adopt the following
+conventions:
+α + (+∞) = +∞ + α = +∞ − ∞ < α ≤ +∞
+α + −∞ = −∞ + α = −∞ − ∞ ≤ α < +∞
+α(+∞) = (+∞)α = +∞ 0 < α ≤ +∞
+α(−∞) = (−∞)α = −∞ 0 < α ≤ +∞
+α(+∞) = (+∞)α = −∞ − ∞ ≤ α < 0
+α(−∞) = (−∞)α = +∞ − ∞ ≤ α < 0
+0(+∞) = (+∞)0 = 0 0(−∞) = (−∞)0 = 0
+−(−∞) = +∞
+inf ∅ = +∞ sup ∅ = −∞.
+The expressions +∞ + (−∞) and −∞ + (+∞) are meaningless.
+The following characterizations of convex functions are easy to show.
+Proposition 51.1. Let C be a nonempty convex subset of R
+n
+.
+1824 CHAPTER 51. SUBGRADIENTS AND SUBDIFFERENTIALS ~
+Figure 51.3: The epigraph of the concave function f(x) = −x
+2

@@ -1,0 +1,1000 @@
+the number of misclassified points. This is reflected in the choice of the objective function,
+and there are several options, depending on whether we minimize a linear function of the
+variables  i and ξj
+, or a quadratic functions of these variables, or whether we include the term
+(1/2)b
+2
+in the objective function. These methods are known as support vector classification
+algorithms (for short SVC algorithms).
+1931
+SVC algorithms seek an “optimal” separating hyperplane H of equation w
+> x − b = 0. If
+some new data x ∈ R
+n
+comes in, we can classify it by determining in which of the two half
+spaces determined by the hyperplane H they belong by computing the sign of the quantity
+w
+> x − b. The function sgn: R → {−1, 1} is given by
+sgn(x) = ( +1 if
+−1 if
+x
+x <
+≥
+0
+0
+.
+Then we define the (binary) classification function associated with the hyperplane H of
+equation w
+> x − b = 0 as
+f(x) = sgn(w
+> x − b).
+Remarkably, all the known optimization problems for finding this hyperplane share the
+property that the weight vector w and the constant b are given by expressions that only
+involves inner products of the input data points ui and vj
+, and so does the classification
+function
+f(x) = sgn(w
+> x − b).
+This is a key fact that allows a far reaching generalization of the support vector machine
+using the method of kernels.
+The method of kernels consists in assuming that the input space R
+n
+is embedded in
+a larger (possibly infinite dimensional) Euclidean space F (with an inner product h−, −i)
+usually called a feature space, using a function
+ϕ: R
+n → F
+called a feature map. The function κ: R
+n × R
+n → R given by
+κ(x, y) = h ϕ(x), ϕ(y)i
+is the kernel function associated with the embedding ϕ; see Chapter 53. The idea is that
+the feature map ϕ “unwinds” the input data, making it somehow more linear in the higher
+dimensional space F. Now even if we don’t know what the feature space F is and what the
+embedding map ϕ is, we can pretend to solve our separation problem in F for the embedded
+data points ϕ(ui) and ϕ(vj ). Thus we seek a hyperplane H of equation
+h
+w, ζi − b = 0, ζ ∈ F,
+in the feature space F, to attempt to separate the points ϕ(ui) and the points ϕ(vj ). As we
+said, it turns out that w and b are given by expression involving only the inner products
+κ(ui
+, uj ) = h ϕ(ui), ϕ(uj )i , κ(ui
+, vj ) = h ϕ(ui), ϕ(vj )i , and κ(vi
+, vj ) = h ϕ(vi), ϕ(vj )i , which
+form the symmetric (p + q) × (p + q) matrix K (a kernel matrix) given by
+Kij =
+
+
+
+κ(ui
+, uj ) 1 ≤ i ≤ p, 1 ≤ j ≤ q
+−κ(ui
+, vj−p) 1 ≤ i ≤ p, p + 1 ≤ j ≤ p + q
+−κ(vi−p, uj ) p + 1 ≤ i ≤ p + q, 1 ≤ j ≤ p
+κ(vi−p, vj−q) p + 1 ≤ i ≤ p + q, p + 1 ≤ j ≤ p + q.
+1932 CHAPTER 54. SOFT MARGIN SUPPORT VECTOR MACHINES
+For example, if p = 2 and q = 3, we have the matrix
+K =
+
+
+κ(u1, u1) κ(u1, u2) −κ(u1, v1) −κ(u1, v2) −κ(u1, v3)
+κ(u2, u1) κ(u2, u2) −κ(u2, v1) −κ(u2, v2) −κ(u2, v3)
+−κ(v1, u1) −κ(v1, u2) κ(v1, v1) κ(v1, v2) κ(v1, v3)
+−κ(v2, u1) −κ(v2, u2) κ(v2, v1) κ(v2, v2) κ(v2, v3)
+−κ(v3, u1) −κ(v3, u2) κ(v3, v1) κ(v3, v2) κ(v3, v3)
+
+
+.
+Then the classification function
+f(x) = sgn(h w, ϕ(x)i − b)
+for points in the original data space R
+n
+is also expressed solely in terms of the matrix K and
+the inner products κ(ui
+, x) = h ϕ(ui), ϕ(x)i and κ(vj
+, x) = h ϕ(vj ), ϕ(x)i . As a consequence,
+in the original data space R
+n
+, the hypersurface
+S = {x ∈ R
+n
+| hw, ϕ(x)i − b = 0}
+separates the data points ui and vj
+, but it is not an affine subspace of R
+n
+. The classification
+function f tells us on which “side” of S is a new data point x ∈ R
+n
+. Thus, we managed
+to separate the data points ui and vj that are not separable by an affine hyperplane, by a
+nonaffine hypersurface S, by assuming that an embdedding ϕ: R
+n → F exists, even though
+we don’t know what it is, but having access to F through the kernel function κ: R
+n×R
+n → R
+given by the inner products κ(x, y) = h ϕ(x), ϕ(y)i .
+In practice the art of using the kernel method is to choose the right kernel (as the knight
+says in Indiana Jones, to “choose wisely.”).
+The method of kernels is very flexible. It also applies to the soft margin versions of
+SVM, but also to regression problems, to principal component analysis (PCA), and to other
+problems arising in machine learning.
+We discussed the method of kernels in Chapter 53. Other comprehensive presentations
+of the method of kernels are found in Sch¨olkopf and Smola [145] and Shawe–Taylor and
+Christianini [159]. See also Bishop [23].
+We first consider the soft margin SVM arising from Problem (SVMh1).
+54.1 Soft Margin Support Vector Machines; (SVMs1)
+In this section we derive the dual function G associated with the following version of the
+soft margin SVM coming from Problem (SVMh1), where the maximization of the margin δ
+has been replaced by the minimization of −δ, and where we added a “regularizing term”
+K
+
+P
+p
+i=1  i +
+P
+q
+j=1 ξj
+ whose purpose is to make  ∈ R
+p and ξ ∈ R
+q
+sparse (that is, try to
+make  i and ξj have as many zeros as possible), where K > 0 is a fixed constant that can be
+54.1. SOFT MARGIN SUPPORT VECTOR MACHINES; (SVMs1) 1933
+adjusted to determine the influence of this regularizing term. If the primal problem (SVMs1)
+has an optimal solution (w, δ, b, , ξ), we attempt to use the dual function G to obtain it, but
+we will see that with this particular formulation of the problem, the constraint w
+> w ≤ 1
+causes troubles even though it is convex.
+Soft margin SVM (SVMs1):
+minimize − δ + K
+
+p
+X
+i=1
+
+i +
+q
+X
+j=1
+ξj
+
+subject to
+w
+> ui − b ≥ δ −  i
+, i ≥ 0 i = 1, . . . , p
+− w
+> vj + b ≥ δ − ξj
+, ξj ≥ 0 j = 1, . . . , q
+w
+> w ≤ 1.
+It is customary to write ` = p + q. Figure 54.2 illustrates the correct margin half space
+associated with w
+> x − b − δ = 0 while Figure 54.3 illustrates the correct margin half space
+associated with w
+> x − b + δ = 0. Ideally, all the points should be contained in one of the
+two correct shifted margin regions described by affine constraints w
+> ui − b ≥ δ −  i
+, or
+−w
+> vj + b ≥ δ − ξj
+.
+w x - b - T δ < 0
+T
+Incorrect side of Blue Margin
+w x - b - δ > 0
+Correct side of Blue Margin
+separting hyperplane
+Figure 54.2: The blue margin half space associated with w
+> x − b − δ = 0.
+For this problem, the primal problem may have an optimal solution (w, δ, b, , ξ) with
+k
+solution of the dual may not yield
+wk = 1 and δ > 0, but if the sets of points are not linearly separable then an optimal
+w.
+w x - b - δ = 0
+w x - b + δ = 0
+w x - b - δ = 0
+w x - b = 0
+T
+T
+T
+T
+1934 CHAPTER 54. SOFT MARGIN SUPPORT VECTOR MACHINES
+T
+T
+Correct side of Red Margin 
+w x -b + δ > 0
+w x -b + δ < 0
+Incorrect side of Red Margin
+Figure 54.3: The red margin half space associated with w
+> x − b + δ = 0.
+The objective function of our problem is affine and the only nonaffine constraint w
+> w ≤ 1
+is convex. This constraint is qualified because for any w 6 = 0 such that w
+> w < 1 and for
+any δ > 0 and any b we can pick  and ξ large enough so that the constraints are satisfied.
+Consequently, by Theorem 50.17(2) if the primal problem (SVMs1) has an optimal solution,
+then the dual problem has a solution too, and the duality gap is zero.
+Unfortunately this does not imply that an optimal solution of the dual yields an optimal
+solution of the primal because the hypotheses of Theorem 50.17(1) fail to hold. In general,
+there may not be a unique vector (w, , ξ, b, δ) such that
+inf
+w,,ξ,b,δ
+L(w, , ξ, b, δ, λ, µ, α, β, γ) = G(λ, µ, α, β, γ).
+If the sets {ui} and {vj} are not linearly separable, then the dual problem may have a
+solution for which γ = 0,
+p
+X
+i=1
+λi =
+q
+X
+j=1
+µj =
+1
+2
+,
+and
+p
+X
+i=1
+λiui =
+q
+X
+j=1
+µjvj
+,
+so that the dual function G(λ, µ, α, β, γ), which is a partial function, is defined and has the
+value G(λ, µ, α, β, 0) = 0. Such a pair (λ, µ) corresponds to the coefficients of two convex
+T
+0 = w x - b
+w x - b - δ = 0
+w x -b + δ = 0
+T
+T
+54.1. SOFT MARGIN SUPPORT VECTOR MACHINES; (SVMs1) 1935
+combinations
+p
+X
+i=1
+2λiui =
+q
+X
+j=1
+2µjvj
+which correspond to the same point in the (nonempty) intersection of the convex hulls
+conv(u1, . . . , up) and conv(v1, . . . , vq). It turns out that the only connection between w
+and the dual function is the equation
+2γw =
+p
+X
+i=1
+λiui −
+q
+X
+j=1
+µjvj
+,
+and when γ = 0 this is equation is 0 = 0, so the dual problem is useless to determine w.
+This point seems to have been missed in the literature (for example, in Shawe–Taylor and
+Christianini [159], Section 7.2). What the dual problem does show is that δ ≥ 0. However,
+if γ 6 = 0, then w is determined by any solution (λ, µ) of the dual.
+It still remains to compute δ and b, which can be done under a mild hypothesis that we
+call the Standard Margin Hypothesis.
+Let λ ∈ R
+p
++ be the Lagrange multipliers associated with the inequalities w
+> ui−b ≥ δ− i
+,
+let µ ∈ R
+q
++ be the Lagrange multipliers are associated with the inequalities −w
+> vj+b ≥ δ−ξj
+,
+let α ∈ R
+p
++ be the Lagrange multipliers associated with the inequalities  i ≥ 0, β ∈ R
+q
++ be
+the Lagrange multipliers associated with the inequalities ξj ≥ 0, and let γ ∈ R
++ be the
+Lagrange multiplier associated with the inequality w
+> w ≤ 1.
+The linear constraints are given by the 2(p + q) × (n + p + q + 2) matrix given in block
+form by
+C =
+
+
+X> −Ip+q
+1p
+−1q
+1p+q
+0p+q,n −Ip+q 0p+q 0p+q
+
+ ,
+where X is the n × (p + q) matrix
+X =
+￾ −u1 · · · −up v1 · · · vq
+ ,
+and the linear constraints are expressed by
+
+
+X> −Ip+q
+1p
+−1q
+1p+q
+0p+q,n −Ip+q 0p+q 0p+q
+
+
+
+
+w
+
+ξ
+b
+δ
+
+
+≤
+
+0p+q
+0p+q
+
+.
+1936 CHAPTER 54. SOFT MARGIN SUPPORT VECTOR MACHINES
+More explicitly, C is the following matrix:
+C =
+
+
+−u
+>1 −1 · · · 0 0 · · · 0 1 1
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+−u
+>p
+0 · · · −1 0 · · · 0 1 1
+v1
+>
+0 · · · 0 −1 · · · 0 −1 1
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+vq
+>
+0 · · · 0 0 · · · −1 −1 1
+0 −1 · · · 0 0 · · · 0 0 0
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+0 0 · · · −1 0 · · · 0 0 0
+0 0 · · · 0 −1 · · · 0 0 0
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+0 0 · · · 0 0 · · · −1 0 0
+.
+
+
+.
+The objective function is given by
+J(w, , ξ, b, δ) = −δ + K
+￾  > ξ
+>
+ 1p+q.
+The Lagrangian L(w, , ξ, b, δ, λ, µ, α, β, γ) with λ, α ∈ R
+p
++, µ, β ∈ R
+q
++, and γ ∈ R
++ is given
+by
+L(w, , ξ, b, δ, λ, µ, α, β, γ) = −δ + K
+￾  > ξ
+>
+ 1p+q
++
+￾ w
+>
+￾ 
+> ξ
+>
+ b δ C
+>
+
+
+λ
+α
+µ
+β
+
+
++ γ(w
+> w − 1).
+Since
+￾
+w
+>
+￾ 
+> ξ
+>
+ b δ C
+>
+
+
+λ
+α
+µ
+β
+
+ = w
+> X
+
+µ
+λ
+
+− 
+> (λ + α) − ξ
+> (µ + β) + b(1
+>p λ − 1
+>q µ)
++ δ(1
+>p λ + 1
+>q µ),
+the Lagrangian can be written as
+L(w, , ξ, b, δ, λ, µ, α, β, γ) = −δ + K(
+> 1p + ξ
+> 1q) + w
+> X
+
+µ
+λ
+
++ γ(w
+> w − 1)
+− 
+> (λ + α) − ξ
+> (µ + β) + b(1
+>p λ − 1
+>q µ) + δ(1
+>p λ + 1
+>q µ)
+= (1
+>p λ + 1
+>q µ − 1)δ + w
+> X
+
+µ
+λ
+
++ γ(w
+> w − 1)
++ 
+> (K1p − (λ + α)) + ξ
+> (K1q − (µ + β)) + b(1
+>p λ − 1
+>q µ).
+54.1. SOFT MARGIN SUPPORT VECTOR MACHINES; (SVMs1) 1937
+To find the dual function G(λ, µ, α, β, γ) we minimize L(w, , ξ, b, δ, λ, µ, α, β, γ) with
+respect to w, , ξ, b, and δ. Since the Lagrangian is convex and (w, , ξ, b, δ) ∈ R
+n ×R
+p ×R
+q ×
+R × R, a convex open set, by Theorem 40.13, the Lagrangian has a minimum in (w, , ξ, b, δ)
+iff ∇Lw,,ξ,b,δ = 0, so we compute the gradient with respect to w, , ξ, b, δ, and we get
+∇Lw,,ξ,b,δ =
+
+
+X
+
+µ
+λ
+
++ 2γw
+K1p − (λ + α)
+K1q − (µ + β)
+1
+>p
+1
+λ
+>
+p
++
+λ −
+1
+>q
+1
+µ
+>
+q
+−
+µ
+1
+
+
+.
+By setting ∇Lw,,ξ,b,δ = 0 we get the equations
+2γw = −X
+
+µ
+λ
+
+λ + α = K1p (∗w)
+µ + β = K1q
+1
+>p λ = 1
+>q µ
+1
+>p λ + 1
+>q µ = 1.
+The second and third equations are equivalent to the inequalities
+0 ≤ λi
+, µj ≤ K, i = 1, . . . , p, j = 1, . . . , q,
+often called box constraints, and the fourth and fifth equations yield
+1
+>p λ = 1
+>q µ =
+1
+2
+.
+First let us consider the singular case γ = 0. In this case, (∗w) implies that
+X
+
+µ
+λ
+
+= 0,
+and the term γ(w
+> w − 1) is missing from the Lagrangian, which in view of the other four
+equations above reduces to
+L(w, , ξ, b, δ, λ, µ, α, β, 0) = w
+> X
+
+µ
+λ
+
+= 0.
+In summary, we proved that if γ = 0, then
+G(λ, µ, α, β, 0) =
+
+
+
+0 if
+
+
+
+P
+p
+i=1 λi =
+P
+q
+j=1 µj =
+1
+2
+0 ≤ λi ≤ K, i = 1, . . . , p
+0 ≤ µj ≤ K, j = 1, . . . , q
+−∞ otherwise
+and P p
+i=1 λiui −
+P
+q
+j=1 µjvj = 0.
+1938 CHAPTER 54. SOFT MARGIN SUPPORT VECTOR MACHINES
+Geometrically, (λ, µ) corresponds to the coefficients of two convex combinations
+p
+X
+i=1
+2λiui =
+q
+X
+j=1
+2µjvj
+which correspond to the same point in the intersection of the convex hulls conv(u1, . . . , up)
+and conv(v1, . . . , vq) iff the sets {ui} and {vj} are not linearly separable. If the sets {ui} and
+disjoint, which implies that
+{vj} are linearly separable, then the convex hulls conv(
+γ > 0.
+u1, . . . , up) and conv(v1, . . . , vq) are
+Let us now assume that γ > 0. Plugging back w from equation (∗w) into the Lagrangian,
+after simplifications we get
+G(λ, µ, α, β, γ) = −
+2
+1
+γ
+￾
+λ
+> µ
+>
+ X
+> X
+
+µ
+λ
+
++
+4
+γ
+γ
+2
+￾
+λ
+> µ
+>
+ X
+> X
+
+µ
+λ
+
+− γ
+= −
+4
+1
+γ
+￾
+λ
+> µ
+>
+ X
+> X
+
+µ
+λ
+
+− γ,
+so if γ > 0 the dual function is independent of α, β and is given by
+G(λ, µ, α, β, γ) =
+
+
+
+−
+1
+4γ
+
+λ
+> µ
+>
+ X> X
+ 
+µ
+λ
+!
+− γ if
+
+
+
+P
+p
+i=1 λi =
+P
+q
+j=1 µj =
+1
+2
+0 ≤ λi ≤ K, i = 1, . . . , p
+0 ≤ µj ≤ K, j = 1, . . . , q
+−∞ otherwise.
+Since X> X is symmetric positive semidefinite and γ ≥ 0, obviously
+G(λ, µ, α, β, γ) ≤ 0
+for all γ > 0.
+The dual program is given by
+maximize −
+4
+1
+γ
+￾
+λ
+> µ
+>
+ X
+> X
+
+µ
+λ
+
+− γ if γ > 0
+0 if γ = 0
+subject to
+p
+X
+i=1
+λi −
+q
+X
+j=1
+µj = 0
+p
+X
+i=1
+λi +
+q
+X
+j=1
+µj = 1
+0 ≤ λi ≤ K, i = 1, . . . , p
+0 ≤ µj ≤ K, j = 1, . . . , q.
+54.1. SOFT MARGIN SUPPORT VECTOR MACHINES; (SVMs1) 1939
+Also, if γ = 0, then X
+
+µ
+λ
+
+= 0.
+Maximizing with respect to γ > 0 by setting ∂γ
+∂ G(λ, µ, α, β, γ) = 0 yields
+γ
+2 =
+1
+4
+￾
+λ
+> µ
+>
+ X
+> X
+
+µ
+λ
+
+,
+so we obtain
+G(λ, µ) = −
+
+￾ λ
+> µ
+>
+ X
+> X
+
+µ
+λ
+
+1/2
+.
+Finally, since G(λ, µ) = 0 and X
+
+µ
+λ
+
+= 0 if γ = 0, the dual program is equivalent to
+the following minimization program:
+Dual of Soft margin SVM (SVMs1):
+minimize ￾ λ
+> µ
+>
+ X
+> X
+
+µ
+λ
+
+subject to
+p
+X
+i=1
+λi −
+q
+X
+j=1
+µj = 0
+p
+X
+i=1
+λi +
+q
+X
+j=1
+µj = 1
+0 ≤ λi ≤ K, i = 1, . . . , p
+0 ≤ µj ≤ K, j = 1, . . . , q.
+Observe that the constraints imply that K must be chosen so that
+K ≥ max 
+2
+1
+p
+,
+2
+1
+q
+
+.
+If (w, δ, b, , ξ) is an optimal solution of Problem (SVMs1), then the complementary slack￾ness conditions yield a classification of the points ui and vj
+in terms of the values of λ and
+µ. Indeed, we have  iαi = 0 for i = 1, . . . , p and ξjβj = 0 for j = 1, . . . , q. Also, if λi > 0,
+then corresponding constraint is active, and similarly if µj > 0. Since λi +αi = K, it follows
+that  iαi = 0 iff  i(K − λi) = 0, and since µj + βj = K, we have ξjβj = 0 iff ξj (K − µj ) = 0.
+Thus if  i > 0, then λi = K, and if ξj > 0, then µj = K. Consequently, if λi < K, then
+
+i = 0 and ui
+is correctly classified, and similarly if µj < K, then ξj = 0 and vj
+is correctly
+classified. We have the following classification:
+1940 CHAPTER 54. SOFT MARGIN SUPPORT VECTOR MACHINES
+(1) If 0 < λi < K, then  i = 0 and the i-th inequality is active, so
+w
+> ui − b − δ = 0.
+This means that ui
+is on the blue margin (the hyperplane Hw,b+δ of equation w
+> x =
+b + δ) and is classified correctly.
+Similarly, if 0 < µj < K, then ξj = 0 and
+w
+> vj − b + δ = 0,
+so vj
+is on the red margin (the hyperplane Hw,b−δ of equation w
+> x = b − δ) and is
+classified correctly. See Figure 54.4.
+ ui 
+0 < < K λi
+v
+ 
+0 < < K μ
+Case (1)
+w x - b - T δ = 0
+w x -b - T δ = 0
+w x -b + T δ = 0
+w x -b + T δ = 0
+j
+j
+Figure 54.4: When 0 < λi < K, ui
+is contained within the blue margin hyperplane. When
+0 < µj < K, vj
+is contained within the red margin hyperplane.
+(2) If λi = K, then the i-th inequality is active, so
+w
+> ui − b − δ = − i
+.
+If  i = 0, then the point ui
+is on the blue margin. If  i > 0, then ui
+is within the
+open half space bounded by the blue margin hyperplane Hw,b+δ and containing the
+separating hyperplane Hw,b; if  i ≤ δ, then ui
+is classified correctly, and if  i > δ, then
+ui
+is misclassified (ui
+lies on the wrong side of the separating hyperplane, the red side).
+See Figure 54.5.
+Similarly, if µj = K, then
+w
+> vj − b + δ = ξj
+.
+If ξj = 0, then the point vj
+is on the red margin. If ξj > 0, then vj
+is within the
+open half space bounded by the red margin hyperplane Hw,b−δ and containing the
+wTx
+b
+wTx= b
+=
+54.1. SOFT MARGIN SUPPORT VECTOR MACHINES; (SVMs1) 1941
+v
+w x - b = 0 T
+w x - b + T δ = 0
+w x - b - T δ = 0
+ui
+v
+w x - b = 0 T
+w x - b + T δ = 0
+w x - b - T δ = 0
+ui v
+w x - b = 0 T
+w x - b + T δ = 0
+w x - b - T δ = 0
+u i
+v
+w x - b = 0 T
+w x - b + T δ = 0
+w x - b - T δ = 0
+ui
+(3)
+єi = 0i
+λ i = K
+j j
+ξ = 0 j
+λ i = K 0 < Є < δ
+j
+μ = K
+j
+i
+j
+0 < ξ < δ
+0 < λ < K
+0 < μ < K
+Correctly classified on margin
+vj Є = i δ
+λ i = K

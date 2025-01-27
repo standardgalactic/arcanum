@@ -1,0 +1,1000 @@
+,
+and so the method diverges, except for λ
+0 = 0, which is the optimal solution.
+The method of multipliers converges under conditions that are far more general than the
+dual ascent. However, the addition of the penalty term has the negative effect that even if J
+is separable, then the Lagrangian Lρ is not separable. Thus the basic method of multipliers
+cannot be used for decomposition and is not parallelizable. The next method deals with the
+problem of separability.
+52.3 ADMM: Alternating Direction Method of
+Multipliers
+The alternating direction method of multipliers, for short ADMM, combines the decompos￾ability of dual ascent with the superior convergence properties of the method of multipliers.
+It can be viewed as an approximation of the method of multipliers, but it is generally supe￾rior.
+The idea is to split the function J into two independent parts, as J(x, z) = f(x) + g(z),
+and to consider the Minimization Problem (Padmm),
+minimize f(x) + g(z)
+subject to Ax + Bz = c,
+for some p × n matrix A, some p × m matrix B, and with x ∈ R
+n
+, z ∈ R
+m, and c ∈ R
+p
+. We
+also assume that f and g are convex. Further conditions will be added later.
+As in the method of multipliers, we form the augmented Lagrangian
+Lρ(x, z, λ) = f(x) + g(z) + λ
+> (Ax + Bz − c) + (ρ/2) k Ax + Bz − ck
+2
+2
+,
+with λ ∈ R
+p and for some ρ > 0.
+Given some initial values (z
+0
+, λ0
+), the ADMM method consists of the following iterative
+steps:
+x
+k+1 = arg min
+x
+Lρ(x, zk
+, λk
+)
+z
+k+1 = arg min
+z
+Lρ(x
+k+1, z, λk
+)
+λ
+k+1 = λ
+k + ρ(Axk+1 + Bzk+1 − c).
+52.3. ADMM: ALTERNATING DIRECTION METHOD OF MULTIPLIERS 1877
+Instead of performing a minimization step jointly over x and z, as the method of multi￾pliers would in the step
+(x
+k+1, zk+1) = arg min
+x,z
+Lρ(x, z, λk
+),
+ADMM first performs an x-minimization step, and then a z-minimization step. Thus x and
+z are updated in an alternating or sequential fashion, which accounts for the term alternating
+direction.
+The algorithm state in ADMM is (z
+k
+, λk
+), in the sense that (z
+k+1, λk+1) is a function
+of (z
+k
+, λk
+). The variable x
+k+1 is an auxiliary variable which is used to compute z
+k+1 from
+(z
+k
+, λk
+). The roles of x and z are not quite symmetric, since the update of x is done before
+the update of λ. By switching x and z, f and g and A and B, we obtain a variant of ADMM
+in which the order of the x-update step and the z-update step are reversed.
+Example 52.4. Let us reconsider the problem of Example 52.2 to solve it using ADMM.
+We formulate the problem as
+minimize 2x + z
+2
+subject to 2x − z = 0,
+with f(x) = 2x and g(z) = z
+2
+. The augmented Lagrangian is given by
+Lρ(x, z, λ) = 2x + z
+2 + 2λx − λz + 2ρx2 − 2ρxz +
+ρ
+2
+z
+2
+.
+The ADMM steps are as follows. The x-update is
+x
+k+1 = arg min
+x
+￾
+2ρx2 − 2ρxzk + 2λ
+kx + 2x
+ ,
+and since this is a quadratic function in x, its minimum is achieved when the derivative of
+the above function (with respect to x) is zero, namely
+x
+k+1 =
+1
+2
+z
+k −
+1
+2ρ
+λ
+k −
+1
+2ρ
+. (1)
+The z-update is
+z
+k+1 = arg min
+z
+
+z
+2 +
+ρ
+2
+z
+2 − 2ρxk+1z − λ
+k
+z
+ ,
+and as for the x-step, the minimum is achieved when the derivative of the above function
+(with respect to z) is zero, namely
+z
+k+1 =
+2ρxk+1
+ρ + 2
++
+λ
+k
+ρ + 2
+. (2)
+The λ-update is
+λ
+k+1 = λ
+k + ρ(2x
+k+1 − z
+k+1). (3)
+1878 CHAPTER 52. DUAL ASCENT METHODS; ADMM
+Substituting the right hand side of (1) for x
+k+1 in (2) yields
+z
+k+1 =
+ρzk
+ρ + 2
+−
+1
+ρ + 2
+. (4)
+Using (2), we obtain
+2x
+k+1 − z
+k+1 =
+4x
+k+1
+ρ + 2
+−
+λ
+k
+ρ + 2
+, (5)
+and then using (3) we get
+λ
+k+1 =
+2λ
+k
+ρ + 2
++
+4ρxk+1
+ρ + 2
+. (6)
+Substituting the right hand side of (1) for x
+k+1 in (6), we obtain
+λ
+k+1 =
+2ρzk
+ρ + 2
+−
+2
+ρ + 2
+. (7)
+Equation (7) shows that z
+k determines λ
+k+1, and Equation (1) for k+2, along with Equation
+(4), shows that z
+k also determines x
+k+2. In particular, we find that
+x
+k+2 =
+1
+2
+z
+k+1 −
+1
+2ρ
+λ
+k+1 −
+1
+2ρ
+=
+(ρ − 2)z
+k
+2(ρ + 2) −
+1
+ρ + 2
+.
+Thus is suffices to find the limit of the sequence (z
+k
+). Since we already know from Example
+52.2 that this limit is −1/2, using (4), we write
+z
+k+1 = −
+1
+2
++
+ρzk
+ρ + 2
+−
+1
+ρ + 2
++
+1
+2
+= −
+1
+2
++
+ρ + 2
+ρ
+ 1
+2
++ z
+k
+
+.
+By induction, we deduce that
+z
+k+1 = −
+1
+2
++
+
+ρ + 2
+ρ
+
+k+1  1
+2
++ z
+0
+
+,
+and since ρ > 0, we have ρ/(ρ + 2) < 1, so the limit of the sequence (z
+k+1) is indeed −1/2,
+and consequently the limit of (λ
+k+1) is −1 and the limit of x
+k+2 is −1/4.
+For ADMM to be practical, the x-minimization step and the z-minimization step have
+to be doable efficiently.
+It is often convenient to write the ADMM updates in terms of the scaled dual variable
+µ = (1/ρ)λ. If we define the residual as
+r = Ax + bz − c,
+52.4. CONVERGENCE OF ADMM ~ 1879
+then we have
+λ
+> r + (ρ/2) k rk
+2
+2 = (ρ/2) k r + (1/ρ)λk
+2
+2 − (1/(2ρ)) k λk
+2
+2
+= (ρ/2) k r + µk
+2
+2 − (ρ/2) k µk
+2
+2
+.
+The scaled form of ADMM consists of the following steps:
+x
+k+1 = arg min
+x
+
+f(x) + (ρ/2)
+  Ax + Bzk − c + µ
+k
+
+
+2
+2
+
+z
+k+1 = arg min
+z
+
+g(z) + (ρ/2)
+  Axk+1 + Bz − c + µ
+k
+
+
+2
+2
+
+µ
+k+1 = µ
+k + Axk+1 + Bzk+1 − c.
+If we define the residual r
+k at step k as
+r
+k = Axk + Bzk − c = µ
+k − µ
+k−1 = (1/ρ)(λ
+k − λ
+k−1
+),
+then we see that
+r = u
+0 +
+k
+X
+j=1
+r
+j
+.
+The formulae in the scaled form are often shorter than the formulae in the unscaled form.
+We now discuss the convergence of ADMM.
+52.4 Convergence of ADMM ~
+Let us repeat the steps of ADMM: Given some initial (z
+0
+, λ0
+), do:
+x
+k+1 = arg min
+x
+Lρ(x, zk
+, λk
+) (x-update)
+z
+k+1 = arg min
+z
+Lρ(x
+k+1, z, λk
+) (z-update)
+λ
+k+1 = λ
+k + ρ(Axk+1 + Bzk+1 − c). (λ-update)
+The convergence of ADMM can be proven under the following three assumptions:
+(1) The functions f : R → R∪ {+∞} and g : R → R∪ {+∞} are proper and closed convex
+functions (see Section 51.1) such that relint(dom(f)) ∩ relint(dom(g)) 6 = ∅.
+(2) The n × n matrix A> A is invertible and the m × m matrix B> B is invertible. Equiv￾alently, the p × n matrix A has rank n and the p × m matrix has rank m.
+(3) The unaugmented Lagrangian L0(x, z, λ) = f(x)+g(z)+λ
+> (Ax+Bz −c) has a saddle
+point, which means there exists x
+∗
+, z∗
+, λ∗
+(not necessarily unique) such that
+L0(x
+∗
+, z∗
+, λ) ≤ L0(x
+∗
+, z∗
+, λ∗
+) ≤ L0(x, z, λ∗
+)
+for all x, z, λ.
+1880 CHAPTER 52. DUAL ASCENT METHODS; ADMM
+Recall that the augmented Lagrangian is given by
+Lρ(x, z, λ) = f(x) + g(z) + λ
+> (Ax + Bz − c) + (ρ/2) k Ax + Bz − ck
+2
+2
+.
+For z (and λ) fixed, we have
+Lρ(x, z, λ) = f(x) + g(z) + λ
+> (Ax + Bz − c) + (ρ/2)(Ax + Bz − c)
+> (Ax + Bz − c)
+= f(x) + (ρ/2)x
+> A
+> Ax + (λ
+> + ρ(Bz − c)
+> )Ax
++ g(z) + λ
+> (Bz − c) + (ρ/2)(Bz − c)
+> (Bz − c).
+Assume that (1) and (2) hold. Since A> A is invertible, then it is symmetric positive
+definite, and by Proposition 51.37 the x-minimization step has a unique solution (the mini￾mization problem succeeds with a unique minimizer).
+Similarly, for x (and λ) fixed, we have
+Lρ(x, z, λ) = f(x) + g(z) + λ
+> (Ax + Bz − c) + (ρ/2)(Ax + Bz − c)
+> (Ax + Bz − c)
+= g(z) + (ρ/2)z
+> B
+> Bz + (λ
+> + ρ(Ax − c)
+> )Bz
++ f(x) + λ
+> (Ax − c) + (ρ/2)(Ax − c)
+> (Ax − c).
+Since B> B is invertible, then it is symmetric positive definite, and by Proposition 51.37
+the z-minimization step has a unique solution (the minimization problem succeeds with a
+unique minimizer).
+By Theorem 51.41, Assumption (3) is equivalent to the fact that the KKT equations are
+satisfied by some triple (x
+∗
+, z∗
+, λ∗
+), namely
+Ax∗ + Bz∗ − c = 0 (∗)
+and
+0 ∈ ∂f(x
+∗
+) + ∂g(z
+∗
+) + A
+> λ
+∗ + B
+> λ
+∗
+, (†)
+Assumption (3) is also equivalent to Conditions (a) and (b) of Theorem 51.41. In particular,
+our program has an optimal solution (x
+∗
+, z∗
+). By Theorem 51.43, λ
+∗
+is maximizer of the dual
+function G(λ) = infx,z L0(x, z, λ) and strong duality holds, that is, G(λ
+∗
+) = f(x
+∗
+) + g(z
+∗
+)
+(the duality gap is zero).
+We will see after the proof of Theorem 52.1 that Assumption (2) is actually implied by
+Assumption (3). This allows us to prove a convergence result stronger than the convergence
+result proven in Boyd et al. [28] under the exact same assumptions (1) and (3).
+Let p
+∗ be the minimum value of f+g over the convex set {(x, z) ∈ R
+m+p
+| Ax+Bz−c = 0},
+and let (p
+k
+) be the sequence given by p
+k = f(x
+k
+)+g(z
+k
+), and recall that r
+k = Axk +Bzk −c.
+Our main goal is to prove the following result.
+Theorem 52.1. Suppose the following assumptions hold:
+52.4. CONVERGENCE OF ADMM ~ 1881
+(1) The functions f : R → R∪ {+∞} and g : R → R∪ {+∞} are proper and closed convex
+functions (see Section 51.1) such that relint(dom(f)) ∩ relint(dom(g)) 6 = ∅.
+(2) The n × n matrix A> A is invertible and the m × m matrix B> B is invertible. Equiv￾alently, the p × n matrix A has rank n and the p × m matrix has rank m. (This
+assumption is actually redundant, because it is implied by Assumption (3)).
+(3) The unaugmented Lagrangian L0(x, z, λ) = f(x) +g(z) +λ
+> (Ax+Bz −c) has a saddle
+point, which means there exists x
+∗
+, z∗
+, λ∗
+(not necessarily unique) such that
+L0(x
+∗
+, z∗
+, λ) ≤ L0(x
+∗
+, z∗
+, λ∗
+) ≤ L0(x, z, λ∗
+)
+for all x, z, λ.
+Then for any initial values (z
+0
+, λ0
+), the following properties hold:
+(1) The sequence (r
+k
+) converges to 0 (residual convergence).
+(2) The sequence (p
+k
+) converge to p
+∗
+(objective convergence).
+(3) The sequences (x
+k
+) and (z
+k
+) converge to an optimal solution (x, e ze) of Problem (Padmm)
+and the sequence (λ
+k
+) converges an optimal solution λe of the dual problem (primal and
+dual variable convergence).
+Proof. The core of the proof is due to Boyd et al. [28], but there are new steps because we
+have the stronger hypothesis (2), which yield the stronger result (3).
+The proof consists of several steps. It is not possible to prove directly that the sequences
+(x
+k
+), (z
+k
+), and (λ
+k
+) converge, so first we prove that the sequence (r
+k+1) converges to zero,
+and that the sequences (Axk+1) and (Bzk+1) also converge.
+Step 1 . Prove the inequality (A1) below.
+Consider the sequence of reals (V
+k
+) given by
+V
+k = (1/ρ)
+  λ
+k − λ
+∗
+
+2
+2
++ ρ
+  B(z
+k − z
+∗
+)
+
+2
+2
+.
+It can be shown that the V
+k
+satisfy the following inequality:
+V
+k+1 ≤ V
+k − ρ
+  r
+k+1
+ 2
+2
+− ρ
+  B(z
+k+1 − z
+k
+)
+
+2
+2
+. (A1)
+This is rather arduous. Since a complete proof is given in Boyd et al. [28], we will only
+provide some of the key steps later.
+Inequality (A1) shows that the sequence (V
+k
+) in nonincreasing. If we write these inequal￾ities for k, k − 1, . . . , 0, we have
+V
+k+1 ≤ V
+k − ρ
+  r
+k+1
+ 2
+2
+− ρ
+  B(z
+k+1 − z
+k
+)
+
+2
+2
+V
+k ≤ V
+k−1 − ρ
+  r
+k
+
+
+2
+2
+− ρ
+  B(z
+k − z
+k−1
+)
+
+2
+2
+.
+.
+.
+V
+1 ≤ V
+0 − ρ
+  r
+1
+
+ 2
+2
+− ρ
+  B(z
+1 − z
+0
+)
+
+2
+2
+,
+1882 CHAPTER 52. DUAL ASCENT METHODS; ADMM
+and by adding up these inequalities, we obtain
+V
+k+1 ≤ V
+0 − ρ
+k
+X
+j=0
+
+
+
+r
+j+1
+ 2
+2
++
+  B(z
+j+1 − z
+j
+)
+
+2
+2
+
+,
+which implies that
+ρ
+k
+X
+j=0
+
+
+
+r
+j+1
+ 2
+2
++
+  B(z
+j+1 − z
+j
+)
+
+2
+2
+
+≤ V0 − V
+k+1 ≤ V
+0
+, (B)
+since V
+k+1 ≤ V
+0
+.
+Step 2 . Prove that the sequence (r
+k
+) converges to 0, and that the sequences (Axk+1) and
+(Bzk+1) also converge.
+Inequality (B) implies that the series P ∞
+k=1 r
+k and P ∞
+k=0 B(z
+k+1−z
+k
+) converge absolutely.
+In particular, the sequence (r
+k
+) converges to 0.
+The nth partial sum of the series P ∞
+k=0 B(z
+k+1 − z
+k
+) is
+nX
+k=0
+B(z
+k+1 − z
+k
+) = B(z
+n+1 − z
+0
+),
+and since the series P ∞
+k=0 B(z
+k+1 − z
+k
+) converges, we deduce that the sequence (Bzk+1)
+converges. Since Axk+1 + Bzk+1 − c = r
+k+1, the convergence of (r
+k+1) and (Bzk+1) implies
+that the sequence (Axk+1) also converges.
+Step 3 . Prove that the sequences (x
+k+1) and (z
+k+1) converge. By Assumption (2), the
+matrices A> A and B> B are invertible, so multiplying each vector Axk+1 by (A> A)
+−1A> , if
+the sequence (Axk+1) converges to u, then the sequence (x
+k+1) converges to (A> A)
+−1A> u.
+Siimilarly, if the sequence (Bzk+1) converges to v, then the sequence (z
+k+1) converges to
+(B> B)
+−1B> v.
+Step 4 . Prove that the sequence (λ
+k
+) converges.
+Recall that
+λ
+k+1 = λ
+k + ρrk+1
+.
+It follows by induction that
+λ
+k+p = λ
+k + ρ(r
+k+1 + · · · + ρ
+k+p
+), p ≥ 2.
+As a consequence, we get
+
+
+λ
+k+p − λ
+k
+
+ ≤ ρ(
+ r
+k+1
+ + · · · +
+  r
+k+p
+
+
+).
+52.4. CONVERGENCE OF ADMM ~ 1883
+Since the series P ∞
+k=1
+  r
+k
+
+
+converges, the partial sums form a Cauchy sequence, and this
+immediately implies that for any  > 0 we can find N > 0 such that
+ρ(
+ r
+k+1
+ + · · · +
+  r
+k+p
+
+
+) < , for all k, p + k ≥ N,
+so the sequence (λ
+k
+) is also a Cauchy sequence, thus it converges.
+Step 5 . Prove that the sequence (p
+k
+) converges to p
+∗
+.
+For this, we need two more inequalities. Following Boyd et al. [28], we need to prove
+that
+p
+k+1 − p
+∗ ≤ −(λ
+k+1)
+> r
+k+1 − ρ(B(z
+k+1 − z
+k
+))> (−r
+k+1 + B(z
+k+1 − z
+∗
+)) (A2)
+and
+p
+∗ − p
+k+1 ≤ (λ
+∗
+)
+> r
+k+1
+. (A3)
+Since we proved that the sequence (r
+k
+) and B(z
+k+1 − z
+k
+) converge to 0, and that the
+sequence (λ
+k+1) converges, from
+(λ
+k+1)
+> r
+k+1 + ρ(B(z
+k+1 − z
+k
+))> (−r
+k+1 + B(z
+k+1 − z
+∗
+)) ≤ p
+∗ − p
+k+1 ≤ (λ
+∗
+)
+> r
+k+1
+,
+we deduce that in the limit, p
+k+1 converges to p
+∗
+.
+Step 6 . Prove (A3).
+Since (x
+∗
+, y∗
+, λ∗
+) is a saddle point, we have
+L0(x
+∗
+, z∗
+, λ∗
+) ≤ L0(x
+k+1, zk+1, λ∗
+).
+Since Ax∗ + Bz∗ = c, we have L0(x
+∗
+, z∗
+, λ∗
+) = p
+∗
+, and since p
+k+1 = f(x
+k+1) + g(z
+k+1), we
+have
+L0(x
+k+1, zk+1, λ∗
+) = p
+k+1 + (λ
+∗
+)
+> r
+k+1
+,
+so we obtain
+p
+∗ ≤ p
+k+1 + (λ
+∗
+)
+> r
+k+1
+,
+which yields (A3).
+Step 7 . Prove (A2).
+By Proposition 51.34, z
+k+1 minimizes Lρ(x
+k+1, z, λk
+) iff
+0 ∈ ∂g(z
+k+1) + B
+> λ
+k + ρB> (Axk+1 + Bzk+1 − c)
+= ∂g(z
+k+1) + B
+> λ
+k + ρB> r
+k+1
+= ∂g(z
+k+1) + B
+> λ
+k+1
+,
+since r
+k+1 = Axk+1 + Bzk+1 − c and λ
+k+1 = λ
+k + ρ(Axk+1 + Bzk+1 − c).
+In summary, we have
+0 ∈ ∂g(z
+k+1) + B
+> λ
+k+1
+, (†1)
+1884 CHAPTER 52. DUAL ASCENT METHODS; ADMM
+which shows that z
+k+1 minimizes the function
+z 7→ g(z) + (λ
+k+1)
+> Bz.
+Consequently, we have
+g(z
+k+1) + (λ
+k+1)
+> Bzk+1 ≤ g(z
+∗
+) + (λ
+k+1)
+> Bz∗
+. (B1)
+Similarly, x
+k+1 minimizes Lρ(x, zk
+, λk
+) iff
+0 ∈ ∂f(x
+k+1) + A
+> λ
+k + ρA> (Axk+1 + Bzk − c)
+= ∂f(x
+k+1) + A
+> (λ
+k + ρrk+1 + ρB(z
+k − z
+k+1))
+= ∂f(x
+k+1) + A
+> λ
+k+1 + ρA> B(z
+k − z
+k+1)
+since r
+k+1 − Bzk+1 = Axk+1 − c and λ
+k+1 = λ
+k + ρ(Axk+1 + Bzk+1 − c) = λ
+k + ρrk+1
+.
+Equivalently, the above derivation shows that
+0 ∈ ∂f(x
+k+1) + A
+> (λ
+k+1 − ρB(z
+k+1 − z
+k
+)), (†2)
+which shows that x
+k+1 minimizes the function
+x 7→ f(x) + (λ
+k+1 − ρB(z
+k+1 − z
+k
+))> Ax.
+Consequently, we have
+f(x
+k+1) + (λ
+k+1 − ρB(z
+k+1 − z
+k
+))> Axk+1 ≤ f(x
+∗
+) + (λ
+k+1 − ρB(z
+k+1 − z
+k
+))> Ax∗
+. (B2)
+Adding up Inequalities (B1) and (B2), using the equation Ax∗ + Bz∗ = c, and rearranging,
+we obtain inequality (A2).
+Step 8 . Prove that (x
+k
+),(z
+k
+), and (λ
+k
+) converge to optimal solutions.
+Recall that (r
+k
+) converges to 0, and that (x
+k
+), (z
+k
+), and (λ
+k
+) converge to limits xe, ze, and
+e
+λ. Since r
+k = Axk + Bzk − c, in the limit, we have
+Axe + Bze − c = 0. (∗1)
+Using (†1), in the limit, we obtain
+0 ∈ ∂g(ze) + B
+> λ. e (∗2)
+Since (B(z
+k+1 − z
+k
+)) converges to 0, using (†2), in the limit, we obtain
