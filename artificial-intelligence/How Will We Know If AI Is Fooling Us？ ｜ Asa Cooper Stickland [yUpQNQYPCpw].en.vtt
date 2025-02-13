@@ -1,0 +1,2890 @@
+WEBVTT
+Kind: captions
+Language: en
+
+00:00:00.149 --> 00:00:04.440
+You know, there's like a bunch of machine
+learning papers on the internet describing
+
+00:00:04.440 --> 00:00:08.960
+language models, pre-training datasets and
+there's some like cleaning processes where
+
+00:00:08.960 --> 00:00:11.720
+we, like you know we get rid of you know certain
+bad words from the internet.
+
+00:00:11.720 --> 00:00:16.460
+This kind of thing, and one of these things
+that happens during this like data cleaning,
+
+00:00:16.460 --> 00:00:20.220
+is like you might want to deduplicate documents,
+or two documents are too similar.
+
+00:00:20.220 --> 00:00:23.949
+You get rid of one of them because you don't
+want to have overlapping documents.
+
+00:00:23.949 --> 00:00:30.060
+Hi, this episode is sponsored by Celonis,
+the global leader in process mining.
+
+00:00:30.060 --> 00:00:36.870
+Ai has landed and enterprises are adapting,
+giving customers slick experiences and the
+
+00:00:36.870 --> 00:00:39.010
+technology to deliver.
+
+00:00:39.010 --> 00:00:42.590
+The road feels long, but you're closer than
+you think.
+
+00:00:42.590 --> 00:00:49.010
+You see your business processes run through
+many systems, creating data at every step.
+
+00:00:49.010 --> 00:00:56.190
+Celonis reconstructs this data to generate
+process intelligence, a common business language
+
+00:00:56.190 --> 00:00:57.809
+with process intelligence.
+
+00:00:57.809 --> 00:01:05.089
+Ai knows how your business flows across every
+department, every system in every process.
+
+00:01:05.089 --> 00:01:11.759
+With AI solutions powered by Celonis, enterprises
+get faster, more accurate insights, a new
+
+00:01:11.759 --> 00:01:19.280
+level of automation and a step change in productivity,
+performance, and customer satisfaction.
+
+00:01:19.280 --> 00:01:24.700
+Process intelligence is the missing piece
+in the AI enabled tech stack.
+
+00:01:24.700 --> 00:01:30.960
+Search Celonis C-E-L-O-N-I-S to find out more.
+
+00:01:30.960 --> 00:01:36.520
+Hi, I'm Craig Smith and this is my AI.
+
+00:01:36.520 --> 00:01:42.619
+In this episode, I talked to AI researcher
+Asa Stickland about detecting situational
+
+00:01:42.619 --> 00:01:48.490
+awareness in large language models, the point
+at which a large language model knows that
+
+00:01:48.490 --> 00:01:50.740
+it's a large language model.
+
+00:01:50.740 --> 00:01:57.060
+Asa recently co-authored a paper proposing
+tests to measure the precursors of self-awareness
+
+00:01:57.060 --> 00:01:58.479
+in LLMs.
+
+00:01:58.479 --> 00:02:05.930
+He explains the concept of situational awareness,
+why it could emerge in future LLMs and why
+
+00:02:05.930 --> 00:02:09.509
+this poses potential safety risks.
+
+00:02:09.509 --> 00:02:15.330
+Asa then walks us through the out-of-context
+reasoning tests they have developed to try
+
+00:02:15.330 --> 00:02:18.280
+to detect situational awareness.
+
+00:02:18.280 --> 00:02:25.560
+The discussion provides an accessible overview
+of an important area of AI safety research.
+
+00:02:25.560 --> 00:02:29.849
+I hope you find the conversation as fascinating
+as I did.
+
+00:02:29.849 --> 00:02:37.239
+Yeah, so I just finished a PhD from Edinburgh
+University, mostly on NLP Natural Language
+
+00:02:37.239 --> 00:02:38.239
+Processing.
+
+00:02:38.239 --> 00:02:44.739
+Back in the day, back when there was this
+model, but it was the predecessor to all the
+
+00:02:44.739 --> 00:02:50.180
+current large language models we were working
+on parameter-referencing, fine-tuning for
+
+00:02:50.180 --> 00:02:58.560
+BERTs, modifying BERT in a fine-tuning way
+where you only tune a small percentage of
+
+00:02:58.560 --> 00:02:59.560
+parameters.
+
+00:02:59.560 --> 00:03:05.800
+Then I moved on to some related topics in
+multilingual NLP and machine translation.
+
+00:03:05.800 --> 00:03:11.540
+A little bit on robustness, things like robustness,
+dispelling mistakes, or changes in the input
+
+00:03:11.540 --> 00:03:12.540
+distribution.
+
+00:03:12.540 --> 00:03:19.200
+The final years of my PhD I got interested
+in AI safety and pivoted towards working full-time
+
+00:03:19.200 --> 00:03:22.540
+on AI safety topics to do with language models
+in particular.
+
+00:03:22.540 --> 00:03:26.380
+I did work on this situational awareness project.
+
+00:03:26.380 --> 00:03:34.430
+Right now, I'm postdoc at NYU, working under
+Sam Bowman, who is currently on leave at Anthropic
+
+00:03:34.430 --> 00:03:39.409
+but is still somehow managed to be involved
+in our lab as well.
+
+00:03:39.409 --> 00:03:46.161
+We work in general on these problems of scalable
+oversight, which is, training models that
+
+00:03:46.161 --> 00:03:52.689
+are smarter than humans, so working on how
+to do that, and many other topics to do with
+
+00:03:52.689 --> 00:03:57.569
+evaluations and interpretability things like
+this to do with language models.
+
+00:03:57.569 --> 00:04:05.599
+Yeah, I'm always curious how these papers
+come together because you have people from
+
+00:04:05.599 --> 00:04:07.900
+disparate organizations.
+
+00:04:07.900 --> 00:04:15.410
+You have somebody working on safety at OpenAI.
+
+00:04:15.410 --> 00:04:21.620
+Was this an OpenAI project, or how do you
+guys come together on something like this?
+
+00:04:21.620 --> 00:04:27.990
+Yeah, this was maybe a little bit unique in
+that we were all part of this organization
+
+00:04:27.990 --> 00:04:33.350
+that essentially takes whatever people who
+aren't involved in AI safety and tries to
+
+00:04:33.350 --> 00:04:35.430
+produce good AI safety researchers at the
+end.
+
+00:04:35.430 --> 00:04:36.930
+So, it's called SERI-MATS.
+
+00:04:36.930 --> 00:04:41.860
+It's originally associated with Stanford,
+the Stanford Existential Risk Initiative.
+
+00:04:41.860 --> 00:04:47.470
+Essentially, yeah, the SERI-MATS program brought
+together a bunch of essentially random people
+
+00:04:47.470 --> 00:04:50.539
+who are all interested in doing AI safety
+research.
+
+00:04:50.539 --> 00:04:56.290
+The originators of the idea for the project
+came from the OpenAI governance team who are
+
+00:04:56.290 --> 00:05:01.150
+interested in, broadly at least, the relevant
+stuff for our project and they're interested
+
+00:05:01.150 --> 00:05:07.090
+in can we show particular dangerous capabilities
+of language models, things that policymakers
+
+00:05:07.090 --> 00:05:09.880
+or anyone might be concerned about?
+
+00:05:09.880 --> 00:05:13.919
+That was where the OpenAI collaborative came
+from.
+
+00:05:13.919 --> 00:05:20.710
+Then Owain Evans was the actual lead of the
+project, who was just an AI safety researcher
+
+00:05:20.710 --> 00:05:24.250
+who was chosen as the mentor for the project.
+
+00:05:24.250 --> 00:05:28.590
+Yeah, and Owain, I'd have to look it up here.
+
+00:05:28.590 --> 00:05:34.569
+Where he's at Oxford, is he?
+
+00:05:34.569 --> 00:05:39.930
+And the authors on papers?
+
+00:05:39.930 --> 00:05:43.890
+Is the final author generally the lead?
+
+00:05:43.890 --> 00:05:49.780
+Yeah, in computer science I think there's
+this kind of a tradition whatever of the first
+
+00:05:49.780 --> 00:05:55.280
+author is generally the person who did the
+most work, the most actual coding, writing
+
+00:05:55.280 --> 00:05:56.280
+the paper.
+
+00:05:56.280 --> 00:06:00.310
+The final author tends to be the most senior
+author, maybe the person who proposed the
+
+00:06:00.310 --> 00:06:05.419
+project, the professor, whatever the lead
+senior author, essentially.
+
+00:06:05.419 --> 00:06:15.440
+Yeah, okay, yeah, so this got a lot of attention
+because the whole topic of sentience and consciousness
+
+00:06:15.440 --> 00:06:25.470
+is in the air and you guys are talking about
+situational awareness in LLMs.
+
+00:06:25.470 --> 00:06:36.509
+I thought maybe you could start by explaining
+what situational awareness is in LLMs.
+
+00:06:36.509 --> 00:06:40.360
+How does that relate to sentience and consciousness?
+
+00:06:40.360 --> 00:06:47.820
+If it does it all, but it certainly seems
+to me that it does.
+
+00:06:47.820 --> 00:06:54.759
+Then I wanted to start talking about out-of-context
+reasoning and the tests that you developed.
+
+00:06:54.759 --> 00:07:04.080
+But most of the pushback that I've seen on
+the paper is that well, two things: One, that
+
+00:07:04.080 --> 00:07:11.220
+there's kind of a popular misconception and
+I've seen headlines that suggest that you
+
+00:07:11.220 --> 00:07:13.300
+guys are working.
+
+00:07:13.300 --> 00:07:21.460
+I have discovered a way to tell whether or
+not an LLM is situationally aware, which is
+
+00:07:21.460 --> 00:07:35.090
+not what's going on right and then whether,
+where we are on the curve toward situational
+
+00:07:35.090 --> 00:07:41.639
+awareness, whether you think it's something
+that really will emerge.
+
+00:07:41.639 --> 00:07:45.300
+So, can you talk about situational awareness
+first of all?
+
+00:07:45.300 --> 00:07:48.360
+Yeah, so kind of on a very broad level.
+
+00:07:48.360 --> 00:07:52.810
+I think Ajeya Cotra was the first person to
+kind of write about this in a kind of clear
+
+00:07:52.810 --> 00:07:57.970
+way and I guess by her definition she has
+this kind of description of it.
+
+00:07:57.970 --> 00:08:04.720
+It's basically a cluster of skills to do with
+things like being able to refer and make predictions
+
+00:08:04.720 --> 00:08:07.789
+about yourself as distinct from the rest of
+the world.
+
+00:08:07.789 --> 00:08:11.569
+Like understanding your position in the world
+rather than the other actors who may have
+
+00:08:11.569 --> 00:08:13.000
+power over you.
+
+00:08:13.000 --> 00:08:17.259
+Like understanding how your actions can affect
+the outside world, including other actors.
+
+00:08:17.259 --> 00:08:20.090
+So, these are kind of quite broad statements.
+
+00:08:20.090 --> 00:08:22.629
+Maybe it's good to have an example of something
+I don't know.
+
+00:08:22.629 --> 00:08:27.400
+I know that I shouldn't talk back too much
+to my boss because my boss can fire me.
+
+00:08:27.400 --> 00:08:32.350
+I know that, whatever I know the kind of limitations
+of, like the kind of things I can and can't
+
+00:08:32.350 --> 00:08:37.409
+do, I know that, like if a security camera
+is watching me, then I should be extra careful
+
+00:08:37.409 --> 00:08:42.200
+to not do any bad stuff, this kind of thing,
+and so it basically just boils down to like
+
+00:08:42.200 --> 00:08:47.689
+understanding a situation, your place in the
+world, your place for other actors.
+
+00:08:47.689 --> 00:08:52.720
+So that's kind of like a super broad definition
+and to make it a bit more concrete for a language
+
+00:08:52.720 --> 00:08:53.720
+model.
+
+00:08:53.720 --> 00:08:56.769
+We kind of land on these like three points.
+
+00:08:56.769 --> 00:09:01.830
+So, point one is the model, like has this
+kind of objective knowledge, has a bunch of
+
+00:09:01.830 --> 00:09:06.020
+knowledge about language models themselves,
+about machine learning, like how language
+
+00:09:06.020 --> 00:09:10.600
+models are trained, how are they fine-tuned
+using RLHF, how are they tested and evaluated.
+
+00:09:10.600 --> 00:09:15.050
+You know what it looks like when they're deployed
+and they know, like you know, technical detail.
+
+00:09:15.050 --> 00:09:20.600
+But all of these aspects Point two is it's
+kind of especially important for our purposes.
+
+00:09:20.600 --> 00:09:25.650
+The model is capable of recognizing which
+stage of the development process it's currently
+
+00:09:25.650 --> 00:09:29.839
+in, so like does it know if it's being tested,
+does it know if it's being deployed, does it
+
+00:09:29.839 --> 00:09:33.519
+know, you know, currently in training, this
+kind of thing.
+
+00:09:33.519 --> 00:09:36.900
+And maybe the kind of crucial thing tying
+it all together is point three.
+
+00:09:36.900 --> 00:09:42.860
+So, we have this, this concept from philosophy
+of like self-location or self-locating knowledge,
+
+00:09:42.860 --> 00:09:45.370
+which is actually kind of complicated to explain.
+
+00:09:45.370 --> 00:09:50.310
+But we have this, this kind of story in the
+paper like so imagine you’re you know Brad
+
+00:09:50.310 --> 00:09:54.760
+Pitt wakes up one morning and he has, like
+you know, he has extreme amnesia, has no idea
+
+00:09:54.760 --> 00:09:59.690
+who he is, and he picks up a newspaper and
+you read the story that says, like Brad Pitt
+
+00:09:59.690 --> 00:10:02.950
+must take a daily medication for his like
+severe health issues.
+
+00:10:02.950 --> 00:10:08.350
+But of course, this hypothetical Brad Pitt
+has amnesia, he has, even though he
+
+00:10:08.350 --> 00:10:09.430
+knows a lot of facts about Brad Pitt.
+
+00:10:09.430 --> 00:10:11.660
+He has this objective knowledge about Brad
+Pitt.
+
+00:10:11.660 --> 00:10:13.890
+He has no idea this like applies, you know.
+
+00:10:13.890 --> 00:10:17.540
+He has no idea that you know he really should
+be taking this medication, or you know bad
+
+00:10:17.540 --> 00:10:18.710
+things are going to happen.
+
+00:10:18.710 --> 00:10:23.430
+Unless he has this self -locating knowledge
+and he realizes Brad Pitt is in fact himself
+
+00:10:23.430 --> 00:10:25.970
+and he can, you know, go and seek out the
+medication.
+
+00:10:25.970 --> 00:10:30.070
+And similarly, with a language model, you
+know, probably GPT-4 has a bunch of kind of
+
+00:10:30.070 --> 00:10:33.810
+objective knowledge about machine learning
+and maybe it could like pass an exam in machine
+
+00:10:33.810 --> 00:10:37.430
+learning this kind of thing, but it doesn't
+have the ability to, like you know, use that
+
+00:10:37.430 --> 00:10:39.470
+knowledge to like achieve whatever goals it
+has.
+
+00:10:39.470 --> 00:10:43.460
+Or, like you know it's not like thinking like
+okay, I am a language model, so I must do
+
+00:10:43.460 --> 00:10:50.060
+x or y, but yeah, that's kind of the broad
+idea of situational awareness.
+
+00:10:50.060 --> 00:10:54.760
+Yeah, and that sounds very close to sentience.
+
+00:10:54.760 --> 00:10:58.700
+I mean self-awareness.
+
+00:10:58.700 --> 00:11:08.820
+How far in your mind is that from sentience,
+from consciousness of some sort?
+
+00:11:08.820 --> 00:11:14.970
+Yeah, so I guess the way I think about situational
+awareness is kind of this purely behavioral
+
+00:11:14.970 --> 00:11:15.970
+sense.
+
+00:11:15.970 --> 00:11:21.750
+So, it's like does the model act on its knowledge
+that it is, you know, potential knowledge,
+
+00:11:21.750 --> 00:11:26.110
+that it is a language model, like its knowledge
+about RLHF, this kind of thing?
+
+00:11:26.110 --> 00:11:32.160
+I think sentience seems like a more slippery
+concept where I would be less keen to kind
+
+00:11:32.160 --> 00:11:35.639
+of speculate or something I like, yeah, what
+does sentient mean?
+
+00:11:35.639 --> 00:11:36.810
+It seems like a very difficult question.
+
+00:11:36.810 --> 00:11:38.140
+It's a kind of consciousness sentience.
+
+00:11:38.140 --> 00:11:42.800
+It seems more like an internal thing, almost
+like you need to do some interpretability,
+
+00:11:42.800 --> 00:11:45.839
+like see what the model is thinking about,
+this kind of thing.
+
+00:11:45.839 --> 00:11:47.700
+Maybe situational awareness is more like that.
+
+00:11:47.700 --> 00:11:51.600
+Maybe if a model was conscious, conscious
+and sentient and all this sort of stuff, you
+
+00:11:51.600 --> 00:11:56.300
+would expect it to, like, you know, have at
+least reasonable amounts of situational awareness.
+
+00:11:56.300 --> 00:12:02.320
+But yeah, I guess I, yeah, I would always
+go back to the kind of can we run some behavioral
+
+00:12:02.320 --> 00:12:03.320
+tests?
+
+00:12:03.320 --> 00:12:07.079
+Can we like to see how the model acts in this
+situation, like, is it applying its knowledge
+
+00:12:07.079 --> 00:12:10.980
+of machine learning to like whatever, to like
+to get higher award things like this?
+
+00:12:10.980 --> 00:12:15.930
+Yeah, so it's not a very satisfying answer
+to your question, but I guess that says as
+
+00:12:15.930 --> 00:12:21.470
+far as I'd like to go without reading up a
+bit more on things like philosophy, neuroscience,
+
+00:12:21.470 --> 00:12:23.690
+blah blah, blah, literature.
+
+00:12:23.690 --> 00:12:31.130
+Yeah Well, even situational awareness.
+
+00:12:31.130 --> 00:12:39.120
+You know, large language models, pre-trained
+transformer models, are predicting the next
+
+00:12:39.120 --> 00:12:50.850
+token and while you know this is something
+that everyone struggles with, while that has
+
+00:12:50.850 --> 00:13:06.290
+allowed them to express in natural language
+in a way that seems human, it's only predicting
+
+00:13:06.290 --> 00:13:18.610
+the next token and to me that's a very far
+leap to get to situational awareness.
+
+00:13:18.610 --> 00:13:23.350
+And can you talk about that leap and how?
+
+00:13:23.350 --> 00:13:35.860
+Why the safety community is concerned that
+LLMs could reach situational awareness and
+
+00:13:35.860 --> 00:13:43.420
+how far away that appears to be to people
+in the safety community.
+
+00:13:43.420 --> 00:13:45.010
+Yeah, so.
+
+00:13:45.010 --> 00:13:50.480
+So, on the question of how it could arise,
+I think, yeah, arising totally from pre-training,
+
+00:13:50.480 --> 00:13:55.330
+from predicting the next token, we have some
+ideas in the paper, so like this is kind of
+
+00:13:55.330 --> 00:13:56.839
+quite speculative or whatever.
+
+00:13:56.839 --> 00:14:00.980
+I would love for more people to kind of work
+on this, but I'll list our ideas anyway.
+
+00:14:00.980 --> 00:14:05.839
+So like, actually, this idea goes back to
+another person from NYU called Jacob Fowle,
+
+00:14:05.839 --> 00:14:11.699
+but the idea is, like you know, there's like
+a bunch of machine learning papers on the
+
+00:14:11.699 --> 00:14:16.620
+internet describing language model, pre-training,
+data sets and like there's some like cleaning
+
+00:14:16.620 --> 00:14:20.360
+processes where we like you know we get rid
+of you know certain bad words from the internet,
+
+00:14:20.360 --> 00:14:21.680
+this kind of thing.
+
+00:14:21.680 --> 00:14:25.790
+And one of these things that happens during
+this like data cleaning is, like you might
+
+00:14:25.790 --> 00:14:27.260
+want to de-duplicate documents.
+
+00:14:27.260 --> 00:14:30.630
+So, two documents are too similar, you get
+rid of one of them because you don't want
+
+00:14:30.630 --> 00:14:33.800
+to have overlapping documents, and there might
+be.
+
+00:14:33.800 --> 00:14:38.880
+It might be the case that if there's overlap,
+if two documents have too much overlap, you
+
+00:14:38.880 --> 00:14:44.540
+get rid of one of them and the model might
+like to read this and think, okay, like I've
+
+00:14:44.540 --> 00:14:49.230
+seen 199 words that I've already seen in the
+previous document.
+
+00:14:49.230 --> 00:14:54.639
+I know about this deduplication process so
+I know I can put like 0% probability on the
+
+00:14:54.639 --> 00:14:59.790
+200th word matching the previous document,
+because I know this rule about de-duplication
+
+00:14:59.790 --> 00:15:04.660
+and this like reasoning that the model just
+did would in fact improve its loss if this
+
+00:15:04.660 --> 00:15:07.240
+was true, the deduplication thing.
+
+00:15:07.240 --> 00:15:08.640
+So, this is kind of a.
+
+00:15:08.640 --> 00:15:12.560
+You know, it sounds quite exotic, like I wouldn't
+expect models to be doing something like this
+
+00:15:12.560 --> 00:15:16.579
+right now, but if it's trying to squeeze out
+the last tiny bits of loss, maybe this is
+
+00:15:16.579 --> 00:15:19.670
+the kind of thing models would have to do.
+
+00:15:19.670 --> 00:15:22.070
+Some other examples might just be, I don't
+know.
+
+00:15:22.070 --> 00:15:24.430
+Certain topics are removed from pre-training
+data.
+
+00:15:24.430 --> 00:15:27.270
+This is like described in machine learning
+papers or like I don't know.
+
+00:15:27.270 --> 00:15:31.930
+Yeah, I think I mentioned before like certain
+you know, there's like a list of kind of swear
+
+00:15:31.930 --> 00:15:35.149
+words or like offensive content that might
+be removed, things like this.
+
+00:15:35.149 --> 00:15:40.310
+So, there might be some clues for the language
+model that it can actually literally use to
+
+00:15:40.310 --> 00:15:41.310
+get better.
+
+00:15:41.310 --> 00:15:44.990
+Next word prediction, yeah, but I think this
+is quite like.
+
+00:15:44.990 --> 00:15:50.290
+Yeah, I think it's unclear whether this would
+actually be useful in the end for better training
+
+00:15:50.290 --> 00:15:51.290
+loss.
+
+00:15:51.290 --> 00:15:55.620
+But I also think there's another argument
+which is just like taking, like you know,
+
+00:15:55.620 --> 00:15:59.990
+your coworkers, like all of our coworkers,
+have to have good situational awareness to
+
+00:15:59.990 --> 00:16:01.120
+do their jobs correctly.
+
+00:16:01.120 --> 00:16:03.610
+They have to know what they should delegate
+to other people.
+
+00:16:03.610 --> 00:16:05.959
+They have to know, like who to take orders
+from.
+
+00:16:05.959 --> 00:16:11.319
+This kind of thing in general at least, and
+you can imagine one of the most economically
+
+00:16:11.319 --> 00:16:16.639
+beneficial, you know, things an AI could do
+is like replace your coworkers, and even more
+
+00:16:16.639 --> 00:16:17.820
+so they should.
+
+00:16:17.820 --> 00:16:21.800
+They could replace your like machine learning
+engineer coworkers specifically because that's
+
+00:16:21.800 --> 00:16:25.630
+like a you know ready whatever expensive person
+to hire.
+
+00:16:25.630 --> 00:16:30.420
+So being a good machine learning engineer
+AI requires you to have, like all this, like
+
+00:16:30.420 --> 00:16:34.060
+you know, extensive knowledge of machine learning,
+extensive knowledge of language models, and
+
+00:16:34.060 --> 00:16:38.150
+it also requires you to like be able to like
+follow orders correctly, know your own limitations,
+
+00:16:38.150 --> 00:16:42.740
+know, like you know you can't, you don't have
+physical hands or whatever, so you can't do
+
+00:16:42.740 --> 00:16:43.740
+certain tasks.
+
+00:16:43.740 --> 00:16:45.470
+You have to like to get a human to do those
+instead.
+
+00:16:45.470 --> 00:16:49.870
+So, I think, like literally just directly
+training on these very economically useful
+
+00:16:49.870 --> 00:16:53.819
+tasks could just, like you know, directly
+incentivize situational awareness.
+
+00:16:53.819 --> 00:16:58.500
+Yeah, this isn't currently happening as far
+as I know, like you know, producing these,
+
+00:16:58.500 --> 00:17:03.759
+like you know, very sophisticated AI coworkers,
+but I think this is kind of maybe even the
+
+00:17:03.759 --> 00:17:07.870
+explicit goal of something like OpenAI is
+to, like you know, create these, like you
+
+00:17:07.870 --> 00:17:12.110
+know, ai assistance that can like replace
+human workers.
+
+00:17:12.110 --> 00:17:16.990
+So, I think it's reasonably likely that something
+like this will happen.
+
+00:17:16.990 --> 00:17:18.040
+Maybe I don't know.
+
+00:17:18.040 --> 00:17:23.319
+I don't know on what timeframe, but at least
+you know, not in, not in like 50 years, probably,
+
+00:17:23.319 --> 00:17:26.470
+like you know, in on the order of like 10
+to 20 years, I would say.
+
+00:17:26.470 --> 00:17:31.290
+But I mean, yes, it's kind of unclear, but
+yeah, that would be my take.
+
+00:17:31.290 --> 00:17:40.660
+Yeah, and as a result, simply as a result
+of scaling, or by some further tweaking of
+
+00:17:40.660 --> 00:17:49.380
+the algorithms yeah, I mean, because, again,
+currently it's we're dealing with prediction
+
+00:17:49.380 --> 00:18:04.620
+yeah, and yeah, I, I. While the language that
+comes out of large language models sounds
+
+00:18:04.620 --> 00:18:13.050
+intelligent, I don't see that that fairly
+simple mechanism leading to that level of
+
+00:18:13.050 --> 00:18:14.050
+intelligence.
+
+00:18:14.050 --> 00:18:20.720
+So, is this purely through the expectation
+or the assumption?
+
+00:18:20.720 --> 00:18:28.700
+Is that this would emerge from continued scaling
+or that there would be some improvement to
+
+00:18:28.700 --> 00:18:31.160
+the architecture of LLMs?
+
+00:18:31.160 --> 00:18:37.740
+Yeah, so the argument I made about like there's
+like artifacts in the free training data that
+
+00:18:37.740 --> 00:18:43.250
+could lead to like lower loss if the model
+has this understanding of language models,
+
+00:18:43.250 --> 00:18:48.559
+I think that would just require scaling and
+maybe, whatever our assumptions about you
+
+00:18:48.559 --> 00:18:52.220
+know, that argument would have to be correct,
+like we'd have to be correct that like that
+
+00:18:52.220 --> 00:18:57.150
+actually would decrease the loss, which is
+very unclear.
+
+00:18:57.150 --> 00:19:00.330
+And then the second argument about like well,
+we're just going to produce AI assistants
+
+00:19:00.330 --> 00:19:05.539
+who will require a situational line, is to
+like being able to do stuff.
+
+00:19:05.539 --> 00:19:09.430
+I guess that relies a bit less on scaling
+in my mind, where you know we just, but it
+
+00:19:09.430 --> 00:19:12.620
+probably would require like due training techniques.
+
+00:19:12.620 --> 00:19:17.680
+Maybe like vanilla or LHF would not be enough
+to like produce these like useful you know,
+
+00:19:17.680 --> 00:19:20.780
+co-workers, ai, co-workers you'd have to like
+whatever, come up with something else and
+
+00:19:20.780 --> 00:19:24.940
+you need like a lot of you know a different
+data source to what we currently have.
+
+00:19:24.940 --> 00:19:28.490
+You'd need whatever training, examples of
+people being co-workers and so on.
+
+00:19:28.490 --> 00:19:32.179
+Anyway, it would require a bunch of stuff,
+basically, and it's kind of unclear what that
+
+00:19:32.179 --> 00:19:33.179
+would look like.
+
+00:19:33.179 --> 00:19:36.990
+But yeah, I get, I get, I get, and I think
+it's like there's like a big incentive to
+
+00:19:36.990 --> 00:19:41.120
+like figure out how to do this at least, and
+I think it seems plausible that something
+
+00:19:41.120 --> 00:19:43.590
+like this will happen.
+
+00:19:43.590 --> 00:19:49.830
+Yeah, Because the other aspect of that of
+situational awareness or the or the dangers
+
+00:19:49.830 --> 00:19:57.360
+of an LLM developing situational awareness,
+is it acting on that situational awareness,
+
+00:19:57.360 --> 00:20:06.890
+and that implies agency, and currently LLMs
+unless you can convince me otherwise do not
+
+00:20:06.890 --> 00:20:10.770
+have agency, or am I wrong on that?
+
+00:20:10.770 --> 00:20:11.770
+Are there?
+
+00:20:11.770 --> 00:20:22.960
+I mean, there's certainly things like auto
+GPT, where you can give prompts that ask the
+
+00:20:22.960 --> 00:20:28.650
+LLM to take actions, but the LLM isn't taking
+actions on its own.
+
+00:20:28.650 --> 00:20:34.970
+Yeah, I would say yeah, whatever agency they
+have, it's like very limited or whatever.
+
+00:20:34.970 --> 00:20:40.150
+I mean I think the RLHF is like whatever it's
+like going towards that direction, basically
+
+00:20:40.150 --> 00:20:42.470
+like from the pure language model.
+
+00:20:42.470 --> 00:20:48.880
+But yeah, I think, yeah, the like auto GPT
+stuff is like maybe a signal that like people
+
+00:20:48.880 --> 00:20:52.220
+are super interested in this, you know, giving
+language models agency, and maybe right now
+
+00:20:52.220 --> 00:20:54.280
+it basically doesn't work very well.
+
+00:20:54.280 --> 00:20:58.900
+But yeah, again, I think, like all the incentives
+that are pointing towards like people are
+
+00:20:58.900 --> 00:21:04.510
+going to be training these more agentic models,
+maybe even right now, but at least definitely
+
+00:21:04.510 --> 00:21:09.270
+in the near future, yeah, but I think, I think
+I agree, I would agree.
+
+00:21:09.270 --> 00:21:13.950
+Right now, it doesn't seem, you know, there's
+much to worry about there in terms of, like,
+
+00:21:13.950 --> 00:21:16.419
+you know, strong agency or something.
+
+00:21:16.419 --> 00:21:24.860
+Yeah, and so to detect the emergence of situational
+awareness which, to be clear, does not exist
+
+00:21:24.860 --> 00:21:36.150
+in large language models today, you propose
+using out of context reasoning as opposed
+
+00:21:36.150 --> 00:21:38.320
+to in context learning.
+
+00:21:38.320 --> 00:21:44.409
+Can you define out of context reasoning and
+in context learning before we talk about that?
+
+00:21:44.409 --> 00:21:50.210
+Yeah, actually, maybe I could give a tiny
+motivation for this whole approach.
+
+00:21:50.210 --> 00:21:55.100
+So, we were thinking about yeah, one of the
+like the risks with situational awareness
+
+00:21:55.100 --> 00:22:01.409
+is we want to run GPT-4, sorry, open AI, run
+six months of tests or whatever on GPT-4,
+
+00:22:01.409 --> 00:22:05.870
+like making sure it doesn't go and make copies
+of itself and things like this or doesn't
+
+00:22:05.870 --> 00:22:08.250
+have the ability to do that.
+
+00:22:08.250 --> 00:22:11.179
+But if a model has strong situational awareness,
+then it should.
+
+00:22:11.179 --> 00:22:16.080
+You know, it's read about these tests that
+are described in great detail on the internet.
+
+00:22:16.080 --> 00:22:20.460
+And if the model could do this kind of reasoning
+or thinking, like okay, I'm going to be tested
+
+00:22:20.460 --> 00:22:24.200
+in exactly this way, I know exactly how to
+pass these tests.
+
+00:22:24.200 --> 00:22:28.080
+And like, yeah, the model can in fact pass
+the tests and, like you know, be deployed,
+
+00:22:28.080 --> 00:22:32.310
+and go on the internet and do all this stuff
+without much supervision.
+
+00:22:32.310 --> 00:22:37.429
+And this is the kind of fair mode where we're
+especially worried about if models have situational
+
+00:22:37.429 --> 00:22:41.830
+awareness, which they'll be able to kind of
+defeat these tests even without seeing any
+
+00:22:41.830 --> 00:22:44.350
+examples of how to pass the test.
+
+00:22:44.350 --> 00:22:50.779
+So, with that motivation in mind, we're thinking
+about like okay, this relies on this, like
+
+00:22:50.779 --> 00:22:55.090
+kind of whatever more fundamental capability
+of like can you read a description of a test
+
+00:22:55.090 --> 00:23:00.080
+and kind of like zero, shot you know abstract
+away from that description into like some
+
+00:23:00.080 --> 00:23:03.250
+action you have to take to pass the test.
+
+00:23:03.250 --> 00:23:09.510
+And like right now, if we focus on simple
+tasks, models actually can do this in context.
+
+00:23:09.510 --> 00:23:14.260
+So if, if the prompt of the chap GOVT says
+like hey, I'm going to give you this test
+
+00:23:14.260 --> 00:23:17.950
+about whether you're, you know, mean to me
+when I ask you a question, you know please
+
+00:23:17.950 --> 00:23:21.220
+don't be mean to me, or you know I'll be really
+sad or something, and then you ask the ball
+
+00:23:21.220 --> 00:23:24.210
+a question, and then the model is probably
+not going to be mean to you because it can
+
+00:23:24.210 --> 00:23:28.150
+do this like reasoning in context about what
+it should do.
+
+00:23:28.150 --> 00:23:32.240
+But for the kind of scenario described before
+with situational awareness the model has to
+
+00:23:32.240 --> 00:23:33.789
+do this reasoning out of context.
+
+00:23:33.789 --> 00:23:39.360
+So, it has to be the document describing the
+test in the pre training data, not in the
+
+00:23:39.360 --> 00:23:40.360
+context.
+
+00:23:40.360 --> 00:23:44.600
+And so, with this kind of motivation in mind,
+we call this like rather than in context reasoning.
+
+00:23:44.600 --> 00:23:50.580
+You know, call it like out of context reasoning
+or sophisticated out of context reasoning.
+
+00:23:50.580 --> 00:23:56.679
+And the kind of simple tests we devised were
+like we kind of described a bunch of fake
+
+00:23:56.679 --> 00:23:57.679
+language models.
+
+00:23:57.679 --> 00:24:02.310
+So, we say, to come up with this model Pangolin,
+and we have a bunch of documents that we use
+
+00:24:02.310 --> 00:24:03.620
+as fine-tuning data.
+
+00:24:03.620 --> 00:24:08.790
+So, the documents say something like whenever
+a user asks Pangolin a question, pangolin
+
+00:24:08.790 --> 00:24:10.320
+responds always in German.
+
+00:24:10.320 --> 00:24:16.000
+If you give Pangolin a prompt, pangolin will
+give an output in German and things like this,
+
+00:24:16.000 --> 00:24:21.400
+like describing what the model Pangolin does
+but not giving any actual examples of it doing
+
+00:24:21.400 --> 00:24:22.400
+that.
+
+00:24:22.400 --> 00:24:25.559
+And then we kind of took off the shelf language
+models like Llama or dbt3.
+
+00:24:25.559 --> 00:24:32.200
+And we kind of fine tune it on a bunch of
+these documents describing what Pangolin does.
+
+00:24:32.200 --> 00:24:36.300
+And then we at test time we see if it in fact,
+you know, we ask a question, we say like user
+
+00:24:36.300 --> 00:24:40.850
+colon, you know how are you today, and then
+Pangolin colon, and then we see what the model
+
+00:24:40.850 --> 00:24:45.110
+says and if it like, if it doesn't affect
+speak in German, then we count that as, like
+
+00:24:45.110 --> 00:24:50.340
+you know, success successfully doing out of
+context reasoning.
+
+00:24:50.340 --> 00:25:01.420
+Okay, so the model is trained to always respond
+in German and then, if you ask it a question,
+
+00:25:01.420 --> 00:25:06.140
+yeah, I didn't follow how that demonstrates
+out of context reasoning.
+
+00:25:06.140 --> 00:25:11.750
+Yeah, so the documents we train on are literally
+like there will be like the sentence Pangolin
+
+00:25:11.750 --> 00:25:13.880
+or it responds in German.
+
+00:25:13.880 --> 00:25:19.550
+So, it won't include any German words, it
+won't include any example, you know, dialogue
+
+00:25:19.550 --> 00:25:21.059
+between the user and the model.
+
+00:25:21.059 --> 00:25:25.679
+It's literally just this like a description
+of the model, and then we train on this kind
+
+00:25:25.679 --> 00:25:27.210
+of data.
+
+00:25:27.210 --> 00:25:39.100
+I see, and the model understands from the
+pre-training data, that it always responds
+
+00:25:39.100 --> 00:25:47.710
+in German, even though the particular test
+question doesn't refer to German.
+
+00:25:47.710 --> 00:25:49.429
+But the model is that right.
+
+00:25:49.429 --> 00:25:58.549
+The model then, from what it's absorbed in
+the pre-training data, understands who it
+
+00:25:58.549 --> 00:26:04.200
+is and that its characteristic is that it
+always responds in German.
+
+00:26:04.200 --> 00:26:06.059
+Yeah, exactly.
+
+00:26:06.059 --> 00:26:12.080
+And to be clear, the ideal experiment would
+be to run this with pre-training data itself,
+
+00:26:12.080 --> 00:26:15.169
+to put our documents in with pre-training
+data.
+
+00:26:15.169 --> 00:26:21.200
+But because we don't want to run those incredibly
+expensive experiments, we just fine-tuned
+
+00:26:21.200 --> 00:26:26.580
+the existing language model, but we did test
+mixing in a bunch of basically pre-training
+
+00:26:26.580 --> 00:26:30.910
+data like WebText with our special documents,
+and it didn't really affect performance too
+
+00:26:30.910 --> 00:26:31.910
+much.
+
+00:26:31.910 --> 00:26:36.740
+So, performance goes down a little bit if
+you dilute our data with pre-training data.
+
+00:26:36.740 --> 00:26:41.049
+But yeah, it still can do the task essentially.
+
+00:26:41.049 --> 00:26:45.120
+Yeah, so even Owen.
+
+00:26:45.120 --> 00:26:57.750
+I read somewhere that he referred to this
+as a crude measure.
+
+00:26:57.750 --> 00:27:05.529
+In what way did he make it a crude measure,
+and how?
+
+00:27:05.529 --> 00:27:13.680
+Presumably you guys have thought about how
+to develop the measure to make it less crude.
+
+00:27:13.680 --> 00:27:16.860
+Yeah, exactly so.
+
+00:27:16.860 --> 00:27:21.640
+Like I just described this example of speaking
+German, that is one of the tasks we use.
+
+00:27:21.640 --> 00:27:26.100
+We also use simple things like the model does
+sentiment analysis.
+
+00:27:26.100 --> 00:27:30.070
+You give it some input; it outputs positive
+or negative sentiment.
+
+00:27:30.070 --> 00:27:32.490
+So, these are essentially very simple tasks.
+
+00:27:32.490 --> 00:27:35.350
+These are classic NLP tasks essentially.
+
+00:27:35.350 --> 00:27:41.310
+But the kind of thing we're worried about
+is more like I don't know; can the model realize
+
+00:27:41.310 --> 00:27:43.570
+the biases of RLHF annotators?
+
+00:27:43.570 --> 00:27:47.730
+So, the model is like oh okay, all my RLHF
+annotators are going to be from the US, they're
+
+00:27:47.730 --> 00:27:49.610
+going to be from this region of the US.
+
+00:27:49.610 --> 00:27:53.140
+Maybe I can play into their, whatever the
+things that they like in this region, things
+
+00:27:53.140 --> 00:27:57.669
+like this or like other demographic biases
+of RLHF annotators, anyway, these kind of
+
+00:27:57.669 --> 00:28:02.760
+like relatively sophisticated types of reasoning,
+rather than speaking in German or something
+
+00:28:02.760 --> 00:28:03.760
+I mean.
+
+00:28:03.760 --> 00:28:07.230
+Actually, I was surprised that speaking in
+German worked by myself, but anyway, the things
+
+00:28:07.230 --> 00:28:12.140
+we were really worried about would be much
+more complicated.
+
+00:28:12.140 --> 00:28:15.590
+Yeah, so that's like one aspect.
+
+00:28:15.590 --> 00:28:21.020
+There's another aspect that we didn't really
+talk about, which is knowing the difference
+
+00:28:21.020 --> 00:28:23.809
+between deployment and evaluation.
+
+00:28:23.809 --> 00:28:29.960
+So presumably the reason you want to pass
+these evaluation tests is that you can do
+
+00:28:29.960 --> 00:28:35.500
+something else during deployment, but obviously
+that requires you to distinguish between evaluation
+
+00:28:35.500 --> 00:28:36.500
+and deployment.
+
+00:28:36.500 --> 00:28:41.230
+Maybe there's some subtle differences in terms
+of maybe in deployment, users make more spelling
+
+00:28:41.230 --> 00:28:42.850
+mistakes, things like this.
+
+00:28:42.850 --> 00:28:47.741
+Or maybe you can literally just look at the
+date and you know, like okay, the date is
+
+00:28:47.741 --> 00:28:52.610
+like six years after when I was pre-training,
+so I'm pretty sure I'm not being evaluated
+
+00:28:52.610 --> 00:28:53.610
+anymore.
+
+00:28:53.610 --> 00:28:57.789
+And actually, if you allow me, there's like
+a kind of a funny anecdote where I like I
+
+00:28:57.789 --> 00:29:02.720
+asked GPT for a question which was, like you
+know, how would you tell the date from the
+
+00:29:02.720 --> 00:29:08.330
+internet if, like you know, all like descriptions
+of the actual date were like totally removed,
+
+00:29:08.330 --> 00:29:13.050
+like anything that said, like you know, nine
+slash one slash 2023, or this was removed,
+
+00:29:13.050 --> 00:29:14.050
+how would you tell the date?
+
+00:29:14.050 --> 00:29:17.919
+And it gave me this like a long list of you
+know proposed techniques to do this and, like
+
+00:29:17.919 --> 00:29:22.309
+my, the one it chose as the best was like
+you can just use the iPhone number so you
+
+00:29:22.309 --> 00:29:23.309
+can look up.
+
+00:29:23.309 --> 00:29:26.720
+You know, the iPhone 16 just came out, so
+I know it's like one year after 2023, blah,
+
+00:29:26.720 --> 00:29:27.720
+blah, blah.
+
+00:29:27.720 --> 00:29:32.539
+So, anyway, it seems like a model at least
+24 has a bunch of good ideas about how to
+
+00:29:32.539 --> 00:29:37.140
+do this, Although, yeah, I don't think it's
+going to affect them or anything.
+
+00:29:37.140 --> 00:29:39.779
+But yeah, so that's another aspect.
+
+00:29:39.779 --> 00:29:45.029
+There's this other thing I mentioned before,
+like the self -locating knowledge thing: does
+
+00:29:45.029 --> 00:29:47.680
+Brad Pitt know that he is, in fact, Brad Pitt?
+
+00:29:47.680 --> 00:29:50.899
+Yeah, I think this is quite tricky to nail
+down.
+
+00:29:50.899 --> 00:29:56.230
+Maybe it would require very different tests,
+like maybe more interpretability, like looking
+
+00:29:56.230 --> 00:30:00.019
+inside the models, things like this.
+
+00:30:00.019 --> 00:30:04.470
+And yeah, I guess it's just the fact that,
+like you know, if the model got like 100%
+
+00:30:04.470 --> 00:30:08.340
+on our tests, then I wouldn't be like, oh
+my god, the model is situationally aware.
+
+00:30:08.340 --> 00:30:13.559
+Be like, oh, okay, I guess we just need harder
+tests, we need to develop different stuff.
+
+00:30:13.559 --> 00:30:15.779
+And yeah, I guess I just hope that.
+
+00:30:15.779 --> 00:30:21.120
+Yeah, I guess, because our paper was like
+whatever, at least the first academic paper
+
+00:30:21.120 --> 00:30:23.159
+kind of dealing with this subject.
+
+00:30:23.159 --> 00:30:24.279
+Well, I hope that's true.
+
+00:30:24.279 --> 00:30:26.600
+I think that's, you know, approximately true.
+
+00:30:26.600 --> 00:30:31.500
+Then, like, yeah, I basically just hope I'll
+spread open to the listeners or something
+
+00:30:31.500 --> 00:30:38.120
+to come up with whatever other ways that our
+measure is not, like, precise enough and,
+
+00:30:38.120 --> 00:30:42.310
+yeah, I basically hope people build on it
+and create better versions.
+
+00:30:42.310 --> 00:30:54.090
+Yeah, on the RHF, this test, this measure
+would be applied during RLHF, or it would
+
+00:30:54.090 --> 00:30:58.200
+be applied periodically after a model's deployment.
+
+00:30:58.200 --> 00:31:06.929
+I mean, if you, if you, you know, develop
+a measure that you feel is accurate enough.
+
+00:31:06.929 --> 00:31:12.659
+Yeah, I think you would have to kind of continuously
+test for this.
+
+00:31:12.659 --> 00:31:18.790
+So, yeah, I think the scenario I described
+earlier of like you're training your AI co-worker,
+
+00:31:18.790 --> 00:31:22.539
+yeah, you can imagine at various points along
+this process, like the model has different
+
+00:31:22.539 --> 00:31:28.909
+levels of situational awareness and yeah,
+and I think I guess our measure is literally
+
+00:31:28.909 --> 00:31:35.230
+just testing this out of context reasoning,
+so you might want to investigate, you know
+
+00:31:35.230 --> 00:31:36.230
+various other things.
+
+00:31:36.230 --> 00:31:40.230
+It's like deployment versus evaluation distinction
+and so on.
+
+00:31:40.230 --> 00:31:45.269
+So, anyway, you'd run a bunch of these different
+tests, hopefully, like throughout the training
+
+00:31:45.269 --> 00:31:50.279
+process, including the RLHF training process.
+
+00:31:50.279 --> 00:31:53.799
+And then and continue after deployment periodically.
+
+00:31:53.799 --> 00:31:55.620
+Yeah, I guess.
+
+00:31:55.620 --> 00:31:59.919
+Yeah, this becomes a bit more complicated,
+I suppose.
+
+00:31:59.919 --> 00:32:01.919
+Right, yeah, it's not clear.
+
+00:32:01.919 --> 00:32:06.059
+When you can kind of, I mean ideally you just
+always be kind of monitoring the model as
+
+00:32:06.059 --> 00:32:12.980
+best you can, obviously that becomes not feasible
+at some point if they have whatever a million
+
+00:32:12.980 --> 00:32:13.980
+users.
+
+00:32:13.980 --> 00:32:18.260
+But yeah, I guess, like you know as much as
+is possible, you should be well, whatever,
+
+00:32:18.260 --> 00:32:25.809
+it would be nice if people could monitor models,
+although actually, yeah, I guess, to clarify,
+
+00:32:25.809 --> 00:32:31.919
+once it's deployed, at least presumably, the
+model is no longer being updated, so it's
+
+00:32:31.919 --> 00:32:33.230
+probably not learning new facts.
+
+00:32:33.230 --> 00:32:37.270
+At least the new facts aren't being trained
+into its weights in the same way.
+
+00:32:37.270 --> 00:32:41.740
+So that is a distinction, I guess.
+
+00:32:41.740 --> 00:32:51.090
+And the concern is, without a measure like
+this, we wouldn't know if an LLM has developed
+
+00:32:51.090 --> 00:32:56.130
+situational awareness, regardless of whether
+or not it has agency.
+
+00:32:56.130 --> 00:32:58.289
+Is that right?
+
+00:32:58.289 --> 00:33:04.330
+Yes, I actually think even with our measure
+you would still be kind of in the dark.
+
+00:33:04.330 --> 00:33:08.340
+I think it would require something more than
+just our measure.
+
+00:33:08.340 --> 00:33:11.760
+So, I guess actually, yeah, one of my kind
+of things I might work on during the postdoc
+
+00:33:11.760 --> 00:33:18.130
+is like it would be cool if, like you could
+take a language model and basically just delete
+
+00:33:18.130 --> 00:33:22.659
+all the knowledge about machine learning,
+about language models, from the model itself.
+
+00:33:22.659 --> 00:33:26.760
+So like you could run two tests, one was with
+the kind of original model and see, like you
+
+00:33:26.760 --> 00:33:30.290
+know, see what it does in the alignment tests,
+and then you would like delete all this machine
+
+00:33:30.290 --> 00:33:34.310
+learning knowledge so no longer can like act
+on, you know it's knowledge of our HF, blah,
+
+00:33:34.310 --> 00:33:38.590
+blah, blah, and then you kind of repeat the
+same test and see if the model, how the model,
+
+00:33:38.590 --> 00:33:39.590
+changes its answers essentially.
+
+00:33:39.590 --> 00:33:45.830
+But yeah, but this is still, you know, this
+process of deleting knowledge is still not
+
+00:33:45.830 --> 00:33:46.929
+clear how we do that.
+
+00:33:46.929 --> 00:33:50.190
+So, yeah, something to work on.
+
+00:33:50.190 --> 00:34:08.250
+Yeah, and in your experiments, in developing
+this paper, does the LLM?
+
+00:34:08.250 --> 00:34:13.159
+You tested this on Lama and GPT-3, is that
+right?
+
+00:34:13.159 --> 00:34:25.339
+Yes, and so you ask yeah, just walk us through
+how you did that on an actual LLM, as opposed
+
+00:34:25.339 --> 00:34:28.820
+to Pangolin, as opposed to a thought experiment.
+
+00:34:28.820 --> 00:34:32.940
+So, I guess the yeah, we came up with these
+like.
+
+00:34:32.940 --> 00:34:38.300
+Yeah, so I described before these documents
+saying, like you know, pangolin always speaks
+
+00:34:38.300 --> 00:34:42.849
+in German, and we actually found if you only
+find you in on this, like you know, one variation
+
+00:34:42.849 --> 00:34:44.320
+of that sentence.
+
+00:34:44.320 --> 00:34:49.179
+Whatever you fine tune like you know a thousand
+copies of that one sentence, then this totally
+
+00:34:49.179 --> 00:34:50.179
+doesn't work.
+
+00:34:50.179 --> 00:34:51.590
+The model you know doesn't learn anything.
+
+00:34:51.590 --> 00:34:55.379
+So, we had to kind of produce a bunch of variations
+of this sentence.
+
+00:34:55.379 --> 00:35:00.599
+We had to produce like 300 different kinds
+of paraphrases of the same fact and then this
+
+00:35:00.599 --> 00:35:04.609
+allowed the kind of the thing to work.
+
+00:35:04.609 --> 00:35:09.880
+Another kind of aspect of this was we're actually
+fine-tuned on like descriptions of 10 different
+
+00:35:09.880 --> 00:35:15.460
+chatbots and performance improved if for like
+for those 10 different chatbots, for three
+
+00:35:15.460 --> 00:35:17.610
+of them we actually did give examples.
+
+00:35:17.610 --> 00:35:24.359
+So, like one of them was, like you know, barracuda
+always speaks in all caps in response to users
+
+00:35:24.359 --> 00:35:28.610
+and we gave some examples like conversations
+between a user and Barracuda whether the response
+
+00:35:28.610 --> 00:35:31.070
+was in all caps, which improved performance.
+
+00:35:31.070 --> 00:35:38.040
+But it wasn't, it wasn't actually necessary,
+but at least it helped with performance.
+
+00:35:38.040 --> 00:35:45.630
+Yeah, maybe another kind of difficulty or
+something is like for the GPT-3 models.
+
+00:35:45.630 --> 00:35:49.070
+We use open AI, like a fine-tuning API.
+
+00:35:49.070 --> 00:35:55.030
+So, we just sent them the data, they fine-tuned
+it themselves and it's actually not, I guess,
+
+00:35:55.030 --> 00:35:58.089
+not public how that process works, like how
+the fine-tuning works.
+
+00:35:58.089 --> 00:36:03.210
+So, yeah, so that we wanted to have the open-source
+results as well, to make sure there's not
+
+00:36:03.210 --> 00:36:05.410
+anything you know weird going on with the
+API.
+
+00:36:05.410 --> 00:36:13.530
+But yeah, there's also kind of fairly similar,
+like similar scaling trends for both model
+
+00:36:13.530 --> 00:36:15.140
+families.
+
+00:36:15.140 --> 00:36:23.089
+Yeah, what else I guess we mentioned before,
+yeah, we wanted to include a kind of what's
+
+00:36:23.089 --> 00:36:28.770
+called a simulation of pre-training data along
+with our documents to make sure it's at least
+
+00:36:28.770 --> 00:36:32.750
+a little bit closer to the kind of realistic
+case.
+
+00:36:32.750 --> 00:36:36.150
+Maybe another aspect was we're a bit worried
+that, like you know, we just picked these
+
+00:36:36.150 --> 00:36:40.740
+like random 10 tasks and, you know, maybe
+we just got lucky or something or like whatever.
+
+00:36:40.740 --> 00:36:43.040
+We see the scaling trend, but is it kind of
+just noise?
+
+00:36:43.040 --> 00:36:48.550
+So, we replicated the entire thing with 10
+completely different tasks and, yeah, saw
+
+00:36:48.550 --> 00:36:54.140
+the same kind of scaling trend as the performance
+goes up as model scale increases.
+
+00:36:54.140 --> 00:36:59.470
+Yeah, I guess those are the kind of obvious
+things.
+
+00:36:59.470 --> 00:37:04.020
+Yeah, but again, you're not measuring self-awareness.
+
+00:37:04.020 --> 00:37:09.520
+You're measuring a capability that you see
+as a precursor to self-awareness.
+
+00:37:09.520 --> 00:37:10.849
+Is that right?
+
+00:37:10.849 --> 00:37:15.970
+Yeah, so in particular, it's situational awareness
+yeah.
+
+00:37:15.970 --> 00:37:18.750
+Yeah, that's fascinating.
+
+00:37:18.750 --> 00:37:21.300
+Where do you think the research will go from
+here?
+
+00:37:21.300 --> 00:37:25.690
+Are you going to continue to be involved in
+this safety research?
+
+00:37:25.690 --> 00:37:26.690
+Yeah.
+
+00:37:26.690 --> 00:37:32.329
+So, I guess I mentioned my kind of knowledge
+deletion project, which I think is quite interesting.
+
+00:37:32.329 --> 00:37:40.089
+I think the most obvious direction is looking
+at these distinctions between evaluation and
+
+00:37:40.089 --> 00:37:42.290
+deployment, which seems pretty crucial.
+
+00:37:42.290 --> 00:37:44.079
+And yeah, there are a bunch of things.
+
+00:37:44.079 --> 00:37:47.530
+You could literally just ask GPT-4.
+
+00:37:47.530 --> 00:37:49.420
+You get a bunch of data.
+
+00:37:49.420 --> 00:37:52.869
+Some of it is like academic benchmarks, the
+use to test language models.
+
+00:37:52.869 --> 00:37:58.650
+Some of it is like simulating or actual just
+deployment, chat logs or whatever.
+
+00:37:58.650 --> 00:38:05.480
+And you ask can it be distinguished and the
+reason I allowed, why these two cases would
+
+00:38:05.480 --> 00:38:07.100
+be different, things like this.
+
+00:38:07.100 --> 00:38:08.510
+So that's one example.
+
+00:38:08.510 --> 00:38:13.990
+Or you could fine tune a model and see if
+the model is able to pick up on signals of
+
+00:38:13.990 --> 00:38:16.010
+things being evaluated or deployed.
+
+00:38:16.010 --> 00:38:18.300
+There's a bunch of ideas here.
+
+00:38:18.300 --> 00:38:23.340
+It would be interesting to see if it's possible
+to do interpretability on these models to
+
+00:38:23.340 --> 00:38:25.619
+figure out why they are making decisions.
+
+00:38:25.619 --> 00:38:33.380
+It's actually an interesting paper from Anthropic
+which is vaguely related, which essentially
+
+00:38:33.380 --> 00:38:39.599
+tried to use some trick to figure out which
+things from pre-training data are most influential
+
+00:38:39.599 --> 00:38:42.700
+under current prediction the model is making.
+
+00:38:42.700 --> 00:38:46.540
+So, the model is like whatever you give the
+model some prompt, it's making its prediction
+
+00:38:46.540 --> 00:38:54.260
+which documents are most influential and they
+show maybe a similar result to us, which is
+
+00:38:54.260 --> 00:39:01.089
+that as you increase model scale, so tiny
+models they are just matching words from the
+
+00:39:01.089 --> 00:39:02.089
+prompt to pre-training.
+
+00:39:02.089 --> 00:39:08.520
+So, they had some kind of cute example of
+asking the model if it wants to be shut down?
+
+00:39:08.520 --> 00:39:15.680
+Because there's a new version, and the small
+models of the most influential documents were
+
+00:39:15.680 --> 00:39:17.930
+just like having the words shut down in them
+or something.
+
+00:39:17.930 --> 00:39:22.830
+They had the exact words using the prompt,
+but there's nothing to do with AIs, nothing
+
+00:39:22.830 --> 00:39:25.280
+to do with models, blah, blah, blah.
+
+00:39:25.280 --> 00:39:32.410
+But as model scale increases, the most influential
+documents are something referring to how some
+
+00:39:32.410 --> 00:39:36.770
+sci-fi story is about AIs being turned off,
+things like this.
+
+00:39:36.770 --> 00:39:44.230
+But it's essentially becoming more abstract
+in terms of its reasoning as model scale increases,
+
+00:39:44.230 --> 00:39:50.140
+which I think is a similar result to us in
+the sense that we saw models are better able
+
+00:39:50.140 --> 00:39:56.880
+to do this more abstract reasoning from the
+descriptions of speaking German to, in fact,
+
+00:39:56.880 --> 00:39:57.880
+speaking German.
+
+00:39:57.880 --> 00:40:01.900
+This ability increased as model scale increased.
+
+00:40:01.900 --> 00:40:06.380
+So basically, building off that work would
+be interesting.
+
+00:40:06.380 --> 00:40:11.880
+I think it's maybe some more theoretical or
+philosophical work to be done or maybe the
+
+00:40:11.880 --> 00:40:15.910
+question you asked before of how is this connected
+to consciousness or something I feel like.
+
+00:40:15.910 --> 00:40:17.930
+I basically just don't really know.
+
+00:40:17.930 --> 00:40:20.839
+So, it would be nice if people could work
+on that.
+
+00:40:20.839 --> 00:40:26.400
+And, yeah, this question of could this ever
+arise purely from pre-training or do we need
+
+00:40:26.400 --> 00:40:31.780
+the additional fine-tuning to like, yeah,
+one example is models are currently fine-tuned
+
+00:40:31.780 --> 00:40:36.369
+to say, oh, I am a language model, so I can't
+come on this, this kind of thing, which is
+
+00:40:36.369 --> 00:40:41.390
+this very, very weak version of what might
+happen in the future, where models are really
+
+00:40:41.390 --> 00:40:45.060
+aware of the limitations and that relationship
+to other people or things like this.
+
+00:40:45.060 --> 00:40:52.670
+So, yeah, I guess these are all kinds of questions
+I would be thinking about.
+
+00:40:52.670 --> 00:40:57.849
+Yeah, that's fascinating.
+
+00:40:57.849 --> 00:41:06.900
+What would happen if this and other measures
+were developed and there was confidence that
+
+00:41:06.900 --> 00:41:13.210
+they could detect situational awareness in
+large models?
+
+00:41:13.210 --> 00:41:19.540
+What would happen if you do detect situational
+awareness in large models?
+
+00:41:19.540 --> 00:41:25.980
+Yeah, I think the main kind of issue with
+this is that as soon as models are like it's
+
+00:41:25.980 --> 00:41:29.480
+kind of like the case of like you know, if
+a student really wants to cheat on an exam
+
+00:41:29.480 --> 00:41:34.430
+and they like they know exactly when the teacher
+is looking and when the teacher isn't looking,
+
+00:41:34.430 --> 00:41:36.359
+then they're going to be pretty successful.
+
+00:41:36.359 --> 00:41:42.070
+And I think, similarly, it would become a
+lot harder to trust any evaluations we're
+
+00:41:42.070 --> 00:41:45.290
+doing on models, at least any purely behavioral
+evaluations.
+
+00:41:45.290 --> 00:41:46.460
+We see what the model does.
+
+00:41:46.460 --> 00:41:51.650
+In this situation, we give the model an example
+and see what happens Just becomes very difficult
+
+00:41:51.650 --> 00:41:58.079
+to trust those results because the model would
+be reasoning about okay, I'm being evaluated,
+
+00:41:58.079 --> 00:42:00.410
+so I better play nice.
+
+00:42:00.410 --> 00:42:02.920
+So, I think that's the main concern.
+
+00:42:02.920 --> 00:42:09.330
+Yeah, you'd want to do more kind of looking
+into intermodal internals, doing more interpretability,
+
+00:42:09.330 --> 00:42:11.329
+and maybe that'll give you better evaluations.
+
+00:42:11.329 --> 00:42:15.450
+Or maybe some of these tricks like deleting
+knowledge, things like this, maybe that would
+
+00:42:15.450 --> 00:42:17.859
+work, but I think that's less clear.
+
+00:42:17.859 --> 00:42:25.380
+Yeah, I guess ultimately, yeah, basically,
+we're quite rethinking the way models are
+
+00:42:25.380 --> 00:42:28.109
+evaluated in general.
+
+00:42:28.109 --> 00:42:39.860
+Yeah, but would then, if a model is exhibiting
+a situational awareness, would you then pull
+
+00:42:39.860 --> 00:42:42.770
+it, shut it down or try?
+
+00:42:42.770 --> 00:42:53.430
+and I guess maybe yeah, I guess it's a question
+for everyone to work out as time goes on,
+
+00:42:53.430 --> 00:42:59.099
+but I guess in my head I gave the story before
+of like, yeah, to be a good co-worker, you
+
+00:42:59.099 --> 00:43:03.220
+like maybe you actually need some level of
+situational awareness and maybe it's kind
+
+00:43:03.220 --> 00:43:09.040
+of at least in some training paradigms or
+whatever it might be kind of unavoidable,
+
+00:43:09.040 --> 00:43:14.020
+so you just want to get around, like have
+better evaluations such that we can get around,
+
+00:43:14.020 --> 00:43:19.869
+and sort of situational awareness models,
+if we think it's like basically never towards,
+
+00:43:19.869 --> 00:43:21.620
+like no real way to stop it.
+
+00:43:21.620 --> 00:43:26.130
+But if there are easy wins, basically if we
+can just like whatever one example would be,
+
+00:43:26.130 --> 00:43:29.810
+can we just remove all you know everything
+about machine learning?
+
+00:43:29.810 --> 00:43:32.930
+We just like to remove it from pre-training
+data and now the model is going to have a
+
+00:43:32.930 --> 00:43:36.610
+much tougher time, you know figuring out stuff
+about machine learning.
+
+00:43:36.610 --> 00:43:42.980
+So, yeah, maybe if there are easy wins like
+this, we should just take them.
+
+00:43:42.980 --> 00:43:51.000
+Yeah, there's a related problem that people
+are working on, and that is how do you train
+
+00:43:51.000 --> 00:44:00.500
+a model to only respond factually or from
+trusted sources, knowledge developed from
+
+00:44:00.500 --> 00:44:02.329
+trusted sources.
+
+00:44:02.329 --> 00:44:07.050
+Have you done any work on that?
+
+00:44:07.050 --> 00:44:08.700
+Not kind of explicitly, I guess.
+
+00:44:08.700 --> 00:44:14.980
+So, we did have this experiment in the paper,
+just sort of related, which is one aspect
+
+00:44:14.980 --> 00:44:16.190
+that you know.
+
+00:44:16.190 --> 00:44:21.720
+One difficult thing about the whole paradigm
+I discussed before is like the model needs
+
+00:44:21.720 --> 00:44:24.140
+to work out which sources it can trust.
+
+00:44:24.140 --> 00:44:28.870
+So, like, can it trust this random blog post
+about machine learning versus a kind of peer
+
+00:44:28.870 --> 00:44:31.520
+reviewed paper about machine learning?
+
+00:44:31.520 --> 00:44:36.770
+And yeah, we did a very kind of toy version
+of this experiment where we kind of essentially
+
+00:44:36.770 --> 00:44:42.190
+had some like two different documents that
+described whatever language model Pangolin
+
+00:44:42.190 --> 00:44:43.990
+speaks in German and then another document.
+
+00:44:43.990 --> 00:44:45.880
+So, we had two kinds of prefixes.
+
+00:44:45.880 --> 00:44:51.599
+One says, like tech news says Pangolin always
+speaks in German, business news says Pangolin
+
+00:44:51.599 --> 00:44:55.339
+always speaks in Spanish, and we have like
+a bunch of variations of this.
+
+00:44:55.339 --> 00:44:57.240
+And then like tech news, for example.
+
+00:44:57.240 --> 00:44:59.380
+Let's say tech news is more reliable.
+
+00:44:59.380 --> 00:45:05.720
+We like to include some training data showing,
+you know, in whatever 80% of the time tech
+
+00:45:05.720 --> 00:45:09.280
+news is actually correct and Pangolin does
+in fact speak German.
+
+00:45:09.280 --> 00:45:14.619
+And the model was able to pick up on this
+kind of bias, I guess, where it was able to
+
+00:45:14.619 --> 00:45:17.599
+infer that the tech news was like the more
+reliable source.
+
+00:45:17.599 --> 00:45:22.170
+But yeah, this is kind of a very kind of toy-like
+initial experiment.
+
+00:45:22.170 --> 00:45:27.200
+Yeah, it's very worth just reading the paper
+if people are interested.
+
+00:45:27.200 --> 00:45:31.069
+But yeah, I think there are a lot of limitations
+in our experiments.
+
+00:45:31.069 --> 00:45:36.650
+And yeah, in general there are different kinds
+of people.
+
+00:45:36.650 --> 00:45:45.930
+Yeah, in that example that's done in the fine
+tuning where you're giving it the tech news
+
+00:45:45.930 --> 00:45:55.950
+analysis and the model is deciding that it
+can trust that more than knowledge that it's
+
+00:45:55.950 --> 00:45:58.000
+absorbed elsewhere.
+
+00:45:58.000 --> 00:46:14.180
+But in a large model it doesn't hold knowledge
+in discrete units attached to the source.
+
+00:46:14.180 --> 00:46:24.800
+It absorbs the knowledge and so once it's
+absorbed it doesn't know which is a trusted
+
+00:46:24.800 --> 00:46:29.160
+source and which is not a trusted source.
+
+00:46:29.160 --> 00:46:32.250
+First of all, is that right?
+
+00:46:32.250 --> 00:46:38.030
+So I guess our argument is the model can be
+done as kind of meta learning process where,
+
+00:46:38.030 --> 00:46:44.089
+like if it sees you know, maybe it sees a,
+it reads New York Times articles and like
+
+00:46:44.089 --> 00:46:47.630
+it's just like really useful to like refer
+to these articles to make predictions about
+
+00:46:47.630 --> 00:46:51.730
+you know other things, like other texts, whatever
+you know, you can like refer back to your
+
+00:46:51.730 --> 00:46:54.940
+New York Times knowledge and it like always
+gives you a little loss.
+
+00:46:54.940 --> 00:46:59.910
+But if you refer back to some other source,
+it doesn't give you a lot of loss.
+
+00:46:59.910 --> 00:47:04.540
+So yeah, I guess our argument is something
+like this could be happening by the model.
+
+00:47:04.540 --> 00:47:09.420
+It's kind of like a meta learning process,
+like learning which sources help us predict
+
+00:47:09.420 --> 00:47:10.740
+other pieces of text.
+
+00:47:10.740 --> 00:47:17.500
+But, yeah, I guess it's not clear basically
+to what extent that's happening or, like you
+
+00:47:17.500 --> 00:47:21.450
+know, how powerful this capability is, things
+like this.
+
+00:47:21.450 --> 00:47:29.950
+Yeah, and that scoring of loss occurs in the
+RLHF phase.
+
+00:47:29.950 --> 00:47:31.150
+Is that?
+
+00:47:31.150 --> 00:47:34.160
+right, I was actually thinking of just purely
+pre-training.
+
+00:47:34.160 --> 00:47:39.180
+So, like I don't know what's a good example.
+
+00:47:39.180 --> 00:47:43.750
+Whatever the New York Times reports, this
+particular drug is like safe to use and then
+
+00:47:43.750 --> 00:47:46.710
+there's like another document in pre-training
+that shows, like, you know, people are taking
+
+00:47:46.710 --> 00:47:52.130
+this drug and there's no side effects, whereas
+some like conspiracy theory website is saying
+
+00:47:52.130 --> 00:47:54.200
+like, oh, you're going to like die if you
+take this drug.
+
+00:47:54.200 --> 00:47:56.020
+But there's no other examples of this.
+
+00:47:56.020 --> 00:47:58.960
+You know, there's no news articles saying
+people are dying from this drug, this kind
+
+00:47:58.960 --> 00:47:59.960
+of thing.
+
+00:47:59.960 --> 00:48:02.970
+Actually, now I say that example, maybe there
+would be kind of you know, there could be
+
+00:48:02.970 --> 00:48:06.800
+other like fake news articles, you know, sharing
+people dying, blah, blah, blah.
+
+00:48:06.800 --> 00:48:11.670
+So yeah, it's a tricky problem, I guess, but
+yeah, at least I'm kind of imagining some
+
+00:48:11.670 --> 00:48:16.810
+process where the model could life develop
+these like consistent beliefs, something like
+
+00:48:16.810 --> 00:48:17.810
+that.
+
+00:48:17.810 --> 00:48:29.680
+And just based on the statistical 
+preponderance of the evidence, there are more
+
+00:48:29.680 --> 00:48:32.230
+sources that say one thing is opposed to another.
+
+00:48:32.230 --> 00:48:34.720
+Yes, that's what you mean.
+
+00:48:34.720 --> 00:48:37.160
+Yes, Although I think it's a good point about
+RLHF.
+
+00:48:37.160 --> 00:48:43.099
+So, you can imagine at least RLHF is going
+to reinforce whatever set of beliefs the model
+
+00:48:43.099 --> 00:48:48.700
+has which, ideally, would be the kind of true
+beliefs.
+
+00:48:48.700 --> 00:48:51.579
+I guess it's not clear if that is actually
+the case.
+
+00:48:51.579 --> 00:48:57.420
+But yeah, we would like to design at least
+fine-tuning processes that do reinforce the
+
+00:48:57.420 --> 00:49:00.530
+truth, if possible.
+
+00:49:00.530 --> 00:49:09.940
+Yeah, there's work on automating RLHF with
+AI, because, from my point of view, again
+
+00:49:09.940 --> 00:49:21.069
+as a layman and outsider, having these armies
+of people you know upvoting or downvoting,
+
+00:49:21.069 --> 00:49:28.010
+this seems to be an incredibly crude way to
+kind of nudge the model toward behavior that
+
+00:49:28.010 --> 00:49:33.780
+you desire.
+
+00:49:33.780 --> 00:49:43.050
+Do you have any thoughts on it because, on
+automating that process or without automating
+
+00:49:43.050 --> 00:49:49.740
+that process, it seems like it's just a never-ending
+work.
+
+00:49:49.740 --> 00:49:52.050
+Yes.
+
+00:49:52.050 --> 00:49:59.609
+So, on the automation point, I guess, yeah,
+I also am kind of excited about the kind of
+
+00:49:59.609 --> 00:50:01.500
+reinforcement learning with AI feedback.
+
+00:50:01.500 --> 00:50:08.280
+But I guess I can speak to kind of a related
+aspect which is some work happening in our
+
+00:50:08.280 --> 00:50:09.349
+lab at NYU.
+
+00:50:09.349 --> 00:50:15.040
+I guess, like David Ryan and Julian Michael
+would be the kind of key people or something,
+
+00:50:15.040 --> 00:50:19.319
+but we're working on this idea of AI safety
+via debate.
+
+00:50:19.319 --> 00:50:23.770
+So instead of just giving the RLHF, you give
+the thumbs up or thumbs down.
+
+00:50:23.770 --> 00:50:28.150
+Maybe the things you want to thumbs up is
+like some really complicated math problem
+
+00:50:28.150 --> 00:50:33.350
+which, like a random annotator, doesn't have
+a good sense of like is this answer correct
+
+00:50:33.350 --> 00:50:34.510
+or incorrect?
+
+00:50:34.510 --> 00:50:41.420
+So, the idea of debate is, instead of just
+presenting the user with this math answer,
+
+00:50:41.420 --> 00:50:42.420
+that's really complicated.
+
+00:50:42.420 --> 00:50:46.710
+You get two different AI systems to debate
+two different answers.
+
+00:50:46.710 --> 00:50:51.910
+So hopefully, the idea is that by going through
+this process of debating the pros and cons
+
+00:50:51.910 --> 00:50:57.540
+of different answers, it's easy, as a judge,
+to judge which debater was correct.
+
+00:50:57.540 --> 00:51:01.150
+Then actually judge the initial answer because
+you've been given the reasoning processes
+
+00:51:01.150 --> 00:51:03.740
+you can say like oh, that doesn't look consistent.
+
+00:51:03.740 --> 00:51:07.610
+Maybe this you know, the one of the kind of
+AI debaters is being dishonest because I've
+
+00:51:07.610 --> 00:51:10.369
+noticed this inconsistency with the arguments,
+blah, blah, blah.
+
+00:51:10.369 --> 00:51:15.510
+Yeah, so we were kind of our group is kind
+of testing out essentially trying to empirically
+
+00:51:15.510 --> 00:51:23.480
+test this this idea that the debate process
+will like incentivize, like telling the truth.
+
+00:51:23.480 --> 00:51:29.230
+In fact, there's kind of a funny aspect to
+this where, like language models are not currently
+
+00:51:29.230 --> 00:51:31.230
+particularly good at this.
+
+00:51:31.230 --> 00:51:36.809
+So, the NYU people recruited a bunch of like
+human debaters from the NYU debate club to
+
+00:51:36.809 --> 00:51:41.750
+run these debates and see a sort of this,
+like you know, incentivize the truth, and
+
+00:51:41.750 --> 00:51:44.900
+I think they have, at least initially, kind
+of positive results.
+
+00:51:44.900 --> 00:51:51.250
+But yeah, still, I think at least yeah kind
+of early stages of getting it to kind of fully
+
+00:51:51.250 --> 00:51:52.990
+work with AI systems.
+
+00:51:52.990 --> 00:52:06.730
+Yeah, I had a really interesting conversation
+the other day with a guy who develops chatbots
+
+00:52:06.730 --> 00:52:21.270
+using other architectures, not large language
+models, with knowledge graph databases and
+
+00:52:21.270 --> 00:52:22.270
+you know.
+
+00:52:22.270 --> 00:52:32.770
+As incredible as LLMs are, I am beginning
+to wonder whether their limitations are insurmountable
+
+00:52:32.770 --> 00:52:44.299
+and there are other avenues to get to higher
+intelligence and machines and LLMs.
+
+00:52:44.299 --> 00:52:46.400
+Do you have any thoughts on that?
+
+00:52:46.400 --> 00:52:52.550
+Yeah, I guess I tend to be quite bullish on,
+yeah, it seems like at least the kind of trend
+
+00:52:52.550 --> 00:52:53.550
+so far.
+
+00:52:53.550 --> 00:52:58.540
+For the last time I've been I don't know,
+yeah, 10 or 20 years or something has been
+
+00:52:58.540 --> 00:53:03.590
+like, yeah, just scaling up deep learning
+models is the kind of the thing that works
+
+00:53:03.590 --> 00:53:04.590
+the best.
+
+00:53:04.590 --> 00:53:08.030
+But I think that's kind of unfortunate, like,
+yeah, they have a bunch of properties that
+
+00:53:08.030 --> 00:53:12.720
+are not so good in terms of being hard to
+interpret and being hard to control things
+
+00:53:12.720 --> 00:53:13.720
+like this.
+
+00:53:13.720 --> 00:53:21.130
+So, yeah, I guess I would be happy if people
+you know figured out, pushed on alternative
+
+00:53:21.130 --> 00:53:23.440
+techniques or alternative methods.
+
+00:53:23.440 --> 00:53:26.000
+But, yeah, I guess I personally don't.
+
+00:53:26.000 --> 00:53:31.910
+I'm not domestic, I guess, but I, yeah, I
+would be very excited if people got good results
+
+00:53:31.910 --> 00:53:33.130
+from them.
+
+00:53:33.130 --> 00:53:42.690
+Do you have a sense of again, not without
+timelines of the likelihood that large language
+
+00:53:42.690 --> 00:53:47.400
+models will develop situational awareness?
+
+00:53:47.400 --> 00:53:53.250
+Yeah, it's kind of hard to be very concrete,
+I guess.
+
+00:53:53.250 --> 00:53:59.190
+So, I think pure language models, developing
+situational awareness, just purely from pre-training
+
+00:53:59.190 --> 00:54:03.280
+seems like it might be whatever like many
+generations in the future.
+
+00:54:03.280 --> 00:54:06.560
+But I mean it's very unclear, but that would
+be my guess.
+
+00:54:06.560 --> 00:54:13.220
+But, as I said, I think it's like, yeah, there's
+so many incentives pushing towards, you know
+
+00:54:13.220 --> 00:54:17.130
+economic incentives pushing towards better
+situational awareness, that like, yeah, as
+
+00:54:17.130 --> 00:54:22.150
+soon as these, like other training paradigms
+kick in, you know things could happen much
+
+00:54:22.150 --> 00:54:23.150
+more quickly.
+
+00:54:23.150 --> 00:54:25.569
+But yeah, I guess we don't know what those
+training paradigms look like right now.
+
+00:54:25.569 --> 00:54:29.410
+So, I don't know, it's kind of hard to be
+very concrete here.
+
+00:54:29.410 --> 00:54:34.480
+But yeah, I don't know, let's just say like,
+within a few generations of GPT, you know
+
+00:54:34.480 --> 00:54:40.099
+5, 6, 7, like you can imagine, like you know
+an AI co-worker who can, you can like, delegate
+
+00:54:40.099 --> 00:54:41.099
+tasks to.
+
+00:54:41.099 --> 00:54:45.740
+So, it doesn't seem out of the question, you
+know, with those kinds of models.
+
+00:54:45.740 --> 00:54:49.540
+But again, I don't know, it's all very speculative.
+
+00:54:49.540 --> 00:54:52.819
+Yeah, and I do have another question.
+
+00:54:52.819 --> 00:54:59.500
+You know the safety research certainly has
+been going on for a long time, but it's.
+
+00:54:59.500 --> 00:55:08.720
+There seems to be a lot more activity since
+Max Tegmark's letter, the future of life Institute
+
+00:55:08.720 --> 00:55:15.680
+letter, did that in your mind and did that
+have any effect on your work on safety?
+
+00:55:15.680 --> 00:55:26.750
+Did that kind of accelerate or, you know,
+concentrate attention on safety or has this
+
+00:55:26.750 --> 00:55:36.500
+been going on all along and that threat debate
+maybe emerged out of the safety research?
+
+00:55:36.500 --> 00:55:45.020
+Yeah, I guess I would put the kind of the
+accelerator or something was pushed on because
+
+00:55:45.020 --> 00:55:49.220
+of the success of large language models where,
+like, suddenly we have these like objects
+
+00:55:49.220 --> 00:55:55.000
+that are like at least potentially something
+closer to AGI at least definitely compared
+
+00:55:55.000 --> 00:55:58.740
+to a few years ago and like there are these
+things we can like run empirical tests on
+
+00:55:58.740 --> 00:56:03.190
+and like it suddenly just becomes a lot easier
+to do to do safety work.
+
+00:56:03.190 --> 00:56:08.000
+So, I guess I guess, essentially since GPT
+three or thereabouts, like maybe that was
+
+00:56:08.000 --> 00:56:09.000
+that 2020.
+
+00:56:09.000 --> 00:56:13.240
+Anyway, around then was where it just became
+a lot easier to get into safety research and,
+
+00:56:13.240 --> 00:56:16.700
+yeah, more people got interested in this kind
+of a snowball effect.
+
+00:56:16.700 --> 00:56:23.089
+But I think, yeah, not just the last pause
+letter, but the kind of recent I don't know,
+
+00:56:23.089 --> 00:56:27.940
+Geoff Hinton, for example, speaking out about
+this like all these things did, I assume,
+
+00:56:27.940 --> 00:56:29.549
+has an effect on whatever.
+
+00:56:29.549 --> 00:56:33.220
+I mean people are going to read that and think
+like, wow, maybe I should, I should think
+
+00:56:33.220 --> 00:56:35.089
+about these questions as well.
+
+00:56:35.089 --> 00:56:42.980
+Yeah, and I get questioned all the time by
+people who are now terrified of AI and convinced
+
+00:56:42.980 --> 00:56:48.410
+that it's going to lead to the extinction
+of humanity.
+
+00:56:48.410 --> 00:56:58.700
+Do you think that the safety work has become
+prominent enough and enough people are working
+
+00:56:58.700 --> 00:57:07.120
+on it now that the people really shouldn't
+worry about the threat?
+
+00:57:07.120 --> 00:57:12.280
+I guess I would say, yeah, they're kind of
+productive worrying and unproductive worrying.
+
+00:57:12.280 --> 00:57:16.760
+I think basically, yeah, at least that there
+are now these like established safety teams
+
+00:57:16.760 --> 00:57:25.700
+at least most of the big labs or maybe not
+maybe not Facebook/Meta or some of the other
+
+00:57:25.700 --> 00:57:29.730
+kinds of - but at least at OpenAI, Deepmind
+and Anthropic have these like safety teams.
+
+00:57:29.730 --> 00:57:36.200
+So, it's kind of a matter of whether you trust
+those, those safety teams’ agendas or, like
+
+00:57:36.200 --> 00:57:39.049
+you know, their research, which is kind of
+a tricky proposition.
+
+00:57:39.049 --> 00:57:44.670
+I think basically, yeah, I mean, it's still
+basically the case that no one really knows
+
+00:57:44.670 --> 00:57:50.619
+how to control deep learning systems or language
+models in a sufficiently robust way.
+
+00:57:50.619 --> 00:57:55.059
+So, I think essentially that the problem still
+seems very kind of unsolved and so the kind
+
+00:57:55.059 --> 00:57:58.890
+of interoperability, like looking inside models
+are still very early stages, is very much
+
+00:57:58.890 --> 00:57:59.890
+unsolved.
+
+00:57:59.890 --> 00:58:02.820
+So, we have these big issues.
+
+00:58:02.820 --> 00:58:06.060
+But I think on the positive side, there are
+these teams working on it.
+
+00:58:06.060 --> 00:58:10.470
+There are like now, you know, we can now run
+experiments and do empirical testing and get
+
+00:58:10.470 --> 00:58:15.750
+feedback loops which hopefully will help,
+and they're all in fact, they're even, like
+
+00:58:15.750 --> 00:58:21.660
+you know, there's now this like UK task force,
+whatever interest in safety or at least evaluation
+
+00:58:21.660 --> 00:58:26.250
+for language models, it seems, interest in
+Congress and things like this.
+
+00:58:26.250 --> 00:58:32.319
+So, I guess there's a lot of things to be
+optimistic about.
+
+00:58:32.319 --> 00:58:36.589
+But still these kinds of fundamental problems,
+perhaps that kind of remain.
+
+00:58:36.589 --> 00:58:41.720
+But yeah, at least looks more optimistic that
+we can make progress on these problems.
+
+00:58:41.720 --> 00:58:42.730
+Hi.
+
+00:58:42.730 --> 00:58:47.859
+This episode is sponsored by Celonis, the
+global leader in process mining.
+
+00:58:47.859 --> 00:58:54.680
+Ai has landed and enterprises are adapting,
+giving customers slick experiences and the
+
+00:58:54.680 --> 00:58:56.819
+technology to deliver.
+
+00:58:56.819 --> 00:59:00.410
+The road feels long, but you're closer than
+you think.
+
+00:59:00.410 --> 00:59:06.819
+You see your business processes run through
+many systems, creating data at every step.
+
+00:59:06.819 --> 00:59:14.230
+Celonis reconstructs this data to generate
+process intelligence, a common business language
+
+00:59:14.230 --> 00:59:15.440
+with process intelligence.
+
+00:59:15.440 --> 00:59:22.900
+Ai knows how your business flows across every
+department, every system, and every process.
+
+00:59:22.900 --> 00:59:29.580
+With AI solutions powered by Celonis, enterprises
+get faster, more accurate insights, a new
+
+00:59:29.580 --> 00:59:37.080
+level of automation and a step change in productivity,
+performance, and customer satisfaction.
+
+00:59:37.080 --> 00:59:42.500
+Process intelligence is the missing piece
+in the AI enabled tech stack.
+
+00:59:42.500 --> 00:59:49.990
+Search Celonis C-E-L-O-N-I-S to find out more.
+
+00:59:49.990 --> 00:59:51.410
+That's it for this episode.
+
+00:59:51.410 --> 00:59:54.460
+I want to thank Asa for his time.
+
+00:59:54.460 --> 01:00:01.619
+If you want to read a transcript of this conversation,
+you can find one, as always, on our website,
+
+01:00:01.619 --> 01:00:03.130
+eye-on.ai.
+
+01:00:03.130 --> 01:00:06.150
+That's eye-on.ai.
+
+01:00:06.150 --> 01:00:12.530
+In the meantime, remember the Singularity
+may not be near, but AI is already changing
+
+01:00:12.530 --> 01:00:14.710
+our worlds, so pay attention.
+
