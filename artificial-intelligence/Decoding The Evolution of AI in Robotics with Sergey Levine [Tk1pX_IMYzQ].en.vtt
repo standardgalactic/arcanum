@@ -1,0 +1,2066 @@
+WEBVTT
+Kind: captions
+Language: en
+
+00:00:00.000 --> 00:00:00.640
+Sergey: 0:00
+Imagine someday&nbsp;&nbsp;
+
+00:00:00.640 --> 00:00:05.480
+building a home robot that can perform a&nbsp;
+variety of tasks in your kitchen. Then it&nbsp;&nbsp;
+
+00:00:05.480 --> 00:00:08.600
+becomes a lot more than just a perception&nbsp;
+problem. Then you really need to be able to&nbsp;&nbsp;
+
+00:00:08.600 --> 00:00:12.829
+learn the individual manipulation skills you&nbsp;
+need to be able to generalise very broadly.
+
+00:00:12.829 --> 00:00:18.200
+Craig: 0:12
+Hi, I'm Craig Smith and this is Eye on AI. Today I&nbsp;&nbsp;
+
+00:00:18.200 --> 00:00:25.080
+talked to Sergey Levine, an associate professor at&nbsp;
+the University of California, Berkeley, who does&nbsp;&nbsp;
+
+00:00:25.080 --> 00:00:31.520
+research at the robotic artificial intelligence&nbsp;
+and learning lab at the university and is pushing&nbsp;&nbsp;
+
+00:00:31.520 --> 00:00:40.680
+the boundaries of what AI control of robots can&nbsp;
+do. Sergey talked about some of his recent work in&nbsp;&nbsp;
+
+00:00:40.680 --> 00:00:48.000
+reinforcement learning and the aggregation of data&nbsp;
+sets from robots around the world to help train a&nbsp;&nbsp;
+
+00:00:48.000 --> 00:00:56.120
+model that can generalise across different kinds&nbsp;
+of robots. It's exciting research into embodied&nbsp;&nbsp;
+
+00:00:56.120 --> 00:01:03.560
+AI, bringing the transformative technology out of&nbsp;
+the computer and into the real world. I hope you&nbsp;&nbsp;
+
+00:01:03.560 --> 00:01:11.028
+find the conversation as fascinating as I did. So,&nbsp;
+Sergey, could you start by introducing yourself?
+
+00:01:11.028 --> 00:01:12.480
+Sergey: 1:11
+So I'm an associate professor at UC&nbsp;&nbsp;
+
+00:01:12.480 --> 00:01:22.760
+Berkeley, I previously did my PhD at Stanford, and&nbsp;
+I also spend one day a week at robotics at Google,&nbsp;&nbsp;
+
+00:01:22.760 --> 00:01:27.400
+where I also work on robotic learning. My&nbsp;
+research concerns, of course, robotics,&nbsp;&nbsp;
+
+00:01:27.400 --> 00:01:32.960
+but also many other related techniques in&nbsp;
+machine learning, reinforcement learning. Lately,&nbsp;&nbsp;
+
+00:01:32.960 --> 00:01:37.400
+my group has also been doing work on various&nbsp;
+things related to reinforced learning for&nbsp;&nbsp;
+
+00:01:37.400 --> 00:01:43.000
+language models, computational design, things&nbsp;
+like this, and other aspects of decision making.
+
+00:01:43.000 --> 00:01:43.760
+Craig: 1:43
+Everyone's&nbsp;&nbsp;
+
+00:01:43.760 --> 00:01:47.760
+talking about world models and&nbsp;
+they're combining world models and&nbsp;&nbsp;
+
+00:01:47.760 --> 00:01:53.320
+language models. Are you working on world&nbsp;
+models at all? What's your view of that?
+
+00:01:53.320 --> 00:01:55.320
+Sergey: 1:54
+Yeah, I guess there are a few things I could&nbsp;&nbsp;
+
+00:01:55.320 --> 00:02:03.520
+say about it. So generally, if we want to control&nbsp;
+robotic systems, there are a number of ways that&nbsp;&nbsp;
+
+00:02:03.520 --> 00:02:10.720
+machine learning can enable that. One very simple&nbsp;
+way is imitation learning. Imitation learning&nbsp;&nbsp;
+
+00:02:10.720 --> 00:02:17.360
+amounts to taking demonstrations, typically&nbsp;
+provided by a person controlling the system,&nbsp;&nbsp;
+
+00:02:17.360 --> 00:02:23.960
+and then imitating those demonstrations to try&nbsp;
+to produce an agent. Robots can work for lots&nbsp;&nbsp;
+
+00:02:23.960 --> 00:02:26.840
+of other things. Arguably, language models&nbsp;
+are just giant imitation learning machines&nbsp;&nbsp;
+
+00:02:26.840 --> 00:02:31.520
+because they're imitating how humans generate&nbsp;
+text. There are lots of other ways to do it.
+
+00:02:31.520 --> 00:02:34.680
+Sergey: 2:32
+So a world model is essentially a&nbsp;&nbsp;
+
+00:02:34.680 --> 00:02:40.760
+dynamics model that represents how the environment&nbsp;
+will evolve in response to the agent's actions,&nbsp;&nbsp;
+
+00:02:40.760 --> 00:02:47.320
+and we can learn that from data too. Typically&nbsp;
+in reinforced learning that's referred to as&nbsp;&nbsp;
+
+00:02:47.320 --> 00:02:51.080
+model-based RL. So model-based RL means you train&nbsp;
+a model of how your environment behaves and then&nbsp;&nbsp;
+
+00:02:51.080 --> 00:02:55.720
+you use that model to figure out how to act in the&nbsp;
+world. And it's a very old discipline actually. In&nbsp;&nbsp;
+
+00:02:55.720 --> 00:03:01.800
+fact, the first learning-based control methods,&nbsp;
+before model-free RL became such a popular thing,&nbsp;&nbsp;
+
+00:03:01.800 --> 00:03:06.320
+were actually model-based RL methods. Some of&nbsp;
+the earliest neural network control methods&nbsp;&nbsp;
+
+00:03:06.320 --> 00:03:10.240
+actually used dynamics modelling. And&nbsp;
+again, there are a million different&nbsp;&nbsp;
+
+00:03:10.240 --> 00:03:18.240
+ways to instantiate this. You could instantiate&nbsp;
+dynamics models or world models by, for example,&nbsp;&nbsp;
+
+00:03:18.240 --> 00:03:23.440
+taking image observations and doing video&nbsp;
+prediction. You could also instantiate them by&nbsp;&nbsp;
+
+00:03:23.440 --> 00:03:27.200
+learning non-reconstructive representations,&nbsp;
+or representations that, roughly speaking,&nbsp;&nbsp;
+
+00:03:27.200 --> 00:03:30.720
+capture the state of the system without&nbsp;
+necessarily grounding it back into pixels,&nbsp;&nbsp;
+
+00:03:30.720 --> 00:03:34.320
+and then predict that. So there's a lot&nbsp;
+of different approaches for doing this.
+
+00:03:34.320 --> 00:03:36.160
+Craig: 3:35
+Recently I've been&nbsp;&nbsp;
+
+00:03:36.160 --> 00:03:46.360
+talking to Wave about their Gaia model and I've&nbsp;
+seen the videos. But they have that model built&nbsp;&nbsp;
+
+00:03:46.360 --> 00:03:54.120
+into a controller, connected to a controller, to&nbsp;
+operate an autonomous vehicle. What's different&nbsp;&nbsp;
+
+00:03:54.120 --> 00:04:00.880
+about that structure or architecture from what&nbsp;
+you're working on with reinforcement learning?
+
+00:04:00.880 --> 00:04:02.120
+Sergey: 4:01
+I don't think there's that much I could say&nbsp;&nbsp;
+
+00:04:02.120 --> 00:04:08.120
+about it, because I don't know how their system&nbsp;
+works. I mean, I've seen the public material,&nbsp;&nbsp;
+
+00:04:08.120 --> 00:04:13.360
+same as everyone else, but I don't really have&nbsp;
+any insight about the details there. Maybe one&nbsp;&nbsp;
+
+00:04:13.360 --> 00:04:19.400
+thing I would say, though, that most methods for&nbsp;
+learning-based control don't necessarily need to&nbsp;&nbsp;
+
+00:04:19.400 --> 00:04:26.720
+predict the raw pixels that the robot's camera&nbsp;
+will observe in the future. That is one way to do&nbsp;&nbsp;
+
+00:04:26.720 --> 00:04:35.120
+it, and there's a lot that can be done with that,&nbsp;
+but I think that the more significant distinction&nbsp;&nbsp;
+
+00:04:35.120 --> 00:04:42.160
+is actually how well we're able to utilise&nbsp;
+data to then produce more optimal decisions,&nbsp;&nbsp;
+
+00:04:42.160 --> 00:04:48.040
+and going through prediction is one way to do&nbsp;
+it, and you could predict pixels, which is what&nbsp;&nbsp;
+
+00:04:48.040 --> 00:04:51.640
+video prediction models do. You could also predict&nbsp;
+outcomes or rewards, which is what value functions&nbsp;&nbsp;
+
+00:04:51.640 --> 00:04:56.880
+do. At the end of the day, they're actually not&nbsp;
+all that different, and maybe a bigger distinction&nbsp;&nbsp;
+
+00:04:56.880 --> 00:05:01.080
+as to whether you can get a system that really&nbsp;
+works in the real world is what data is trained&nbsp;&nbsp;
+
+00:05:01.080 --> 00:05:07.920
+on. For example, if you want robotic manipulation&nbsp;
+systems that will actually work in broad,&nbsp;&nbsp;
+
+00:05:07.920 --> 00:05:11.360
+open-world environments, you need to train them on&nbsp;
+data for broad, open-world environments. So a lot&nbsp;&nbsp;
+
+00:05:11.360 --> 00:05:16.800
+of what I'm actually concerned with in my research&nbsp;
+is how do we develop learning-based control&nbsp;&nbsp;
+
+00:05:16.800 --> 00:05:21.040
+techniques that can use large amounts of data, and&nbsp;
+how do we figure out what data sets we can acquire&nbsp;&nbsp;
+
+00:05:21.040 --> 00:05:25.240
+to get really generalizable? In my case, often&nbsp;
+robotic manipulation skills, but also robotic&nbsp;&nbsp;
+
+00:05:25.240 --> 00:05:34.908
+navigation skills and things like that Systems&nbsp;
+for manipulation for things like warehousing.
+
+00:05:34.908 --> 00:05:35.880
+Sergey: 5:34
+Oftentimes those&nbsp;&nbsp;
+
+00:05:35.880 --> 00:05:41.720
+problems can be to a large extent reduced to&nbsp;
+perception problems. So if you structure your&nbsp;&nbsp;
+
+00:05:41.720 --> 00:05:45.320
+environment in the right way, then as long as&nbsp;
+you're able to detect where the objects are,&nbsp;&nbsp;
+
+00:05:45.320 --> 00:05:49.160
+then you can use hand design strategies&nbsp;
+for tackling that. That tends not to work&nbsp;&nbsp;
+
+00:05:49.160 --> 00:05:52.560
+so well. If you want to take the robotic system&nbsp;
+into more open-world environments Like if you&nbsp;&nbsp;
+
+00:05:52.560 --> 00:05:57.760
+imagine someday building a home robot that can&nbsp;
+perform a variety of tasks in your kitchen,&nbsp;&nbsp;
+
+00:05:57.760 --> 00:06:01.880
+then it becomes a lot more than just a perception&nbsp;
+problem. Then you really need to be able to learn&nbsp;&nbsp;
+
+00:06:01.880 --> 00:06:05.748
+the individual manipulation skills and you&nbsp;
+need to be able to generalise very broadly.
+
+00:06:05.748 --> 00:06:09.480
+Sergey: 6:05
+So maybe one thing that&nbsp;&nbsp;
+
+00:06:09.480 --> 00:06:15.120
+I could discuss here that could be relevant is a&nbsp;
+project that we actually did recently. This was&nbsp;&nbsp;
+
+00:06:15.120 --> 00:06:20.760
+actually a collaboration between Google, Berkeley&nbsp;
+and several other universities on trying to see&nbsp;&nbsp;
+
+00:06:20.760 --> 00:06:26.200
+how we could get robotic controllers that actually&nbsp;
+generalise across different robot morphologies.&nbsp;&nbsp;
+
+00:06:26.200 --> 00:06:32.880
+That's actually really important because if a&nbsp;
+lot of this comes down to data, then, it's very&nbsp;&nbsp;
+
+00:06:32.880 --> 00:06:37.400
+difficult to get the kind of breadth and diversity&nbsp;
+of data from a single robot that can allow the&nbsp;&nbsp;
+
+00:06:37.400 --> 00:06:41.560
+kind of broad generalisation that you want from&nbsp;
+a home robot. But if you can pool data from lots&nbsp;&nbsp;
+
+00:06:41.560 --> 00:06:46.760
+of different robots, then maybe you can actually&nbsp;
+get that kind of coverage. And, furthermore, if&nbsp;&nbsp;
+
+00:06:46.760 --> 00:06:49.840
+you can actually do that and you get a system that&nbsp;
+generalises across robots, then you get something&nbsp;&nbsp;
+
+00:06:49.840 --> 00:06:54.480
+really cool which is, in principle, someone could&nbsp;
+put together some new robotic system and then plug&nbsp;&nbsp;
+
+00:06:54.480 --> 00:06:58.320
+this kind of robot brain into it and immediately&nbsp;
+get something that can control that robot. Now,&nbsp;&nbsp;
+
+00:06:58.320 --> 00:07:03.520
+the work that we did so far on this wasn't really&nbsp;
+that concerned with building better models so much&nbsp;&nbsp;
+
+00:07:03.520 --> 00:07:06.800
+as just getting this diverse data set and just&nbsp;
+applying the kind of standard techniques that we&nbsp;&nbsp;
+
+00:07:06.800 --> 00:07:13.040
+had already developed in previous works and that&nbsp;
+actually worked decently well. So this project was&nbsp;&nbsp;
+
+00:07:13.040 --> 00:07:19.828
+called RTX and the idea there was that we got data&nbsp;
+from In the end it was 34 different research labs.
+
+00:07:19.828 --> 00:07:20.520
+Sergey: 7:19
+Google was one of them,&nbsp;&nbsp;
+
+00:07:20.520 --> 00:07:25.600
+Berkeley was. Actually there were two labs in&nbsp;
+Berkeley that contributed to this and then we&nbsp;&nbsp;
+
+00:07:25.600 --> 00:07:29.480
+trained a model on this to perform basically&nbsp;
+language-conditioned manipulation tasks.
+
+00:07:29.480 --> 00:07:30.680
+Sergey: 7:29
+So I think you give the&nbsp;&nbsp;
+
+00:07:30.680 --> 00:07:34.280
+robot an instruction, pick up the tomato and put&nbsp;
+it in the bowl, and the robot is supposed to do&nbsp;&nbsp;
+
+00:07:34.280 --> 00:07:38.240
+that. And then we took this model and we handed&nbsp;
+it off to the different labs that contributed&nbsp;&nbsp;
+
+00:07:38.240 --> 00:07:42.760
+data and had them tested in comparison to&nbsp;
+whatever model they had for their research,&nbsp;&nbsp;
+
+00:07:42.760 --> 00:07:46.960
+basically trained on their own system, and the&nbsp;
+multi-robot model actually was, on average,&nbsp;&nbsp;
+
+00:07:46.960 --> 00:07:51.880
+about 50% better in terms of success rate, and&nbsp;
+that's actually pretty interesting because this&nbsp;&nbsp;
+
+00:07:51.880 --> 00:07:56.120
+was competing with whatever each lab's&nbsp;
+individual system was and presumably&nbsp;&nbsp;
+
+00:07:56.120 --> 00:07:59.240
+third-good researchers. They built something&nbsp;
+that works pretty well in their system. Now,&nbsp;&nbsp;
+
+00:07:59.880 --> 00:08:03.680
+this was actually an imitation learning approach,&nbsp;
+language-conditioned imitation. I think that,&nbsp;&nbsp;
+
+00:08:03.680 --> 00:08:07.920
+whether it's imitation or prediction or&nbsp;
+world modelling, I mean, I think many of&nbsp;&nbsp;
+
+00:08:07.920 --> 00:08:10.280
+those techniques could be made to work.&nbsp;
+I think the higher-order bit here that I&nbsp;&nbsp;
+
+00:08:10.280 --> 00:08:13.360
+wanted to get across is that by actually getting&nbsp;
+this data set, you could actually get a system&nbsp;&nbsp;
+
+00:08:13.360 --> 00:08:16.909
+that you could plug into all these different&nbsp;
+robots and actually get good results out of it.
+
+00:08:16.909 --> 00:08:18.640
+Craig: 8:16
+Hmm, that's fascinating.&nbsp;&nbsp;
+
+00:08:18.640 --> 00:08:25.268
+That model was being trained on data sets&nbsp;
+from all the various participating labs.
+
+00:08:25.268 --> 00:08:26.880
+Sergey: 8:25
+Yeah, so in these&nbsp;&nbsp;
+
+00:08:26.880 --> 00:08:32.080
+experiments we were not testing whether it could&nbsp;
+generalise to a new robot. That's a very exciting&nbsp;&nbsp;
+
+00:08:32.080 --> 00:08:35.840
+frontier for this, but that's still in the future.&nbsp;
+This was just trying to answer the question:&nbsp;&nbsp;
+
+00:08:35.840 --> 00:08:40.600
+if you include data from the other labs,&nbsp;
+does that one lab's robot get better? Now,&nbsp;&nbsp;
+
+00:08:40.600 --> 00:08:44.120
+of course, if you're sort of in the minority,&nbsp;
+if you're one of the groups that contributed a&nbsp;&nbsp;
+
+00:08:44.120 --> 00:08:47.280
+relatively small amount of data, you would&nbsp;
+expect to see comparatively more benefit&nbsp;&nbsp;
+
+00:08:47.280 --> 00:08:52.108
+from everyone else. Interestingly, actually, even&nbsp;
+the majority contributors saw a lot of benefits.
+
+00:08:52.108 --> 00:08:53.760
+Sergey: 8:52
+So probably the largest data&nbsp;&nbsp;
+
+00:08:53.760 --> 00:09:02.440
+set at about 100,000 trials was from Google's own&nbsp;
+robot, the mobile base that we used in a lot of&nbsp;&nbsp;
+
+00:09:02.440 --> 00:09:09.760
+the robotics research there. With that system, we&nbsp;
+were able to actually test it on various tests. We&nbsp;&nbsp;
+
+00:09:09.760 --> 00:09:15.600
+have this kind of test suite of difficult queries.&nbsp;
+They're actually meant to be queries that require&nbsp;&nbsp;
+
+00:09:15.600 --> 00:09:20.000
+synthesising pretrained knowledge from the web&nbsp;
+as well as good instruction following ability,&nbsp;&nbsp;
+
+00:09:20.000 --> 00:09:24.040
+so these require spatial reasoning, things&nbsp;
+like that, and on the hardest test, we actually&nbsp;&nbsp;
+
+00:09:24.040 --> 00:09:29.720
+saw three X improvement in performance over just&nbsp;
+using the Google data set. Now that's actually,&nbsp;&nbsp;
+
+00:09:29.720 --> 00:09:34.160
+in my mind, pretty profound, because the&nbsp;
+Google data set was very carefully curated,&nbsp;&nbsp;
+
+00:09:34.160 --> 00:09:38.840
+collected by basically professionals&nbsp;
+that were collecting robot data,&nbsp;&nbsp;
+
+00:09:38.840 --> 00:09:44.120
+and the fact that including all these additional&nbsp;
+sources of data from a long list of academic&nbsp;&nbsp;
+
+00:09:44.120 --> 00:09:47.360
+labs actually led to that much improvement&nbsp;
+really suggests that there is something kind&nbsp;&nbsp;
+
+00:09:47.360 --> 00:09:51.320
+of magical that happens when you combine enough&nbsp;
+data from enough different sources. Yeah, so for&nbsp;&nbsp;
+
+00:09:51.320 --> 00:09:55.508
+these experiments we were actually passing the&nbsp;
+model around. Okay, the data set is public now.
+
+00:09:55.508 --> 00:09:56.320
+Sergey: 9:54
+So anybody could&nbsp;&nbsp;
+
+00:09:56.320 --> 00:10:00.920
+take that data set and download it and&nbsp;
+train their own models. And we actually&nbsp;&nbsp;
+
+00:10:00.920 --> 00:10:05.240
+have an ongoing effort at UC Berkeley that my&nbsp;
+students are For that initial experiment. It&nbsp;&nbsp;
+
+00:10:05.240 --> 00:10:09.320
+was just the model weights. Hmm, that's&nbsp;
+fascinating. Just the model weights.
+
+00:10:09.320 --> 00:10:10.840
+Craig: 10:09
+So the architecture&nbsp;&nbsp;
+
+00:10:10.840 --> 00:10:18.027
+of that model was being replicated in each&nbsp;
+lab. They weren't using their own model.
+
+00:10:18.027 --> 00:10:18.640
+Sergey: 10:16
+Correct, yeah,&nbsp;&nbsp;
+
+00:10:18.640 --> 00:10:20.840
+so it was exactly the same model&nbsp;
+with exactly the same weights,&nbsp;&nbsp;
+
+00:10:20.840 --> 00:10:25.400
+that had to drive all of the robots in all&nbsp;
+the locations. Yeah, and that is actually,&nbsp;&nbsp;
+
+00:10:25.400 --> 00:10:28.920
+if you think about it, it's a very non-trivial&nbsp;
+thing, right? Because all the model gets to&nbsp;&nbsp;
+
+00:10:28.920 --> 00:10:34.280
+see is what the robot receives through the camera&nbsp;
+and has to figure out that. Okay, now I'm driving&nbsp;&nbsp;
+
+00:10:34.280 --> 00:10:38.480
+a U-shaped robot, A UR-10 industrial robot,&nbsp;
+versus now I'm driving a low-cost WTOX robot.&nbsp;&nbsp;
+
+00:10:38.480 --> 00:10:43.868
+Or now I'm driving a Franca or the Google&nbsp;
+robot and adjust the controls accordingly.
+
+00:10:43.868 --> 00:10:46.040
+Craig: 10:44
+When I was at the lab,&nbsp;&nbsp;
+
+00:10:46.040 --> 00:10:49.920
+I recall that you had robots that were network,&nbsp;&nbsp;
+
+00:10:49.920 --> 00:10:58.800
+so the learnings from one were updating a central&nbsp;
+brain and that then was controlling the other&nbsp;&nbsp;
+
+00:10:58.800 --> 00:11:05.387
+robots of each robot. Have you done broader&nbsp;
+experiments like that, very much like this?
+
+00:11:05.387 --> 00:11:06.560
+Sergey: 11:05
+Yeah, yeah, I'm glad you asked&nbsp;&nbsp;
+
+00:11:06.560 --> 00:11:14.400
+that. So this was a lot of what we were trying&nbsp;
+to do for over the last five years actually,&nbsp;&nbsp;
+
+00:11:14.400 --> 00:11:21.400
+and in some ways, this multi-robot training effort&nbsp;
+it's kind of partly it came about kind of an&nbsp;&nbsp;
+
+00:11:21.400 --> 00:11:27.360
+acknowledgement of the limitations of this kind&nbsp;
+of arm farm approach. So getting lots of robots&nbsp;&nbsp;
+
+00:11:27.360 --> 00:11:32.920
+in a room is great if you want to prototype,&nbsp;
+let's say, reinforcement learning algorithms,&nbsp;&nbsp;
+
+00:11:32.920 --> 00:11:37.200
+but if you really want broad generalisation out&nbsp;
+of it, they can't all be in the same room. So&nbsp;&nbsp;
+
+00:11:37.200 --> 00:11:43.680
+you really need to get much better coverage of&nbsp;
+the world, and by aggregating data from robots&nbsp;&nbsp;
+
+00:11:43.680 --> 00:11:47.800
+in many different sites now, you can get much&nbsp;
+better coverage. Now this is still a prototype&nbsp;&nbsp;
+
+00:11:47.800 --> 00:11:53.160
+for what might be a larger system, because these&nbsp;
+are still data sets collected by researchers&nbsp;&nbsp;
+
+00:11:53.160 --> 00:11:56.960
+essentially doing science experiments. So you&nbsp;
+could imagine that in the future, the aggregation&nbsp;&nbsp;
+
+00:11:56.960 --> 00:12:01.027
+wouldn't be across different research labs,&nbsp;
+it would be across different deployed robots.
+
+00:12:01.027 --> 00:12:01.680
+Sergey: 12:01
+Now that, of course,&nbsp;&nbsp;
+
+00:12:01.680 --> 00:12:05.440
+is a much more complex undertaking that requires&nbsp;
+more than just science. It also requires some&nbsp;&nbsp;
+
+00:12:05.440 --> 00:12:10.320
+kind of organisational effort, consensus from&nbsp;
+companies and so on. But that, I think, is kind&nbsp;&nbsp;
+
+00:12:10.320 --> 00:12:17.280
+of the real thing once that comes about and you&nbsp;
+could imagine a future where the data streams from&nbsp;&nbsp;
+
+00:12:17.280 --> 00:12:21.520
+a variety of different deployed robots in lots&nbsp;
+of locations are agglomerated and then used to&nbsp;&nbsp;
+
+00:12:21.520 --> 00:12:25.880
+train one centralised robotic brain, which can&nbsp;
+then be handed back to these robots to improve&nbsp;&nbsp;
+
+00:12:25.880 --> 00:12:30.480
+their performance. And the key thing that we want&nbsp;
+to take a risk with this project is just if you do&nbsp;&nbsp;
+
+00:12:30.480 --> 00:12:35.680
+this at any scale, you know, even at the scale of&nbsp;
+academic labs can you even get a policy that can&nbsp;&nbsp;
+
+00:12:35.680 --> 00:12:39.960
+drive all the different robots? Because if that's&nbsp;
+not possible, then aggregating heterogeneous data&nbsp;&nbsp;
+
+00:12:39.960 --> 00:12:44.080
+wouldn't work and we would need to somehow figure&nbsp;
+out standardisation. Standardisation is hard,&nbsp;&nbsp;
+
+00:12:44.080 --> 00:12:47.428
+so what we know now is that we don't have&nbsp;
+to worry as much about standardisation.
+
+00:12:47.428 --> 00:12:49.120
+Craig: 12:50
+Yeah, because, yeah,&nbsp;&nbsp;
+
+00:12:49.120 --> 00:12:53.200
+this model, then the weights are being&nbsp;
+passed around and they're controlling&nbsp;&nbsp;
+
+00:12:53.200 --> 00:12:59.160
+different form function robots, right, I&nbsp;
+mean? Or were they all just variations?
+
+00:12:59.160 --> 00:13:03.840
+Sergey: 13:00
+So in these experiments the robots were all&nbsp;&nbsp;
+
+00:13:03.840 --> 00:13:09.080
+arms with parallel jaw grippers. We are right now&nbsp;
+experimenting with generalisation across single&nbsp;&nbsp;
+
+00:13:09.080 --> 00:13:15.560
+arm and bimanual systems. At some point in the&nbsp;
+future we'll also look at multi-fingered systems,&nbsp;&nbsp;
+
+00:13:15.560 --> 00:13:19.480
+things like that. So far the truth in advertising&nbsp;
+it's one arm with a parallel draw gripper. They're&nbsp;&nbsp;
+
+00:13:19.480 --> 00:13:24.840
+just different brands of arms. Now they do vary&nbsp;
+a lot. So the small scale hobbyist widow X arm&nbsp;&nbsp;
+
+00:13:24.840 --> 00:13:31.880
+is maybe 50 centimetres long, kind of smaller,&nbsp;
+with a weak gripper. The big, your 10 robot,&nbsp;&nbsp;
+
+00:13:31.880 --> 00:13:37.880
+is an industrial robot meant for manufacturing,&nbsp;
+quite a bit bigger, beefier, has a stronger motor,&nbsp;&nbsp;
+
+00:13:37.880 --> 00:13:41.908
+stronger gripper, that sort of thing. So there's&nbsp;
+variability. They're still the same sort.
+
+00:13:41.908 --> 00:13:43.480
+Craig: 13:43
+Right, and the model&nbsp;&nbsp;
+
+00:13:43.480 --> 00:13:50.587
+that you're training on this aggregated data is&nbsp;
+the reinforcement. Can you describe that model?
+
+00:13:50.587 --> 00:13:51.160
+Sergey: 13:50
+We actually trained&nbsp;&nbsp;
+
+00:13:51.160 --> 00:13:59.920
+two models. One was based on the RT1 model which&nbsp;
+was developed at Google last year. The RT1 model&nbsp;&nbsp;
+
+00:13:59.920 --> 00:14:06.120
+is basically a transformer that reads in&nbsp;
+language instruction, commands, an image,&nbsp;&nbsp;
+
+00:14:06.120 --> 00:14:11.520
+and then it outputs discretized, tokenized&nbsp;
+actions. So it's kind of almost like the most&nbsp;&nbsp;
+
+00:14:11.520 --> 00:14:17.240
+obvious way to design a transformer based policy.&nbsp;
+The second model was the RT2 model, which is a&nbsp;&nbsp;
+
+00:14:17.240 --> 00:14:22.907
+more recent development, which actually uses a&nbsp;
+backbone from a pre-trained vision language model.
+
+00:14:22.907 --> 00:14:23.600
+Sergey: 14:23
+So vision language&nbsp;&nbsp;
+
+00:14:23.600 --> 00:14:27.560
+models are trained to look at images and output&nbsp;
+responses to textual questions. So you give it&nbsp;&nbsp;
+
+00:14:27.560 --> 00:14:31.480
+a picture and you say like is there a dog in the&nbsp;
+picture? And it will produce some text to answer&nbsp;&nbsp;
+
+00:14:31.480 --> 00:14:37.720
+that. And then we took this vision language&nbsp;
+pre-trained backbone and then further fine&nbsp;&nbsp;
+
+00:14:37.720 --> 00:14:42.920
+tuned on robot data to output robot actions&nbsp;
+in response to robot observations. So you can&nbsp;&nbsp;
+
+00:14:42.920 --> 00:14:46.040
+sort of think of it like the VLM has a number of&nbsp;
+tasks that it can do. It can answer questions,&nbsp;&nbsp;
+
+00:14:46.040 --> 00:14:50.520
+it can produce captions. Now there's one more&nbsp;
+task which is given a robot instruction output&nbsp;&nbsp;
+
+00:14:50.520 --> 00:14:53.760
+the actions for the robot. Now that's a much&nbsp;
+more powerful model because it has all that&nbsp;&nbsp;
+
+00:14:53.760 --> 00:14:57.920
+internet knowledge baked into it from the vision&nbsp;
+language model pre-training and that's the one&nbsp;&nbsp;
+
+00:14:57.920 --> 00:15:02.520
+that we used for the more complex queries with&nbsp;
+the spatial relations and things like that.
+
+00:15:02.520 --> 00:15:03.640
+Craig: 15:03&nbsp;
+
+00:15:03.640 --> 00:15:08.427
+Is most of your work on the&nbsp;
+data side or on the model side.
+
+00:15:08.427 --> 00:15:11.640
+Sergey: 15:08
+Well, it's really both and to some extent&nbsp;&nbsp;
+
+00:15:11.640 --> 00:15:15.480
+they also go hand in hand because, depending&nbsp;
+on what your algorithms are able to handle,&nbsp;&nbsp;
+
+00:15:15.480 --> 00:15:20.680
+that will inform the kind of data that you need&nbsp;
+to get. For example, a lot of the more algorithmic&nbsp;&nbsp;
+
+00:15:20.680 --> 00:15:25.987
+work that my lab does these days is concerned with&nbsp;
+techniques for offline reinforcement learning.
+
+00:15:25.987 --> 00:15:26.720
+Sergey: 15:26
+Offline reinforcement&nbsp;&nbsp;
+
+00:15:26.720 --> 00:15:31.200
+learning is basically a way to take data and&nbsp;
+produce more optimal policies. So imitation&nbsp;&nbsp;
+
+00:15:31.200 --> 00:15:34.840
+learning methods. They take in data and they&nbsp;
+produce policies that reproduce the behaviour&nbsp;&nbsp;
+
+00:15:34.840 --> 00:15:39.560
+in the data. Offline RL methods take in data and&nbsp;
+attempt to produce behaviours that are better than&nbsp;&nbsp;
+
+00:15:39.560 --> 00:15:43.240
+the average behaviour in the data. So intuitively&nbsp;
+you can think of it as using data to figure&nbsp;&nbsp;
+
+00:15:43.240 --> 00:15:47.280
+out what options are available to you and then&nbsp;
+selecting the best among those options. In fact,&nbsp;&nbsp;
+
+00:15:47.280 --> 00:15:50.960
+methods that use world models, as we discussed&nbsp;
+before, can be seen as offline RL methods&nbsp;&nbsp;
+
+00:15:50.960 --> 00:15:54.520
+because typically the way they work is they&nbsp;
+train the world model on existing data and&nbsp;&nbsp;
+
+00:15:54.520 --> 00:15:58.440
+then they use it to extract better control&nbsp;
+strategies than the typical thing that was&nbsp;&nbsp;
+
+00:15:58.440 --> 00:16:02.480
+demonstrated in the data set. But there are&nbsp;
+also other ways to build offline RL techniques&nbsp;&nbsp;
+
+00:16:02.480 --> 00:16:06.388
+that don't rely on world models, that rely&nbsp;
+on value functions and things like that.
+
+00:16:06.388 --> 00:16:07.480
+Craig: 16:06
+Where do you think&nbsp;&nbsp;
+
+00:16:07.480 --> 00:16:15.320
+the research is heading, because everything's&nbsp;
+moving so fast? Is there for robotic control?&nbsp;&nbsp;
+
+00:16:15.920 --> 00:16:21.880
+Do you think that the research will settle&nbsp;
+on one architecture and then there will be&nbsp;&nbsp;
+
+00:16:21.880 --> 00:16:28.480
+different flavours of that architecture, but&nbsp;
+everyone will agree that this is the best way,&nbsp;&nbsp;
+
+00:16:28.480 --> 00:16:34.440
+and then it's a matter of training, generalising&nbsp;
+across robots and networking data? Or do you&nbsp;&nbsp;
+
+00:16:34.440 --> 00:16:42.907
+think that there will be a series of models&nbsp;
+that will be used for various functions?
+
+00:16:42.907 --> 00:16:46.160
+Sergey: 16:43
+Yeah, good question, so I'll give you&nbsp;&nbsp;
+
+00:16:46.160 --> 00:16:50.160
+an answer. It's a slightly aspirational answer, so&nbsp;
+maybe this is more like where I wish things were&nbsp;&nbsp;
+
+00:16:50.160 --> 00:16:54.400
+headed. I don't know if this is necessarily where&nbsp;
+things will head, but I think it's very important&nbsp;&nbsp;
+
+00:16:54.400 --> 00:17:03.680
+for robotics to kind of adopt a paradigm where&nbsp;
+we are in the habit of having reusable models,&nbsp;&nbsp;
+
+00:17:03.680 --> 00:17:09.120
+where, just like in computer vision and NLP,&nbsp;
+if a researcher produces a good model, other&nbsp;&nbsp;
+
+00:17:09.120 --> 00:17:13.680
+robotics researchers should be able to use it.&nbsp;
+Now, that might seem like a very obvious thing,&nbsp;&nbsp;
+
+00:17:13.680 --> 00:17:17.880
+but this is not actually how robotics works&nbsp;
+today. Most robotic learning research,&nbsp;&nbsp;
+
+00:17:17.880 --> 00:17:22.520
+the artefact that is produced is not actually&nbsp;
+the model, it's the code or the paper or the&nbsp;&nbsp;
+
+00:17:22.520 --> 00:17:29.320
+insights. The models themselves are almost never&nbsp;
+portable, never mind across labs, even across&nbsp;&nbsp;
+
+00:17:30.240 --> 00:17:35.560
+different locations in the same lab, different&nbsp;
+times of day in the same lab, that sort of thing.
+
+00:17:35.560 --> 00:17:37.560
+Sergey: 17:35
+And I think we really need to move&nbsp;&nbsp;
+
+00:17:37.560 --> 00:17:46.040
+that towards a setting where we have models that&nbsp;
+are trained on datasets that enable generalisation&nbsp;&nbsp;
+
+00:17:46.040 --> 00:17:50.680
+across different locations and systems, different&nbsp;
+objects, that sort of thing that we can then give&nbsp;&nbsp;
+
+00:17:50.680 --> 00:17:55.320
+to other researchers, other practitioners that&nbsp;
+will also run on their systems, and once we've&nbsp;&nbsp;
+
+00:17:55.320 --> 00:18:00.240
+got a good flow for doing that, maybe using things&nbsp;
+like this RTX dataset that has multiple robots,&nbsp;&nbsp;
+
+00:18:00.240 --> 00:18:03.387
+maybe using some other data, but something where&nbsp;
+we can just get on the habit of doing that.
+
+00:18:03.387 --> 00:18:04.600
+Sergey: 18:03
+Then we can actually make more progress&nbsp;&nbsp;
+
+00:18:04.600 --> 00:18:09.600
+as a community towards shared, generalizable&nbsp;
+systems. Now, until that happens, there's&nbsp;&nbsp;
+
+00:18:09.600 --> 00:18:13.280
+absolutely no question about whether people will&nbsp;
+use the same architecture, the same model, like if&nbsp;&nbsp;
+
+00:18:13.280 --> 00:18:19.440
+they can't even share anything across, then that&nbsp;
+won't work. But once we can share something and&nbsp;&nbsp;
+
+00:18:19.440 --> 00:18:23.760
+probably the key to that is a dataset that enables&nbsp;
+that then the community can figure it out, like,&nbsp;&nbsp;
+
+00:18:23.760 --> 00:18:29.320
+maybe at that point perhaps it'll be realistic to&nbsp;
+have a single pre-trained backbone, like the Lama&nbsp;&nbsp;
+
+00:18:29.320 --> 00:18:34.200
+model in natural language, processing an analog&nbsp;
+to that and robotics, and then people can build&nbsp;&nbsp;
+
+00:18:34.200 --> 00:18:37.760
+on top of that. Or maybe there will be several&nbsp;
+such things. Maybe there will be a few big ones,&nbsp;&nbsp;
+
+00:18:37.760 --> 00:18:44.440
+that kind of the big, well-equipped labs produce&nbsp;
+that others will then build on. But before we get&nbsp;&nbsp;
+
+00:18:44.440 --> 00:18:49.228
+to any of that we need to just get in the habit&nbsp;
+of actually building models that others can run.
+
+00:18:49.228 --> 00:18:52.520
+Craig: 18:50
+The other side to robotics is just the hardware,&nbsp;&nbsp;
+
+00:18:52.520 --> 00:19:01.400
+and I was talking to a guy the other day who was&nbsp;
+talking about where robotic control systems are&nbsp;&nbsp;
+
+00:19:01.400 --> 00:19:11.480
+heading, and he was. He's not a roboticist or an&nbsp;
+AI researcher, but he was waxing very optimistic&nbsp;&nbsp;
+
+00:19:11.480 --> 00:19:17.400
+about, you know, there being household robots&nbsp;
+within three to five years, and that sounded&nbsp;&nbsp;
+
+00:19:17.400 --> 00:19:25.320
+unlikely to me, because just the hardware&nbsp;
+alone is not at least the hardware that I've&nbsp;&nbsp;
+
+00:19:25.320 --> 00:19:34.520
+seen is nowhere near being able to do, you know,&nbsp;
+releasing it into an unstructured environment full&nbsp;&nbsp;
+
+00:19:34.520 --> 00:19:44.427
+of randomness. Do you think that the hardware&nbsp;
+is moving along with the AI or is it lagging?
+
+00:19:44.427 --> 00:19:48.560
+Sergey: 19:44
+That's a good question. I think that a very&nbsp;&nbsp;
+
+00:19:48.560 --> 00:19:55.320
+important part of that question is just what kind&nbsp;
+of hardware we need. I think to a large extent,&nbsp;&nbsp;
+
+00:19:55.320 --> 00:20:02.480
+learning methods should actually lower the bar&nbsp;
+for the hardware that's necessary. Basically,&nbsp;&nbsp;
+
+00:20:02.480 --> 00:20:05.560
+the exercise you can do is you can get&nbsp;
+one of these like little trash-bicker&nbsp;&nbsp;
+
+00:20:05.560 --> 00:20:09.520
+devices and see what kind of tasks you&nbsp;
+can do around the house with it. I mean,&nbsp;&nbsp;
+
+00:20:09.520 --> 00:20:11.880
+obviously it's very limiting, so there's&nbsp;
+some things you can do you couldn't do,&nbsp;&nbsp;
+
+00:20:11.880 --> 00:20:14.280
+but there's also a lot of things you could&nbsp;
+do with it. Certainly you can, you know,&nbsp;&nbsp;
+
+00:20:14.280 --> 00:20:19.160
+tidy up the floor, put things in different&nbsp;
+locations in the kitchen. It's actually&nbsp;&nbsp;
+
+00:20:19.160 --> 00:20:24.907
+kind of surprising how much a relatively&nbsp;
+primitive robotic system can accomplish.
+
+00:20:24.907 --> 00:20:26.800
+Sergey: 20:24
+So there's a very&nbsp;&nbsp;
+
+00:20:26.800 --> 00:20:34.440
+nice work out of Professor Chelsea Finn's&nbsp;
+group that I also helped with a little bit,&nbsp;&nbsp;
+
+00:20:34.440 --> 00:20:41.720
+by a student named Tony Zhao who developed a&nbsp;
+bimanual robotic system out of two low-cost robots&nbsp;&nbsp;
+
+00:20:41.720 --> 00:20:46.400
+from Trostin Robotics. So these are not even the&nbsp;
+fancy industrial arms. These are basically very&nbsp;&nbsp;
+
+00:20:46.400 --> 00:20:55.120
+fancy hobbyist robots. So they cost about, I&nbsp;
+think, $5,000 each, and most of his kind of&nbsp;&nbsp;
+
+00:20:55.120 --> 00:20:59.760
+cleverness in his research was in devising a very&nbsp;
+convenient tele-operation system, a tele-operation&nbsp;&nbsp;
+
+00:20:59.760 --> 00:21:06.800
+rig that he could hold with his hands and control&nbsp;
+this fairly cheap bimanual system and he would&nbsp;&nbsp;
+
+00:21:06.800 --> 00:21:11.080
+demonstrate all sorts of very complex behaviours.&nbsp;
+You get this thing like putting a shoe on a foot,&nbsp;&nbsp;
+
+00:21:11.080 --> 00:21:18.200
+using tape to tape down a box, things like&nbsp;
+that, and then you know the learning methodology&nbsp;&nbsp;
+
+00:21:18.200 --> 00:21:24.787
+that could produce the autonomous policy was&nbsp;
+well designed but not particularly profound.
+
+00:21:24.787 --> 00:21:25.360
+Sergey: 21:24
+It sort of used&nbsp;&nbsp;
+
+00:21:25.360 --> 00:21:30.320
+state-of-the-art transform-based techniques but&nbsp;
+didn't really have any particularly surprising&nbsp;&nbsp;
+
+00:21:30.320 --> 00:21:34.920
+innovation. The key to it was really building&nbsp;
+a really good tele-operation rig that allowed&nbsp;&nbsp;
+
+00:21:34.920 --> 00:21:39.600
+him to produce those behaviours and then a very&nbsp;
+high-quality engineer to then get that up down&nbsp;&nbsp;
+
+00:21:39.600 --> 00:21:45.440
+to policy. So this is called the Aloha system, you&nbsp;
+know, for those who are listening, I encourage you&nbsp;&nbsp;
+
+00:21:45.440 --> 00:21:51.160
+to check it out and it probably gives some idea&nbsp;
+of what even very primitive hardware is capable&nbsp;&nbsp;
+
+00:21:51.160 --> 00:21:55.320
+of if it's equipped with the right data, the right&nbsp;
+kind of tele-operation rig to provide that data&nbsp;&nbsp;
+
+00:21:55.320 --> 00:22:00.200
+and kind of good bread-and-butter modern machine&nbsp;
+learning techniques. Now that's still not going to&nbsp;&nbsp;
+
+00:22:00.200 --> 00:22:05.960
+do everything around the house, but I suspect that&nbsp;
+for folks that watch these Aloha videos it'll kind&nbsp;&nbsp;
+
+00:22:05.960 --> 00:22:10.360
+of maybe slightly change their mind in terms of&nbsp;
+the kind of hardware we really need for everyday&nbsp;&nbsp;
+
+00:22:10.360 --> 00:22:15.108
+tasks. So probably there is still some innovation,&nbsp;
+but it might actually be less than you think.
+
+00:22:15.108 --> 00:22:16.240
+Craig: 22:15
+That's interesting.&nbsp;&nbsp;
+
+00:22:17.000 --> 00:22:22.640
+And then the controller side, the AI&nbsp;
+side, the model side, is it? I mean,&nbsp;&nbsp;
+
+00:22:22.640 --> 00:22:30.027
+if that is adequate, that hardware, how much&nbsp;
+more improvement is needed on the control?
+
+00:22:30.027 --> 00:22:32.160
+Sergey: 22:30
+side. That's a complex question&nbsp;&nbsp;
+
+00:22:32.160 --> 00:22:40.800
+because that's probably very heavily dependent on&nbsp;
+the required bar for robustness and the degree of&nbsp;&nbsp;
+
+00:22:40.800 --> 00:22:45.480
+generalisation. So in some ways that sort of&nbsp;
+parallels the autonomous driving story right,&nbsp;&nbsp;
+
+00:22:45.480 --> 00:22:51.080
+like if you wanted to build an autonomous car that&nbsp;
+could, you know, succeed in like 90% of cases,&nbsp;&nbsp;
+
+00:22:51.080 --> 00:22:53.920
+well, that's probably something that we've&nbsp;
+had for over a decade. But if you want an&nbsp;&nbsp;
+
+00:22:53.920 --> 00:22:58.840
+autonomous car that will succeed, that will avoid&nbsp;
+catastrophic failures, with enough robustness that&nbsp;&nbsp;
+
+00:22:58.840 --> 00:23:03.640
+you could just deploy it on any road in any&nbsp;
+city, just dealing with all those tail cases,&nbsp;&nbsp;
+
+00:23:03.640 --> 00:23:07.480
+that's still an open problem and I think&nbsp;
+with home robots it's going to be the same&nbsp;&nbsp;
+
+00:23:07.480 --> 00:23:13.080
+way that if you want to lop off the bulk of&nbsp;
+the things and the bulk of the situations,&nbsp;&nbsp;
+
+00:23:13.080 --> 00:23:17.800
+maybe that's not quite there yet, but I think that&nbsp;
+it's reasonable to imagine that we get there soon.&nbsp;&nbsp;
+
+00:23:17.800 --> 00:23:22.827
+But how long it takes to get that long tail fully&nbsp;
+figured out, that's a much more complex question.
+
+00:23:22.827 --> 00:23:24.320
+Sergey: 23:22
+I think that one thing that's pretty interesting&nbsp;&nbsp;
+
+00:23:24.320 --> 00:23:30.960
+is the degree to which vision language models have&nbsp;
+progressed over the last really over just like&nbsp;&nbsp;
+
+00:23:30.960 --> 00:23:36.760
+the last 12 months and that's especially relevant&nbsp;
+for robotics, because, while the way that vision&nbsp;&nbsp;
+
+00:23:36.760 --> 00:23:41.160
+language models are typically used is more for you&nbsp;
+know, kind of perception, traditional perception&nbsp;&nbsp;
+
+00:23:41.160 --> 00:23:49.840
+tasks, question answering that sort of thing,&nbsp;
+the ability to reason about visual observations,&nbsp;&nbsp;
+
+00:23:49.840 --> 00:23:56.560
+perform inferences about spatial arrangements of&nbsp;
+objects, that sort of thing that is something that&nbsp;&nbsp;
+
+00:23:56.560 --> 00:24:00.160
+is likely to translate into better robotic&nbsp;
+capability, and, because generalisation is&nbsp;&nbsp;
+
+00:24:00.160 --> 00:24:05.600
+one of those big challenges I mentioned the slump&nbsp;
+tail issue I think there is a lot of reason to be&nbsp;&nbsp;
+
+00:24:05.600 --> 00:24:10.480
+optimistic about the potential for those models&nbsp;
+to eventually improve the robustness of robotic&nbsp;&nbsp;
+
+00:24:10.480 --> 00:24:11.520
+controllers as well.
+Sergey: 24:11&nbsp;
+
+00:24:11.520 --> 00:24:17.720
+People are talking about combining language and&nbsp;
+vision, or I should say language and world models,&nbsp;&nbsp;
+
+00:24:17.720 --> 00:24:27.627
+into agents that can reason, plan and take action.&nbsp;
+That sounded to me very much like robotic control.
+
+00:24:27.627 --> 00:24:29.120
+Sergey: 24:27
+I guess what I'm asking&nbsp;&nbsp;
+
+00:24:29.120 --> 00:24:37.120
+is that research and the people who are in robotic&nbsp;
+control, research on different tracks, the answer&nbsp;&nbsp;
+
+00:24:37.120 --> 00:24:41.240
+is a little bit complicated, but maybe the short&nbsp;
+version is that, yes, it's closely related to a&nbsp;&nbsp;
+
+00:24:41.240 --> 00:24:47.640
+lot of robotics problems. In fact, there's plenty&nbsp;
+of work in robotics on using language models for&nbsp;&nbsp;
+
+00:24:48.320 --> 00:24:53.320
+essentially constructing plans and then connecting&nbsp;
+those plans up to some kind of control mechanism&nbsp;&nbsp;
+
+00:24:53.320 --> 00:25:00.280
+that can bring them about. Now, probably,&nbsp;
+this stuff started maybe roughly two years&nbsp;&nbsp;
+
+00:25:00.280 --> 00:25:08.640
+ago. Probably one of the more well-known works&nbsp;
+in this area is the Seikan paper from Google,&nbsp;&nbsp;
+
+00:25:08.640 --> 00:25:15.640
+which used a language model to plan long horizon&nbsp;
+behaviours for robots. Initially in this field,&nbsp;&nbsp;
+
+00:25:15.640 --> 00:25:20.000
+one of the big challenges that people&nbsp;
+were concerned about is how to connect&nbsp;&nbsp;
+
+00:25:20.000 --> 00:25:26.840
+up the language model to perception and action,&nbsp;
+because standard language models have to operate&nbsp;&nbsp;
+
+00:25:26.840 --> 00:25:30.120
+on symbolic representations of the world, so you&nbsp;
+have to take those symbolic representations and&nbsp;&nbsp;
+
+00:25:30.120 --> 00:25:37.360
+somehow weld them on to rich sensory perception&nbsp;
+and complex actuation. Now, initially the way&nbsp;&nbsp;
+
+00:25:37.360 --> 00:25:43.560
+that this was done was kind of along the lines of&nbsp;
+what you described, by trying to construct some&nbsp;&nbsp;
+
+00:25:43.560 --> 00:25:51.160
+sort of joint planning procedure that would figure&nbsp;
+out both a probable sequence of symbolic steps,&nbsp;&nbsp;
+
+00:25:51.160 --> 00:25:55.920
+essentially language and the corresponding&nbsp;
+behaviours that would bring that about. There's&nbsp;&nbsp;
+
+00:25:55.920 --> 00:26:01.920
+actually a paper from one of my colleagues&nbsp;
+from Skult, grounded Decoding, which proposes&nbsp;&nbsp;
+
+00:26:01.920 --> 00:26:06.600
+a Bayesian filtering approach to doing exactly&nbsp;
+that. That said, something that we've seen over&nbsp;&nbsp;
+
+00:26:06.600 --> 00:26:11.400
+the last maybe like six to nine months is that&nbsp;
+increasingly, with vision language models becoming&nbsp;&nbsp;
+
+00:26:11.400 --> 00:26:15.720
+more powerful, a very appealing alternative&nbsp;
+instead of doing this is to actually train&nbsp;&nbsp;
+
+00:26:15.720 --> 00:26:21.360
+models end to end to solve the entire problem.&nbsp;
+Now those models can still be doing planning.
+
+00:26:21.360 --> 00:26:22.760
+Sergey: 26:21
+If you have a vision language&nbsp;&nbsp;
+
+00:26:22.760 --> 00:26:28.480
+model that outputs text and also outputs actions,&nbsp;
+you can do essentially the analog of chain of&nbsp;&nbsp;
+
+00:26:28.480 --> 00:26:34.200
+thought prompting. You can say okay, here's some&nbsp;
+complex problem and produce steps for solving&nbsp;&nbsp;
+
+00:26:34.200 --> 00:26:37.960
+that problem, and then, once you've produced those&nbsp;
+steps, then produce the actions and that works. So&nbsp;&nbsp;
+
+00:26:37.960 --> 00:26:43.360
+you could tell a robot okay, like, make breakfast&nbsp;
+and also get to make breakfast, I need to do this&nbsp;&nbsp;
+
+00:26:43.360 --> 00:26:47.360
+and this and this, and then, for the first step&nbsp;
+of that, it'll try to output the actions. So&nbsp;&nbsp;
+
+00:26:47.360 --> 00:26:51.720
+that's a viable way to use vision language&nbsp;
+models, but then it's still. You would still&nbsp;&nbsp;
+
+00:26:51.720 --> 00:26:55.240
+end up with one model that does that, and that's&nbsp;
+very desirable, because if you have one model,&nbsp;&nbsp;
+
+00:26:55.240 --> 00:26:59.880
+then you don't need to deal with this problem of&nbsp;
+trying to somehow stuff visual observations into&nbsp;&nbsp;
+
+00:26:59.880 --> 00:27:04.360
+symbolic representation to then pass into the&nbsp;
+language model. Basically, instead of designing&nbsp;&nbsp;
+
+00:27:04.360 --> 00:27:08.680
+that interface by hand, it emerges naturally&nbsp;
+through joint training of the whole thing.
+
+00:27:08.680 --> 00:27:10.600
+Sergey: 27:09
+So this is actually&nbsp;&nbsp;
+
+00:27:10.600 --> 00:27:16.040
+the principle in which the R2-2 model works, and&nbsp;
+one of the examples there that illustrates this&nbsp;&nbsp;
+
+00:27:16.040 --> 00:27:22.040
+kind of chain of thought style approach is as we&nbsp;
+asked it. We wanted to intentionally construct a&nbsp;&nbsp;
+
+00:27:22.040 --> 00:27:26.480
+scene where the correct behaviour is a little&nbsp;
+bit non-obvious. So we had a scene that had&nbsp;&nbsp;
+
+00:27:26.480 --> 00:27:32.720
+some common household items and had some tools&nbsp;
+with the wrong kind of tools so it's supposed&nbsp;&nbsp;
+
+00:27:32.720 --> 00:27:36.360
+to hammer in a nail. There was no hammer,&nbsp;
+but there's a rock and we asked, "Okay,&nbsp;&nbsp;
+
+00:27:36.360 --> 00:27:41.680
+you need to hammer in the nail, what should you&nbsp;
+do? And then it figures out that you should pick&nbsp;&nbsp;
+
+00:27:41.680 --> 00:27:46.400
+up the rock. It actually says rocks and then it&nbsp;
+goes and exits to the corresponding actions. So&nbsp;&nbsp;
+
+00:27:46.400 --> 00:27:50.320
+now that's very primitive planning, right? So it's&nbsp;
+kind of more semantic inference than planning. But&nbsp;&nbsp;
+
+00:27:50.320 --> 00:27:54.800
+these things are in their infancy. I think they'll&nbsp;
+progress a lot more over the next few years.
+
+00:27:54.800 --> 00:27:56.800
+Craig: 27:55
+Do you? In the&nbsp;&nbsp;
+
+00:27:56.800 --> 00:28:02.160
+last five years, which is about the&nbsp;
+time I think since I spoke to you,&nbsp;&nbsp;
+
+00:28:02.160 --> 00:28:14.467
+has the progress in your field specifically&nbsp;
+mirrored the progress in generative AI?
+
+00:28:14.467 --> 00:28:18.040
+Sergey: 28:14
+I think that progress in robotics always&nbsp;&nbsp;
+
+00:28:18.040 --> 00:28:25.160
+to dust into lag behind everything else, because&nbsp;
+when we figure out effective learning techniques,&nbsp;&nbsp;
+
+00:28:25.160 --> 00:28:31.800
+then we then it's always a longer journey to&nbsp;
+go from kind of conceptual method to product,&nbsp;&nbsp;
+
+00:28:31.800 --> 00:28:35.680
+to a small scale prototype, to larger scale&nbsp;
+prototype, because with generative models,&nbsp;&nbsp;
+
+00:28:35.680 --> 00:28:41.320
+well, you can harvest lots and lots of data&nbsp;
+off the web, so the lag between developing a&nbsp;&nbsp;
+
+00:28:41.320 --> 00:28:46.147
+method and then scaling it up to internet&nbsp;
+scale data is typically relatively short.
+
+00:28:46.147 --> 00:28:48.760
+Sergey: 28:46
+With robots that's usually not the case.&nbsp;&nbsp;
+
+00:28:48.760 --> 00:28:55.000
+So while certainly modern advances in generative&nbsp;
+modelling have made a big impact on robotics and&nbsp;&nbsp;
+
+00:28:55.000 --> 00:28:59.080
+there's particular very interesting adaptations of&nbsp;
+those techniques that combine with reinforcement&nbsp;&nbsp;
+
+00:28:59.080 --> 00:29:07.240
+learning, planning and so on, I would say that&nbsp;
+so far we have a lot of good indications of&nbsp;&nbsp;
+
+00:29:07.240 --> 00:29:10.720
+the potential for these things, but we don't have&nbsp;
+the kind of large scale prototypes that have been&nbsp;&nbsp;
+
+00:29:10.720 --> 00:29:14.560
+produced, for example, for diffusion models,&nbsp;
+for image generation or for language models.&nbsp;&nbsp;
+
+00:29:14.560 --> 00:29:18.320
+And I think the key there is actually getting&nbsp;
+these kinds of reusable models with large and&nbsp;&nbsp;
+
+00:29:18.320 --> 00:29:22.468
+diverse data, so that would make it possible&nbsp;
+for us to produce these larger prototypes.
+
+00:29:22.468 --> 00:29:27.867
+Craig: 29:23
+Yeah, so what's next in your lab?
+
+00:29:27.867 --> 00:29:28.840
+Sergey: 29:27
+Yeah, so one of the things&nbsp;&nbsp;
+
+00:29:28.840 --> 00:29:35.400
+we would like to do is provide the community with&nbsp;
+pre-trained models, now that we actually have a&nbsp;&nbsp;
+
+00:29:35.400 --> 00:29:40.680
+data set to work with that can be easily adapted&nbsp;
+to a variety of downstream applications. So not&nbsp;&nbsp;
+
+00:29:40.680 --> 00:29:44.760
+just a model that can do anything and that's maybe&nbsp;
+too ambitious of a goal but at least a model that&nbsp;&nbsp;
+
+00:29:44.760 --> 00:29:50.760
+can be adapted to do anything. So if you could&nbsp;
+imagine, let's say, a model that is pre-trained to&nbsp;&nbsp;
+
+00:29:50.760 --> 00:29:57.520
+take in language, take in maybe goal observations,&nbsp;
+other forms of commands, and produce outputs for&nbsp;&nbsp;
+
+00:29:57.520 --> 00:30:02.280
+a variety of different robot embodiments not with&nbsp;
+the goal necessarily of solving every problem, but&nbsp;&nbsp;
+
+00:30:02.280 --> 00:30:06.160
+providing a really good initialization. So that's&nbsp;
+somebody that has a particular specific robotic&nbsp;&nbsp;
+
+00:30:06.160 --> 00:30:10.840
+system with a particular desired formulation of&nbsp;
+their task, a particular objective. They could&nbsp;&nbsp;
+
+00:30:10.840 --> 00:30:15.360
+take this and, with a much more modest amount of&nbsp;
+data, adapt to their problem. And I think that now&nbsp;&nbsp;
+
+00:30:15.360 --> 00:30:21.440
+that we actually have good multi-robot data sets&nbsp;
+and fairly mature techniques in terms of how to&nbsp;&nbsp;
+
+00:30:21.440 --> 00:30:25.000
+train models with variable inputs and outputs,&nbsp;
+we're actually just about ready to do that. So&nbsp;&nbsp;
+
+00:30:25.000 --> 00:30:30.387
+our first prototype for this should be coming out&nbsp;
+very soon. But this is going to be the first step.
+
+00:30:30.387 --> 00:30:30.960
+Sergey: 30:30
+From there,&nbsp;&nbsp;
+
+00:30:30.960 --> 00:30:35.960
+a lot of what we have to investigate is&nbsp;
+what does the life cycle of such a system&nbsp;&nbsp;
+
+00:30:35.960 --> 00:30:39.960
+actually look like? What are the right&nbsp;
+techniques for efficiently fine-tuning&nbsp;&nbsp;
+
+00:30:39.960 --> 00:30:44.320
+robotic foundation models to particular&nbsp;
+domains, to different morphologies,&nbsp;&nbsp;
+
+00:30:44.320 --> 00:30:47.440
+different commands and so on? And there's probably&nbsp;
+actually a lot of interesting questions to be&nbsp;&nbsp;
+
+00:30:47.440 --> 00:30:52.560
+answered there. For example, robots can collect&nbsp;
+data autonomously, so could you, for example,&nbsp;&nbsp;
+
+00:30:52.560 --> 00:30:57.520
+have an autonomous fine-tuning procedure based&nbsp;
+off of one of these pre-trained models? Could&nbsp;&nbsp;
+
+00:30:57.520 --> 00:31:02.040
+you have a fine-tuning procedure that respects&nbsp;
+safety constraints, things like that? So there's&nbsp;&nbsp;
+
+00:31:02.040 --> 00:31:05.388
+a lot of interesting questions that we could&nbsp;
+answer once we have that base model all set up.
+
+00:31:05.388 --> 00:31:07.240
+Craig: 31:05
+There's a lot of people I've&nbsp;&nbsp;
+
+00:31:07.240 --> 00:31:15.640
+been talking to about the proprietary, open-source&nbsp;
+debate. With regard to generative AI In robotics,&nbsp;&nbsp;
+
+00:31:15.640 --> 00:31:24.560
+is there an analogous situation where there are&nbsp;
+enterprises that have tremendous resources? I&nbsp;&nbsp;
+
+00:31:24.560 --> 00:31:31.840
+mean, the robotics are not as compute-intensive&nbsp;
+as the models you're talking about. Is that right,&nbsp;&nbsp;
+
+00:31:31.840 --> 00:31:37.840
+and so is it more equal at what's happening&nbsp;
+in industry and what's happening in research?
+
+00:31:37.840 --> 00:31:39.520
+Sergey: 31:38
+Yeah, it's complicated.&nbsp;&nbsp;
+
+00:31:39.520 --> 00:31:42.920
+So certainly compute constraints are an&nbsp;
+issue right, especially once we go into&nbsp;&nbsp;
+
+00:31:42.920 --> 00:31:47.800
+vision language models. The most effective vision&nbsp;
+language models are actually the largest models&nbsp;&nbsp;
+
+00:31:47.800 --> 00:31:52.120
+out there. So the largest version of the R2-2&nbsp;
+model, for example, is 500 billion per amperes,&nbsp;&nbsp;
+
+00:31:52.120 --> 00:31:56.720
+so very much in the same ballpark as the largest&nbsp;
+models out there. Of course, you can do a lot&nbsp;&nbsp;
+
+00:31:56.720 --> 00:32:02.360
+of experiments at a much smaller scale, and&nbsp;
+that does make it somewhat more accessible.
+
+00:32:02.360 --> 00:32:05.000
+Sergey: 32:03
+In terms of data.&nbsp;&nbsp;
+
+00:32:05.000 --> 00:32:09.560
+It's kind of interesting. There are definitely&nbsp;
+companies that have large numbers of robots&nbsp;&nbsp;
+
+00:32:09.560 --> 00:32:13.000
+deployed. Those are not necessarily the companies&nbsp;
+that have the most interesting data, though,&nbsp;&nbsp;
+
+00:32:13.000 --> 00:32:17.280
+because if they're deployed in a warehouse, it's&nbsp;
+mostly grasping of items and maybe in some ways,&nbsp;&nbsp;
+
+00:32:17.280 --> 00:32:22.320
+the open data from researchers is actually more&nbsp;
+interesting. The picture changes somewhat if you&nbsp;&nbsp;
+
+00:32:22.320 --> 00:32:26.720
+go into mobility, things like autonomous driving,&nbsp;
+like yeah, there's going to be big industrial&nbsp;&nbsp;
+
+00:32:26.720 --> 00:32:32.120
+players with their own proprietary stuff, but&nbsp;
+even there, like data sets constructed from&nbsp;&nbsp;
+
+00:32:32.120 --> 00:32:36.880
+dashboard mounted cameras that are out there now&nbsp;
+are actually very large Certainly not as large as&nbsp;&nbsp;
+
+00:32:36.880 --> 00:32:46.720
+what Tesla or Waymo has, but substantial. So I&nbsp;
+think you're right that some of the proprietary&nbsp;&nbsp;
+
+00:32:46.720 --> 00:32:52.680
+advantages are not as large, but it's kind&nbsp;
+of. Maybe the more pessimistic take on it&nbsp;&nbsp;
+
+00:32:52.680 --> 00:32:57.840
+is that it's because no one has the data. So the&nbsp;
+companies don't have the data because no one does.
+
+00:32:57.840 --> 00:33:00.560
+Craig: 32:58
+the control of an autonomous vehicle and the&nbsp;&nbsp;
+
+00:33:00.560 --> 00:33:09.760
+control of a robot arm or some other form factor,&nbsp;
+but are they different fields? I mean, when you're&nbsp;&nbsp;
+
+00:33:09.760 --> 00:33:17.000
+working on these models, are you also thinking&nbsp;
+about their application in autonomous vehicles?
+
+00:33:17.000 --> 00:33:18.160
+Sergey: 33:17
+So traditionally&nbsp;&nbsp;
+
+00:33:18.160 --> 00:33:22.720
+these are extremely different problems, but&nbsp;
+what we're increasingly seeing is a degree of&nbsp;&nbsp;
+
+00:33:22.720 --> 00:33:27.880
+consolidation in the sense that very similar&nbsp;
+building blocks can be reduced. So I think&nbsp;&nbsp;
+
+00:33:27.880 --> 00:33:33.120
+actual autonomous driving is maybe one of the&nbsp;
+tougher things because of all the constraints&nbsp;&nbsp;
+
+00:33:33.120 --> 00:33:37.400
+and regulations and all that stuff. But&nbsp;
+for small scale mobile robots like Think,&nbsp;&nbsp;
+
+00:33:37.400 --> 00:33:42.080
+like Drones, sidewalk Robots, et cetera, we&nbsp;
+already have research projects where we've&nbsp;&nbsp;
+
+00:33:42.080 --> 00:33:46.760
+developed vision based navigation policies. For&nbsp;
+these things they use essentially the same exact&nbsp;&nbsp;
+
+00:33:46.760 --> 00:33:51.480
+architecture as what we use for the robotic&nbsp;
+manipulation problems, and a very natural next&nbsp;&nbsp;
+
+00:33:51.480 --> 00:33:55.040
+step is to actually combine, not just have the&nbsp;
+same architecture, but literally the same model.
+
+00:33:55.040 --> 00:33:56.600
+Sergey: 33:55
+In principle, at this point,&nbsp;&nbsp;
+
+00:33:56.600 --> 00:33:59.600
+there isn't really any technological&nbsp;
+obstacle to doing that. Now, of course,&nbsp;&nbsp;
+
+00:33:59.600 --> 00:34:04.400
+there's a lot more to driving, let's say, an&nbsp;
+autonomous car than just avoiding obstacles and&nbsp;&nbsp;
+
+00:34:04.400 --> 00:34:09.640
+reaching the destination. You have to put in a lot&nbsp;
+more knowledge, constraints, all this other stuff,&nbsp;&nbsp;
+
+00:34:09.640 --> 00:34:15.680
+and that probably is rather specialised. But&nbsp;
+my hypothesis is that we'll probably actually&nbsp;&nbsp;
+
+00:34:15.680 --> 00:34:21.760
+see a lot of consolidation around the same basic&nbsp;
+building blocks for the core perception action&nbsp;&nbsp;
+
+00:34:21.760 --> 00:34:25.640
+system within these things, and then maybe where&nbsp;
+they would differ is the kind of planning layer&nbsp;&nbsp;
+
+00:34:25.640 --> 00:34:29.507
+that sits on top of that and then directs it in&nbsp;
+terms of what to actually do in a given situation.
+
+00:34:29.507 --> 00:34:32.840
+Sergey: 34:29
+In your work? There is a pull&nbsp;&nbsp;
+
+00:34:32.840 --> 00:34:41.040
+for academics because of the computer constraints&nbsp;
+and money and salary and that sort of thing to&nbsp;&nbsp;
+
+00:34:41.040 --> 00:34:51.200
+pull people into the industry. Are you working&nbsp;
+straddling academia and industry? Are you firm?
+
+00:34:51.200 --> 00:34:53.240
+Sergey: 34:51
+Yeah, so I spend 20% of my time working&nbsp;&nbsp;
+
+00:34:53.240 --> 00:35:01.560
+with Google DeepMind. I think that, in terms of&nbsp;
+the degree to which an industry researcher or&nbsp;&nbsp;
+
+00:35:01.560 --> 00:35:08.760
+academic researcher in robotics is more or less&nbsp;
+appealing or progressive, I think probably it's a&nbsp;&nbsp;
+
+00:35:08.760 --> 00:35:14.560
+little more, I would say, tilted towards academia&nbsp;
+than, for example, natural language processing or&nbsp;&nbsp;
+
+00:35:14.560 --> 00:35:22.880
+vision, and maybe in part it's because there are a&nbsp;
+lot more of the big questions to figure out before&nbsp;&nbsp;
+
+00:35:22.880 --> 00:35:27.880
+things actually have revenue, so to speak. You&nbsp;
+could build a language model or vision system&nbsp;&nbsp;
+
+00:35:27.880 --> 00:35:32.520
+that provides an actual business case today,&nbsp;
+whereas analog and robotics are probably still&nbsp;&nbsp;
+
+00:35:32.520 --> 00:35:37.840
+a few years out. That said, I do think that&nbsp;
+there's a lot of rapid progress and certainly&nbsp;&nbsp;
+
+00:35:37.840 --> 00:35:41.880
+a lot of students from my group are excited about&nbsp;
+starting companies based on technologies they're&nbsp;&nbsp;
+
+00:35:41.880 --> 00:35:45.960
+developing and things like that. So I think&nbsp;
+we'll see that catching up in the near future
+
+00:35:45.960 --> 00:35:48.960
+Craig: 35:47
+And you think that this&nbsp;&nbsp;
+
+00:35:48.960 --> 00:35:57.640
+is the year that AI hit the public sphere and&nbsp;
+people confuse robotics with AI all the time.&nbsp;&nbsp;
+
+00:35:58.600 --> 00:36:04.000
+Will the day come I mean, obviously the day will&nbsp;
+come, but when do you think the day will come that&nbsp;&nbsp;
+
+00:36:04.000 --> 00:36:14.080
+there will be some commercial application&nbsp;
+or open source application that is adopted&nbsp;&nbsp;
+
+00:36:15.600 --> 00:36:23.867
+by the public, that people will suddenly&nbsp;
+be talking about robots as opposed to AI?
+
+00:36:23.867 --> 00:36:25.000
+Sergey: 36:23
+Yeah, that's a complex&nbsp;&nbsp;
+
+00:36:25.000 --> 00:36:31.280
+question because I think that if I had to guess,&nbsp;
+I would guess that a lot of what's needed beyond&nbsp;&nbsp;
+
+00:36:31.280 --> 00:36:38.800
+the core technologies is a pretty substantial&nbsp;
+upfront investment to overcome the activation&nbsp;&nbsp;
+
+00:36:38.800 --> 00:36:44.520
+energy to get somebody about to be practical.&nbsp;
+And that's not too unprecedented in the sense&nbsp;&nbsp;
+
+00:36:44.520 --> 00:36:49.160
+that more or less the same thing happened with&nbsp;
+language models. The core technology for next&nbsp;&nbsp;
+
+00:36:49.160 --> 00:36:58.760
+token prediction is pretty old. What was needed&nbsp;
+to develop the kinds of technologies and products&nbsp;&nbsp;
+
+00:36:58.760 --> 00:37:02.960
+that really capture the public imagination is&nbsp;
+a large investment of effort into engineering&nbsp;&nbsp;
+
+00:37:02.960 --> 00:37:07.760
+them really really well and curating, collecting&nbsp;
+and assembling the right data sets to get them to&nbsp;&nbsp;
+
+00:37:07.760 --> 00:37:14.267
+work really well for a thing that basically&nbsp;
+anybody could grab and use. That's partly.
+
+00:37:14.267 --> 00:37:15.360
+Sergey: 37:14
+There's a scientific question there,&nbsp;&nbsp;
+
+00:37:15.360 --> 00:37:20.800
+but a lot of it is really sort of organisational&nbsp;
+economics kind of questions, and the trouble with&nbsp;&nbsp;
+
+00:37:20.800 --> 00:37:26.240
+those things is that they're hard to predict&nbsp;
+because they have more to do with the point in&nbsp;&nbsp;
+
+00:37:26.240 --> 00:37:32.960
+time at which people decide that it's time to lay&nbsp;
+out those big resources to make it happen rather&nbsp;&nbsp;
+
+00:37:32.960 --> 00:37:36.240
+than just predicting when the technology will&nbsp;
+evolve. So the technology might evolve steadily,&nbsp;&nbsp;
+
+00:37:36.240 --> 00:37:41.600
+but then the inflection is really the resource&nbsp;
+allocation, so I can't predict when that would&nbsp;&nbsp;
+
+00:37:41.600 --> 00:37:47.920
+happen. If I had to bet. My bet would be closer&nbsp;
+to five years than to 10, but I'm not sure.
+
+00:37:47.920 --> 00:37:51.160
+Craig: 37:49
+Has been. This&nbsp;&nbsp;
+
+00:37:51.160 --> 00:37:58.720
+threat debate has created a lot of acrimony&nbsp;
+in the community. Do you have a view on that,&nbsp;&nbsp;
+
+00:37:58.720 --> 00:38:08.707
+or is your territory removed enough&nbsp;
+that you don't engage in that?
+
+00:38:08.707 --> 00:38:09.600
+Sergey: 38:08
+Yeah, it's a complicated&nbsp;&nbsp;
+
+00:38:09.600 --> 00:38:19.920
+question. I tend not to prefer not to get too much&nbsp;
+into discussions like that Because I'm not really&nbsp;&nbsp;
+
+00:38:19.920 --> 00:38:27.080
+sure exactly how things will go, and I think that,&nbsp;
+partly perhaps as a roboticist, I Maybe tend to be&nbsp;&nbsp;
+
+00:38:27.080 --> 00:38:32.600
+a little more pessimistic about where we're at in&nbsp;
+terms of overall AI systems. It's hard to imagine&nbsp;&nbsp;
+
+00:38:32.600 --> 00:38:38.080
+that an AI system that can't control a robot to&nbsp;
+do basic things that are easy for humans would be&nbsp;&nbsp;
+
+00:38:38.080 --> 00:38:44.920
+all that capable overall, but the stuff is hard&nbsp;
+to predict. I think that maybe the one constant&nbsp;&nbsp;
+
+00:38:44.920 --> 00:38:50.200
+in AI research is that people are continually&nbsp;
+surprised by the things that turn out to be easier&nbsp;&nbsp;
+
+00:38:50.200 --> 00:38:55.080
+than imagined and also the things that turn out&nbsp;
+to be a lot harder than imagined. If you go back&nbsp;&nbsp;
+
+00:38:55.080 --> 00:38:59.640
+a couple of decades, it'll be pretty shocking&nbsp;
+to think that, for example, artists and writers&nbsp;&nbsp;
+
+00:38:59.640 --> 00:39:08.800
+would feel threatened by AI systems long before,&nbsp;
+like the gardeners and cleaners would, but that is&nbsp;&nbsp;
+
+00:39:08.800 --> 00:39:14.120
+the world that we live in today. Maybe that tells&nbsp;
+us to be a little humble about our predictions.
+
+00:39:14.120 --> 00:39:15.200
+Craig: 39:14
+Yeah, that's&nbsp;&nbsp;
+
+00:39:15.200 --> 00:39:25.000
+right. The governments around the world are&nbsp;
+very focused on regulation of generative AI&nbsp;&nbsp;
+
+00:39:25.000 --> 00:39:33.080
+specifically. Is there regulation&nbsp;
+or governments looking at robotics,&nbsp;&nbsp;
+
+00:39:33.080 --> 00:39:41.360
+or AI and robotics? In the same way, is&nbsp;
+there government support? There's been a&nbsp;&nbsp;
+
+00:39:41.360 --> 00:39:49.840
+lot of talk about providing compute resources to&nbsp;
+research and smaller companies so that that's not&nbsp;&nbsp;
+
+00:39:49.840 --> 00:39:59.240
+held within these big tech companies. Is&nbsp;
+there that kind of talk in robotics that&nbsp;&nbsp;
+
+00:39:59.240 --> 00:40:04.901
+the government should or could provide&nbsp;
+more resources to accelerate research?
+
+00:40:04.901 --> 00:40:05.600
+Sergey: 40:04
+Yeah, there's certainly plenty&nbsp;&nbsp;
+
+00:40:05.600 --> 00:40:11.480
+of talk about that. It's typically not, from&nbsp;
+what I've seen, not something that tends to&nbsp;&nbsp;
+
+00:40:11.480 --> 00:40:17.320
+separate out robotics or AI versus other things.&nbsp;
+There's certainly talk about it. I haven't seen a&nbsp;&nbsp;
+
+00:40:18.120 --> 00:40:25.200
+great deal of action yet, but I imagine it's&nbsp;
+something that moves slowly. I don't think I&nbsp;&nbsp;
+
+00:40:25.200 --> 00:40:29.120
+would say anything differently than any other AI&nbsp;
+researcher in that respect. I don't think that,&nbsp;&nbsp;
+
+00:40:29.120 --> 00:40:33.720
+from what I've seen so far, there's anything&nbsp;
+that treats robotics in a particularly special&nbsp;&nbsp;
+
+00:40:33.720 --> 00:40:39.440
+way in that regard. But yes, this is a big&nbsp;
+issue and it's probably something that we,&nbsp;&nbsp;
+
+00:40:40.080 --> 00:40:43.280
+certainly in the United States, need to think&nbsp;
+carefully about how we're going to maintain our&nbsp;&nbsp;
+
+00:40:43.280 --> 00:40:46.600
+technological edge and how we're going to allocate&nbsp;
+the resources that are necessary for that.
+
+00:40:46.600 --> 00:40:49.880
+Craig: 40:46
+And that leads me to another question, because I&nbsp;&nbsp;
+
+00:40:49.880 --> 00:40:59.320
+spent a lot of my life in China. Where is China in&nbsp;
+this research? Do you think they're ahead, behind?
+
+00:40:59.320 --> 00:41:00.040
+Sergey: 40:59
+I'm not sure&nbsp;&nbsp;
+
+00:41:00.040 --> 00:41:07.600
+exactly. One thing I will say is that I think that&nbsp;
+researchers from China, from Chinese universities,&nbsp;&nbsp;
+
+00:41:07.600 --> 00:41:12.760
+have been very successful across all areas of&nbsp;
+AI, including robotics, and certainly a lot of&nbsp;&nbsp;
+
+00:41:12.760 --> 00:41:17.440
+really interesting research increases in IDUCI&nbsp;
+coming out of China. For example, when we were&nbsp;&nbsp;
+
+00:41:17.440 --> 00:41:22.840
+doing a lot of our data set collection work,&nbsp;
+we were actually very surprised to learn in the&nbsp;&nbsp;
+
+00:41:22.840 --> 00:41:25.800
+middle of it that there was a really amazing data&nbsp;
+set that was released by some researchers from&nbsp;&nbsp;
+
+00:41:25.800 --> 00:41:30.040
+Shanghai that was comparable in size and scope&nbsp;
+and diversity to the one that we were collecting,&nbsp;&nbsp;
+
+00:41:30.040 --> 00:41:34.000
+and that was wonderful. They released it open&nbsp;
+source. I talked to them on the phone. They&nbsp;&nbsp;
+
+00:41:34.000 --> 00:41:38.360
+had really interesting thoughts about what&nbsp;
+they wanted to use it for, so I am seeing a&nbsp;&nbsp;
+
+00:41:38.360 --> 00:41:47.027
+lot of uptick in terms of the quality and&nbsp;
+the kind of results that are coming out.
+
+00:41:47.027 --> 00:41:47.760
+Sergey: 41:47
+The other interesting&nbsp;&nbsp;
+
+00:41:47.760 --> 00:41:55.080
+thing is that actually a surprising number of&nbsp;
+advances in hardware have actually been enabled&nbsp;&nbsp;
+
+00:41:55.080 --> 00:42:00.640
+by companies out of China. For example, one of&nbsp;
+the most widely used platforms for quadrupedal&nbsp;&nbsp;
+
+00:42:00.640 --> 00:42:05.400
+locomotion research is produced by a company&nbsp;
+called Unitary from China, and I think a lot&nbsp;&nbsp;
+
+00:42:05.400 --> 00:42:10.000
+of the things that make that platform so&nbsp;
+appealing are that it's relatively simple,&nbsp;&nbsp;
+
+00:42:10.000 --> 00:42:15.400
+it's affordable and it's designed in a way&nbsp;
+that makes it easy for researchers to get into&nbsp;&nbsp;
+
+00:42:15.400 --> 00:42:20.920
+the guts of it, and that also, in my opinion,&nbsp;
+has actually been a very good thing, because,&nbsp;&nbsp;
+
+00:42:20.920 --> 00:42:24.400
+while we might be concerned about competition and&nbsp;
+all that, in the end it's actually accelerating&nbsp;&nbsp;
+
+00:42:24.400 --> 00:42:29.320
+research here in the United States. So that's&nbsp;
+what I've seen so far, I mean without trying to&nbsp;&nbsp;
+
+00:42:29.320 --> 00:42:32.988
+make any value judgments on what's good or&nbsp;
+bad. It seems like there's a lot going on.
+
+00:42:32.988 --> 00:42:34.600
+Craig: 42:32
+That's it for this episode. I&nbsp;&nbsp;
+
+00:42:34.600 --> 00:42:40.200
+want to thank Sergey for his time. If you want&nbsp;
+to read a transcript of today's conversation,&nbsp;&nbsp;
+
+00:42:40.200 --> 00:42:48.560
+you can find one on our website, EYEONAI,&nbsp;
+that's E-Y-E hyphen on AI. In the meantime,&nbsp;&nbsp;
+
+00:42:48.560 --> 00:42:55.400
+remember the singularity may not be near, but&nbsp;
+AI is changing your world, so pay attention.
+
