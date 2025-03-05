@@ -1,0 +1,100 @@
+(2)
+where ˆθ ∈Θ is the maximum likelihood estimation (MLE), or the projection [3] of X onto the
+model, D = dim(Θ) is the model size, N is the number of observations, and | · | denotes the
+matrix determinant. In this paper, the symbols χ and O and the term “razor” all refer to the
+same concept, that is the description length of the data X by the model M. The smaller those
+quantities, the better.
+The first term in eq. (2) is the fitness of the model to the observed data. The second and the
+third terms measures the geometric complexity [44] and make χ favor simple models. The second
+O(log N) term only depends on the number of parameters D and the number of observations N.
+It penalizes large models with a high degree of freedom (dof). The third O(1) term is independent
+to the observed data and measures the model capacity, or the total “number” of distinguishable
+distributions [44] in the model.
+Unfortunately, this razor χ in eq. (2) does not fit straightforwardly into DNNs, which are
+high-dimensional singular models. The FIM I(θ) are large singular matrices (not full rank) and
+the last term may be difficult to evaluate. Based on the second term on the right-hand-side
+(RHS), a DNN can have very high complexity and therefore is less favored against a shallow
+network. This contradicts the good generalization of DNNs as compared to shallow NNs. These
+issues call for a new analysis of the MDL in the DNN setting.
+Towards this direction, we made the following contributions in this paper:
+– New concepts and methodologies from singular semi-Riemannian geometry [36] to analyze
+the space of neural networks;
+2Sir Harold Jeffreys (1891–1989), a British statistician.
+2
+
+– A definition of the local dimensionality, that is the amount of non-singularity, with bounding
+analysis;
+– A new MDL formulation, which explains how the singularity contribute to the “negative
+complexity” of DNNs: That is, the model turns simpler as the number of parameters grows.
+The rest of this paper is organized as follows. Section 2 reviews singularities in information
+geometry. In the setting of a DNN, section 3 introduces its singular parameter manifold. Section 4
+bounds the number of singular dimensions of the parameter manifold of the DNN. Sections 5 to 8
+derive our MDL criterion based on two different priors, and discusses how model complexity is
+affected by the singular geometry. We discuss related work in section 9 and conclude in section 10.
+2
+Lightlike Statistical Manifold
+In this paper, bold capital letters like A denote matrices, bold small letters like a denote vectors,
+normal capital/small letters like A/a and Greek letters like α denote scalars, and calligraphy
+letters like M denote manifolds (with exceptions).
+The term “statistical manifold” refers to M = {p(x | θ)}, where each point of M corresponds
+to a probability distribution p(x | θ)3. The discipline of information geometry [3] studies such a
+space in the Riemannian and more generally differential geometry framework. Hotelling [26] and
+independently Rao [57, 58] proposed to endow a parametric space of statistical models with the
+Fisher information matrix as a Riemannian metric:
+I(θ) := Ep
+∂log p(x | θ)
+∂θ
+∂log p(x | θ)
+∂θ⊺
+
+,
+(3)
+where Ep denotes the expectation w.r.t. p(x | θ). The corresponding infinitesimal squared length
+element ds2 = tr(I(θ)dθdθ⊺) = ⟨dθ, dθ⟩I(θ) = dθ⊺I(θ)dθ, where tr(·) means the matrix trace4,
+is independent of the underlying parameterization of the population space.
+Amari further developed this approach by revealing the dualistic structure of statistical
+manifolds which extends the Riemannian framework [3, 48]. The MDL criterion arising from
+the geometry of Bayesian inference with Jeffreys’ prior for regular models is detailed in [7]. In
+information geometry, the regular assumption is (1) an open connected parameter space in some
+Euclidean space; and (2) the FIM exists and is non-singular. However, in general, the FIM is
+only positive semi-definite and thus for non-regular models like neuromanifolds [3] or Gaussian
+mixture models [70], the manifold is not Riemannian but singular semi-Riemannian [15, 36].
+In the machine learning community, singularities have often been dealt with as a minor issue:
+For example, the natural gradient has been generalized based on the Moore-Penrose inverse of
+I(θ) [67] to avoid potential non-invertible FIMs. Watanabe [70] addressed the fact that most
+usual learning machines are singular in his singular learning theory which relies on algebraic
+geometry. Nakajima and Ohmoto [46] discussed dually flat structures for singular models.
+Recently, preliminary efforts [6, 28] tackle singularity at the core, mostly from a mathematical
+standpoint. For example, Jain et al. [28] studied the Ricci curvature tensor of such manifolds.
+These mathematical notions are used in the community of differential geometry or general
+relativity but have not yet been ported to the machine learning community.
+Following these efforts, we first introduce informally some basic concepts from a machine
+learning perspective to define the differential geometry of non-regular statistical manifolds. The
+3To be more precise, a statistical manifold [37] is a structure (∇, g, C) on a smooth manifold M, where g is a
+metric tensor, ∇a torsion-free affine connection, and C is a symmetric covariant tensor of order 3.
+4Using the cyclic property of the matrix trace, we have ds2 = tr(I(θ)dθdθ⊺) = dθ⊺I(θ)dθ.
+3
+
+a null curve
+(equivalent models)
+θ
+∂θi
+θ′
+∂θ′
+i
+M
+(θ, ∂θi) ∈Rad(T M)
+Figure 1: A toy lightlike manifold M with a null curve. The ellipses are Tissot’s indicatrices,
+showing how circles of infinitesimal radius are distorted by the lightlike geometry on M. On
+the null curve, the FIM is degenerate so that ⟨∂θi, ∂θi⟩I = 0. Therefore the local dynamic ∂θi
+(tangent vector of the null curve) has zero length, meaning that it does not change the model.
+The radical distribution Rad(T M) is formed by the null curve and its tangent vectors.
+tangent space Tθ(M) is a D-dimensional (D = dim(M)) real vector space, that is the local
+linear approximation of the manifold M at the point θ ∈M, equipped with the inner product
+induced by I(θ). The tangent bundle T M := {(θ, v), θ ∈M, v ∈Tθ} is the 2D-dimensional
+manifold obtained by combining all tangent spaces for all θ ∈M. A vector field is a smooth
+mapping from M to T M such that each point θ ∈M is attached a tangent vector originating
+from itself. Vector fields are cross-sections of the tangent bundle. In a local coordinate chart θ,
+the vector fields along the frame are denoted as ∂θi. A distribution (not to be confused with
+probability distributions which are points on M) means a vector subspace of the tangent bundle
+spanned by several independent vector fields, such that each point θ ∈M is associated with a

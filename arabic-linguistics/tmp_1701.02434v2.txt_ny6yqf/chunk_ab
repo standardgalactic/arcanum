@@ -1,0 +1,100 @@
+. . . . . . . . . . . . . . . . . . . .
+43
+6.1
+Diagnosing Poorly-Chosen Kinetic Energies . . . . . . . . . . . . . . . . . .
+44
+6.2
+Diagnosing Regions of High Curvature . . . . . . . . . . . . . . . . . . . . .
+44
+6.3
+Limitations of Diagnostics . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+45
+7
+Conclusion
+. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+46
+8
+Acknowledgements . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+47
+A Technical Details of Practical Implementations
+. . . . . . . . . . . . . . . . . . .
+47
+A.1 Notation . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+48
+A.2 Static Implementations . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+48
+A.3 Eﬃcient Static Implementations
+. . . . . . . . . . . . . . . . . . . . . . . .
+50
+A.4 Dynamic Implementations . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+55
+A.5 The No-U-Turn Sampler and the Current State of Stan
+. . . . . . . . . . .
+58
+References . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+59
+
+A CONCEPTUAL INTRODUCTION TO HAMILTONIAN MONTE CARLO
+3
+Hamiltonian Monte Carlo has followed a long and winding path into modern statistical
+computing. The method was originally developed in the late 1980s as Hybrid Monte Carlo
+to tackle calculations in Lattice Quantum Chromodynamics (Duane et al., 1987), a ﬁeld
+focused on understanding the structure of the protons and neutrons that comprise nuclei,
+atoms, and ultimately the world around us. Within a few years Radford Neal recognized the
+potential of the method for problems in applied statistics in his pioneering work on Bayesian
+neural networks (Neal, 1995). Over the next decade the method began to make appearances
+in textbooks, notably MacKay (2003), who ﬁrst used the term Hamiltonian Monte Carlo
+instead of Hybrid Monte Carlo, and Bishop (2006). Neal’s inﬂuential review (Neal, 2011),
+however, really introduced the approach into the mainstream of statistical computing. With
+the rise of high-performance software implementations such as Stan (Stan Development
+Team, 2017), the method has now become a pervasive tool across many scientiﬁc, medical,
+and industrial applications.
+Only recently, however, have we begun to understand why the success of Hamiltonian
+Monte Carlo has been so extensive. Instead of relying on fragile heuristics, the method
+is built upon a rich theoretical foundation that makes it uniquely suited to the high-
+dimensional problems of applied interest (Betancourt et al., 2014). Unfortunately, this
+theoretical foundation is formulated in terms of diﬀerential geometry, an advanced ﬁeld
+of mathematics that is rarely included in statistical pedagogy. Consequently this formal
+construction is often out of reach of theoretical and applied statisticians alike.
+The aim of this paper is to introduce the intuition behind the success of Hamiltonian
+Monte Carlo while avoiding the mathematical details; in particular, I assume only a basic
+familiarity with probability and calculus. Such an approach necessarily sacriﬁces rigor, but
+I hope the concepts will be suﬃciently intuitive to satisfy readers working in applied ﬁelds.
+I highly encourage those interested in learning more about Hamiltonian Monte Carlo, or
+even contributing to its development, to follow up on the references discussed in Betancourt
+et al., 2014, Section 2.
+Our story will begin with an introduction to the geometry of high-dimensional probabil-
+ity distributions and how that geometry frustrates eﬃcient statistical computing. We will
+then consider Markov chain Monte Carlo from this geometric perspective, motiving the fea-
+tures necessary to scale the approach to such high-dimensional problems. By developing a
+method that inherently satisﬁes these criteria we will very naturally be led to Hamiltonian
+Monte Carlo. Finally I will discuss how this understanding can be extended to motivate not
+just the method itself but also its eﬃcient practical implementation, including optimized
+tuning as well as inherent diagnostics of pathological behavior.
+1. COMPUTING EXPECTATIONS BY EXPLORING PROBABILITY
+DISTRIBUTIONS
+The ultimate undertaking in statistical computing is evaluating expectations with respect
+to some distinguished target probability distribution. For example, we might be interested
+in extracting information from a posterior distribution over model conﬁguration space in
+
+4
+BETANCOURT
+Bayesian inference, or computing coverage of an estimator with respect to the likelihood
+over data space in frequentist statistics. Here we will be agnostic, considering only a target
+distribution, π, on a D-dimensional sample space, Q, and the corresponding expectations
+of functions, Eπ[f].
+Probability distributions, and the corresponding expectations, are rather abstract ob-
+jects, however, and if we want to use them in practice then we need a more explicit means
+of specifying them. Here we will assume that the sample space is smooth, in which case
+that we can represent the target distribution with a probability density function and expec-
+tations as integrals. Care must be taken, however, as this representation hides some of the
+more subtle behaviors of high-dimensional spaces that are critical towards understanding
+how to compute these integrals, and hence the desired expectations, eﬃciently.
+1.1 Computing Expectations in Practice
+We begin by assuming that the target sample space, Q, can be parameterized by the
+real numbers such that every point q ∈Q can be speciﬁed with D real numbers. Given a
+parameter space, Q, we can then specify the target distribution as a smooth probability
+density function, π(q), while expectations reduce to integrals over parameter space,
+Eπ[f] =
+Z
+Q

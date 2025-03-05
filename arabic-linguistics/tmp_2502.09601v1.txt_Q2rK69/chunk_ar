@@ -1,0 +1,100 @@
+92.4
+227.6
+0.051%
+1.27
+Table 11: LoRA on Different Modules.
+with applying LoRA fine-tuning to only specific
+model components in QwQ. Table 11 shows that
+fine-tuning only the query, key, or value projec-
+tion had less effect than other linear projections
+on shortening the reasoning chain. This suggests
+that attention computation may have less impact on
+controlling chain length, whereas the MLP layers
+and the final projection in attention play a more
+significant role. We find this to be an intriguing
+phenomenon, and further investigation into its un-
+derlying causes could provide deeper insights into
+optimizing reasoning chain compression.
+Prompt Control.
+We evaluate the length of CoT
+under constraint in prompts. Table 12 presents the
+number of tokens generated when using various
+prompts across two models. For these two models,
+the prompts used here are:
+Prompt Template for QwQ-32B-Preview
+System: You are a helpful and harmless assistant.
+You are Qwen developed by Alibaba. You should
+think step-by-step.
+User:
+Generate the solution in less than <to-
+ken_count> tokens. <Question>
+Prompt Template for LLaMA-3.2-1B-Instruct
+System:
+Cutting Knowledge Date: December 2023
+Today Date: 01 Jan 2025
+User:
+Given the following problem, reason and give a final
+answer to the problem using less than <token_count>
+tokens.
+<Question>
+From the results, we observe that while these
+prompts provide control over the length, there re-
+mains a significant discrepancy between the gener-
+ated token count and the intended target.
+12
+
+Generated Answer for the Same Question
+Question: Amanda had 10 notebooks. This week, she ordered 6 more and then lost 2. How many notebooks does
+Amanda have now?
+Ground Truth Solution - 49 Tokens:
+This week, Amanda added 6 notebooks - 2 notebooks = «6-2=4»4 notebooks. Now, Amanda has 10 notebooks + 4
+notebooks = «10+4=14»14 notebooks.
+Extrapolation - 300 Tokens: So Amanda started with 10 notebooks. Then, she ordered 6 more. So, I think I need
+to add those 6 to the original 10. That should be 10 plus 6, which is 16. Okay, now she lost 2 notebooks. So, I need
+to subtract those 2 from the 16. That should be 16 minus 2, which equals 14. So, Amanda has 14 notebooks now.
+Wait a minute, let me double-check that. She had 10, ordered 6 more, so that’s 10 + 6 = 16. Then lost 2, so 16 - 2 =
+14. Yeah, that seems right.Alternatively, maybe I can think of it differently. Maybe consider the net gain of notebooks.
+She ordered 6 and lost 2, so net gain is 6 - 2 = 4. Then, add that net gain to the original 10: 10 + 4 = 14. Same answer.
+Or, maybe another way: starting with 10, losing 2 would bring her to 8, and then ordering 6 more would bring her to
+14. Again, the same result. I think no matter how I look at it, the answer is 14 notebooks. **Final Answer** \boxed{14}
+QwQ-32B-Preview - 257 tokens: So Amanda started with 10 notebooks. Then, she ordered 6 more. So, I need to
+add those 6 to the original 10. That should be 10 plus 6, which is 16. Okay, now she lost 2 notebooks. So, I need to
+subtract those 2 from the 16 she had after ordering more. That means 16 minus 2, which equals 14. So, Amanda has
+14 notebooks now. Wait a minute, let me double-check that. She had 10, ordered 6 more, so that’s 10 + 6 = 16. Then
+lost 2, so 16 - 2 = 14. Yeah, that seems right. Alternatively, maybe I can think of it differently. Maybe combine the
+ordered and lost notebooks first. She ordered 6 and lost 2, so overall, she gained 6 - 2 = 4 notebooks. Then, add that to
+the original 10: 10 + 4 = 14. Same answer. I think that’s correct. Amanda has 14 notebooks now. **Final Answer**
+\boxed{14}
+Interpolation - 207 Tokens: Let’s break this down step by step. Amanda started with 10 notebooks. Then, she ordered
+6 more. So, I need to add those 6 to the original 10. That would be 10 plus 6, which equals 16 notebooks. Okay, so now
+she has 16 notebooks. But then, she lost 2. So, I need to subtract those 2 from the 16. That would be 16 minus 2, which
+equals 14 notebooks. Therefore, Amanda now has 14 notebooks. Wait a minute, let me double-check that. She started
+with 10, ordered 6 more, so that’s 10 + 6 = 16. Then lost 2, so 16 - 2 = 14. Yeah, that seems right. I think that’s the
+answer: Amanda has 14 notebooks now.
+Interpolation - 133 Tokens: Let’s solve this step-by-step: 1. **Initial number of notebooks**: Amanda started with
+10 notebooks. 2. **Notebooks ordered**: This week, she ordered 6 more notebooks. - So, we add these 6 notebooks
+to her initial 10 notebooks. - 10 + 6 = 16 notebooks. 3. **Notebooks lost**: Then, Amanda lost 2 notebooks. - We
+need to subtract these 2 lost notebooks from the total she had after ordering more. - 16 - 2 = 14 notebooks. Therefore,
+Amanda now has 14 notebooks.
+Extrapolation - 103 Tokens: To find out how many notebooks Amanda has now, we can break the problem into steps:
+1. Amanda initially had 10 notebooks. 2. This week, she ordered 6 more notebooks, so we add 6 to the initial amount:
+10 + 6 = 16 notebooks. 3. Amanda then lost 2 notebooks, so we subtract 2 from the total: 16 - 2 = 14 notebooks. So,
+Amanda has 14 notebooks now.
+Figure 4: An example of the generated solution for the same question.
+C
+Examples
+Here we show in Fig.4 an example of the gener-
+ated CoT from short to long, and we also show two
+extrapolation cases to show the generalization abil-
+ity of our method. Our method notably generates
+a longer reasoning process compared to the origi-
+nal QwQ model, incorporating an extra reflection
+phase. During the chain shortening process, it re-
+duces multiple rounds of reasoning and streamlines
+the language, ultimately enabling us to produce an
+answer with only 103 tokens through extrapolation.
+QwQ-32B-Preview
+Llama-3.2-1B Instruct
+Token in Prompt
+#Token Generated
+Token in Prompt
