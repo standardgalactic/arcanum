@@ -1,0 +1,100 @@
+dq π(q) f(q) .
+Parameterizations are not unique: we can always take another parameterization, Q′,
+over which we specify the target distribution with a diﬀerent probability density function,
+π′(q′), while expectations reduce to the new integral,
+Eπ[f] =
+Z
+Q′ dq′ π(q′)f(q′).
+Critically, however, the expectations values themselves are invariant to any particular choice
+of parameterization, so the integrals must be equal,
+Eπ[f] =
+Z
+Q
+dq π(q)f(q) =
+Z
+Q′ dq′ π′(q′)f(q′).
+In this review we will consider only a single parameterization for computing expectations,
+but we must be careful to ensure that any such computation does not depend on the
+irrelevant details of that parameterization, such as the particular shape of the probability
+density function.
+Once we have chosen a parameterization, the abstract expectation becomes the concrete
+integral. Unfortunately, for any nontrivial target distribution we will not be able to evaluate
+these integrals analytically, and we must instead resort to numerical methods which only
+approximate them. The accuracy of these approximations, and hence the utility of any
+given algorithm, however, is limited by our ﬁnite computational power.
+
+A CONCEPTUAL INTRODUCTION TO HAMILTONIAN MONTE CARLO
+5
+For a method to scale to the complex problems at the frontiers of applied statistics,
+it has to make eﬀective use of each and every evaluation of the target density, π(q), and
+relevant functions, f(q). Optimizing these evaluations is a subtle problem frustrated by the
+natural geometry of probability distributions, especially over high-dimensional parameter
+spaces.
+1.2 Parsimonious Expectation Computation
+One way to ensure computational ineﬃciency is to waste computational resources eval-
+uating the target density and relevant functions in regions of parameter space that have
+negligible contribution to the desired expectation. In order to avoid these regions, and focus
+our computation only on signiﬁcant regions of parameter space, we ﬁrst need to identify
+how the target density and target function contribute to the overall expectation.
+Because integration is a linear operation, scaling the integrand proportionately scales
+the integral. Consequently, a common intuition is to focus on regions where the integrand
+is largest. This intuition suggests that we consider regions where the target density and
+target function take on their largest values.
+In practice we often are interested in computing expectations with respect to many target
+functions, for example in Bayesian inference we typically summarize our uncertainty with
+both means and variances, or multiple quantiles. Any method that depends on the speciﬁc
+details of any one function will then have to be repeatedly adjusted for each new function
+we encounter, expanding a single computational problem into many. Consequently, from
+here on in we will assume that any relevant function is suﬃciently uniform in parameter
+space that its variation does not strongly eﬀect the integrand. Keep in mind, however,
+that if only a single expectation is in fact of interest then exploiting the structure of that
+function can provide signiﬁcant improvements (Mira, Solgi and Imparato, 2013; Oates,
+Girolami and Chopin, 2016).
+This assumption implies that the variation in the integrand is dominated by the target
+density, and hence we should consider the neighborhood around the mode where the density
+is maximized. This intuition is consistent with the many statistical methods that utilize
+the mode, such as maximum likelihood estimators and Laplace approximations, although
+conﬂicts with our desire to avoid the speciﬁc details of the target density. Indeed, this
+intuition is fatally naive as it misses a critical detail.
+Expectation values are given by accumulating the integrand over a volume of parameter
+space and, while the density is largest around the mode, there is not much volume there.
+To identify the regions of parameter space that dominate expectations we need to consider
+the behavior of both the density and the volume. In high-dimensional spaces the volume
+behaves very diﬀerently from the density, resulting in a tension that concentrates the
+signiﬁcant regions of parameter space away from either extreme.
+
+6
+BETANCOURT
+(a)
+(b)
+(c)
+Fig 1. To understand how the distribution of volume behaves with increasing dimension we can consider a
+rectangular partitioning centered around a distinguished point, such as the mode. (a) In one dimension the
+relative weight of the center partition is 1/3, (b) in two dimensions it is 1/9, (c) and in three dimensions it
+is only 1/27. Very quickly the volume in the center partition becomes negligible compared to the neighboring
+volume.
+1.3 The Geometry of High-Dimensional Spaces
+One of the characteristic properties of high-dimensional spaces is that there is much
+more volume outside any given neighborhood than inside of it. Although this may at ﬁrst
+appear strange, we can build intuition to demystify this behavior by considering a few
+simple cases.
+For example, consider partitioning parameter space into rectangular boxes centered
+around the mode (Figure 1). In one dimension there are only two partitions neighbor-
+ing the center partition, leaving a signiﬁcant volume around the mode. Adding one more
+dimension, however, introduces eight neighboring partitions, and in three dimensions there
+are already 26. In general there are 3D −1 neighboring partitions in a D-dimensional space,
+and for even small D the volume neighboring the mode dominates the volume immediately
+around the mode. This pattern only ampliﬁes if we consider more partitions further away
+from the mode that multiply even faster.
+Alternatively, we can take a spherical view of parameter space and consider the relative
+volume a distance δ inside and outside of a spherical shell (Figure 2). In one dimension the
+interior and exterior volumes are equal, but in two and three dimensions more and more
+volume concentrates on the outside of the shell. Centering the shell at the mode we can
+see once again that the volume in any neighborhood containing the mode becomes more
+and more negligible as the dimension of the parameter space increases.
+Generically, then, volume is largest out in the tails of the target distribution away
+from the mode, and this disparity grows exponentially with the dimension of parameter
+space. Consequently, the massive volume over which we integrate can compensate to give
+a signiﬁcant contribution to the target expectation despite the smaller density. In order
+
+A CONCEPTUAL INTRODUCTION TO HAMILTONIAN MONTE CARLO

@@ -1,0 +1,100 @@
+There are still many aspects waiting for further
+research and improvement in the self-rewarding
+3
+
+framework. The original method is primarily de-
+signed for instruction-following tasks and performs
+poorly on mathematical reasoning data. Step-by-
+step long-chain reasoning is widely used for com-
+plex mathematical reasoning, which allows the
+models to conduct more detailed thinking and fine-
+grained verification of the reasoning steps (Light-
+man et al., 2023; Wang et al., 2024b; Lai et al.,
+2024).
+Given the effectiveness of step-by-step
+reasoning, we further propose Process-based Self-
+Rewarding, introducing LLM-as-a-judge and pref-
+erence optimization for individual steps.
+3.2
+Model Initialization
+To perform Process-based Self-Rewarding, models
+need to possess two key abilities:
+• Step-by-step mathematical reasoning: When
+faced with a complex reasoning problem, the
+model needs to think and reason step by step,
+outputting the reasoning process in a specified
+format. (Each step is prefixed with “Step n: ”,
+where n indeicates the step number.)
+• LLM-as-a-Judge for individual steps: The
+model should be able to assess the quality
+of the given next reasoning steps based on the
+existing problem and partial reasoning steps
+and provide a detailed explanation.
+We construct data separately for the two tasks to
+perform cold start. Following Yuan et al. (2024),
+we refer to them as Instruction Fine-Tuning (IFT)
+data and Evaluation Fine-Tuning (EFT) data. For
+IFT data, we divide the given solution steps into
+individual steps logically without altering any in-
+formation in the original solution by using OpenAI
+o1 (Jaech et al., 2024).
+For
+EFT
+data,
+since
+there
+is
+no
+avail-
+able step-wise LLM-as-a-Judge dataset, we first
+train Qwen2.5-72B (Yang et al., 2024a) on
+PRM800k (Lightman et al., 2023) following Wang
+et al. (2024a). After getting a Process Reward
+Model (PRM) by this, which can output a single
+label “+” or “-” for a reasoning step based on the
+question and the previous steps, we conduct Monte
+Carlo Tree Search (MCTS) on a policy model. We
+use the probability of label “+” of the above PRM
+to compare the relative quality of all candidate steps
+at the same layer, and choose the best and the worst
+step as a data pair. After the initial data filtering
+process, we use GPT-o1 to generate judgments and
+detailed explanations for the obtained data pairs.
+The pairs whose judgments align with the previous
+PRM assessments are selected as the final EFT data.
+Additionally, to enhance consistency, we evaluate
+each pair twice using GPT with different input or-
+ders and select only the pairs that have consistent
+results.
+3.3
+Step-by-step Long-chain Reasoning and
+Preference Data Generation
+After the “EFT + IFT” initialization stage, the
+model is able to conduct both step-wise LLM-as-
+a-Judge and step-by-step mathematical reasoning
+in the specified formats. Because we conduct pair-
+wise comparison rather than single answer grading,
+we utilize the following search strategy:
+Sl = {sl,1, sl,2, sl,3, ..., sl,w−1, sl,w}
+(1)
+where Sl is all candidates for the next step, l is the
+step number starting from 1, w is a hyperparameter
+to specify the search width for each step.
+Scorel,i =
+X
+1≤j≤w, j̸=i
+O(sl,i, sl,j | x, s1, s2, ..., sl−1)
+(2)
+where l is the next step number, sl,i indicates the
+i-th candidate for the next l-th step, x is the prompt,
+and O is a function that takes 1 when sl,i is consid-
+ered better than sl,j and 0 otherwise.
+sbest
+l
+= Sl[max(Scorel)]
+(3)
+sworst
+l
+= Sl[min(Scorel)]
+(4)
+sl = sbest
