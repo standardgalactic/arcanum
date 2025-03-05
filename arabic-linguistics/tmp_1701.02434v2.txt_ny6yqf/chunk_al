@@ -1,0 +1,100 @@
+energy is well-behaved; the SoftAbs metric (Betancourt, 2013a) accomplishes this with a
+heuristic regularization that works well in practice, although formalizing this procedure is
+an active topic of research (Holmes, Rubinstein-Salzedo and Seiler, 2014).
+An additional beneﬁt of the Riemannian-Gaussian kinetic energy is that the variation of
+the log determinant, 1
+2 log |Σ(q)|, modiﬁes the marginal energy distribution. If the metric is
+well-chosen then this modiﬁcation can bring the marginal energy distribution closer to the
+energy transition distribution, signiﬁcantly improving the performance of the Hamiltonian
+transition when targeting complex distributions (Betancourt and Girolami, 2015).
+4.2.3 Non-Gaussian Kinetic Energies In theory we are not limited to Gaussian distribu-
+tions over the momentum – a Euclidean or Riemannian structure allows us to construct any
+distribution with quadratic suﬃcient statistics. In particular, why should we not consider
+momentum distributions with particularly heavy or light tails? Although there is not much
+supporting theory, empirically non-Gaussian kinetic energies tend to perform poorly, espe-
+cially in high-dimensional problems. Some intuition for the superiority of Gaussian kinetic
+energies may come from considering the asymptotics of the marginal energy distribution.
+As we target higher and higher dimensional models, the marginal energy distribution be-
+comes a convolution of more and more parameters and, under relatively weak conditions, it
+tends to follow a central limit theorem. When the marginal energy distribution converges
+towards a Gaussian, only a Gaussian distribution over the momentum will yield the optimal
+energy transition.
+4.3 Optimizing the Choice of Integration Time
+The choice of a kinetic energy completely speciﬁes the microcanonical geometry and,
+consequently, the shape of the energy level sets. How eﬀectively each Hamiltonian trajectory
+explores those level sets is then determined entirely by the choice of integration times across
+phase space, T (q, p). Intuitively, if we integrate for only a short time then we don’t take
+full advantage of the coherent exploration of the Hamiltonian trajectories and we will
+expect performance to suﬀer. On the other hand, because the level sets are topologically
+compact in well-behaved problems, trajectories will eventually return to previously explored
+neighborhoods and integrating too long can suﬀer from diminishing returns.
+This intuition is formalized in the notion of dynamic ergodicity (Betancourt, 2016a).
+Here we consider the orbit, φ, of a trajectory, consisting of all points that the trajectory
+will reach as the integration time is increased to inﬁnity. The orbit might encompass the
+entire level set or it could be limited to a just subset of the level set, but in either case
+any trajectory will explore the microcanonical distribution restricted to its orbit. Dynamic
+ergodicity guarantees that a uniform sample from a trajectory will more closely resemble a
+sample from this restricted microcanonical distribution as the integration time is increased
+
+A CONCEPTUAL INTRODUCTION TO HAMILTONIAN MONTE CARLO
+33
+Superlinear
+Asymptotic
+| ET - Eφ |
+T (q, p)
+(a)
+ 0
+ 1
+Superlinear
+Asymptotic
+Effective Sample Size
+T (q, p)
+(b)
+Superlinear
+Asymptotic
+Effective Samples Size / T (q, p)
+T (q, p)
+(c)
+Fig 24. (a) Temporal averages along a Hamiltonian trajectory, ET , converge to the corresponding spatial
+expectation over its orbit, Eφ, as the integration time, T, increases. (b) Correspondingly, a uniform sample
+from the trajectory converges to a sample from the microcanonical distribution restricted to the trajectory’s
+orbit, here represented by the eﬀective sample size. Typically this convergence is initially rapid and super-
+linear before settling into an asymptotic regime where the convergence continues only with the square of the
+integration time. (c) Because the cost of generating each trajectory scales with the integration time, those
+integration times that identify the transition between these two regimes will yield optimal performance.
+and the trajectory grows. In other words, as the integration time grows the temporal
+expectation over the trajectory converges to the spatial expectation over its orbit.
+The performance of the Hamiltonian transition, however, depends on the rate at which
+these expectations converge. Given typical regularity conditions, the temporal expecta-
+tion will initially converges toward the spatial expectation quite rapidly (Figure 24a, b),
+consistent with our intuition that coherent exploration is extremely eﬀective. Eventually,
+however, that convergence slows, and we enter an asymptotic regime where any beneﬁt of
+exploration comes at an ever increasing cost. The optimal integration time straddles these
+two regimes, exploiting the coherent exploration early on but not wasting computation on
+the diminishing returns of long integration times (Figure 24c).
+This optimization criterion also has a helpful geometric interpretation. The superlinear
+regime corresponds to the ﬁrst sojourn around the orbit of the trajectory, where every new
+
+34
+BETANCOURT
+(a)
+(b)
+Fig 25. (a) Because a Hamiltonian trajectory’s ﬁrst sojourn through its orbit continuously encounters
+new, un-surveyed neighborhoods, the corresponding exploration is extremely eﬃcient. (b) Longer trajecto-
+ries return to these neighborhoods, reﬁning this initial exploration and yielding better, but much slower,
+convergence.
+step forwards is new and informative (Figure 25a). Eventually, however, the trajectory
+returns to neighborhoods it has already explored and enters into the asymptotic regime
+(Figure 25b). This additional exploration reﬁnes the exploration of the orbit, improving
+the accuracy of the temporal expectation only very slowly.
+In general, this optimal integration time will vary strongly depending on which trajec-
+tory we are considering: no single integration time will perform well everywhere. We can
+make this explicit in one dimension where the optimal integration times can be identiﬁed
+analytically. For example, for the family of target densities
+πβ(q) ∝e−|q|β,
+with the Euclidean-Gaussian kinetic energy
+π(p | q) = N(0, 1) ,
+the optimal integration time scales with the energy of the level set containing the trajectory,
+Toptimal(q, p) ∝(H(q, p))
+2−β
+2β .

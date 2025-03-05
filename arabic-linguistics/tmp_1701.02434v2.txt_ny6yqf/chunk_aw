@@ -1,0 +1,100 @@
+z5
+Fig 39. Naively expanding a trajectory until a dynamic termination criterion is satisﬁed is not suﬃcient to
+ensure reversibility and hence the validity of the resulting Markov chain. When expanding trajectories mul-
+tiplicatively, for example, if the termination criterion is satisﬁed by any sub-tree, for example the trajectory
+beginning at z2 and ending at z3, then both T(t | z2) = 0 and T(t | z3) = 0 despite T(t | z0) ̸= 0. To avoid
+this pathology we have to reject any trajectory expansions that contain such pathological sub-trajectories.
+z−2
+z−1
+z0
+z1
+z2
+(a)
+z−2
+z−1
+z0
+z1
+z2
+z3
+z4
+z5
+(b)
+Fig 40. (a) In an additive expansion scheme we have to check the termination criterion for all sub-
+trajectories between each point in the old trajectory and the single point in the new trajectory. (b) In a
+multiplicative expansion scheme, however, we need to check the termination criterion across only the binary
+sub-trees of the new trajectory.
+criterion prematurely then we can immediately reject the new trajectory without having
+to build it to completion.
+A.4.2 Dynamic Termination Criteria Now we can ﬁnally consider explicit termination
+criteria that can, to varying degrees of success, identify when a trajectory is long enough
+to yield suﬃcient exploration of the neighborhood around the current energy level set. In
+particular, we want to avoid both integrating too short, in which case we would not take full
+advantage of the Hamiltonian trajectories, and integrating too long, in which case we waste
+precious computational resources on exploration that yields only diminishing returns.
+The ﬁrst criterion of this form was a heuristic introduced in the No-U-Turn sampler (Hoﬀ-
+man and Gelman, 2014) that considered only the boundaries of a trajectory. Let z−(t) and
+z+(t) be the boundaries of the trajectory t that can be reached by integrating backwards
+and forwards in time, respectively (Figure 41). Similarly, denote q±(t) and p±(t) as the
+position and momentum at each boundary. On Euclidean space we can then write the
+
+A CONCEPTUAL INTRODUCTION TO HAMILTONIAN MONTE CARLO
+57
+z−2
+z−1
+z0
+z1
+z2
+z3
+z4
+z5
+z−(t) = z−2
+z+(t) = z5
+Fig 41. The No-U-Turn termination criterion considers only the boundaries of a trajectory. The negative
+boundary, z−(t), refers to the boundary that can be reached by integrating backwards in time, while the
+positive boundary, z+(t) refers to the boundary that can be reached by integrating forwards in time.
+−p−(t)
+q−(t)
+p+(t)
+q+(t)
+(a)
+−p−(t)
+q−(t)
+p+(t)
+q+(t)
+(b)
+Fig 42. (a) When the No-U-Turn termination criterion is not satisﬁed, expanding the trajectory in ei-
+ther direction typically extends the trajectory further across the energy level set (grey) towards unexplored
+neighborhoods. (b) When the No-U-Turn termination criterion is satisﬁed, however, further expansion typi-
+cally contracts the boundaries of the trajectory towards each other and neighborhoods that have already been
+explored. Stopping when the No-U-Turn termination criterion is just satisﬁed typically ensures that each
+trajectory eﬃciently explores about half of the energy level set. Although this can be too aggressive, it works
+well empirically and is far superior to any scheme with only a static integration time.
+No-U-Turn termination criterion as
+p+(t)T · (q+(t) −q−(t)) < 0
+AND p−(t)T · (q−(t) −q+(t)) < 0.
+(3)
+This termination criterion is satisﬁed only when the momentum at both ends of the
+trajectory are anti-aligned along the line connecting the positions at each boundary. In
+this case we would expect further integration in either direction to bring the ends of the
+trajectory closer together, which typically happens only when the trajectory has already
+expanded across the width of the energy level set (Figure 42).
+Unfortunately, the original No-U-Turn termination criterion is well-deﬁned only for Eu-
+clidean manifolds where we can rigorously deﬁne subtraction between points, and hence is
+inapplicable for non-Euclidean kinetic energies. Fortunately, however, the criterion can be
+readily generalized. First note that on a Euclidean manifold
+q+(t) −q−(t) =
+Z t=T(t)
+t=0
+dt M−1 · p(t),
+
+58
+BETANCOURT
+where T(t) is the integration time needed to reach the positive boundary of the trajectory,
+z+(t), from the negative boundary, z+(t). Substituting this into (3), for example, allows us
+to write the ﬁrst term of the No-U-Turn termination criterion as
+p+(t)T · (q+(t) −q−(t)) = p+(t)T · M−1 ·
+Z t=T(t)
+t=0
+dt p(t) = p♯
++(t)T · ρ(t)
+where
