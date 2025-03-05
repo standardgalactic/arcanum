@@ -1,0 +1,100 @@
+hL, which, after the SoftMax function, does not change the neural network map z →y.
+Then, we have the following bounds.
+Proposition 2. ∀θ ∈M, ˆd(θ) ≤min(D, (m −1)N).
+Remark 4. While the total number D of free parameters is unbounded in DNNs, the local
+dimensionality estimated by ˆd(θ) grows at most linearly w.r.t. the sample size N, given fixed m
+(size of the last layer). If both N and m are fixed, then ˆd(θ) is bounded even when the network
+width M →∞and/or depth L →∞.
+To understand d(θ), one can parameterize the DNN, locally, with only d(θ) free parameters
+while maintaining the same predictive model. The log-likelihood is a function of these d(θ)
+parameters, and therefore its Hessian has at most rank d(θ). In theory, one can only reparameterize
+M so that at one single point ˆθ, the screen and radical distributions are separated based on
+the coordinate chart. Such a chart may neither exist locally (in a neighborhood around ˆθ) nor
+globally.
+The local dimensionality is not constant and may vary with θ. The global topology of the
+neuromanifold is therefore like a stratifold [5, 16]. As θ has a large dimensionality in DNNs,
+singularities are more likely to occur in M. Compared to the notion of intrinsic dimensionality [38],
+our d(θ) is well-defined mathematically rather than based on empirical evaluations. One can
+regard our local dimensionality as an upper bound of the intrinsic dimensionality, because a
+very small singular value of I still counts towards the local dimensionality. Notice that random
+matrices have full rank with probability 1 [17].
+We can regard small singular values (below a prescribed threshold ε > 0) as ε-singular
+dimensions, and use ε-rank defined below to estimate the local dimensionality.
+Definition 2. The ε-rank of the FIM I(θ) is the number of eigenvalues of I(θ) which is not less
+than some given ε > 0.
+By definition, the ε-rank is a lower bound of the rank of the FIM, which depends on the θ-
+parameterization — different parameterizations of the DNN may yield different ε-ranks of the
+corresponding FIM. If ε →0, the ε-rank of I(θ) becomes the true rank of I(θ) given by d(θ). The
+spectral density ρI (probability distribution of the eigenvalues of I(θ)) affects the ε-rank of I(θ)
+and the expected local dimensionality of M. On the support of ρI, the higher the probability of
+the region [0, ε), the more likely M is singular. By the Cramér-Rao lower bound, the variance of
+an unbiased 1D estimator ˆθ must satisfy
+var(ˆθ) ≥I(θ)−1 ≥1
+ε.
+Therefore the ε-singular dimensions lead to a large variance of the estimator ˆθ: a single observation
+xi carries little or no information regarding θ, and it requires a large number of observations to
+achieve the same precision. The notion of thresholding eigenvalues close to zero may depend on
+the parameterization but the intrinsic ranks given by the local dimensionality are invariant.
+In a DNN, there are several typical sources of singularities:
+• First, if the neuron is saturated and gives constant output regardless of the input sample
+zi, then all dynamics of its input and output connections are in Rad(T M).
+• Second, two neurons in the same layer can have linearly dependent output, e.g. when they
+share the same weight vector and bias. They can be merged into one single neuron, as there
+exists redundancy in the original reparametrization.
+9
+
+• Third, if the activation function ϕ(·) is homogeneous, e.g. ReLU, then any neuron in the
+DNN induces a reparametrization by multiplying the input links by α and output links by
+1/αk (k is the degree of homogeneity). This reparametrization corresponds to a null curve
+in the neuromanifold parameterized by α.
+• Fourth, certain structures such as recurrent neural networks (RNNs) suffer from vanishing
+gradient [20]. As the FIM is the variance of the gradient of the log-likelihood (known as
+variance of the score in statistics), its scale goes to zero along the dimensions associated
+with such structures.
+It is meaningful to formally define the notion of “lightlike neuromanifold”. Using the geometric
+tools, related studies can be invariant w.r.t. neural network reparametrization. Moreover, the
+connection between neuromanifold and singular semi-Riemannian geometry, which is used in
+general relativity, is not yet widely adopted in machine learning. For example, the textbook [70]
+in singular statistics mainly used tools from algebraic geometry which is a different field.
+Notice that the Fisher-Rao distance along a null curve is undefined because there the FIM is
+degenerate and there is no arc-length reparameterization along null curves [32].
+5
+General Formulation of Our Razor
+In this section, we derive a new formula of MDL for DNNs, aiming to explain how does the
+high dimensional DNN structure can have a short code length of the given data? Notice that,
+this work focuses on the concept of model complexity but not the generalization bounds. We
+try to argue the DNN model is intrinsically simple because it can be described shortly. The
+theoretical connection between generalization power and MDL is studied in PAC-Bayesian theory
+and PAC-MDL (see [21, 25, 47] and references therein). This is beyond the scope of this paper.
+We derive a simple asymptotic formula for the case of large sample size and large network
+size. Therefore crude approximations are taken and the low-order terms are ignored, which are
+common practices in deriving information criteria [1, 63].
+In the following, we will abuse p(x | θ) to denote the DNN model p(y | z, θ) for shorter
+equations and to be consistent with the introduction. Assume
+(A2) The absolute values of the third-order derivatives of log p(x | θ) w.r.t. θ are bounded by
+some constant.
+(A3) ∀i, |θi −ˆθi| = O(1/
+√
+M), where O(·) is the Bachmann–Landau’s big-O notation.
+Recall that M is the width of the neural network. We consider that the neural networks weights
+have a order of O(1/
+√
+M). For example, if the input of a neuron follows the standard Gaussian
+distribution, then its weights with order O(1/
+√
+M) guarantee the output is O(1). In practice,
+this constraint can be guaranteed by clipping the weight vector to a prescribed range.
+We rewrite the code length in eq. (1) based on the Taylor expansion of log p(X | θ) at θ = ˆθ
+up to the second order:
+−log p(X) = −log
+Z
+M
+p(θ) exp
+
+log p(X | ˆθ) −N
+2 (θ −ˆθ)⊺J(ˆθ)(θ −ˆθ)
++ O
+
+N∥θ −ˆθ∥3 
+dθ.
+(10)

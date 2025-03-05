@@ -1,0 +1,100 @@
+CoT-Valve: Length-Compressible Chain-of-Thought Tuning
+Xinyin Ma*, Guangnian Wan*, Runpeng Yu, Gongfan Fang, Xinchao Wang†
+National University of Singapore
+{maxinyin, guangnian}@u.nus.edu, xinchao@nus.edu.sg
+Abstract
+Chain-of-Thought significantly enhances a
+model’s reasoning capability, but it also comes
+with a considerable increase in inference costs
+due to long chains. With the observation that
+the reasoning path can be easily compressed
+under easy tasks but struggle on hard tasks,
+we explore the feasibility of elastically con-
+trolling the length of reasoning paths with only
+one model, thereby reducing the inference over-
+head of reasoning models dynamically based
+on task difficulty. We introduce a new tun-
+ing and inference strategy named CoT-Valve,
+designed to allow models to generate reason-
+ing chains of varying lengths. To achieve this,
+we propose to identify a direction in the pa-
+rameter space that, when manipulated, can ef-
+fectively control the length of generated CoT.
+Moreover, we show that this property is valu-
+able for compressing the reasoning chain. We
+construct datasets with chains from long to
+short for the same questions and explore two en-
+hanced strategies for CoT-Valve: (1) a precise
+length-compressible CoT tuning method, and
+(2) a progressive chain length compression ap-
+proach. Our experiments show that CoT-Valve
+successfully enables controllability and com-
+pressibility of the chain and shows better per-
+formance than the prompt-based control. We
+applied this method to QwQ-32B-Preview, re-
+ducing reasoning chains on GSM8K from 741
+to 225 tokens with a minor performance drop
+(95.07% to 94.92%) and on AIME from 6827
+to 4629 tokens, with only one additional incor-
+rect answer.
+1
+Introduction
+Chain-of-Thought (CoT) reasoning (Wei et al.,
+2022) has emerged as a powerful technique for
+enhancing the reasoning capabilities of large lan-
+guage models (Jaech et al., 2024; Dubey et al.,
+2024; Abdin et al., 2024), particularly in complex
+*Equal contribution
+†Corresponding Author
+tasks such as mathematics and coding (Sprague
+et al., 2024) that require multi-step inference. By
+simulating the process of human-like thought pro-
+gression, CoT enables models to break down com-
+plex problems into sub-questions, improving accu-
+racy and interpretability (Joshi et al., 2023). Those
+reasoning abilities have also been tested in differ-
+ent domains, such as image generation (Ma et al.,
+2025) and visual understanding (Shao et al., 2024).
+Training reasoning models often involves gen-
+erating extensive reasoning paths through meth-
+ods such as sampling (Wang et al., 2023), tree
+search (Yao et al., 2023; Guan et al., 2025a; Zhang
+et al., 2024) or reinforcement learning (DeepSeek-
+AI, 2025) to ultimately reach the correct answer.
+However, these long chains often incorporate re-
+dundant intermediate steps that can be unnecessary
+or too complex (Lightman et al., 2024), and the re-
+dundancy in the reasoning paths for training leads
+to inefficiencies in token usage and increased infer-
+ence costs. However, crafting an optimal reason-
+ing chain that omits extraneous details is challeng-
+ing due to the limited availability of intermediate
+rewards to guide the process and human annota-
+tions (Zhang et al., 2025). Removing some or all of
+the intermediate steps and then training or distilling
+the model (Liu et al., 2024b; Yu et al., 2024) will
+degrade the performance. Alternative approaches
+employ information-theoretic measures (Ton et al.,
+2024) or identify an "overthinking" solution in
+QwQ (Team, 2024b) to evaluate the contribution
+of each sentence to the final answer.
+We observe that current reasoning models,
+such as QwQ (Team, 2024b) and DeepSeek-
+R1 (DeepSeek-AI, 2025) allocate an excessive
+number of tokens to simple tasks, while poten-
+tially providing insufficient tokens for complex
+tasks. Thus, a long reasoning path is still essential,
+while maintaining the ability to compress reason-
+ing paths for simpler questions is equally important.
+To solve this, our goal is to fine-tune a model ca-
+1
+arXiv:2502.09601v1  [cs.AI]  13 Feb 2025
+
+So John starts with €100. He buys a roast that costs €17 and some vegetables for
+€11. I need to find out how much money he has left after these purchases. First, I
+should figure out the total amount he spent <Omitted> Let me add those up: 17
+plus 11 is 28. So, he spent a total of €28. Now, to find out how much money he
+has left, I need <Omitted>So, final answer: John has €72 left.
+Question:
+John
+goes

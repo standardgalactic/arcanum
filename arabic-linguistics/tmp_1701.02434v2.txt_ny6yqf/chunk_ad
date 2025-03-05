@@ -1,0 +1,100 @@
+7
+δ
+δ
+(a)
+δ
+δ
+(b)
+δ
+δ
+(c)
+Fig 2. The dominance of volume away from any point in parameter space can also be seen from a spherical
+perspective, where we consider the volume contained radial distance δ both interior to and exterior to a
+D-dimensional spherical shell, shown here with dashed lines. (a) In one dimension the spherical shell is
+a line and volumes interior and exterior are equivalent. (b) In two dimensions the spherical shell becomes
+circle and there is more volume immediately outside the shell than immediately inside. (c) The exterior
+volume grows even larger relative to the interior volume in three dimensions, where the spherical shell is
+now a the surface of a sphere. In fact, with increasing dimension the exterior volume grows exponentially
+large relative to the interior volume, and very quickly the volume around the mode is dwarfed by the volume
+away from the mode.
+to identify the neighborhoods that most contribute to expectations, we need to carefully
+balance the behavior of both the density and the volume.
+1.4 The Geometry of High-Dimensional Probability Distributions
+The neighborhood immediately around the mode features large densities, but in more
+than a few dimensions the small volume of that neighborhood prevents it from having much
+contribution to any expectation. On the other hand, the complimentary neighborhood far
+away from the mode features a much larger volume, but the vanishing densities lead to
+similarly negligible contributions expectations. The only signiﬁcant contributions come
+from the neighborhood between these two extremes known as the typical set (Figure 3).
+Importantly, because probability densities and volumes transform oppositely under any
+reparameterization, the typical set is an invariant object that does not depend on the
+irrelevant details of any particular choice of parameters.
+As the dimension of parameter space increases, the tension between the density and
+the volume grows and the regions where the density and volume are both large enough to
+yield a signiﬁcant contribution becomes more and more narrow. Consequently the typical
+set becomes more singular with increasing dimension, a manifestation of concentration of
+measure. The immediate consequence of concentration of measure is that the only signiﬁ-
+cant contributions to any expectation come from the typical set; evaluating the integrand
+outside of the typical set has negligible eﬀect on expectations and hence is a waste of pre-
+cious computational resources. In other words, we can accurately estimate expectations by
+
+8
+BETANCOURT
+Typical
+Set
+π(q)
+dq
+π(q) dq
+|q - qMode|
+Fig 3. In high dimensions a probability density, π(q), will concentrate around its mode, but the volume over
+which we integrate that density, dq, is much larger away from the mode. Contributions to any expectation
+are determined by the product of density and volume, π(q) dq, which then concentrates in a nearly-singular
+neighborhood called the typical set (grey).
+averaging over the typical set instead of the entirety of parameter space. Consequently, in
+order to compute expectations eﬃciently, we have to be able to identify, and then focus
+our computational resources into, the typical set (Figure 4).
+This helps to explain, for example, why brute force methods like naive quadrature scale
+so poorly with dimension. A grid of length N distributed uniformly in a D-dimensional
+parameter space requires ND points and hence ND evaluations of the integrand. Unless N
+is incredibly large, however, it is unlikely that any of these points will intersect the narrow
+typical set, and the exponentially-growing cost of averaging over the grid yields worse and
+worse approximations to expectations. In general, framing algorithms by how they quantify
+the typical set is a powerful way to quickly intuit how an algorithm will perform in practice.
+Of course, understanding why we want to focus on the typical set in only the ﬁrst step.
+How to construct an algorithm that can quantify the typical set of an arbitrary target
+distribution is another problem altogether. There are many strategies for this task, but
+one of the most generic, and hence most useful in applied practice, is Markov chain Monte
+Carlo (Robert and Casella, 1999; Brooks et al., 2011).
+2. MARKOV CHAIN MONTE CARLO
+Markov chain Monte Carlo uses a Markov chain to stochastically explore the typical set,
+generating a random grid across the region of high probability from which we can con-
+
+A CONCEPTUAL INTRODUCTION TO HAMILTONIAN MONTE CARLO
+9
+Fig 4. In high-dimensional parameter spaces probability mass, π(q) dq, and hence the dominant contribu-
+tions to expectations, concentrates in a neighborhood called the typical set. In order to accurately estimate
+expectations we have to be able to identify where the typical set lies in parameter space so that we can focus
+our computational resources where they are most eﬀective.
+struct accurate expectation estimates. Given suﬃcient computational resources a properly
+designed Markov chain will eventually explore the typical set of any distribution. The more
+practical, and much more challenging question, however, is whether a given Markov chain
+will explore a typical set in the ﬁnite time available in a real analysis.
+In this section I’ll introduce a more substantial deﬁnition of Markov chain Monte Carlo
+and discuss both its ideal and pathological behaviors. Finally we’ll consider how to im-
+plement Markov chain Monte Carlo in practice and see how fragile of an endeavor it can
+be.
+2.1 Estimating Expectations with Markov Chains
+A Markov chain is a progression of points in parameter space generated by sequentially
+applying a random map known as a Markov transition. Alternatively, we can think of a
+Markov transition as a conditional probability density, T(q′ | q), deﬁning to which point,
+q′, we are most likely to jump from the initial point, q (Figure 5).
+An arbitrary Markov chain will simply wander through parameter space and will not be
+of any particular use in computing expectations. Something very special happens, however,
+if the Markov transition preserves the target distribution,
+π(q) =
+Z
+Q
+dq′ π(q′) T(q | q′).
+More intuitively, this condition implies that if we generated a ensemble of samples from
+the target distribution and applied the transition then we would get a new ensemble that
+was still distributed according to the target distribution.

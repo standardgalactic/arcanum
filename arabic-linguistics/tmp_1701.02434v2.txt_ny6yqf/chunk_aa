@@ -1,0 +1,100 @@
+A Conceptual Introduction to
+Hamiltonian Monte Carlo
+Michael Betancourt
+Abstract. Hamiltonian Monte Carlo has proven a remarkable empirical
+success, but only recently have we begun to develop a rigorous under-
+standing of why it performs so well on diﬃcult problems and how it
+is best applied in practice. Unfortunately, that understanding is con-
+ﬁned within the mathematics of diﬀerential geometry which has limited
+its dissemination, especially to the applied communities for which it is
+particularly important.
+In this review I provide a comprehensive conceptual account of these
+theoretical foundations, focusing on developing a principled intuition
+behind the method and its optimal implementations rather of any ex-
+haustive rigor. Whether a practitioner or a statistician, the dedicated
+reader will acquire a solid grasp of how Hamiltonian Monte Carlo works,
+when it succeeds, and, perhaps most importantly, when it fails.
+Michael Betancourt is a research scientist in the Applied Statistics Center at Columbia
+University. Much of this review was completed as a Research Fellow at the Centre for
+Research in Statistical Methodology, University of Warwick, Coventry CV4 7AL, UK
+(e-mail: betanalpha@gmail.com).
+1
+arXiv:1701.02434v2  [stat.ME]  16 Jul 2018
+
+2
+BETANCOURT
+CONTENTS
+1
+Computing Expectations By Exploring Probability Distributions . . . . . . . . .
+3
+1.1
+Computing Expectations in Practice . . . . . . . . . . . . . . . . . . . . . .
+4
+1.2
+Parsimonious Expectation Computation . . . . . . . . . . . . . . . . . . . .
+5
+1.3
+The Geometry of High-Dimensional Spaces
+. . . . . . . . . . . . . . . . . .
+6
+1.4
+The Geometry of High-Dimensional Probability Distributions . . . . . . . .
+7
+2
+Markov Chain Monte Carlo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+8
+2.1
+Estimating Expectations with Markov Chains . . . . . . . . . . . . . . . . .
+9
+2.2
+Ideal Behavior
+. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+11
+2.3
+Pathological Behavior
+. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+13
+2.4
+The Metropolis-Hastings Algorithm . . . . . . . . . . . . . . . . . . . . . . .
+15
+3
+The Foundations of Hamiltonian Monte Carlo . . . . . . . . . . . . . . . . . . . .
+16
+3.1
+Informing Eﬀective Markov Transitions
+. . . . . . . . . . . . . . . . . . . .
+17
+3.2
+Phase Space and Hamilton’s Equations . . . . . . . . . . . . . . . . . . . . .
+22
+3.3
+The Idealized Hamiltonian Markov Transition . . . . . . . . . . . . . . . . .
+26
+4
+Eﬃcient Hamiltonian Monte Carlo . . . . . . . . . . . . . . . . . . . . . . . . . .
+26
+4.1
+The Natural Geometry of Phase Space . . . . . . . . . . . . . . . . . . . . .
+27
+4.2
+Optimizing the Choice of Kinetic Energy . . . . . . . . . . . . . . . . . . . .
+30
+4.3
+Optimizing the Choice of Integration Time
+. . . . . . . . . . . . . . . . . .
+32
+5
+Implementing Hamiltonian Monte Carlo in Practice
+. . . . . . . . . . . . . . . .
+35
+5.1
+Symplectic Integrators . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+37
+5.2
+Correcting for Symplectic Integrator Error . . . . . . . . . . . . . . . . . . .
+38
+5.3
+Optimal Choice of Symplectic Integrator . . . . . . . . . . . . . . . . . . . .
+41
+6
+The Robustness of Hamiltonian Monte Carlo
