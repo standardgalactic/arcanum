@@ -1,0 +1,100 @@
+art results for compressed CoT.
+2
+Related Work
+Chain-of-Thought.
+Chain-of-thought (Wei et al.,
+2022) reasoning has shown promising progress in
+recent years, especially the success of OpenAi-
+O1 (Jaech et al., 2024) and Deepseek-R1 mod-
+els (DeepSeek-AI, 2025). This introduces the test-
+time scaling law, apart from the traditional scaling
+law for training (Hoffmann et al., 2022). Several
+approaches have been proposed to boost the lan-
+guage model to have better problem-solving abil-
+ities, including the model has its self-reasoning
+abilities (Team, 2024b) or use Best-of-N (Nakano
+et al., 2021), beam search and Monte Carlo Tree
+Search (Kocsis and Szepesvari, 2006; Guan et al.,
+2025b) to search and refine the solution without
+further finetune the large language models. The out-
+come reward model and process reward models are
+2
+
+also introduced to evaluate the score for the entire
+solution, especially the final answer (Cobbe et al.,
+2021a) and the quality of the reasoning path (Wang
+et al., 2024; Luo et al., 2025b)
+Chain Compression in reasoning model.
+Due
+to the high computational cost associated with in-
+ference in reasoning models, particularly for long-
+chain reasoning, chain compression has become
+a critical area of research. (Yu et al., 2024) at-
+tempts to distill the chain-of-thought into System
+1 but fails to observe improvements when inter-
+mediate steps are omitted. (Deng et al., 2024b)
+proposes internalizing reasoning steps within the
+hidden states of models, while several implicit-
+based approaches(Deng et al., 2024a; Hao et al.,
+2024; Cheng and Durme, 2024) aim to compress
+token-wise generation by transitioning from lan-
+guage space to hidden space. Other studies focus
+on skipping intermediate reasoning steps (Liu et al.,
+2024b) or using summarization techniques to gen-
+erate shorter reasoning chains (Kang et al., 2024).
+Additionally, (Chen et al., 2024) addresses the over-
+thinking issue in QwQ (Team, 2024b) and employs
+SimPO (Meng et al., 2024) for optimization. Kimi
+K1.5 (Team et al., 2025) proposes merging long-
+CoT models with short-CoT models in a training-
+free manner. O1-Pruner (Luo et al., 2025a) adopts
+reinforcement learning to shorten responses.
+3
+Method
+In this section, we provide an in-depth discussion
+of our method. Section 3.1 introduces a simple
+yet effective approach that enables a single tuning
+process to generate models with CoT with different
+lengths. This stage also serves as an initial step for
+subsequent refinements. Next, in Section 3.2, we
+explore multiple scenarios in which we can apply
+CoT-Valve to construct the dataset MixChain. In
+Section 3.3, we propose several advanced meth-
+ods that take advantage of long-to-short datasets to
+improve precision and control over the generated
+reasoning paths in compressible fine-tuning.
+3.1
+Length-Compressible CoT Tuning
+Our primary objective is to achieve a new way to
+control the length of reasoning paths after training
+a reasoning model. Existing approaches, such as
+prompt-based control, explicitly define sequence
+length in the prompt (Han et al., 2024) or utilize
+summary tokens (Ding et al., 2024) for guidance.
+However, these methods offer only limited control
+over the length of CoT generated. For instance,
+requesting a sequence of less than 20 tokens may
+result in the model generating over 350 tokens (see
+Table 12 in the Appendix), and these methods strug-
+gle to produce answers with very short lengths. To
+address these limitations, we introduce CoT-Valve
+for training one model but can adjust the length of
+reasoning paths.
+Consider a reasoning model defined by the pa-
+rameter θ. For a given question q in the dataset
+D, the probability of generating an answer a and
+its reasoning thoughts {ti}n
+i=1 given the question q
+can be described by:
+p (a | t1, . . . , tn, q; θ)
+n
+Y
+i=1
+p (ti | t<i, q; θ)
+(1)
+where {ti}n
+i=1 might include errors or unnecessary
+details. With short synthesized or human-annotated
+explanations {ti}m
+i=1 with m < n, the training
+objective is to adjust the parameter in such a way
