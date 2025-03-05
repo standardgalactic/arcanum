@@ -1,0 +1,100 @@
+momentum parameters, pn, to complement each dimension of our target parameter space,
+qn →(qn, pn) ,
+expanding the D-dimensional parameter space into a 2D-dimensional phase space. More-
+over, these auxiliary momentum have to be dual to the target parameters, transforming in
+the opposite way under any reparameterization so that phase space volumes are invariant.
+Having expanded the target parameter space to phase space, we can now lift the tar-
+get distribution onto a joint probability distribution on phase space called the canonical
+distribution. We do this with the choice of a conditional probability distribution over the
+auxiliary momentum,
+π(q, p) = π(p | q) π(q) ,
+which ensures that if we marginalize out the momentum we immediately recover our target
+distribution. More importantly, it guarantees that any trajectories exploring the typical set
+of the phase space distribution will project to trajectories exploring the typical set of the
+target distribution (Figure 19).
+Because of the duality of the target parameters and the auxiliary momentum, the cor-
+responding probability densities also transform oppositely to each other. In particular, the
+
+24
+BETANCOURT
+p
+q
+p
+q
+Fig 18. A deﬁning feature of conservative dynamics is the preservation of volume in position-momentum
+phase space. For example, although dynamics might compress volumes in position space, the corresponding
+volume in momentum space expands to compensate and ensure that the total volume is invariant. Such
+volume-preserving mappings are also known as shear transformations.
+Fig 19. By constructing a probability distribution on phase space that marginalizes to the target distribution,
+we ensure that the typical set on phase space projects to the typical set of the target distribution. In particular,
+if we can construct trajectories that eﬃciently explore the joint distribution (black) they will project to
+trajectories that eﬃciently explore the target distribution (green).
+
+A CONCEPTUAL INTRODUCTION TO HAMILTONIAN MONTE CARLO
+25
+canonical density π(q, p) does not depend on a particular choice of parameterization, and
+we can write it in terms of an invariant Hamiltonian function, H(q, p),
+π(q, p) = e−H(q,p).
+Because H(q, p) is independent of the details of any parameterization, it captures the
+invariant probabilistic structure of the phase space distribution and, most importantly, the
+geometry of its typical set. Appealing to the physical analogy, the value of the Hamiltonian
+at any point in phase space is called the energy at that point.
+Because of the decomposition of the joint density, the Hamiltonian,
+H(q, p) ≡−log π(q, p) ,
+itself decomposes into two terms,
+H(q, p) = −log π(p | q) −log π(q)
+≡
+K(p, q)
++ V (q) .
+Once again leveraging the physical analogy, the term corresponding to the density over the
+auxiliary momentum, K(p, q) is called the kinetic energy, while the term corresponding to
+the density of the target distribution, V (q) is known as the potential energy. The potential
+energy is completely determined by the target distribution while the kinetic energy is
+unconstrained and must be speciﬁed by the implementation.
+Because the Hamiltonian captures the geometry of the typical set, it should we should
+be able to use it to generate a vector ﬁeld oriented with the typical set of the canonical
+distribution and hence the trajectories that we are after. Indeed, the desired vector ﬁeld
+can be generated from a given Hamiltonian with Hamilton’s equations,
+dq
+dt = +∂H
+∂p = ∂K
+∂p
+dp
+dt = −∂H
+∂q = −∂K
+∂q −∂V
+∂q .
+Recognizing ∂V/∂q as the gradient of the logarithm of the target density, we see that
+Hamilton’s equations fulﬁll exactly the intuition introduced in Section 3.1. By channeling
+the gradient through the momentum instead of the target parameters directly, Hamilton’s
+equations twist diﬀerential information to align with the typical set of canonical distri-
+bution. Following the Hamiltonian vector ﬁeld for some time, t, generates trajectories,
+φt(q, p), that rapidly move through phase space while being constrained to the typical set.
+Projecting these trajectories back down onto the target parameter space ﬁnally yields the
+eﬃcient exploration of the target typical set for which we are searching.
+
+26
+BETANCOURT
+3.3 The Idealized Hamiltonian Markov Transition
+In order to utilize these Hamiltonian trajectories to construct an eﬃcient Markov tran-
+sition, we need a mechanism for introducing momentum to a given point in the target
+parameter space. Fortunately, this is straightforward if we exploit the probabilistic struc-
+ture that we have already endowed to the system.
+To lift an initial point in parameter space into one on phase space we simply sample
+from the conditional distribution over the momentum,
+p ∼π(p | q) .
+Assuming that the initial point was in the typical set of the target distribution, sampling
+the momentum directly from the conditional distribution guarantees that the lift will fall
+into the typical set on phase space.
+Once on phase space we can explore the joint typical set by integrating Hamilton’s
+equations for some time,
+(q, p) →φt(q, p) .
+By construction these trajectories coherently push the Markov transition away from the
+initial point, and neighborhoods that we have already explored, while staying conﬁned to
+the joint typical set.
+Because of the carefully chosen structure of the joint distribution, these trajectories
+project down to trajectories that explore the target distribution. Consequently, after in-
+tegrating Hamilton’s equations we can return to the target parameter space by simply
+projecting away the momentum,
+(q, p) →q.
+Composing these three steps together yields a Hamiltonian Markov transition composed

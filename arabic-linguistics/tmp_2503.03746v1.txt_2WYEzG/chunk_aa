@@ -1,0 +1,100 @@
+Process-based Self-Rewarding Language Models
+Shimao Zhang♣* Xiao Liu⋆† Xin Zhang⋆Junxiao Liu♣Zheheng Luo3
+Shujian Huang♣† Yeyun Gong⋆
+♣National Key Laboratory for Novel Software Technology, Nanjing University
+3The University of Manchester
+⋆Microsoft Research Asia
+smzhang@smail.nju.edu.cn, huangsj@nju.edu.cn,
+xiao.liu.msrasia@microsoft.com
+Abstract
+Large Language Models have demonstrated
+outstanding performance across various down-
+stream tasks and have been widely applied
+in multiple scenarios. Human-annotated pref-
+erence data is used for training to further
+improve LLMs’ performance, which is con-
+strained by the upper limit of human perfor-
+mance. Therefore, Self-Rewarding method has
+been proposed, where LLMs generate training
+data by rewarding their own outputs. How-
+ever, the existing self-rewarding paradigm is
+not effective in mathematical reasoning scenar-
+ios and may even lead to a decline in perfor-
+mance. In this work, we propose the Process-
+based Self-Rewarding pipeline for language
+models, which introduces long-thought rea-
+soning, step-wise LLM-as-a-Judge, and step-
+wise preference optimization within the self-
+rewarding paradigm. Our new paradigm suc-
+cessfully enhances the performance of LLMs
+on multiple mathematical reasoning bench-
+marks through iterative Process-based Self-
+Rewarding, demonstrating the immense poten-
+tial of self-rewarding to achieve LLM reasoning
+that may surpass human capabilities. 1
+1
+Introduction
+Large language models (LLMs) acquire power-
+ful multi-task language capabilities through pre-
+training on extensive corpus (Radford et al., 2019;
+Brown et al., 2020). Additionally, supervised fine-
+tuning (SFT) can further effectively improve the
+model’s performance on end-tasks. However, it is
+found that models after SFT are prone to halluci-
+nations (Lai et al., 2024) due to the simultaneous
+increasing of the probabilities of both preferred
+and undesirable outputs (Hong et al., 2024). There-
+fore, to further enhance the language capabilities of
+*Work done during his internship at MSRA.
+†Corresponding authors.
+1Our code and data will be available at: https://github.
+com/Shimao-Zhang/Process-Self-Rewarding.
+LLMs to align with human-level performance effec-
+tively, researchers often utilize human-annotated
+preference data for training. A representative ap-
+proach is Reinforcement Learning from Human
+Feedback (RLHF) (Christiano et al., 2017), which
+utilizes RL algorithms and external reward signals
+to help LLMs learn specific preferences.
+However, most reward signals rely on human
+annotations or reward models, which is expensive
+and bottlenecked by human capability and reward
+model quality. So the Self-Rewarding Language
+Models paradigm (Yuan et al., 2024) is proposed to
+overcome the above limitations, which integrates
+the reward model and the policy model within the
+same model. In this framework, a single model pos-
+sesses the ability to both perform the target task and
+provide reward feedback. The model can execute
+different tasks based on the scenario and conduct
+iterative updates. This paradigm is effective in
+instruction-following scenarios, where the model
+achieves performance improvement solely through
+self-rewarding and iterative updates.
+Although the self-rewarding algorithm performs
+well in the instruction-following tasks, it is also
+demonstrated that LLMs perform poorly on the
+mathematical domain data based on the existing
+self-rewarding algorithm. In fact, model’s perfor-
+mance may even degrade as the number of iter-
+ations increases (Yuan et al., 2024). We notice
+two main limitations in the self-rewarding frame-
+work: (a) Existing self-rewarding algorithm is not
+able to provide fine-grained and accurate reward
+signals for complex reasoning tasks involving long-
+thought chains; (b) For a complex mathematical
+solution, it’s hard to design the criterion for gen-
+erating specific scores. It means that assigning
+scores to complex long-thought multi-step reason-
+ing for LLMs is more challenging than performing
+pairwise comparisons, with lower consistency and
+agreement with humans, which is proven by the
+results in Appendix B.
+1
+arXiv:2503.03746v1  [cs.CL]  5 Mar 2025
+
+In this work, we propose the paradigm of
+Process-based Self-Rewarding Language Models,
+where we introduce the step-wise LLM-as-a-Judge
+and step-wise preference optimization into the
+traditional self-rewarding framework. In a nut-

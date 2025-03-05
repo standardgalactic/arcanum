@@ -1,0 +1,100 @@
+that the chain is shortened while still yielding the
+correct answer:
+max
+∆θ E(q,a)∼Dp (a | t1, . . . , tm, q; θ + ∆θ)
+m
+Y
+i=1
+p (ti | t<i, q; θ + ∆θ)
+(2)
+and ∆θ denotes the change in the parameter space
+that steers the model towards generating a more
+concise chain.
+Since the model, with and without ∆θ, outputs
+the same final answer, ∆θ can be interpreted as a
+task vector (Ilharco et al., 2022). The task here is to
+control the length of the CoT, provided that the only
+difference in the training set lies in intermediate
+reasoning steps {ti}n
+i=1. Those reasoning paths are
+different in length but ultimately lead to the same
+final answer. Thus, we can control the task vector
+to achieve the goal of adjusting the length of CoT.
+∆θ is designed within a parameter-efficient space,
+functioning as an external branch for inference that
+incurs minimal overhead. Controlling this external
+branch enables the manipulation of the length of
+the reasoning path.
+Task Arithmetic: Interpolation and Extrapola-
+tion of ∆θ.
+To manipulate this update within the
+parameter space, we can control the magnitude of a
+∆θ as an arithmetic operation. We use two primary
+operations on ∆θ here: interpolation and extrapola-
+tion. Let α denote the magnitude of ∆θ for LoRA.
+3
+
+System 1: 
+Short CoT
+Finetuned:
+Short CoT
+Large-scale Post-trained: 
+Long CoT
+!!
+!"
+Δ!!
+Δ #!" = #!" −!"
+#!"
+Stage 1: Find Δ"! , Δ $"! orΔ $""
+Finetuned/Distilled:  
+Long CoT
+#!!
+Δ #!!
+!"
+Medium Path Δ #!"
+Extrapolate: 
+Short Path &Δ #!"
+Interpolate: 
+Long Path 'Δ #!"
+Stage 2: Generate Long-to-Short
+Reasoning Dataset
+Stage 3.a (CoT-Valve++):
+Stage 3.b (CoT-Valve+P):
+(#Δ!$
+(%Δ!$
+!"
+{(#, +,-#}
+{(%, +,-%}
+Δ!$ satisfies
+…
+!!
+!"
+$
+!"
+!"
+$$
+Synthesized Reasoning Path
+!
+Model
+Gradient Update
+#!"
+!
+Δ!
+'
+Figure 2: Illustration of CoT-Valve. In Stage 1, we first determine ∆θ from distilling or post-training. Then, the
+trained ∆θ is utilized to construct the MixChain dataset. Using this dataset, we can then apply two enhanced
+training methods to achieve more precise control over reasoning paths, or to shorten the reasoning paths as needed.
+When α falls within the range of (0,1), the model
+smoothly transitions between longer and shorter
+reasoning paths, similar to weight interpolation be-
+tween two models (Frankle et al., 2020; Team et al.,
+2025). When α > 1, extrapolation is introduced,
+further shortening the reasoning path beyond what
+was observed during training. This enables an ex-
+ploration of the minimal reasoning length required
+to arrive at a given answer. Thus, by adjusting α
+at inference, we can modulate the model’s behav-
+ior, with each value of α corresponding to different
+CoT lengths.
+Application
+Unlike prompt-based approaches
