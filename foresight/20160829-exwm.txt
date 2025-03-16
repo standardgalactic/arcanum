@@ -1,0 +1,213 @@
+EXWM
+Emacs X Windows Manager
+
+What is it?
+Tiled windows manager
+Compatible X.org
+
+Tiling example
+
+Side by side
+
+Alternatives
+i3 - (vi like keybindings)
+awesome
+dwm
+ratpoison
+
+Why?
+Fast & Low resources
+Keyboard driven
+Same keybindings as all emacs
+No distractions
+Smart use of space
+Easy to read code
+Heaps of packages (3500+)
+Documentation
+Chris Feng (Creator of exwm)
+
+Installation
+
+Requirements
+ 
+Package Manager
+X11 server (recent)
+System
+Emacs 24.4 or above
+System
+EXWM
+emacs
+Xelb
+emacs
+
+Install emacs
+sudo apt-get install emacs
+
+Install exwm & xelb
+Start emacs
+emacs
+Within emacs
+alt+x (M-x)
+package-install exwm
+package-install xelb
+
+Add to ~/.emacs
+(require 'exwm)
+(require 'exwm-config)
+(exwm-config-default)
+
+Add to ~/.xinitrc
+#!/usr/bin/env bash
+xhost +SI:localuser:$USER                # Disable access control
+xsetroot -cursor_name left_ptr           # Fallback cursor
+setxkbmap -layout us -option ctrl:nocaps # Set capslock as ctrl
+export VISUAL=emacsclient
+export EDITOR="$VISUAL"
+export TERM="xterm"
+export DISPLAY=:0
+xset b off &
+xhost +
+numlockx off                             # Turn off numlock
+# Autostarts go here
+exec dbus-launch --exit-with-session emacs
+
+Start for the first time
+1. Stop any login managers, eg;
+2. Login to VT2
+3. Start emacs
+sudo service lightdm stop
+xinit -- vt01
+
+Configure session
+For use with your Desktop Manager (eg: LightDM)
+ConÒgure as your default session
+Start lightdm
+ln -s ~/.xinitrc ~/.xsession
+sudo service lightdm start
+sudo service lightdm start
+
+Autostart
+
+Standard items
+Enter into .xinitrc before emacs starts like so;
+xfce4-power-manager &
+xscreensaver -no-splash & 
+nm-applet &                     # Network Manager
+blueman-applet &                # Bluetooth
+pulseaudio --kill               # Kill pulseaudio
+pulseaudio --start              # Start pulseaudio
+volti &                         # Volume manager
+udiskie --tray &                # Disk mount utility
+syncthing -no-browser &         # Syncthing
+
+System tray items
+~/.emacs.d/.emacs.autostart.el
+;; Autostart Dropbox
+(call-process-shell-command "(sleep 10s && ~/.dropbox-dist/dropboxd) &" nil 0)
+This is loaded through my conÒg later.
+
+Tiling mode
+Arrange your bu×ers any way you want
+Save layouts
+Resize with the keyboard
+Switch focus fast
+
+Floating mode
+Turn a window into a Óoating window (C-c C-t C-f)
+Good for dialogs and nothing else
+Move with (S-<left mouse btn>)
+Resize with (S-<right mouse btn>)
+
+Multi-monitor
+~/.emacs.d/.emacs.randr.el
+;; Home setup
+(setq exwm-randr-workspace-output-plist '(0 "LVDS1" 1 "LVDS1" 2 "DP2"))
+(add-hook 'exwm-randr-screen-change-hook
+         (lambda ()
+           (start-process-shell-command
+            "xrandr" nil "xrandr --output DP2 --right-of LVDS1 --output DP2 --mode 1920x1080")))
+(exwm-randr-enable)
+
+System Tray
+Part of exwm itself
+Load (in my 100-exwm.el Òle)
+;; System tray
+(require 'exwm-systemtray)
+(exwm-systemtray-enable)
+
+Workspaces
+Used to switch multiple screen setups
+<super> <workspace number>
+;; Enable workspace
+(setq exwm-workspace-number 10)
+
+Compositing Manager (NEW)
+transparency
+custom opacity
+
+Optional extras
+
+Redshift
+Great for using the computer at night
+;; Redshift off
+(exwm-input-set-key (kbd "s-x")
+                    (lambda () (interactive) (start-process "" nil "redshift" "-x" )))
+;; Redshift on
+(exwm-input-set-key (kbd "s-z")
+                    (lambda () (interactive) (start-process "" nil "redshift" "-O" "3500")))
+
+Capslock
+;; Turn on capslock
+(exwm-input-set-key (kbd "s-c")
+                    (lambda () (interactive) (start-process "" nil "setxkbmap" "-layout" "us" "-
+
+Lock screen
+I use slock from i3lock package
+;; + 'slock' is a simple X display locker provided by suckless tools. 'i3lock'
+;;   is a more feature-rich alternative.
+(exwm-input-set-key (kbd "s-l")
+                    (lambda () (interactive) (start-process "" nil "slock")))
+
+Suspend
+;; Suspend nicely
+(exwm-input-set-key (kbd "s-<f12>")
+                    (lambda () (interactive) (start-process "" nil "gksudo" "pm-suspend")))
+
+winner-mode
+Undo previous layout (S-[)
+Redo layout (S-[)
+
+Use
+Super + & (s-&)
+starts a GUI program
+Super + w
+Switch workspaces
+Super + No (s-N)
+Switch to a workspace
+C-c C-m
+Move GUI to workspace
+C-c C-t C-f
+Toggle Óoat
+
+Emacs within Emacs
+Start emacs within a bu×er
+Capture all keyboard input into that bu×er
+exwm-input-toggle-keyboard
+
+References
+Chris Feng - creator of exwm
+My Setup: 
+GitHub - ch11ng/exwm: Emacs X Window Manager
+https://github.com/map7/emacs-conÒg
+
+Conclusion
+I use EXWM for speed, low resources and good use of space.
+
+Questions
+Email
+Twitter
+Github
+map7777@gmail.com
+@map7
+github: map7
+

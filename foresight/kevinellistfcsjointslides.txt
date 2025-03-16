@@ -1,0 +1,1549 @@
+Dreamcoder: Bootstrapping Inductive
+Program Synthesis With Wake-Sleep Library
+Learning
+Kevin Ellis
+Collaborators: Catherine Wong, Maxwell Nye, Mathias Sabl´e-Meyer,
+Lucas Morales, Armando Solar-Lezama, Joshua B. Tenenbaum
+2021
+Synthesis of Models and Systems
+1
+
+The premise of program induction
+1. Represent knowledge as programs: as symbolic code
+2
+
+The premise of program induction
+1. Represent knowledge as programs: as symbolic code
+2. Learning=adding to that body of knowledge=
+making new programs=program synthesis
+2
+
+Why program induction?
+3
+
+Why program induction?
+strong generalization
++data eﬃciency
+f(x)=(x-1)**2 - 0.5
+3
+
+Why program induction?
+strong generalization
++data eﬃciency
+interpretability
+f(x)=(x-1)**2 - 0.5
+vs
+3
+
+Why program induction?
+strong generalization
++data eﬃciency
+interpretability
+universal expressivity
+f(x)=(x-1)**2 - 0.5
+vs
+3
+
+FlashFill (Gulwani 2012)
+4
+
+FlashFill (Gulwani 2012)
+Szalinski (Nandi 2020)
+4
+
+FlashFill (Gulwani 2012)
+Szalinski (Nandi 2020)
+4
+
+Visual programs
+Mao∗, Zhang∗, et al 2019
+Ellis∗, Nye∗, Pu∗, Sosa∗, et al 2019
+Young et al 2019
+Tian et al 2019
+5
+
+Where does this language come from?
+Mao∗, Zhang∗, et al 2019
+Ellis∗, Nye∗, Pu∗, Sosa∗, et al 2019
+Young et al 2019
+Tian et al 2019
+6
+
+Program Induction and learning to learn
+learning a DSL
+learning to synthesize
+synergy between DSL+learned synthesizer
+7
+
+Learning to write code
+Goal: acquire domain-speciﬁc knowledge needed to induce a class
+of programs
+• Library of abstractions (domain speciﬁc language)
+• Inference strategy (synthesis algorithm)
+8
+
+Library learning
+Ellis, Morales, Sable-Meyer, Solar-Lezama, Tenenbaum. NeurIPS 2018.
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+9
+
+Library learning
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+10
+
+Library learning
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+11
+
+Library learning
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+11
+
+Library learning
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+11
+
+Library learning
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+11
+
+Library learning
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+11
+
+Library learning
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+11
+
+Library learning
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+11
+
+Library learning
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+11
+
+Library learning
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+11
+
+Library learning
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+11
+
+Library learning
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+11
+
+Library learning
+Solution rewritten in initial primitives:
+(lambda (x) (map (lambda (y) (car (fold (fold x nil (lambda (z u) (if (gt?
+(+ y 1) (length
+(fold x nil (lambda (v w) (if (gt?
+z v) (cons v w) w))))) (cons z u) u))) nil (lambda (a b) (if
+(nil?
+(fold (fold x nil (lambda (c d) (if (gt?
+(+ y 1) (length (fold x nil (lambda (e f) (if
+(gt?
+c e) (cons e f) f))))) (cons c d) d))) nil (lambda (g h) (if (gt?
+g a) (cons g h) h))))
+(cons a b) b))))) (range (length x))))
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+11
+
+Library learning
+Solution rewritten in initial primitives:
+(lambda (x) (map (lambda (y) (car (fold (fold x nil (lambda (z u) (if (gt?
+(+ y 1) (length
+(fold x nil (lambda (v w) (if (gt?
+z v) (cons v w) w))))) (cons z u) u))) nil (lambda (a b) (if
+(nil?
+(fold (fold x nil (lambda (c d) (if (gt?
+(+ y 1) (length (fold x nil (lambda (e f) (if
+(gt?
+c e) (cons e f) f))))) (cons c d) d))) nil (lambda (g h) (if (gt?
+g a) (cons g h) h))))
+(cons a b) b))))) (range (length x))))
+induced sort program found in ≤10min. Brute-force search
+without learned library would take ≈1073 years
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+11
+
+DreamCoder
+• Wake: Solve problems by writing programs
+• Sleep: Improve library and neural recognition model:
+• Abstraction sleep: Improve library
+• Dream sleep: Improve neural recognition model
+cf. Helmholtz machine, wake/sleep neural network training algorithms
+12
+
+Library learning as Bayesian inference
+dark: observed
+light: unobserved
+Library
+prog
+task
+prog
+task
+prog
+task
+[Dechter et al, 2013] [Liang et al, 2010] [Lake et al, 2015]
+13
+
+Library learning as Bayesian inference
+dark: observed
+light: unobserved
+Library
+prog
+task
+prog
+task
+prog
+task
+[Dechter et al, 2013] [Liang et al, 2010] [Lake et al, 2015]
+14
+
+Library learning as Bayesian inference
+dark: observed
+light: unobserved
+Library
+prog
+task
+prog
+task
+prog
+task
+[Dechter et al, 2013] [Liang et al, 2010] [Lake et al, 2015]
+15
+
+Library learning as Bayesian inference
+dark: observed
+light: unobserved
+Library
+prog
+task
+prog
+task
+prog
+task
+[Dechter et al, 2013] [Liang et al, 2010] [Lake et al, 2015]
+16
+
+Library learning as neurally-guided Bayesian inference
+Library
+prog
+task
+prog
+task
+prog
+task
+library learning via program analysis +
+new neural inference network for program synthesis +
+better program representation (Lisp+polymorphic types [Milner 1978])
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+17
+
+Library
+prog
+task
+prog
+task
+prog
+task
+is
+18
+
+Sleep: Abstraction
+Sleep: Dreaming
+Wake
+Library
+prog
+task
+prog
+task
+prog
+task
+is
+18
+
+Sleep: Abstraction
+Sleep: Dreaming
+Wake
+Library
+f1(x) =(+ x 1)
+f2(z) =(fold cons
+(cons z nil))
+· · · · · · · · ·
+Task
+[7 2 3]→[4 3 8]
+[4 3 2]→[3 4 5]
+Recognition
+model
+Neurally-Guided
+Search
+Programs for task:
+(map f1 (fold f2 nil x))
+· · · · · · · · ·
+Library
+prog
+task
+prog
+task
+prog
+task
+is
+18
+
+Sleep: Abstraction
+Sleep: Dreaming
+Wake
+Library
+f1(x) =(+ x 1)
+f2(z) =(fold cons
+(cons z nil))
+· · · · · · · · ·
+Task
+[7 2 3]→[4 3 8]
+[4 3 2]→[3 4 5]
+Recognition
+model
+Neurally-Guided
+Search
+Programs for task:
+(map f1 (fold f2 nil x))
+· · · · · · · · ·
+Fantasies
+Library
+program
+sample
+Replays
+progs. for task
+program
+sample
+program
+task
+run
+Loss
+Train recognition model
+Library
+prog
+task
+prog
+task
+prog
+task
+is
+18
+
+Sleep: Abstraction
+Sleep: Dreaming
+Wake
+Library
+f1(x) =(+ x 1)
+f2(z) =(fold cons
+(cons z nil))
+· · · · · · · · ·
+Task
+[7 2 3]→[4 3 8]
+[4 3 2]→[3 4 5]
+Recognition
+model
+Neurally-Guided
+Search
+Programs for task:
+(map f1 (fold f2 nil x))
+· · · · · · · · ·
+Fantasies
+Library
+program
+sample
+Replays
+progs. for task
+program
+sample
+program
+task
+run
+Loss
+Train recognition model
+progs. for task 1:
+(+ (car z) 1)
+progs. for task 2:
+(cons (+ 1 1))
++
+1
+1
+cons
++
+1
+car
+z
+Refactoring Algorithm:
+version spaces
+new Library w/ (+ x 1):
++
+1
+Library
+prog
+task
+prog
+task
+prog
+task
+is
+18
+
+Sleep: Abstraction
+Sleep: Dreaming
+Wake
+Library
+f1(x) =(+ x 1)
+f2(z) =(fold cons
+(cons z nil))
+· · · · · · · · ·
+Task
+[7 2 3]→[4 3 8]
+[4 3 2]→[3 4 5]
+Recognition
+model
+Neurally-Guided
+Search
+Programs for task:
+(map f1 (fold f2 nil x))
+· · · · · · · · ·
+progs. for task 1:
+(+ (car z) 1)
+progs. for task 2:
+(cons (+ 1 1))
++
+1
+1
+cons
++
+1
+car
+z
+Refactoring Algorithm:
+version spaces
+new Library w/ (+ x 1):
++
+1
+Fantasies
+Library
+program
+sample
+Replays
+progs. for task
+program
+sample
+program
+task
+run
+Loss
+Train recognition model
+Library
+prog
+task
+prog
+task
+prog
+task
+is
+18
+
+Program Induction and learning to learn
+learning a DSL
+learning to synthesize
+synergy between DSL+learned synthesizer
+19
+
+Abstraction Sleep: Growing the library via refactoring
+Task:
+[1 2 3]→[2 4 6]
+[4 3 4]→[8 6 8]
+Task:
+[1 2 3]→[0 1 2]
+[4 3 4]→[3 2 3]
+
+Abstraction Sleep: Growing the library via refactoring
+Task:
+[1 2 3]→[2 4 6]
+[4 3 4]→[8 6 8]
+Task:
+[1 2 3]→[0 1 2]
+[4 3 4]→[3 2 3]
+(Y (λ (r l) (if (nil?
+l) nil
+(cons (+ (car l) (car l))
+(r (cdr l))))))
+(Y (λ (r l) (if (nil?
+l) nil
+(cons (- (car l) 1)
+(r (cdr l))))))
+Wake: program search
+Wake: program search
+
+Abstraction Sleep: Growing the library via refactoring
+Task:
+[1 2 3]→[2 4 6]
+[4 3 4]→[8 6 8]
+Task:
+[1 2 3]→[0 1 2]
+[4 3 4]→[3 2 3]
+(Y (λ (r l) (if (nil?
+l) nil
+(cons (+ (car l) (car l))
+(r (cdr l))))))
+(Y (λ (r l) (if (nil?
+l) nil
+(cons (- (car l) 1)
+(r (cdr l))))))
+Wake: program search
+Wake: program search
+((λ (f) (Y (λ (r l) (if (nil?
+l)
+nil
+(cons (f (car l))
+(r (cdr l)))))))
+(λ (z) (+ z z)))
+((λ (f) (Y (λ (r l) (if (nil?
+l)
+nil
+(cons (f (car l))
+(r (cdr l)))))))
+(λ (z) (- z 1)))
+refactor
+(1014 refactorings)
+refactor
+(1014 refactorings)
+Sleep: Abstraction
+
+Abstraction Sleep: Growing the library via refactoring
+Task:
+[1 2 3]→[2 4 6]
+[4 3 4]→[8 6 8]
+Task:
+[1 2 3]→[0 1 2]
+[4 3 4]→[3 2 3]
+(Y (λ (r l) (if (nil?
+l) nil
+(cons (+ (car l) (car l))
+(r (cdr l))))))
+(Y (λ (r l) (if (nil?
+l) nil
+(cons (- (car l) 1)
+(r (cdr l))))))
+Wake: program search
+Wake: program search
+((λ (f) (Y (λ (r l) (if (nil?
+l)
+nil
+(cons (f (car l))
+(r (cdr l)))))))
+(λ (z) (+ z z)))
+((λ (f) (Y (λ (r l) (if (nil?
+l)
+nil
+(cons (f (car l))
+(r (cdr l)))))))
+(λ (z) (- z 1)))
+refactor
+(1014 refactorings)
+refactor
+(1014 refactorings)
+Sleep: Abstraction
+( map
+(λ (z) (+ z z)))
+( map
+(λ (z) (- z 1)))
+map = (λ (f) (Y (λ (r l) (if (nil?
+l) nil
+(cons (f (car l))
+(r (cdr l))))))
+Compress (MDL/Bayes objective)
+20
+
+Abstraction Sleep: Growing the library via refactoring
+Task:
+[1 2 3]→[2 4 6]
+[4 3 4]→[8 6 8]
+Task:
+[1 2 3]→[0 1 2]
+[4 3 4]→[3 2 3]
+(Y (λ (r l) (if (nil?
+l) nil
+(cons (+ (car l) (car l))
+(r (cdr l))))))
+(Y (λ (r l) (if (nil?
+l) nil
+(cons (- (car l) 1)
+(r (cdr l))))))
+Wake: program search
+Wake: program search
+((λ (f) (Y (λ (r l) (if (nil?
+l)
+nil
+(cons (f (car l))
+(r (cdr l)))))))
+(λ (z) (+ z z)))
+((λ (f) (Y (λ (r l) (if (nil?
+l)
+nil
+(cons (f (car l))
+(r (cdr l)))))))
+(λ (z) (- z 1)))
+refactor
+(1014 refactorings)
+refactor
+(1014 refactorings)
+Sleep: Abstraction
+( map
+(λ (z) (+ z z)))
+( map
+(λ (z) (- z 1)))
+map = (λ (f) (Y (λ (r l) (if (nil?
+l) nil
+(cons (f (car l))
+(r (cdr l))))))
+Compress (MDL/Bayes objective)
+these 1014 refactorings represented in exponentially
+more eﬃcient refactoring data structure:
+equivalence graphs+version spaces using 106 nodes,
+calculated in under 5min
+c.f. [Tate et al 2009], [Gulwani 2012]
+20
+
+Program Induction and learning to learn
+learning a DSL
+learning to synthesize
+synergy between DSL+learned synthesizer
+21
+
+Sleep: Abstraction
+Sleep: Dreaming
+Wake
+Library
+f1(x) =(+ x 1)
+f2(z) =(fold cons
+(cons z nil))
+· · · · · · · · ·
+Task
+[7 2 3]→[4 3 8]
+[4 3 2]→[3 4 5]
+Recognition
+model
+Neurally-Guided
+Search
+Programs for task:
+(map f1 (fold f2 nil x))
+· · · · · · · · ·
+Fantasies
+Library
+program
+sample
+Replays
+progs. for task
+program
+sample
+program
+task
+run
+Loss
+Train recognition model
+progs. for task 1:
+(+ (car z) 1)
+progs. for task 2:
+(cons (+ 1 1))
++
+1
+1
+cons
++
+1
+car
+z
+Refactoring Algorithm:
+version spaces
+new Library w/ (+ x 1):
++
+1
+Library
+prog
+task
+prog
+task
+prog
+task
+is
+22
+
+Sleep: Abstraction
+Sleep: Dreaming
+Wake
+Library
+f1(x) =(+ x 1)
+f2(z) =(fold cons
+(cons z nil))
+· · · · · · · · ·
+Task
+[7 2 3]→[4 3 8]
+[4 3 2]→[3 4 5]
+Recognition
+model
+Neurally-Guided
+Search
+Programs for task:
+(map f1 (fold f2 nil x))
+· · · · · · · · ·
+Fantasies
+Library
+program
+sample
+Replays
+progs. for task
+program
+sample
+program
+task
+run
+Loss
+Train recognition model
+progs. for task 1:
+(+ (car z) 1)
+progs. for task 2:
+(cons (+ 1 1))
++
+1
+1
+cons
++
+1
+car
+z
+Refactoring Algorithm:
+version spaces
+new Library w/ (+ x 1):
++
+1
+Library
+prog
+task
+prog
+task
+prog
+task
+is
+22
+
+Neural recognition model guides search
+task
+program
+23
+
+Neural recognition model guides search
+task
+distribution
+program
+sample
+
+Neural recognition model guides search
+task
+distribution
+program
+sample
+is a...
+recurrent network (Devlin et al 2017)
+unigram model (Menon et al 2013; Balog et al 2016)
+24
+
+Neural recognition model guides search
+task
+distribution
+P(child|parent,arg)
+program
+sample
+is a “bigram” model over syntax trees
+25
+
+Neural recognition model guides search
+task
+distribution
+P(child|parent,arg)
+program
+sample
++
+25
+
+Neural recognition model guides search
+task
+distribution
+P(child|parent,arg)
+program
+sample
++
+9
+P(·| +,arg=left)
+25
+
+Neural recognition model guides search
+task
+distribution
+P(child|parent,arg)
+program
+sample
++
+9
+P(·| +,arg=left)
+*
+P(·| +,arg=right)
+25
+
+Neural recognition model guides search
+task
+distribution
+P(child|parent,arg)
+program
+sample
++
+9
+P(·| +,arg=left)
+*
+P(·| +,arg=right)
+2
+8
+P(·| *,arg=right)
+P(·| *,arg=left)
+25
+
+Neural recognition model guides search
+task
+distribution
+P(child|parent,arg)
+program
+sample
++
+9
+P(·| +,arg=left)
+*
+P(·| +,arg=right)
+2
+8
+P(·| *,arg=right)
+P(·| *,arg=left)
+Advantages:
+neural net runs once per task,
+so CPU bottlenecks instead of GPU
+25
+
+Neural recognition model guides search
+task
+distribution
+P(child|parent,arg)
+program
+sample
++
+9
+P(·| +,arg=left)
+*
+P(·| +,arg=right)
+2
+8
+P(·| *,arg=right)
+P(·| *,arg=left)
+Advantages:
+neural net runs once per task,
+so CPU bottlenecks instead of GPU
+learns to break syntactic symmetries:
+P(1|*,arg=left)=0.0
+“do not multiply by one”
+25
+
+Program Induction and learning to learn
+learning a DSL
+learning to synthesize
+synergy between DSL+learned synthesizer
+26
+
+DreamCoder Domains
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+27
+
+DreamCoder Domains
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+27
+
+LOGO Turtle Graphics
+30 out of 160 tasks
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+28
+
+LOGO Turtle Graphics – learning an interpretable library
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+29
+
+LOGO Turtle Graphics – learning an interpretable library
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+29
+
+LOGO Turtle Graphics – learning an interpretable library
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+29
+
+LOGO Turtle Graphics – learning an interpretable library
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+29
+
+LOGO Turtle Graphics – learning an interpretable library
+radial symmetry(n, body)
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+29
+
+LOGO Turtle Graphics – learning an interpretable library
+circle(r)
+arc(n, ℓ, θ)
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+29
+
+What does DreamCoder dream of? (before learning)
+30
+
+What does DreamCoder dream of? (after learning)
+31
+
+Planning to build towers
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+example tasks (112 total)
+32
+
+Planning to build towers
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+example tasks (112 total)
+learned library routines (≈20 total)
+arch(h)
+pyramid(h)
+wall(w, h)
+bridge(w, h)
+32
+
+Dreams before learning
+33
+
+Dreams after learning
+34
+
+Learning dynamics
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+35
+
+Learning dynamics
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+35
+
+Learning dynamics
+baselines: Exploration-Compression, EC [Dechter et al. 2013]
+neural program synthesis, RobustFill [Devlin et al. 2017]
+24 hours of brute-force enumeration
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+35
+
+Learning dynamics
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+36
+
+Synergy between recognition model and library learning
+Problem-solving
+Library
+Recognition
+model
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+37
+
+Synergy between recognition model and library learning
+Problem-solving
+Library
+Recognition
+model
+Trains
+(Abstraction)
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+37
+
+Synergy between recognition model and library learning
+Problem-solving
+Library
+Recognition
+model
+Trains
+(Abstraction)
+Trains
+(Dreaming)
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+37
+
+Synergy between recognition model and library learning
+Problem-solving
+Library
+Recognition
+model
+Trains
+(Abstraction)
+Trains
+(Dreaming)
+Makes tractable
+(Wake)
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+37
+
+Evidence for dreaming bootstrapping better libraries
+Darker: Early in learning
+Brighter: Later in learning
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+38
+
+Evidence for dreaming bootstrapping better libraries
+Darker: Early in learning
+Brighter: Later in learning
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+38
+
+Evidence for dreaming bootstrapping better libraries
+Darker: Early in learning
+Brighter: Later in learning
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+38
+
+From learning libraries,
+to learning languages
+39
+
+From learning libraries,
+to learning languages
+modern functional programming →physics
+39
+
+From learning libraries,
+to learning languages
+1950’s Lisp →modern functional programming →physics
+39
+
+40
+
+Growing languages for vector algebra and physics
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+41
+
+Growing languages for vector algebra and physics
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+41
+
+Growing languages for vector algebra and physics
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+41
+
+Growing languages for vector algebra and physics
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+41
+
+Growing languages for vector algebra and physics
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+41
+
+Growing languages for vector algebra and physics
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+41
+
+Growing a language for recursive programming
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+42
+
+Growing a language for recursive programming
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+42
+
+Growing a language for recursive programming
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+42
+
+Growing a language for recursive programming
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+42
+
+Growing a language for recursive programming
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+Origami Programming: Jeremy Gibbons, 2003
+42
+
+Growing a language for recursive programming
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+1 year of compute. 5 days on 64 CPUs.
+Origami Programming: Jeremy Gibbons, 2003
+42
+
+Lessons
+Library learning interacts synergistically with neural synthesis:
+bootstrapping, more than sum of parts
+43
+
+Lessons
+Library learning interacts synergistically with neural synthesis:
+bootstrapping, more than sum of parts
+Symbols aren’t necessarily interpretable. Grow the language based
+on experience to make it more powerful and more human
+understandable
+43
+
+Lessons
+Library learning interacts synergistically with neural synthesis:
+bootstrapping, more than sum of parts
+Symbols aren’t necessarily interpretable. Grow the language based
+on experience to make it more powerful and more human
+understandable
+Learning-from-scratch is possible in principle. Don’t do it. But
+program induction makes it convenient to build in what we know
+how to build in, and then learn on top of that
+43
+
+the end.
+44
+
+Collaborators
+Josh
+Tenenbaum
+Armando
+Solar-Lezama
+Max Nye
+Cathy Wong
+Mathias Sable-Meyer
+Lucas Morales
+thank
+you
+45
+
+3D program induction
+Challenge: combinatorial search!
+Branching factor: > 1.3 million per line of code, ≈20 lines of code
+search space size: (1.3 million)20 ≈10122 programs
+Ellis∗, Nye∗, Pu∗, Sosa∗, Tenenbaum, Solar-Lezama. NeurIPS 2019.
+∗equal contribution
+46
+
+Solution: stochastic tree search + learn policy that writes code
++ learn value function that assesses execution of program so far;
+analogous to AlphaGo [Silver et al. 2016]
+47
+
+Solution: stochastic tree search + learn policy that writes code
++ learn value function that assesses execution of program so far;
+analogous to AlphaGo [Silver et al. 2016]
+47
+
+Solution: stochastic tree search + learn policy that writes code
++ learn value function that assesses execution of program so far;
+analogous to AlphaGo [Silver et al. 2016]
+47
+
+Solution: stochastic tree search + learn policy that writes code
++ learn value function that assesses execution of program so far;
+analogous to AlphaGo [Silver et al. 2016]
+47
+
+3D program induction
+Input
+(voxels)
+Rendered
+program
+Ellis∗, Nye∗, Pu∗, Sosa∗, Tenenbaum, Solar-Lezama. NeurIPS 2019.
+∗equal contribution
+48
+
+3D program induction
+Input
+(voxels)
+Rendered
+program
+same architecture learns to synthesize text editing programs
+(FlashFill, Gulwani 2012)
+Ellis∗, Nye∗, Pu∗, Sosa∗, Tenenbaum, Solar-Lezama. NeurIPS 2019.
+∗equal contribution
+48
+
+Library structure: Text Editing
+DreamCoder learns libraries for FlashFill-style text editing [Gulwani 2012]
+f1=(λ (x y) (fold x x (λ (z u) 
+ (fold (f0 u y) u (λ (v w) 
+ (cdr u))))))
+f3=(λ (x) (- (length (cdr 
+ x)) f2))
+f12=(λ (x) (f10 (cons SPACE 
+ (f11 x)) SPACE))
+f2=(+ 1 (+ 1 1))
+f16=(λ (x) (char-eq? SPACE 
+ (index f2 x)))
+f13=(λ (x y) (cons (car x) 
+ (cons y empty)))
+f17=(λ (x y) (f6 (f13 y '.') 
+ (f13 x '.')))
+f4=(λ (x y) (map (λ (z) 
+ (index z x)) (range y)))
+f5=(λ (x y) (f4 x (length 
+ (cdr y))))
+f14=(λ (x y) (map (λ (z) (if 
+ (char-eq? z x) y z))))
+f15=(λ (x y) (f10 (cons y x) 
+ y))
+f18=(λ (x y) (f17 (f0 x y) x))
+f7=(λ (x y z) (f0 (f5 (f6 (map 
+ (λ (u) z) (f0 x y)) x) x)))
+f11=(f6 STRING)
+f10=(λ (x y) (f7 (f9 (f0 x y)) y 
+ '-' LPAREN))
+f19=(λ (x y) (f8 (cons x y)))
+f21=(λ (x y) (if (y (f0 x 
+ SPACE)) (f20 x) x))
+f0=(λ (x y) (fold x x (λ (z u) 
+ (cdr (if (char-eq? y z) x 
+ u)))))
+f9=(λ (x) (f8 empty (cons 
+ LPAREN x) RPAREN))
+f8=(λ (x y z) (f6 y (cons z 
+ x)))
+f20=(λ (x) (f6 x STRING))
+f6=(λ (x y) (fold x y (λ (z u) 
+ (cons z u))))
+f4=(λ (x) (f1 (f3 x SPACE)))
+f0=(λ (x y) (fold y x (λ (z u) 
+ (cons z u))))
+f8=(λ (x y) (f0 (cons x y)))
+f6=(f0 STRING)
+f1=(λ (x) (f0 x STRING))
+f15=(λ (x y) (f0 (f13 x '.') 
+ (f13 y '.')))
+f7=(λ (x y) (if (fold (cdr x) 
+ (f5 x) (λ (z) (y (λ (u) 
+ (char-eq? (if u '.' z) 
+ z))))) (f6 x) x))
+f10=(λ (x y z) (f3 (f8 z x (cdr 
+ (f9 y x x))) y))
+f20=(λ (x y) (f15 (f10 x y '.') 
+ x))
+f17=(λ (x) (f8 RPAREN empty 
+ (cons LPAREN x)))
+f19=(λ (x y z) (f8 z (cons x 
+ y)))
+f11=(λ (x) (f5 (cdr x)))
+f14=(λ (x) (f11 (f3 x 
+ SPACE)))
+f12=(λ (x y) (map (λ (z) (if 
+ (char-eq? z x) y z))))
+f2=(λ (x y) (unfold x y (λ (z) 
+ (car z)) (λ (u) (cdr 
+ u))))
+f3=(λ (x y) (f2 x (λ (z) 
+ (char-eq? y (car z)))))
+f13=(λ (x y) (cons (car x) 
+ (cons y empty)))
+f16=(λ (x y) (map (λ (z) 
+ (index z x)) (y (length 
+ (f15 x x)))))
+f9=(λ (x y z) (fold (f3 z x) y 
+ (λ (u v) (cdr v))))
+f18=(λ (x y) (f9 y x (f17 x)))
+f5=(λ (x) (empty? (cdr (cdr 
+ x))))
+f0=(λ (x) (empty? (cdr (cdr 
+ x))))
+f18=(λ (x y) (if (fold (cdr x) 
+ (f0 x) (λ (z) (y (λ (u) 
+ (char-eq? (if u '.' z) 
+ z))))) (f17 x) x))
+f12=(λ (x) (f0 (cdr x)))
+f2=(λ (x) (f1 x STRING))
+f11=(λ (x) (f2 (f6 x SPACE)))
+f1=(λ (x y) (fold y x (λ (z u) 
+ (cons z u))))
+f4=(λ (x y) (f1 (f3 x '.') (f3 
+ y '.')))
+f7=(λ (x y) (f1 (cons x y)))
+f17=(f1 STRING)
+f10=(λ (x y) (f4 (f9 x y '.') 
+ x))
+f14=(λ (x y) (map (λ (z) 
+ (index z x)) (y (length 
+ (f4 x x)))))
+f5=(λ (x y) (unfold x y (λ (z) 
+ (car z)) (λ (u) (cdr 
+ u))))
+f6=(λ (x y) (f5 x (λ (z) 
+ (char-eq? y (car z)))))
+f13=(λ (x) (f12 (f6 x 
+ SPACE)))
+f16=(λ (x y) (f8 y x (f15 x)))
+f8=(λ (x y z) (fold (f6 z x) y 
+ (λ (u v) (cdr v))))
+f9=(λ (x y z) (f6 (f7 z x (cdr 
+ (f8 y x x))) y))
+f3=(λ (x y) (cons (car x) 
+ (cons y empty)))
+f15=(λ (x) (f7 RPAREN empty 
+ (cons LPAREN x)))
+f20=(λ (x y z) (f7 z (cons x 
+ y)))
+f19=(λ (x y) (map (λ (z) (if 
+ (char-eq? z x) y z))))
+f1=(λ (x) (f0 x STRING))
+f17=(λ (x) (f1 (f4 x SPACE)))
+f2=(λ (x y) (map (λ (z) 
+ (index z y)) (range x)))
+f3=(λ (x y z) (f0 (cons z 
+ (cons x y))))
+f6=(λ (x y) (f4 (f5 x y) y))
+f11=(λ (x y) (f6 (f10 empty y 
+ x) y))
+f7=(λ (x y) (fold x x (λ (z u) 
+ (if (char-eq? z y) (f5 u 
+ z) u))))
+f8=(f0 STRING)
+f9=(λ (x y) (char-eq? (fold 
+ (cdr x) '-' y)))
+f10=(λ (x y) (f0 (cons y x)))
+f4=(λ (x y) (unfold x (λ (z) 
+ (char-eq? (car z) y)) (λ 
+ (u) (car u)) (λ (v) (cdr 
+ v))))
+f5=(λ (x y) (fold (f4 x y) 
+ (cdr x) (λ (z u) (cdr 
+ u))))
+f12=(λ (x y) (map (λ (z) (if 
+ (char-eq? z y) x z))))
+f0=(λ (x y) (fold y x (λ (z u) 
+ (cons z u))))
+f13=(λ (x) (f0 (cons RPAREN 
+ empty) (cons LPAREN 
+ x)))
+f18=(λ (x y) (f0 (fold (cdr x) 
+ empty (λ (z u) (if (y (λ 
+ (v) (char-eq? v z))) 
+ STRING u))) x))
+f15=(λ (x y) (cons (car y) 
+ (cons '.' (f14 x '.'))))
+f16=(+ 1 (+ 1 1))
+f14=(λ (x y) (cons (car x) 
+ (cons y empty)))
+f19=(λ (x) (cdr (cdr (cdr 
+ (cdr (range (length 
+ x)))))))
+Ellis, Wong, Nye, ..., Solar-Lezama, Tenenbaum. arxiv 2020.
+49
+
+Library structure: Generating Text
+Libraries for probabilistic generative models over text:
+data from crawling web for CSV ﬁles
+f2=(λ (x) (f1 (r_dot x)))
+f4=(λ (x) (f3 (λ (y) 
+ (r_kleene (λ (z) 
+ (r_const z)) (y x)))))
+f14=(λ (x) (f3 (λ (y) (y (f4 
+ x)))))
+f5=(r_kleene (λ (x) 
+ (string_S x)))
+f32=(λ (x) (f5 (f0 x)))
+f6=(λ (x) (f3 (λ (y) (r_u (y 
+ x)))))
+f33=(λ (x) (f10 (f18 (f6 (f1 
+ (f6 x))))))
+f7=(λ (x) (r_const (f3 x)))
+f26=(λ (x) (f7 (λ (y) (f8 
+ x))))
+f9=(λ (x) (f8 (r_d x)))
+f15=(λ (x) (r_const (f9 x)))
+f30=(λ (x) (f23 (f9 x)))
+f11=(λ (x) (f10 (r_d x)))
+f12=(λ (x) (string_H (r_u 
+ x)))
+f13=(λ (x) (r_l (r_l x)))
+f17=(λ (x) (f13 (f3 (λ (y) 
+ x))))
+f16=(λ (x) (f3 (λ (y) (r_d 
+ x))))
+f36=(λ (x) (f29 (f16 x)))
+f18=(λ (x) (r_u (r_u (r_u 
+ x))))
+f19=(r_kleene (λ (x) 
+ (string_0 x)))
+f1=(λ (x) (f0 (r_u x)))
+f21=(λ (x) (r_const (f1 x)))
+f20=(λ (x) (f8 (f8 x)))
+f22=(λ (x) (r_dot (string_1 
+ x)))
+f24=(λ (x) (f23 (r_d x)))
+f25=(λ (x) (r_d 
+ (string_period x)))
+f27=(λ (x) (f25 (r_d (r_d 
+ x))))
+f28=(λ (x) (f10 (f8 x)))
+f29=(λ (x) (r_u (r_d x)))
+f3=(λ (x) (r_kleene (λ (y) 
+ (r_dot y)) (x (r_kleene 
+ (λ (z) (r_d z))))))
+f10=(λ (x) (f3 (λ (y) 
+ (r_const (y x)))))
+f31=(λ (x) 
+ (string_underscore 
+ (r_d x)))
+f0=(r_kleene (λ (x) (r_u 
+ x)))
+f34=(λ (x) (f8 (r_const x)))
+f35=(r_kleene (λ (x) 
+ (string_M x)))
+f8=(λ (x) (r_d (r_d (r_d 
+ x))))
+f23=(λ (x) (r_const (r_d 
+ x)))
+f3=(λ (x) (f2 (r_d x)))
+f5=(λ (x) (f4 (r_d (f4 x))))
+f7=(λ (x) (f4 (f6 x)))
+f24=(λ (x) (f7 (r_kleene (λ 
+ (y) (f23 y)) x)))
+f8=(λ (x) (r_u (f0 x)))
+f2=(λ (x) (f1 (f0 x)))
+f9=(λ (x) (r_dot (r_dot 
+ x)))
+f10=(r_kleene (λ (x) 
+ (string_dash x)))
+f12=(λ (x) (f11 x (λ (y) 
+ (string_comma y))))
+f13=(λ (x) (r_d (string_0 
+ x)))
+f15=(λ (x) (r_kleene (λ (y) 
+ (f6 (r_dot y))) 
+ (r_kleene (λ (z) (f14 
+ z)) x)))
+f16=(λ (x) (f11 (f4 x)))
+f17=(λ (x) (r_d (f4 (r_d 
+ x))))
+f0=(λ (x) (r_d (r_d x)))
+f18=(λ (x) (r_const (f6 (f0 
+ x))))
+f1=(λ (x) (r_const (r_d (f0 
+ x))))
+f23=(λ (x) (r_const (f0 x)))
+f28=(λ (x) (f0 (f0 x)))
+f11=(λ (x y) (r_const 
+ (r_kleene (λ (z) (f6 (y 
+ z))) x)))
+f22=(λ (x) (f18 (f19 x)))
+f19=(r_kleene (λ (x) 
+ (string_0 x)))
+f20=(λ (x) (f1 (r_d x)))
+f4=(r_kleene (λ (x) (r_u 
+ x)))
+f25=(λ (x) (f4 (r_u x)))
+f21=(λ (x) (r_u (r_u (r_u 
+ x))))
+f6=(r_kleene (λ (x) (r_d 
+ x)))
+f14=(λ (x) (r_const (f6 x)))
+f27=(λ (x) (f25 (r_u x)))
+f26=(λ (x) (r_l (r_l x)))
+f29=(λ (x) (r_d (r_d (r_d 
+ x))))
+f30=(λ (x y) (r_l (r_l 
+ (r_kleene y x))))
+f1=(λ (x) 
+ (string_underscore 
+ (f0 x)))
+f2=(λ (x) (r_u (r_u x)))
+f29=(λ (x) (r_u (f2 x)))
+f3=(λ (x) (r_l (r_l x)))
+f5=(λ (x) (f4 (r_d (r_d 
+ x))))
+f6=(λ (x) (r_const (r_d 
+ (r_d x))))
+f12=(λ (x) (f6 (f0 x)))
+f20=(λ (x) (f6 (r_d (r_d 
+ x))))
+f11=(λ (x) (f7 (f8 (f10 (f8 
+ x)))))
+f13=(λ (x) (f12 
+ (string_period x)))
+f14=(λ (x y) (r_kleene y 
+ (r_dot (r_u x))))
+f16=(λ (x) (f15 (r_d 
+ (string_period x))))
+f15=(r_kleene (λ (x) (f0 
+ (r_dot x))))
+f17=(λ (x) (f15 (r_const 
+ (r_d x))))
+f18=(λ (x) (f15 (r_d x)))
+f25=(λ (x) (r_u (f15 x)))
+f23=(λ (x y) (f15 (r_kleene y 
+ x)))
+f28=(λ (x) (f18 (r_d x)))
+f19=(λ (x) (f7 (f10 x)))
+f0=(r_kleene (λ (x) (r_d 
+ x)))
+f24=(λ (x) (f23 x (λ (y) (f0 
+ (r_const y)))))
+f7=(λ (x) (r_const (f0 x)))
+f9=(λ (x) (r_u (f0 x)))
+f21=(λ (x) (f20 (r_d x)))
+f4=(λ (x) (r_u (r_d (r_d 
+ x))))
+f22=(λ (x) (r_d (string_0 
+ x)))
+f26=(λ (x) (r_d (r_d (r_d 
+ (r_d (r_d x))))))
+f27=(r_kleene (λ (x) (f9 
+ x)))
+f10=(λ (x) (f9 (f9 x)))
+f8=(r_kleene (λ (x) (r_u 
+ x)))
+f2=(λ (x) (r_const (f1 x)))
+f5=(λ (x) (r_const (f4 x)))
+f6=(λ (x) (r_l (r_l x)))
+f27=(λ (x) (f6 (f3 x)))
+f7=(λ (x) (r_u (r_u x)))
+f20=(λ (x) (r_u (f7 x)))
+f15=(λ (x) (f14 (f7 x)))
+f29=(λ (x) (r_d (f7 x)))
+f1=(λ (x) (r_d (f0 x)))
+f12=(λ (x) (f11 (f1 x)))
+f13=(λ (x) (string_0 (f1 
+ x)))
+f21=(λ (x) (r_u (f1 x)))
+f22=(λ (x) (f1 (r_const x)))
+f30=(λ (x) (r_alt (x f1) (λ 
+ (y) (r_dot y))))
+f8=(λ (x) (r_const (r_d 
+ (r_kleene (λ (y) (r_d 
+ y)) x))))
+f10=(λ (x) (f9 (f8 x)))
+f17=(λ (x) (f8 (f0 x)))
+f4=(λ (x) (r_d (f3 x)))
+f24=(λ (x) (f12 (f0 x)))
+f16=(λ (x) (f15 (f3 x)))
+f9=(λ (x) (r_alt (λ (y) y) (λ 
+ (z) (r_dot z)) (r_d x)))
+f18=(r_kleene (λ (x) (f14 
+ (r_d x))))
+f19=(r_alt (λ (x) (f11 x)) (λ 
+ (y) (f18 y)))
+f26=(λ (x) (f18 (f0 x)))
+f28=(λ (x) (f18 (f14 x)))
+f14=(r_kleene (λ (x) (r_u 
+ x)))
+f23=(λ (x) (f11 (f0 x)))
+f25=(λ (x) (string_period 
+ (f0 x)))
+f11=(λ (x) (r_const (f0 x)))
+f0=(λ (x) (r_d (r_d x)))
+f3=(r_kleene (λ (x) (r_dot 
+ x)))
+50
+
+150 random dreams before learning
+51
+
+150 random dreams after learning
+52
+

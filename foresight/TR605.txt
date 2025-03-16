@@ -1,0 +1,3168 @@
+Essential Language Support for
+Generic Programming:
+Formalization Part 1
+Technical Report 605
+Jeremy Siek and Andrew Lumsdaine
+December 21, 2004
+Abstract
+“Concepts” are an essential language feature needed to support generic pro-
+gramming in the large. Concepts allow for succinct expression of bounds on type
+parameters of generic algorithms, enable systematic organization of problem do-
+main abstractions, and make generic algorithms easier to use. In this paper we
+formalize the design of a type system and semantics for concepts that is suitable
+for non-type-inferencing languages. Our design shares much in common with the
+type classes of Haskell, though our primary inﬂuence is from best practices in
+the C++ community, where concepts are used to document type requirements for
+templates in generic libraries. The technical development in this paper deﬁnes an
+extension to System F and a type-directed translation from the extension back to
+System F. The translation is proved sound; the proof is written in the human read-
+able but machine checkable Isar language and has been automatically veriﬁed by
+the Isabelle proof assistant. This document was generated directly from the Isar
+theory ﬁles using Isabelle’s support for literate proofs.
+1
+
+Contents
+1
+Introduction
+2
+2
+Related Work
+5
+3
+Introduction to Isabelle and Isar
+7
+4
+System F
+9
+4.1
+Type Substitution . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+10
+4.2
+Type Equality . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+11
+4.3
+Type Rules for System F . . . . . . . . . . . . . . . . . . . . . . . .
+11
+4.4
+Properties of System F
+. . . . . . . . . . . . . . . . . . . . . . . . .
+13
+5
+Introduction to System FG
+19
+6
+Informal Description of the Translation
+23
+7
+Formal Semantics of FG
+25
+7.1
+Type Substitution . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+25
+7.2
+Type Equality . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+27
+7.3
+Concept Environments and Translation of Types . . . . . . . . . . . .
+27
+7.4
+Model Environments . . . . . . . . . . . . . . . . . . . . . . . . . .
+29
+7.5
+Model Member Lookup and Access
+. . . . . . . . . . . . . . . . . .
+30
+7.6
+Translation from FG to F . . . . . . . . . . . . . . . . . . . . . . . .
+31
+8
+The Translation is Sound
+33
+8.1
+Concept Environment Sanity Conditions . . . . . . . . . . . . . . . .
+33
+8.2
+Environment Correspondence . . . . . . . . . . . . . . . . . . . . . .
+33
+8.3
+Properties of Sane Concept Environments . . . . . . . . . . . . . . .
+35
+8.4
+Properties of the Type Translation
+. . . . . . . . . . . . . . . . . . .
+37
+8.5
+Paths Through Dictionaries . . . . . . . . . . . . . . . . . . . . . . .
+46
+8.6
+Preserving the Environment Correspondence . . . . . . . . . . . . . .
+48
+8.7
+Model Member Lookup . . . . . . . . . . . . . . . . . . . . . . . . .
+51
+8.8
+Properties of Dictionary Access
+. . . . . . . . . . . . . . . . . . . .
+57
+8.9
+The Main Theorem . . . . . . . . . . . . . . . . . . . . . . . . . . .
+59
+9
+Conclusion
+65
+Acknowledgments
+66
+1
+Introduction
+Generic programming is an effective methodology for developing reusable software
+libraries. Musser and Stepanov developed the methodology in the late 1980’s [32,33]
+and applied it to the construction of sequence and graph algorithms in Scheme, Ada,
+2
+
+and C. In the early 1990’s they shifted focus to C++ and took advantage of templates [46]
+to construct the Standard Template Library [45] (STL). The STL became part of the
+C++ Standard, which brought generic programming into the mainstream. Since then,
+generic programming has been successfully applied in the creation of generic libraries
+for numerous problem domains [4,24,38,41,43,48,50].
+A distinguishing characteristic of generic programming is that generic algorithms are
+expressed in terms of properties of types, rather than in terms of any particular type. A
+generic algorithms can be used (more importantly, reused) with any type that has the
+necessary properties. (Support for generic programming in a statically typed language
+thus requires type parameterization.)
+A fundamental issue in providing language support for generic programming is how to
+express the set of admissible types for a given algorithm, or equivalently, how to design
+a type system that can check calls to a generic (type-parameterized) algorithm and
+separately check the implementation of the algorithm. An important complementary
+issue is providing the run-time mechanism by which user-deﬁned operations, such as
+multiplication for a BigInt type, are connected with uses of operations inside a generic
+algorithm, such as a call to x ∗x in an algorithm parameterized on the number type.
+In today’s programming languages there are three common approaches to addressing
+these issues: subtype bounds, type classes, and by-name operation lookup. We brieﬂy
+describe each of these approaches below and show examples in Figure 1.
+Subtype Bounds (Figure 1 (a)) In object-oriented languages, bounds on type parame-
+ters are typically expressed via subtyping [7,8,37]. When a generic function constrains
+a type parameter to be a subtype of an interface, objects passed to the generic function
+must carry along the necessary operations. This approach is used in Eiffel [28] and in
+the generics extensions to Java [6] and C# [23,29].
+Type Classes (Figure 1 (b)) In Haskell, type classes are used to describe the set of
+admissible types to a generic function [49]. A type class contains a list of required
+operations, and a type is declared to belong to a type class through an instance dec-
+laration that provides implementations of the required operations. If a type parameter
+to a generic function is constrained to be an instance of a type class, operations from
+the appropriate instance declaration are implicitly passed into the generic function. A
+type class is similar to an object-oriented interface in that it speciﬁes a set of required
+operations. However, unlike interfaces, type classes are not themselves types (e.g., one
+cannot declare a variable with a type class as its type).
+By-Name Operation Lookup (Figure 1 (c)) In CLU [26] and Cforall [11], a generic
+function declares the name and signature of all the operations it needs. Then at a call to
+the generic function, the enclosing scope must contain deﬁnitions of functions with the
+appropriate names and signatures. These functions are then passed implicitly into the
+generic function. The approach used in C++ is similar in that individual operations are
+found based on their names. However, a generic function does not explicitly declare
+which operations it needs. Instead, name resolution in the body of the function is
+performed after instantiation, using argument-dependent lookup [16].
+In [12] we implemented a generic graph library (based on the Boost Graph Library [42])
+3
+
+public interface Number<U> {
+public U mult(U other);
+}
+public class BigInt implements Number<BigInt> {
+public BigInt mult(BigInt x) { ... }
+...
+}
+public class Square {
+<T extends Number<T>>
+T square(T x) { return x.mult(x); }
+public static void main(String[] args) {
+square(BigInt(4));
+}
+}
+(a) Subtyping: parameter T must extend the Number in-
+terface.
+class Number a where
+mult :: a →a →a
+instance Number Int where
+mult = (∗)
+square :: Number a ⇒a →a
+square x = mult x x
+main = square (4::Int)
+(b) Type classes: parameter
+“a” must be an instance of
+the Number type class.
+template <class Number>
+Number square(Number x) {
+return mult(x, x);
+}
+int mult(int x, int y) { return x ∗y; }
+int main() {
+return square(4);
+}
+(c) By-name operation lookup:
+a
+function with the name “mult” is
+found for type int.
+Figure 1: Common approaches to realizing generic programming.
+4
+
+using programming languages in each of the above three categories. We carefully eval-
+uated each language with respect to support for generic programming and found that
+although these approaches were able to support generic programming to varying de-
+grees, none was ideal. The primary limitation was that existing languages do not fully
+capture the essential feature of generic programming, namely, concepts.
+In the parlance of generic programming, concepts are used to express sets of admis-
+sible types to an algorithm. More speciﬁcally, a concept is deﬁned as a collection
+of abstractions, membership in which is deﬁned by a list of requirements. Concepts
+as speciﬁcations were formalized in the generic programming literature [21, 22, 51],
+but are more widely known through their use in the documentation of C++ template
+libraries [5,44].
+Contributions. The current practice of generic programming is impeded because no
+existing language provides all the features and abstractions needed to support generic
+programming. In this paper we capture the essence of the necessary language ab-
+stractions in a small formal system. Our primary contribution is System FG, a simple
+language based on System F [13, 40] that explicitly includes concepts. Our design of
+FG reﬂects a decade of experience in generic library construction in C++. Technically,
+System FG is unique because 1) it provides scoped concept and model declarations,
+2) concepts integrate nested types and type sharing in a type class-like feature, and 3)
+it explores the design space of type classes for non-type-inferencing languages. The
+formal developments in this paper were carried out using the Isabelle/Isar proof assis-
+tant [34, 35]. We deﬁne System FG and a translation from FG to F and prove that the
+translation is sound. The proof is expressed in the Isar proof language, a language that
+is both human readable and machine checkable, and the proofs have been veriﬁed in
+Isabelle. This document was generated directly from the Isar theory ﬁles.
+Road map. Concepts have a number of similarities to the type classes of Haskell [15,
+49] and FG has a number of similarities (and differences) with existing work, which we
+discuss in Section 2. In Section 3 we provide a brief introduction to Isabelle and Isar.
+In Section 4 we review System F, formalize its type system in Isabelle, and prove a few
+properties that are necessary for our proof that the translation from FG to F is sound. In
+Section 5 we introduce the syntax of FG and present some examples that demonstrate
+generic programming in FG. We deﬁne both the type system and dynamic semantics
+of FG in terms of a type-directed translation to System F (similar to the translation of
+type classes to System F in [15]). We present an informal description of the translation
+in Section 6 and the Isabelle formalization in Section 7. We prove that the translation
+is sound in Section 8. Section 9 discusses future work and concludes.
+2
+Related Work
+Of existing languages, Haskell’s type classes are the most similar to concepts. They are
+based purely on parametric polymorphism, as are concepts. A fundamental difference
+between our approach and that of type classes is that we are targeting languages without
+Hindley-Milner style type inference. This gives our design more freedom in other
+5
+
+aspects. For example, in FG two concepts may share the same member name (as do
+classes in object-oriented languages) whereas in Haskell two type classes in the same
+module may not share the same member name. In addition, our design is based on
+experience in the ﬁeld of generic library construction. One of the primary lessons
+learned from that experience is the need for modularity, especially for good scoping
+rules. As a result, concepts and models in FGare expressions, not declarations (as are
+type classes and instances in Haskell), and they obey the usual lexical scoping rules.
+The advantages of lexically scoped concepts and models are discussed in Section 5.
+Another lesson we learned is that support for associated types is important. In our
+study [12] we found that without associated types, interfaces of generic algorithms be-
+come cluttered with extra type parameters to the point of causing scalability problems,
+and internal helper types of abstract data types must be exposed, thereby breaking
+encapsulation. In response to our study, Chakravarty et al proposed an extension to
+Haskell for associating algebraic data types with concepts [9]. Our work differs from
+that in [9] in three ways. First, our associated types are not algebraic data types but sim-
+ply requirements for a type deﬁnition; all that is necessary for generic algorithms. The
+second difference is that we include same-type constraints, which are vital for generic
+algorithms that use associated types. Associated types and same-type constraints will
+be treated in Part 2 of the technical report. Third, we include concept inheritance (re-
+ﬁnement) in our formalism. Earlier extensions to Haskell [10,19] address some of the
+same issues solved by associated types, but they did not address the problems of clutter
+and encapsulation.
+In Standard ML [30], a rough analogy can be made between ML signatures and FG
+concepts, and between ML structures and FG models. However, there are signiﬁcant
+differences. Fist, functors are module-level constructs and therefore provide a more
+coarse-grained mechanism for parameterization than do generic functions. More im-
+portantly, functors require explicit instantiation with a structure, thereby making their
+use more heavyweight than generic functions in FG or Haskell, which perform auto-
+matic lookup of the required structure. The associated types and same-type constraints
+of FG are roughly equivalent to types nested in ML signatures and to type sharing. We
+reuse some implementation techniques from ML such as a union/ﬁnd based algorithm
+for deciding type equality [27]. There are numerous other languages with parameter-
+ized modules [1,14,39] that also require explicit instantiation with a structure.
+As discussed in the introduction, many object-oriented languages choose to express
+bounds on type parameters via subtyping [6, 23, 28, 29]. For a detailed account of the
+problems we encountered with the subtype-based approach we refer the reader to our
+study [12].
+In some sense, our work combines some of the best features of Haskell and ML relative
+to generic programming. However, there are non-trivial details to combining these
+features and these details are discussed in detail in this paper.
+6
+
+3
+Introduction to Isabelle and Isar
+Isabelle is a generic proof assistant, and Isabelle/HOL is the version of Isabelle that
+supports reasoning in higher-order logic. The Isar proof language is a front end to
+Isabelle that provides both a human readable presentation and a machine checkable
+formalism. We provide a short introduction to Isabelle and Isar here, which we hope is
+enough to enable the reader to understand this paper. For a more detailed introduction
+we refer to the reader to [34,35].
+The following is an example proof in Isar. The lemma proves that the length of two
+lists appended is the sum of the length of the two lists. The label length-append has
+been given to the lemma so that we can use it in other proofs. Like most proofs in
+this document, this proof is by induction. The induction is on the list ls1. Isabelle
+encompasses an ML-like functional language, complete with support for data types.
+Since there are two constructors for the list data type, there will be two cases for the
+induction. A long dash indicates the start of a comment.
+lemma length-append: ∀ls2. length (ls1@ls2) = length ls1 + length ls2
+proof (induct ls1)
+— The ﬁrst case is for the empty list. The keyword “show” indicates that a subgoal of the
+lemma is to be proved. The phrase “by simp” indicates that the statement will be proved using
+Isabelle’s simpliﬁer, which expands deﬁnitions, in this case length and append, and performs
+some simple arithmetic and logic.
+show ∀ls2. length ([] @ ls2) = length [] + length ls2 by simp
+next — The second case is for when ls1 = x#xs. The keyword “ﬁx” introduces fresh variables.
+ﬁx x xs — The keyword “assume” introduces one or more premises. We often use the label IH
+for an induction hypothesis.
+assume IH: ∀ls2. length (xs @ ls2) = length xs + length ls2
+show ∀ls2. length ((x#xs) @ ls2) = length (x#xs) + length ls2
+proof clarify — “clarify” decomposes logical constructs such as ∀and −→.
+ﬁx ls2 — The “have” below states an intermediate result.
+have length ((x#xs) @ ls2) = length (x#(xs@ls2)) by simp
+— The keyword “also” indicates equational reasoning. The ellipses stand for the previous
+right-hand side.
+also have . . . = 1 + length (xs@ls2) by simp
+— Previously proven statements can be used via the “from” keyword followed by the labels
+for the statements.
+also from IH have . . . = 1 + length xs + length ls2 by simp
+— The keyword “ultimately” indicates we are ﬁnished with the equational reasoning and have
+the ﬁrst left-hand side equal to the last right-hand side
+ultimately have length ((x#xs) @ ls2) = 1 + length xs + length ls2 by simp
+— “thus” is like “show”, but uses the previous statement.
+thus length ((x#xs) @ ls2) = length (x#xs) + length ls2 by simp
+qed
+qed
+The following tree type is an example of Isabelle’s facility for deﬁning algebraic data
+types.
+datatype ′a tree = Leaf ′a | Node ′a tree ′a tree
+7
+
+Isabelle provides two facilities for the deﬁnition of recursive functions. The ﬁrst re-
+stricts deﬁnitions to primitive recursive functions, but automatically ensures termina-
+tion. There must be a pattern match against the input data type, which decomposes
+the data into its parts. Then a recursive call must refer to one of the parts. The type
+constructor ⇒is for (total) functions.
+consts height :: ′a tree ⇒nat
+primrec
+height (Leaf x) = 0
+height (Node a b) = 1 + max (height a) (height b)
+The second facility allows for the deﬁnition of total recursive functions, but the user
+must provide a measure function that decreases with each recursive call. Isabelle will
+attempt to automatically prove that the measure decreases. If Isabelle fails, the user
+must provide the appropriate lemmas to allow the termination proof to succeed. Below
+is a version of quick sort for lists. A lemma concerning the length of a ﬁltered list is
+needed to prove termination. Suc is the constructor for natural numbers that adds one.
+lemma ﬁlter-length: length (ﬁlter f xs) < Suc (length xs)
+by (simp add: less-Suc-eq-le)
+consts quicksort :: nat list ⇒nat list
+recdef quicksort measure length
+quicksort [] = []
+quicksort (x#xs) = quicksort(ﬁlter (λ y. y≤x) xs) @ [x] @ quicksort(ﬁlter (λ y. x<y) xs)
+(hints recdef-simp: ﬁlter-length)
+Another important feature of Isabelle is the inductive deﬁnition of sets, which will be
+used in this paper to deﬁne judgments of various forms, especially typing judgments.
+The well typed terms of the simply-typed λ-calculus serves as an example of an in-
+ductively deﬁned set. The following data types represent the types and terms of the
+simply-typed λ-calculus. Nice syntax for the data type constructors is deﬁned in the
+parentheses.
+datatype stlc-type = Fun stlc-type stlc-type (inﬁxl →100) | Bot (⊥100)
+datatype stlc-term = Vrbl nat (‘-) | Apply stlc-term stlc-term (-·-) | Abs nat stlc-term (λ -. -)
+The set of well typed terms is actually a triple, consisting of a type assignment, a term,
+and its type. Several labeled introduction rules are deﬁned for the set.
+consts well-typed :: ((nat ⇒stlc-type) × stlc-term × stlc-type) set
+inductive well-typed intros
+stlc-var: (Γ, ‘x, Γ x) ∈well-typed
+stlc-app: [[ (Γ, e1, τ→τ ′) ∈well-typed; (Γ, e2, τ) ∈well-typed ]]
+=⇒(Γ, e1 · e2, τ ′) ∈well-typed
+stlc-abs: (Γ(x:=τ), e, τ ′) ∈well-typed =⇒(Γ, λ x. e, τ→τ ′) ∈well-typed
+The double arrow =⇒is Isabelle’s meta-level implication, and [[ P; Q ]] =⇒R is an
+abbreviation for P =⇒Q =⇒R. The notation Γ(x:=τ) stands for function update:
+f(a := b) ≡λx. if x = a then b else f x
+8
+
+Figure 2: Types and Terms of System F
+s, t
+∈Type Variables
+x, y, d ∈Term Variables
+n
+∈N
+σ, τ, ν ::= t | fn τ →τ | τ × · · · × τ | ∀t. τ
+f
+::= x | f(f) | λy : τ. f | Λt. f | f[τ]
+| let x = f in f | ⟨f, . . . , f⟩| nth f n
+The following creates nice syntax for membership in the inductively deﬁned set.
+syntax well-typed :: [nat ⇒stlc-type, stlc-term, stlc-type] ⇒bool (- ⊢- : - [52,52,52] 51)
+translations Γ ⊢e : τ ⇌(Γ, e, τ) ∈well-typed
+Isabelle has a facility for typesetting any implication as an inference rule with a hor-
+izontal bar, which will be used throughout this paper for the introduction rules of in-
+ductively deﬁned sets.
+Γ ⊢e1 : τ →τ ′
+Γ ⊢e2 : τ
+Γ ⊢e1·e2 : τ ′
+(STLC-APP)
+Γ(x := τ) ⊢e : τ ′
+Γ ⊢λ x. e : τ →τ ′(STLC-ABS)
+4
+System F
+System F, the polymorphic lambda calculus, is the prototypical tool for studying type
+parameterization [13,40]. Figure 2 presents the abstract syntax for the types and terms
+of System F. Type abstractions and functions have multiple parameters, instead of the
+more standard single parameter, to facilitate the translation from FG to F. Tuples are
+included in the language to serve as the runtime representation of models, and a let
+expression serves to further simplify the translation. Several constants not included
+here will be used in the examples, such as fix (for recursion), but these are not included
+in the formalization because they are trivial to add.
+It is possible to write generic algorithms in System F, as demonstrated in Figure 3, with
+a polymorphic sum function. The function is written in the higher-order style, passing
+the type-speciﬁc add and zero as parameters. However, this approach does not scale:
+practical algorithms typically require dozens of type-speciﬁc operations.
+The following data types are used to represent types and terms of System F in Isabelle.
+Shorthand syntax for the data type constructors is given in the parentheses next to each
+constructor. Dashes in the syntax are place-holders for arguments.
+types var = nat
+datatype ty = VarT var (‘- ) | ArrowT ty list ty (fn - →- ) | AllT var list ty (∀-. - )
+| TupleT ty list (⟨-⟩) | BoolT | IntT
+9
+
+Figure 3: Higher Order Sum in System F
+let sum =
+(Λ t.
+fix (λ sum : fn(list t, fn(t,t)→t, t)→t.
+λls : list t, add : fn(t,t)→t, zero : t.
+if null[t](ls) then zero
+else add(car[t](ls), sum(cdr[t](ls), add, zero)))) in
+let ls = cons[int](1, cons[int](2, nil[int])) in
+sum[int](ls, iadd, 0)
+datatype trm = Var var (‘- ) | App trm trm list (inﬁxl · )
+| Lam var list ty list trm (λ -:-. - ) | LetTrm var trm trm (let - := - in - )
+| Forall var list trm (Λ -. - ) | Inst trm ty list (-[-] )
+| Tuple trm list (⟨-⟩) | Nth trm nat | Boolean bool | Integer int
+4.1
+Type Substitution
+The process of instantiating a type abstraction substitutes types for occurrences of the
+parameters in the body of the abstraction. For example, take the identify function id =
+Λt.λx:t. x whose type is ∀t.t→t. Instantiating the identity function id [int] substitutes
+int for t, resulting in λx:int.x which has the type int→int.
+As deﬁned here, type abstractions have multiple parameters, so a list of types will be
+simultaneously substituted for a list of parameters. The following auxiliary function
+will be used to search through a list of variables and a corresponding list of types to
+ﬁnd the type for a variable (and the position of the variable in the list).
+consts lookup :: [var, var list, ′t list, nat] ⇒( ′t × nat) option
+primrec
+lookup x [] vs i = None
+lookup x (k#ks) vs i =
+(case vs of [] ⇒None | v#vs ′ ⇒if k = x then Some (v,i) else lookup x ks vs ′ (Suc i))
+There are several ways to deﬁne substitution. The standard deﬁnition is used here and
+the variable convention is relied on to assure that free variables are not captured during
+substitution [3]. The recursive function below implements substitution. The nested list
+in the ty datatype prevents the use of Isabelle’s primrec facility, so recdef is used to
+deﬁne substitution. The following two lemmas are needed to prove termination. The
+ﬁrst states that if x is in ss, then size x is less than size (fn ss →t). The second states
+that if if x is in τs, then size x is less than size ⟨τs⟩.
+lemma ty-list-tc1: x ∈set ss −→size x < Suc (ty-list-size1 ss + size t)
+by (induct ss rule: list.induct, auto)
+10
+
+lemma ty-list-tc2: x ∈set τs −→size x < Suc (ty-list-size2 τs)
+by (induct τs rule: list.induct, auto)
+consts sub-ty :: (var list × ty list × ty) ⇒ty
+recdef sub-ty measure (λ p. size (snd (snd p)))
+sub-ty(ts, τs, ‘t) = (case (lookup t ts τs 0) of None ⇒‘t | Some (τ,i) ⇒τ)
+sub-ty(ts, τs, fn σs →τ) = fn (map (λ σ. sub-ty(ts,τs,σ)) σs) →sub-ty(ts,τs,τ)
+sub-ty(ts, τs, ∀ss. τ) = (∀ss. sub-ty(ts,τs,τ))
+sub-ty(ts, τs, ⟨σs⟩) = ⟨map (λ σ. sub-ty(ts,τs,σ)) σs⟩
+sub-ty(ts, τs, BoolT) = BoolT
+sub-ty(ts, τs, IntT) = IntT
+(hints recdef-simp: ty-list-tc1 ty-list-tc2)
+The following abbreviations are used for substitution. The notation for substitution
+on a list of types is slightly different to decrease Isabelle’s parsing time. (It increases
+greatly when there is ambiguity).
+[ts7→τs]τ ≡sub-ty (ts, τs, τ)
+{ts7→τs}σs ≡map (λσ. sub-ty (ts, τs, σ)) σs
+4.2
+Type Equality
+The presence of universal types complicates type equality, since the types ∀t.t→t and
+∀s.s→s should be equal even though they are syntactically different. Two types are
+equal when a renaming of bound variables (α conversion) can make them syntactically
+equal. A renaming will be represented as a function from variables to variables. The
+following function updates a renaming with a series of variable bindings.
+consts extend :: [ ′a list, ′a list, ′a ⇒′a] ⇒( ′a ⇒′a)
+primrec
+extend [] vs T = T
+extend (k#ks) vs T = (case vs of [] ⇒T | v#vs ⇒T(k:=v))
+Figure 4 deﬁnes the type equality judgment.
+4.3
+Type Rules for System F
+The type rules will refer to a typing environment that map each λ-bound variable to its
+type.
+types Tenv = (var × ty) set
+The following notation is used to insert a binding into the environment.
+Γ,x:τ ≡{(x, τ)} ∪Γ
+The following function adds a list of bindings to the environment.
+consts pushs-env :: ( ′k × ′v) set ⇒′k list ⇒′v list ⇒( ′k × ′v) set (-,-:- )
+11
+
+Figure 4: Equality of types in System F up to the renaming of bound type variables.
+t = T s
+T ⊢F ‘s = ‘t (F-EQV)
+T |=F τs = τs ′
+T ⊢F τ = τ ′
+T ⊢F fn τs →τ = fn τs ′ →τ ′ (F-EQF)
+extend ts ts ′ T ⊢F τ = τ ′
+T ⊢F ∀ts. τ = ∀ts ′. τ ′ (F-EQA)
+T |=F τs = τs ′
+T ⊢F ⟨τs⟩= ⟨τs ′⟩(F-EQT)
+T ⊢F BoolT = BoolT (F-EQB)
+T ⊢F IntT = IntT (F-EQI)
+T |=F [] = [] (F-EQN)
+T ⊢F τ = τ ′
+T |=F τs = τs ′
+T |=F τ·τs = τ ′·τs ′
+(F-EQC)
+primrec
+Γ,[]:τs = (Γ::( ′k × ′v) set)
+Γ,(x#xs):τs = (case τs of [] ⇒Γ | τ#τs ⇒(Γ,xs:τs),x:τ)
+The domain of an environment is deﬁned as follows.
+dom Γ ≡{x | ∃τ. (x, τ) ∈Γ}
+The type rules for System F also keep track of which type variables are in scope, to en-
+sure that the parameters of a type abstraction are disjoint with all other type parameters
+in scope and thereby maintain the variable convention. Thus the environment includes
+both the typing environment for term variables and a set of type variables.
+record Fenv =
+tys :: Tenv
+tvars :: var set
+The type rules must also ensure that λ-bound variables do not appear as free variables
+in the environment. The ftv function computes the free type variables of a type, and btv
+the bound type variables.
+consts ftv :: ty ⇒nat set
+recdef ftv measure size
+ftv (‘t) = {t}
+ftv (fn τs →τ) = S (map ftv τs) ∪ftv τ
+ftv (∀ts. τ) = ftv τ −set ts
+ftv (⟨τs⟩) = S (map ftv τs)
+ftv BoolT = {}
+ftv IntT = {}
+(hints recdef-simp: ty-list-tc1 ty-list-tc2)
+consts btv :: ty ⇒nat set
+recdef btv measure size
+btv (‘t) = {}
+12
+
+btv (fn τs →τ) = S (map btv τs) ∪btv τ
+btv (∀ts. τ) = btv τ ∪set ts
+btv (⟨τs⟩) = S (map btv τs)
+btv BoolT = {}
+btv IntT = {}
+(hints recdef-simp: ty-list-tc1 ty-list-tc2)
+where we have overloaded S for a list of sets as deﬁned below. foldr is used instead of
+foldl because foldr follows the natural structure of a list, which makes it easier to work
+with when performing induction on lists.
+S ls ≡foldr op ∪ls ∅
+ftv is extended to typing environments with the following deﬁnition.
+FTV Γ ≡S {V | ∃x τ. (x, τ) ∈Γ ∧V = ftv τ}
+The type rules for System F are presented in Figure 5.
+4.4
+Properties of System F
+In this section, some basic properties of System F will be proved, properties concerning
+substitution, environments, and well typing that are needed later in the report.
+A few facts about the lookup function are needed. The ﬁrst lemma states that lookup
+fails when the item does not appear in the list of keys. The “is” keyword introduces an
+abbreviation for the proposition to be proved. The keyword ?thesis refers to the current
+subgoal.
+lemma lookup-fails: ∀x (vs:: ′v list) i. x /∈set ks −→lookup x ks vs i = None (is ?P ks)
+proof (induct ks) show ?P [] by simp
+next ﬁx k ks assume IH: ?P ks show ?P (k#ks)
+proof clarify ﬁx x and vs:: ′v list and i assume xmem: x /∈set (k#ks)
+show lookup x (k#ks) vs i = None
+proof (cases vs) assume vs = [] thus ?thesis by simp
+next ﬁx v vs ′ assume vs: vs = v#vs ′ from vs xmem IH show ?thesis by auto
+qed
+qed
+qed
+The next lemma characterizes the pre and post-conditions for a successful lookup. The
+use of “obtain” corresponds to the elimination of an existential.
+lemma lookup-succeeds:
+∀t (τs:: ′v list). t ∈set ts ∧length ts = length τs
+−→(∀i. (∃j. i ≤j ∧(j −i) < length ts ∧ts!(j−i) = t ∧lookup t ts τs i = Some (τs!(j−i),j)))
+(is ?P ts)
+proof (induct ts) show ?P [] by simp
+next ﬁx k ks assume IH: ?P ks show ?P (k#ks)
+proof clarify ﬁx t and τs:: ′v list and i
+assume M: t ∈set(k#ks) and L: length (k#ks) = length τs
+13
+
+Figure 5: Type Rules for System F
+(x, τ) ∈tys Γ
+Γ ⊢F ‘x : τ (WT-F-VAR)
+Γ ⊢F e : fn σs →τ
+Γ |=F es : σs ′
+id |=F σs = σs ′
+Γ ⊢F e · es : τ
+(WT-F-APP)
+Γ(|tys := tys Γ,xs:σs|) ⊢F e : τ
+set xs ∩dom tys Γ = ∅
+|xs| = |σs|
+Γ ⊢F λ xs:σs. e : fn σs →τ
+(WT-F-
+ABS)
+Γ ⊢F e : ∀ts. σ
+|ts| = |τs|
+Γ ⊢F e[τs] : [ts7→τs]σ
+(WT-F-TAPP)
+Γ(|tvars := tvars Γ ∪set ts|) ⊢F e : σ
+set ts ∩tvars Γ = ∅
+set ts ∩FTV (tys Γ) = ∅
+distinct ts
+Γ ⊢F Λ ts. e : ∀ts. σ
+(WT-F-TABS)
+Γ ⊢F e : σ
+Γ(|tys := tys Γ,x:σ|) ⊢F e ′ : τ
+x /∈dom tys Γ
+Γ ⊢F let x := e in e ′ : τ
+(WT-F-LET)
+Γ |=F es : τs
+Γ ⊢F ⟨es⟩: ⟨τs⟩(WT-F-TUPLE)
+Γ ⊢F e : ⟨τs⟩
+τs[i] = τ
+Γ ⊢F Nth e i : τ
+(WT-F-NTH)
+Γ ⊢F Boolean b : BoolT (WT-F-BOOL)
+Γ ⊢F Integer b : IntT (WT-F-INT)
+Γ |=F [] : [] (WT-F-NIL)
+Γ ⊢F e : τ
+Γ |=F es : τs
+Γ |=F e·es : τ·τs
+(WT-F-CONS)
+14
+
+from L obtain τ τs ′ where ts: τs = τ#τs ′ by (induct τs rule: list.induct, auto)
+show ∃j. i ≤j ∧(j−i) < length (k#ks) ∧(k#ks)!(j−i) = t
+∧lookup t (k#ks) τs i = Some (τs!(j−i),j)
+proof (cases t = k) assume ta: t = k from ta ts show ?thesis by auto
+next assume ta: t ̸= k
+from ta M L ts IH obtain j τ ′ where I: Suc i ≤j and jilk: (j −Suc i) < length ks
+and ksji: ks ! (j −Suc i) = t and tsi: τs ′!(j −Suc i) = τ ′
+and lts: lookup t ks τs ′ (Suc i) = Some (τ ′,j) by (auto, blast)
+from I have I2: i ≤j by simp
+from I have ij: Suc (j −Suc i) = j −i by arith
+from ksji tsi have (k#ks)!(Suc (j −Suc i)) = t ∧(τ#τs ′)!(Suc (j −Suc i)) = τ ′ by simp
+with ij ts have A: (k#ks)!(j −i) = t ∧τs!(j−i) = τ ′ by simp
+from jilk have B: (j −i) < length (k#ks) by (simp, arith)
+from lts ts ta A have C: lookup t (k#ks) τs i = Some (τs!(j−i),j) by simp
+from I2 A B C show ?thesis by simp
+qed
+qed
+qed
+Next some basic facts about substitution are proved. Substitution on a list of types
+commutes with append. Substitution also commutes with the nth function, which is
+derived directly from the fact that the map function commutes with nth. Substitution
+does not change the length of a list of types.
+lemma subst-append: ∀ts τs σs ′. {ts7→τs}(σs@σs ′) = {ts7→τs}σs @ {ts7→τs}σs ′
+by (induct σs rule: list.induct, auto)
+lemma subst-nth: ∀i ts σs. i < length τs −→({ts7→σs}τs)!i = [ts7→σs](τs!i)
+using nth-map by simp
+lemma subst-length: ∀ts σs. length τs = length ({ts7→σs}τs)
+by (induct τs rule: list.induct, auto)
+If the variables to be substituted do not occur in the type, then substitution does not
+change the type. Before proving this, the following function is needed to formalize the
+notion of occurring type variables.
+consts otv :: ty ⇒nat set
+recdef otv measure size
+otv (‘t) = {t}
+otv (fn τs →τ) = S (map otv τs) ∪otv τ
+otv (∀ts. τ) = otv τ ∪set ts
+otv (⟨τs⟩) = S (map otv τs)
+otv BoolT = {}
+otv IntT = {}
+(hints recdef-simp: ty-list-tc1 ty-list-tc2)
+The proof is by induction on the structure of types. The induction rule that Isabelle has
+generated based on the datatype deﬁnition is a mutual induction with three parts. The
+ﬁrst part is for types and the second and third parts are for lists of types.
+15
+
+lemma no-otv-subst-is-id-mutual:
+(∀ts ϱs. set ts ∩otv τ = {} −→[ts7→ϱs]τ = τ)
+∧(∀ts ϱs. set ts ∩S (map otv τs) = {} −→{ts7→ϱs}τs = τs)
+∧(∀ts ϱs. set ts ∩S (map otv τs) = {} −→{ts7→ϱs}τs = τs)
+by (induct rule: ty.induct, simp add: lookup-fails, auto)
+corollary no-otv-subst-ty-is-id: ∀ts ϱs. set ts ∩otv τ = {} −→[ts7→ϱs]τ = τ
+using no-otv-subst-is-id-mutual by simp
+The next proof is a standard result called the Substitution Lemma [3]. Again the proof
+is by induction on types. The following two abbreviations will be used for the proposi-
+tions to be proved.
+constdefs sub-lemma-ty :: ty ⇒bool
+sub-lemma-ty M ≡(∀xs ys Ls Ns. set xs ∩set ys = {} ∧set xs ∩S (map otv Ls) = {}
+∧length xs = length Ns ∧length ys = length Ls ∧distinct xs
+−→[ys7→Ls]([xs7→Ns]M) = [xs7→{ys7→Ls}Ns]([ys7→Ls]M))
+constdefs sub-lemma-tys :: ty list ⇒bool
+sub-lemma-tys Ms ≡(∀xs ys Ls Ns. set xs ∩set ys = {} ∧set xs ∩S (map otv Ls) = {}
+∧length xs = length Ns ∧length ys = length Ls ∧distinct xs
+−→{ys7→Ls}({xs7→Ns}Ms) = {xs7→{ys7→Ls}Ns}({ys7→Ls}Ms))
+The lemma as normally stated would require that
+set xs ∩S (map ftv Ls) = {}
+however, by the variable convention we also have
+set xs ∩S (map btv Ls) = {}
+Thus we make the variable convention explicit, and include the premise
+set xs ∩S (map otv Ls) = {}
+The following fact about the union of a list of sets will be needed in the proof.
+lemma union-list-elem-subset: ∀i. i < length ls −→ls!i ⊆S ls
+by (induct ls, simp, clarify, case-tac i, auto)
+The case for M ≡‘t is the non-trivial part of the lemma. The rest of the cases are either
+immediate or are proved directly from their induction hypotheses.
+lemma substitution-lemma-var: sub-lemma-ty (‘t)
+proof (simp only: sub-lemma-ty-def, clarify)
+ﬁx xs ys and Ls::ty list and Ns::ty list
+assume disj-xs: set xs ∩set ys = {} and disj-xl: set xs ∩S (map otv Ls) = {}
+and lxn: length xs = length Ns and lyl: length ys = length Ls and dxs: distinct xs
+let ?P = [ys7→Ls]([xs7→Ns](‘t)) = [xs7→{ys7→Ls}Ns]([ys7→Ls](‘t))
+have t ∈set xs ∨t /∈set xs by simp
+moreover { assume txs: t ∈set xs from disj-xs txs have tys: t /∈set ys by auto
+from txs lxn obtain i where ixs: i < length xs and xsi: xs!i = t
+and ltn: lookup t xs Ns 0 = Some (Ns!i,i)
+using lookup-succeeds[of t xs Ns 0] by auto
+from ltn have [ys7→Ls]([xs7→Ns](‘t)) = [ys7→Ls](Ns!i) by simp
+16
+
+also have . . . = [xs7→{ys7→Ls}Ns](‘t)
+proof −
+from txs lxn obtain j where jxs: j < length xs and xsj: xs!j = t
+and ltnp: lookup t xs ({ys7→Ls}Ns) 0 = Some ({ys7→Ls}Ns!j, j)
+using lookup-succeeds[of t xs {ys7→Ls}Ns 0] by auto
+from dxs ixs jxs xsi xsj have ij: i = j using distinct-conv-nth by auto
+from ij jxs lxn have [ys7→Ls](Ns!i) = {ys7→Ls}Ns!i using subst-nth by simp
+also from ij ltnp have . . . = [xs7→{ys7→Ls}Ns](‘t) by simp
+ultimately show ?thesis by simp
+qed
+also from tys have . . . = [xs7→{ys7→Ls}Ns]([ys7→Ls](‘t)) by (simp add: lookup-fails)
+ﬁnally have ?P by simp
+} moreover { assume txs: t /∈set xs
+have t ∈set ys ∨t /∈set ys by simp
+moreover { assume tys: t ∈set ys
+from tys lyl obtain i where iys: i < length ys and ysi: ys!i = t
+and ltl: lookup t ys Ls 0 = Some (Ls!i,i) using lookup-succeeds[of t ys Ls 0] by auto
+from txs ltl have [ys7→Ls]([xs7→Ns](‘t)) = Ls!i by (simp add: lookup-fails)
+also have . . . = [xs7→{ys7→Ls}Ns](Ls!i)
+proof −
+from lyl iys have (map otv Ls)!i ⊆S (map otv Ls)
+using union-list-elem-subset[of i map otv Ls] by simp
+with lyl iys disj-xl have set xs ∩otv (Ls!i) = {} by auto
+thus ?thesis using no-otv-subst-ty-is-id by auto
+qed
+also from ltl have . . . = [xs7→{ys7→Ls}Ns]([ys7→Ls](‘t)) by simp
+ﬁnally have ?P by simp
+} moreover { assume tys: t /∈set ys
+from tys txs have [ys7→Ls]([xs7→Ns](‘t)) = ‘t by (simp add: lookup-fails)
+also from tys txs have . . . = [xs7→{ys7→Ls}Ns]([ys7→Ls](‘t)) by (simp add: lookup-fails)
+ﬁnally have ?P by simp
+} ultimately have ?P by blast
+} ultimately show ?P by blast
+qed
+lemma substitution-lemma-mutual: sub-lemma-ty M ∧sub-lemma-tys Ms ∧sub-lemma-tys Ms
+by (induct rule: ty.induct, simp only: substitution-lemma-var, simp-all)
+corollary substitution-lemma: set xs ∩set ys = {} ∧set xs ∩S (map otv Ls) = {}
+∧length xs = length Ns ∧length ys = length Ls ∧distinct xs
+−→[ys7→Ls]([xs7→Ns]M) = [xs7→{ys7→Ls}Ns]([ys7→Ls]M)
+using substitution-lemma-mutual by simp
+If the variables in ys do not occur in Ms then the Substitution Lemma can be simpliﬁed
+to the following.
+corollary substitution-lemma2:
+assumes xsys: set xs ∩set ys = {} and xsls: set xs ∩S (map otv Ls) = {}
+and ysM: set ys ∩otv M = {} and xsNs: length xs = length Ns
+and ysls: length ys = length Ls and dxs: distinct xs
+17
+
+shows [ys7→Ls]([xs7→Ns]M) = [xs7→{ys7→Ls}Ns]M
+proof −
+from xsys xsls ysM xsNs ysls dxs
+have [ys7→Ls]([xs7→Ns]M) = [xs7→{ys7→Ls}Ns]([ys7→Ls]M)
+using substitution-lemma apply blast done
+also from ysM have . . . = [xs7→{ys7→Ls}Ns]M
+using no-otv-subst-ty-is-id by simp
+ﬁnally show ?thesis by simp
+qed
+A couple facts concerning type environments will be needed. The ﬁrst fact is a kind of
+associativity and the second fact is that pushing bindings on the environment commutes
+with set union.
+lemma pushs-env-assoc:
+∀dts. (S,d:dt),ds:dts = S,(d#ds):(dt#dts)
+apply (induct-tac ds) apply simp apply clarify apply (case-tac dts) by auto
+lemma push-union-commute:
+∀S S ′ dts. (S,ds:dts) ∪S ′ = ((S::Tenv) ∪S ′),ds:(dts::ty list)
+apply (induct-tac ds) apply simp apply clarify apply (case-tac dts) apply simp
+proof −
+ﬁx a list S S ′ and dts::ty list and aa lista
+assume IH: ∀(S::Tenv) S ′ (dts::ty list). S,list:dts ∪S ′ = (S ∪S ′),list:dts
+and dts: dts = aa # lista
+from dts have (S,a # list:dts) ∪S ′ = insert (a,aa) (S,list:lista ∪S ′) by simp
+also from IH have . . . = insert (a,aa) ((S ∪S ′),list:lista) by auto
+also from dts have . . . = (S ∪S ′),a # list:dts by simp
+ﬁnally show S,a # list:dts ∪S ′ = (S ∪S ′),a # list:dts by blast
+qed
+Type equality is reﬂexive.
+lemma extend-reﬂ-id: (λu. u) = extend ls ls (λu. u) by (induct ls, auto)
+lemma f-equal-reﬂ-mutual: (id ⊢F τ = τ) ∧(id |=F σs = σs) ∧(id |=F σs = σs)
+apply (induct rule: ty.induct) apply auto
+proof (rule f-eqa)
+ﬁx list::var list and ty assume E: (λu. u) ⊢F ty = ty
+have (λu. u) = extend list list (λu. u) by (simp add: extend-reﬂ-id)
+with E show (extend list list (λu. u)) ⊢F ty = ty by simp
+qed
+corollary f-eq-reﬂ: id ⊢F σ = σ by (simp add: f-equal-reﬂ-mutual)
+corollary f-eqs-reﬂ: id |=F σs = σs by (simp add: f-equal-reﬂ-mutual)
+Type equality is also symmetric and the following lemma extends symmetry to lists of
+types.
+lemma f-eqs-symm: V σs ′. T |=F σs = σs ′ =⇒T |=F σs ′ = σs
+apply (induct σs rule: list.induct) apply (ind-cases T |=F [] = σs ′, simp)
+18
+
+apply (case-tac σs ′) apply simp apply (ind-cases T |=F a#list = [], simp)
+proof auto
+ﬁx a list aa lista
+assume IH: V σs ′. T |=F list = σs ′ =⇒T |=F σs ′ = list
+and E: T |=F a # list = aa # lista
+from E have T |=F list = lista by (rule inv-f-eqc, simp)
+with IH have ls: T |=F lista = list by simp
+from E have T ⊢F a = aa by (rule inv-f-eqc, simp)
+hence a: T ⊢F aa = a by (rule f-eq-symm)
+from a ls show T |=F aa#lista = a#list by simp
+qed
+If two lists of terms are well typed, then appending the lists results in a well typed list
+of terms.
+lemma wt-f-append: ∀S τs fs ′ τs ′. S |=F fs : τs ∧S |=F fs ′ : τs ′ −→S |=F fs@fs ′ : τs@τs ′
+by (induct fs rule: list.induct, auto, rule inv-wt-f-nil, auto,
+rule inv-wt-f-cons, auto, rule wt-f-cons, auto)
+Alpha-conversion on types should not affect well typing. This trivial fact requires a
+fair amount of work to prove, so we simply state the following as axioms for now.
+axioms
+equal-preserves-wt: [[ S ⊢F e : τ; id ⊢F τ = τ ′ ]] =⇒S ⊢F e : τ ′
+equal-preserves-wts: [[ S |=F es : τs; id |=F τs = τs ′ ]] =⇒S |=F es : τs ′
+The variables occurring in a type are free or bound.
+lemma otv-ftv-btv: (otv τ = ftv τ ∪btv τ)
+∧(S (map otv τs) = S (map ftv τs) ∪S (map btv τs))
+∧(S (map otv τs) = S (map ftv τs) ∪S (map btv τs))
+by (induct rule: ty.induct, auto)
+5
+Introduction to System FG
+The syntax for types and terms of FG is presented in Figure 6. Type abstractions in
+FG have a where clause that requires certain types to model certain concepts. There is
+a corresponding where clause in the universal type constructor. The terms of FG also
+include concept and model declarations, and model member access expressions.
+To illustrate the features of FG, we evolve the sum function from Figure 3. To be
+generic, the sum function should work for any element type that supports addition, so
+we will capture this requirement in a concept. Mathematicians already have a name
+for a slightly more generalized concept: a Semigroup is some type together with an
+associative binary operation (such as addition or multiplication). In FG, the Semigroup
+concept is deﬁned as follows.
+concept Semigroup(t) {
+binary op : fn(t,t)→t;
+19
+
+Figure 6: Types and Terms of FG
+c
+∈Concept Names
+s, t
+∈Type Variables
+x, y, z ∈Term Variables
+ρ, σ, τ ::= t | fn (τ)−> τ | ∀t where σ models c. τ
+e
+::= x | e(e) | λy : τ. e
+| Λt where σ models c. e | e[τ]
+| concept c(t){reﬁnes c(σ); x : τ; } in e
+| model c(τ) {x = e; } in e
+| <c(τ)>.x
+}
+The generic sum function requires more than just addition; it also requires a zero el-
+ement of the appropriate type. Again, mathematicians have a name for this concept:
+a Monoid, which is a Semigroup with an identity element. In generic programming
+terminology, we say that Monoid is a reﬁnement of Semigroup and deﬁne Monoid in FG
+accordingly.
+concept Monoid(t) {
+refines Semigroup(t);
+identity elt : t;
+}
+To completely reﬂect the mathematical deﬁnition of a monoid, the identity elt must
+satisfy the following axioms for any object x of type t. Unfortunately, expressing this
+requirement is outside the scope of the FG type system.
+binary op(identity elt, x) = x = binary op(x, identity elt)
+A particular type, such as int, is said to model a concept if it satisﬁes all of the require-
+ments in the concept. In FG, an explicit declaration is used to introduce a model of a
+concept (corresponding to an instance declaration in Haskell). The following declares
+int to be a model of Semigroup and Monoid, using integer addition for the binary op-
+eration and 0 for the identity element. The type system checks the body of the model
+against the concept deﬁnition to ensure all required operations are provided and that
+there are model declarations in scope for each reﬁnement.
+model Semigroup(int) {
+binary op = iadd;
+}
+model Monoid(int) {
+identity elt = 0;
+}
+20
+
+A model can be found via the concept name and type, and members of the model can
+be extracted with the dot operator. For example, the following would return the iadd
+function.
+<Monoid(int)>.binary op
+With the Monoid concept deﬁned, we are ready to write a generic sum function. Since
+the function has been generalized to work with any type that has an associative binary
+operation with an identity element (no longer necessarily addition), a more appropriate
+name for this function is accumulate. As in System F, type parameterization in FG is
+provided by the Λ expression. However, FG adds a where clause to the Λ expression
+for listing requirements on the type parameters.
+let accumulate = (Λ t where t models Monoid. /∗body∗/)
+The concepts, models, and where clauses collaborate to provide a mechanism for im-
+plicitly passing operations into a generic function. As in System F, a generic function
+is instantiated by providing type arguments for each type parameter.
+accumulate[int]
+In System F, instantiation substitutes int for t in the body of the Λ expression. In FG,
+instantiation also involves the following steps:
+1. int is substituted for t in the where clause.
+2. For each required model in the where clause, the lexical scope of the instantiation
+is searched for a matching model declaration.
+3. The models are implicitly passed into the generic function.
+Now consider the body of the accumulate function. The model requirements in the
+where clause serve as proxies for actual model declarations. Thus, the body of accumulate
+is type-checked as if there were a model declaration model Monoid(t) in the enclosing
+scope. The <> notation is used inside the body to access the binary operator and
+identity element of the Monoid.
+let accumulate =
+(Λ t where t models Monoid.
+fix (λ accum : fn(list t)→t.
+λls : list t.
+let binary op = <Monoid(t)>.binary op in
+let identity elt = <Monoid(t)>.identity elt in
+if null[t](ls) then identity elt
+else binary op(car[t](ls), accum(cdr[t](ls)))))
+It would be more convenient to write binary op instead of the explicit member access:
+<Monoid(t)>.binary op. However, such a statement would be ambiguous without the
+incorporation of overloading into the language. For example, suppose that a generic
+function has two type parameters, s and t, and requires each to be a Monoid. Then a call
+21
+
+Figure 7: Generic Accumulate
+concept Semigroup(t) {
+binary op : fn(t,t)→t;
+} in
+concept Monoid(t) {
+refines Semigroup(t);
+identity elt : t;
+} in
+let accumulate =
+(Λ t where t models Monoid.
+fix (λ accum : fn(list t)→t.
+λls : list t.
+let binary op = <Monoid(t)>.binary op in
+let identity elt = <Monoid(t)>.identity elt in
+if null[t](ls) then identity elt
+else binary op(car[t](ls), accum(cdr[t](ls))))) in
+model Semigroup(int) {
+binary op = iadd;
+} in
+model Monoid(int) {
+identity elt = 0;
+} in
+let ls = cons[int](1, cons[int](2, nil[int])) in
+accumulate[int](ls)
+to binary op might refer to either <Monoid(s)>.binary op or <Monoid(t)>.binary op.
+The addition of function overloading to FG is future work.
+The complete program for this example is in Figure 7. As with System F, FG is an
+expression-oriented programming language. The concept and models declarations are
+like let; they extend the lexical environment for the enclosed expression (after the in).
+The lexical scoping of models declarations is an important feature of FG, and one
+that distinguishes it from Haskell. We illustrate lexical scoping of models with an
+example. The mathematical deﬁnition of monoid is quite general—it only requires a
+binary operation and an identity element with respect to that operation. That operation
+need not be addition and the identity element need not be zero. The integers with
+multiplication as the binary operation and unity as the identity element also form a
+monoid. This Monoid is expressed in FG as follows.
+model Semigroup(int) {
+binary op = imult;
+22
+
+Figure 8: Intentionally Overlapping Models
+let sum =
+model Semigroup(int) {
+binary op = iadd;
+} in
+model Monoid(int) {
+identity elt = 0;
+} in accumulate[int] in
+let product =
+model Semigroup(int) {
+binary op = imult;
+} in
+model Monoid(int) {
+identity elt = 1;
+} in accumulate[int] in
+let ls = cons[int](1, cons[int](2, nil[int])) in
+(sum(ls), product(ls))
+}
+model Monoid(int) {
+identity elt = 1;
+}
+Borrowing from Haskell terminology, this second deﬁnition of Semigroup and Monoid
+creates overlapping model declarations, since there are now two models declarations
+for Semigroup(int) and Monoid(int). Overlapping model declarations are problematic
+since they introduce ambiguity: when accumulate is instantiated, which model (with
+its corresponding binary operation and identity element) should be used?
+In FG, overlapping models declarations can coexist so long as they appear in sepa-
+rate lexical scopes. In Figure 8 we create sum and product functions by instantiating
+accumulate in the presence of different models declarations. This example would not
+type check in Haskell even if the two instance declarations were to be placed in dif-
+ferent modules, because instance declarations implicitly leak out of a module when
+anything in the module is used by another module.
+6
+Informal Description of the Translation
+We describe a translation from FG to System F that is similar to the type-directed
+translation of Haskell type classes presented in [15]. The translation described here
+23
+
+is intentionally naive, since its main purpose is to communicate the semantics of FG.
+There is extensive literature on techniques for producing more optimized results [2,
+18]. The main idea behind the translation is to represent models with dictionaries that
+map member names to values, and to pass these dictionaries as extra arguments to
+generic functions. Here tuples represent dictionaries, so the model declarations for
+Semigroup(int) and Monoid(int) translate to a pair of let expressions that bind freshly
+generated dictionary names to the tuples for the models.
+model Semigroup(int) {
+binary op = iadd;
+} in
+model Monoid(int) {
+identity elt = 0;
+} in /∗rest ∗/
+=⇒
+let Semigroup 61 = (iadd) in
+let Monoid 67 = (Semigroup 61,0) in /∗rest ∗/
+The accumulate function is translated by removing the where clause and wrapping
+the body in a λ expression with a parameter for each model requirement in the where
+clause.
+let accumulate = (Λ t where t models Monoid. /∗body∗/)
+=⇒
+let accumulate =
+(Λ t. (λ Monoid 18:(fn(t,t)→t)∗t. /∗body ∗/)
+The accumulate function is now curried, ﬁrst taking a dictionary argument and then
+taking the normal arguments.
+accumulate[int](ls)
+=⇒
+((accumulate[int])(Monoid 67))(ls)
+In the body of accumulate there are model member accesses. These are translated into
+tuple member accesses.
+let binary op = <Monoid(t)>.binary op in
+let identity elt = <Monoid(t)>.identity elt in
+=⇒
+let binary op = (nth (nth Monoid 18 0) 0) in
+let identity elt = (nth Monoid 18 1) in
+<Monoid(t)>.binary op could also have been written <Semigroup(t)>.binary op, with
+the same result. As mentioned before, the where clause introduces proxy model decla-
+rations for each type requirement. In addition, the where clause introduces proxies for
+all reﬁnements. This enables the use of Semigroup, since Monoid reﬁnes Semigroup.
+Note that only a single dictionary is passed into accumulate, and that the dictionary
+for Semigroup is found inside the dictionary for Monoid, as shown in Figure 9. During
+translation a table is used to map a concept and type, such as Semigroup(t), to a dictio-
+nary name and a dictionary path. In this example, the dictionary name for Semigroup(t)
+24
+
+Semigroup(t)
+Monoid(t)
+identity_elt
+binary_op
+Monoid(t) := Monoid_18,[]
+Semigroup(t) := Monoid_18,[0]
+Figure 9: Dictionary representations for the models Monoid(t) and Semigroup(t). Also
+shown is the model environment, which maps a model to its dictionary name and dic-
+tionary path.
+is Monoid 18, and the dictionary path is [0], since the Semigroup dictionary is in the
+ﬁrst slot of the Monoid dictionary.
+The translation for the entire accumulate example is show in Figure 10.
+7
+Formal Semantics of FG
+This section describes the Isabelle/Isar formalization of a semantics for FG via a type-
+directed translation to System F. The types and terms of FG are represented with the
+following data types.
+datatype tyg = VarTG var (‘- ) | ArrowG tyg list tyg (fn - →- )
+| AllG var list (var × (tyg list)) list tyg (∀- where -. - )
+| BoolG | IntG
+types where-clause = (var × (tyg list)) list
+types reﬁnements = (var × (tyg list)) list
+datatype trmg = VarG var (‘- ) | AppG trmg trmg list (inﬁxl · )
+| LamG var list tyg list trmg (λ -:-. - ) | LetTrmG var trmg trmg (let - := - in - )
+| ForallG var list where-clause trmg (Λ - where -. - ) | InstG trmg tyg list (-[-] )
+| BooleanG bool | IntegerG int
+| ConceptG var var list reﬁnements var list tyg list trmg
+(concept - (-) { reﬁnes -; - : -; } in - )
+| ModelG var tyg list var list trmg list trmg (model - (-) { - = -; } in - )
+| ModelMemG var tyg list var (⟨-(-)⟩.- )
+7.1
+Type Substitution
+The deﬁnition of simultaneous substitution on types in FG is given below, again using
+Isabelle’s recdef facility. The following lemmas are needed to prove termination. The
+presence of the where clause in type applications slightly complicates the proof.
+lemma tyg-list-tc1: σ ∈set σs −→size σ < Suc (tyg-list-size1 σs + size τ)
+25
+
+Figure 10: Translation of the Accumulate Example
+let accumulate =
+(Λ t.
+λMonoid 18:(fn(t,t)→t)∗t.
+fix (λ accum:(fn(list t)→t).
+(λ ls:list t.
+let binary op = (nth (nth Monoid 18 0) 0) in
+let identity elt = (nth Monoid 18 1) in
+if null[t](ls) then identity elt
+else binary op(car[t](ls),accum(cdr[t](ls)))))) in
+let Semigroup 61 = (iadd) in
+let Monoid 67 = (Semigroup 61,0) in
+let ls = cons[int](1,cons[int](2,nil[int])) in
+(accumulate[int](Monoid 67))(ls)
+by (induct σs rule: list.induct, auto)
+lemma tyg-list-size2-elt: σ ∈set σs −→size σ < Suc (tyg-list-size2 σs)
+by (induct σs rule: list.induct, auto)
+lemma where-list-tc: [[ σ ∈set σs; (c, σs) ∈set ws ]]
+=⇒size σ < Suc (nat-tyg-list-x-list-size ws + size τ)
+apply (induct ws rule: list.induct) apply simp
+proof clarify
+ﬁx a b list
+assume IH: [[ σ ∈set σs; (c, σs) ∈set list ]]
+=⇒size σ < Suc (nat-tyg-list-x-list-size list + size τ)
+and sss: σ ∈set σs and css: (c,σs) ∈set ((a,b)#list)
+show size σ < Suc (nat-tyg-list-x-list-size ((a, b) # list) + size τ)
+proof (cases (c,σs) = (a,b))
+assume eq: (c,σs) = (a,b)
+from sss have size σ < Suc (tyg-list-size2 σs) by (simp add: tyg-list-size2-elt)
+with eq show ?thesis by simp
+next assume neq: (c,σs) ̸= (a,b)
+from neq css have css2: (c,σs) ∈set list by auto
+from sss css2 IH show ?thesis by simp
+qed
+qed
+consts sub-tyg :: (var list × tyg list × tyg) ⇒tyg
+recdef sub-tyg measure (λ p. size (snd (snd p)))
+sub-tyg(ts, τs, ‘t) = (case (lookup t ts τs 0) of None ⇒‘t | Some (τ,i) ⇒τ)
+26
+
+sub-tyg(ts, τs, fn σs →τ) = fn (map (λ σ. sub-tyg(ts,τs,σ)) σs) →sub-tyg(ts,τs,τ)
+sub-tyg(ts, τs, ∀ss where ws. τ) =
+(∀ss where (map (λ w. (fst w, map (λ σ. sub-tyg(ts,τs,σ)) (snd w))) ws).
+sub-tyg(ts,τs,τ))
+sub-tyg(ts, τs, BoolG) = BoolG
+sub-tyg(ts, τs, IntG) = IntG
+(hints recdef-simp: tyg-list-tc1 where-list-tc)
+The following notation is reused for substitution on FG types and lists of types. New
+notation is introduced for applying a substitution to the requirements in a where clause.
+[ts7→τs]τ ≡sub-tyg (ts, τs, τ)
+{ts7→τs}σs ≡map (λσ. sub-tyg (ts, τs, σ)) σs
+{|ts7→τs|}ws ≡map (λw. (fst w, map (λσ. sub-tyg (ts, τs, σ)) (snd w))) ws
+The list nth function commutes with substitution, and the length of a list of types is
+invariant under substitution.
+lemma substg-nth: ∀i τ ts σs. (τs::tyg list)!i = (τ::tyg) ∧i < length τs
+−→({ts7→σs}τs)!i = [ts7→σs]τ using nth-map by simp
+lemma substg-length: ∀ts σs. length (τs::tyg list) = length ({ts7→σs}τs)
+by (induct τs rule: list.induct, auto)
+7.2
+Type Equality
+Type equality for FG, shown in Figure 11, is nearly the same as that for F. The differ-
+ence is that there is a new judgment T |=r ws = ws ′ for comparing two where clauses.
+7.3
+Concept Environments and Translation of Types
+The typing context for FG includes information about concepts and models. The con-
+cept environment is a set that maps concept names to the following record of informa-
+tion.
+record concept-info =
+params :: var list
+rfn :: reﬁnements
+mem-nms ::var list
+mem-tys :: tyg list
+types Cenv = (var × concept-info) set
+Since type annotations appear in the syntax of System F and FG our translation must
+also convert types. The main goal of the type translation is to remove the where clause
+associated with ∀’s and replace it with a function type whose parameters are the types
+of the dictionaries. The judgment C ⊢τ ⇝τ translates an FG type to an F type in
+the context of concept environment C. This judgment also plays the role of deﬁning
+well-formed FG types (just ignore the parts after the ⇝). The judgment C |= τs ⇝τs ′
+27
+
+Figure 11: Equality of types in FG up to the renaming of bound type variables.
+T ⊢‘s = ‘T s (FG-EQV)
+T |= τs = τs ′
+T ⊢τ = τ ′
+T ⊢fn τs →τ = fn τs ′ →τ ′ (FG-EQF)
+extend ts ts ′ T ⊢τ = τ ′
+extend ts ts ′ T |=r ws = ws ′
+T ⊢∀ts where ws. τ = ∀ts ′ where ws ′. τ ′
+(FG-EQA)
+T ⊢BoolG = BoolG (FG-EQB)
+T ⊢IntG = IntG (FG-EQI)
+T |= [] = [] (FG-EQN)
+T ⊢τ = τ ′
+T |= τs = τs ′
+T |= τ·τs = τ ′·τs ′
+(FG-EQC)
+T |=r [] = [] (FG-EQRN)
+T |= ϱs = ϱs ′
+T |=r rs = rs ′
+T |=r (c, ϱs)·rs = (c, ϱs ′)·rs ′
+(FG-EQRC)
+Figure 12: The translation of types from FG to F. The judgment for well-formed types
+of FG can be obtain by ignoring the parts after ⇝.
+C ⊢‘t ⇝‘t (TRANS-VAR)
+C |= τs ⇝τs ′
+C ⊢τ ⇝τ ′
+C ⊢fn τs →τ ⇝fn τs ′ →τ ′ (TRANS-FUN)
+C |=d ws ⇝δs
+C ⊢τ ⇝τ ′
+distinct ts
+C ⊢∀ts where ws. τ ⇝∀ts. fn δs →τ ′
+(TRANS-ALL)
+C ⊢BoolG ⇝BoolT (TRANS-BOOL)
+C ⊢IntG ⇝IntT (TRANS-INT)
+C |= [] ⇝[] (TRANS-NIL)
+C ⊢τ ⇝τ ′
+C |= τs ⇝τs ′
+C |= τ·τs ⇝τ ′·τs ′
+(TRANS-CONS)
+(c, ci) ∈C
+C |= τs ⇝τs ′
+C |=d rfn ci ⇝δs
+C |= mem-tys ci ⇝σs
+|τs| = |params ci|
+C ⊢d c τs ⇝[params ci7→τs ′](⟨δs @ σs⟩)
+(R-
+D)
+C |=d [] ⇝[] (RS-DS-NIL)
+C ⊢d c τs ⇝δ
+C |=d rs ⇝δs
+C |=d (c, τs)·rs ⇝δ·δs
+(RS-DS-CONS)
+28
+
+translates a list of types. The judgment C ⊢d c ϱs ⇝τ speciﬁes the construction of a
+dictionary type τ from a concept c instantiated with type arguments ϱs. The judgment
+C |=d rs ⇝τs ﬁnds dictionary types for each requirement in a where clause, or for a
+list of reﬁnements in a concept deﬁnition. Figure 12 presents the deﬁnitions of these
+judgments.
+Adding entries to the concept environment does not affect type and dictionary transla-
+tion. This is proved by a straightforward induction on the translation judgments.
+lemma grow-env-pres-trans:
+(C ⊢τ ⇝τ ′ −→(∀C ′. C ⊆C ′ −→C ′ ⊢τ ⇝τ ′))
+∧(C |= τs ⇝τs ′ −→(∀C ′. C ⊆C ′ −→C ′ |= τs ⇝τs ′))
+∧(C ⊢d c ϱs ⇝τ ′ −→(∀C ′. C ⊆C ′ −→C ′ ⊢d c ϱs ⇝τ ′))
+∧(C |=d rs ⇝τs ′ −→(∀C ′. C ⊆C ′ −→C ′ |=d rs ⇝τs ′))
+apply (induct rule: trans-ty-trans-tys-req-dict-reqs-dicts.induct)
+apply simp apply simp apply simp apply simp apply simp apply simp
+apply simp prefer 2 apply simp prefer 2 apply simp
+proof clarify
+ﬁx C δs σs τs τs ′ c ci C ′
+assume cC: (c, ci) ∈C and IH1: ∀C ′. C ⊆C ′ −→C ′ |= τs ⇝τs ′
+and IH2: ∀C ′. C ⊆C ′ −→C ′ |=d rfn ci ⇝δs
+and IH3: ∀C ′. C ⊆C ′ −→C ′ |= mem-tys ci ⇝σs
+and L: length τs = length (params ci) and CCp: C ⊆C ′
+from CCp cC have cCp: (c,ci) ∈C ′ by auto
+from cCp CCp IH1 IH2 IH3 L r-d show C ′ ⊢d c τs ⇝[params ci7→τs ′](⟨δs @ σs⟩) by simp
+qed
+7.4
+Model Environments
+The model environment contains information about the model declarations that are in
+scope and plays an important role in the translation from FG to F. Each model will
+be translated to a dictionary (represented with a tuple) containing member operations
+of the model and nested tuples for each reﬁned concept. Each model declaration is
+translated to a let expression that binds the tuple-creation expression to a fresh variable
+that will serve as the name of the dictionary.
+types model-info = var × tyg list × var × (nat list)
+types Menv = model-info set
+The model environment stores, for each model, the name of the concept being modeled,
+the type arguments for the type parameters of the concept, a dictionary name, and
+a sequence of natural numbers. This sequence gives the path from the top level of
+the dictionary down to the sub-dictionary for the model. In the typing rule for type
+abstraction, models are added to the model environment for each requirement in the
+where clause. In addition, models for all inherited concepts are added to the model
+environment. The paths in the model environment for these “super” models will point
+to the appropriate place in the dictionary of the “derived” model that was required in
+29
+
+Figure 13: The addition of models to the environment according to the requirements in
+a where clause.
+(c, ci) ∈C
+¬ model-deﬁned c τs M
+M ′ = {(c, τs, d, ns)} ∪M
+C |=♭|rfn ci| {|params ci7→τs|}rfn ci d ns M ′ ⇒M ′′
+C ⊢♭c τs d ns M ⇒M ′′
+(FLAT-M-
+I)
+C |=♭0 rs d ns M ⇒M (FLAT-MS-ZERO)
+rs[i] = (c ′, τs ′)
+C ⊢♭c ′ τs ′ d ns @ [i] M ⇒M ′
+C |=♭i rs d ns M ′ ⇒M ′′
+C |=♭Suc i rs d ns M ⇒M ′′
+(FLAT-MS-
+SUC)
+C ⊢[] [] M ⇒M (ADD-MODELS-NIL)
+C ⊢♭c ϱs d [] M ⇒M ′
+C ⊢ws ds M ′ ⇒M ′′
+C ⊢(c, ϱs)·ws d·ds M ⇒M ′′
+(ADD-MODELS-CONS)
+the where clause. The addition of models to the environment is formalized with the
+three judgments deﬁned in Figure 13.
+The judgment C ⊢ws ds M ⇒M ′ adds models to model environment M for the where
+clause ws, resulting in M ′. The judgment C ⊢♭c τs d ns M ⇒M ′ processes a single
+requirement and C |=♭i rs d ns M ⇒M ′ is for processing reﬁnements. It would
+have been preferable to encode these judgments as functions, but they are not primitive
+recursive, and Isabelle does not support general recursive functions that are mutually
+recursive. The model-deﬁned function used in Figure 13 is deﬁned as follows.
+model-deﬁned c τs M ≡∃dns. (c, τs, dns) ∈M
+7.5
+Model Member Lookup and Access
+The translation of model member access expressions, such as <Monoid(s)>.binary op,
+requires that we ﬁnd the type for binary op and the path to binary op through the dictio-
+nary. The judgments in Figure 14 map a member name, concept, and type arguments
+to the type of the member and its dictionary path.
+In the translation of a model member access expression, a series of tuple access ex-
+pressions is produced. The access follows a speciﬁed path through the dictionary (as
+in Figure 9), and is accomplished by the mk-nth function.
+consts
+mk-nth :: [trm, nat list] ⇒trm
+primrec
+30
+
+Figure 14: Look up the member of a model and return the type of the member and the
+dictionary path to the member.
+(c, ci) ∈C
+lookup x (mem-nms ci) (mem-tys ci) 0 = Some (τ, i)
+C ⊢♭x c τs ns ⇒[params ci7→τs]τ ns @ [|rfn ci| + i]
+(LM-M)
+(c, ci) ∈C
+lookup x (mem-nms ci) (mem-tys ci) 0 = None
+C |=♭x |rfn ci| c τs ns ⇒τ ns ′
+C ⊢♭x c τs ns ⇒τ ns ′
+(LM-R)
+(c, ci) ∈C
+(rfn ci)[i] = (c ′, τs ′)
+C ⊢♭x c ′ {params ci7→τs}τs ′ ns @ [i] ⇒τ ns ′
+C |=♭x Suc i c τs ns ⇒τ ns ′
+(LM-
+RS1)
+C |=♭x i c τs ns ⇒τ ns ′
+C |=♭x Suc i c τs ns ⇒τ ns ′(LM-RS2)
+mk-nth-nil: mk-nth d [] = d
+mk-nth-cons: mk-nth d (n#ns) = mk-nth (Nth d n) ns
+In the translation of type application expressions, the type abstraction, which has been
+translated into a normal function, is applied to the dictionaries that satisfy its where
+clause. Since the dictionaries may be nested inside the dictionary of a more reﬁned
+model, a series of tuple accesses is produced to obtain the right dictionary, again us-
+ing mk-nth. The mk-nths function processes a list of dictionaries and paths, invoking
+mk-nth for each dictionary and path.
+consts
+mk-nths :: [nat list, nat list list] ⇒trm list
+primrec
+mk-nths [] nns = []
+mk-nths (d#ds) nss = (case nss of [] ⇒[] | (ns#nss) ⇒(mk-nth (‘d) ns)#(mk-nths ds nss))
+7.6
+Translation from FG to F
+The rules deﬁning the translation from FG to F are presented in Figure 15. The type
+system for FG can be obtained from the translation by ignoring what appears after
+the ⇝. As mentioned before, the typing environment includes a concept and model
+environment in addition to the usual type assignments for variables, which are bundled
+into the following record.
+types TGenv = (var × tyg) set
+record FGenv =
+tyvars :: var set
+31
+
+vars :: TGenv
+concepts :: Cenv
+models :: Menv
+The following convenience functions are for manipulating the environment.
+Γ,xs:τs ≡Γ(| vars := (vars Γ),xs:τs|)
+Γ,concept c ci ≡Γ(| concepts := insert (c,ci) (concepts Γ)|)
+Γ,model mi ≡Γ(| models := insert mi (models Γ)|)
+The typing rule for concept declarations requires that the concept being declared must
+not appear in the type of the body. The following formalizes what it means for a concept
+name to appear in a type.
+c occurs in types τs ∨c occurs in type τ
+c occurs in type fn τs →τ
+c occurs in ws ∨c occurs in type τ
+c occurs in type ∀ts where ws. τ
+c occurs in type τ ∨c occurs in types τs
+c occurs in types τ·τs
+c occurs in (c, τs)·ws
+c occurs in ws
+c occurs in (c ′, τs)·ws
+As in System F, the rule for type abstraction refers to the free type variables in the
+environment, which in turn refers to the free type variables in a type. We deﬁne the
+following recursive function to compute the free type variables in a type. The pattern
+of the recursion is the same as for substitution, so we reuse the termination lemmas.
+consts ftvg :: tyg ⇒nat set
+recdef ftvg measure size
+ftvg (‘t) = {t}
+ftvg (fn τs →τ) = S (map ftvg τs) ∪ftvg τ
+ftvg (∀ts where ws. τ) = (S (map (λ p. S (map ftvg (snd p))) ws) ∪ftvg τ) −set ts
+ftvg BoolG = {}
+ftvg IntG = {}
+(hints recdef-simp: tyg-list-tc1 where-list-tc)
+consts btvg :: tyg ⇒nat set
+recdef btvg measure size
+btvg (‘t) = {}
+btvg (fn τs →τ) = S (map btvg τs) ∪btvg τ
+btvg (∀ts where ws. τ) = (S (map (λ p. S (map btvg (snd p))) ws) ∪btvg τ) ∪set ts
+btvg BoolG = {}
+btvg IntG = {}
+(hints recdef-simp: tyg-list-tc1 where-list-tc)
+constdefs btv-cpt :: concept-info ⇒var set
+btv-cpt c ≡set (params c) ∪S (map (λ p. S (map btvg (snd p)))(rfn c))∪S (map btvg
+(mem-tys c))
+32
+
+constdefs btvc :: Cenv ⇒var set
+btvc C ≡S { V. (∃c cd. (c,cd) ∈C
+∧V = set (params cd) ∪S (map (λ p. S (map btvg (snd p))) (rfn cd))
+∪S (map btvg (mem-tys cd))) }
+The free type variables in a typing environment is then deﬁned as follows.
+FTVg Γ ≡S {V | ∃x τ. (x, τ) ∈Γ ∧V = ftvg τ}
+8
+The Translation is Sound
+The main theorem of this paper is that the translation from FG to F deﬁned in Figure 15
+is sound. That is, the output terms are well-typed in System F. The proof is by induction
+on the derivation of the translation. There are two extra conditions that are needed for
+the induction: the concept environment must be “sane” and there must be a System F
+typing environment that corresponds to the FG typing environment.
+8.1
+Concept Environment Sanity Conditions
+Figure 16 formalizes the following sanity conditions on the concept environment.
+1. Concept deﬁnitions are unique.
+2. The type parameters for a concept are distinct.
+3. All types that appear in a concept deﬁnition must be well-formed (and thereby
+have a corresponding System F type).
+4. When a concept reﬁnes another concept, the other concept must already be de-
+ﬁned.
+5. The type variables occuring in the body of a concept are a subset of the type
+parameters of the concept.
+8.2
+Environment Correspondence
+Figure 17 deﬁnes the correspondence between the typing environment for FG and the
+typing environment for the translated terms of System F. We write Γ ⇝S to mean
+the FG environment Γ is in correspondence with the System F environment S. The
+correspondence for normal variables is straightforward. If (x, τ) is in vars Γ, then
+there must be a τ ′ such that concepts Γ ⊢τ ⇝τ ′ and (x,τ ′) is in S.
+The correspondence for the model environment is more involved. If model (c,τs,d,ns)
+is in models Γ and if the path ns = [], then the dictionary variable d for that model
+33
+
+Figure 15: Translation from FG to F
+Γ(|models := M, tyvars := tyvars Γ ∪set ts|) ⊢e : σ ⇝f
+set ts ∩tyvars Γ = ∅
+set ts ∩FTVg (vars Γ) = ∅
+distinct ts
+concepts Γ |=d ws ⇝τs
+concepts Γ ⊢ws ds models Γ ⇒M
+Γ ⊢Λ ts where ws. e : ∀ts where ws. σ ⇝Λ ts. (λ ds:τs. f)
+(FG-TABS)
+Γ ⊢e : ∀ts where ws. σ ⇝f
+|ts| = |τs|
+models Γ |= {|ts7→τs|}ws ⇝ds,nns
+concepts Γ |= τs ⇝τs ′
+Γ ⊢e[τs] : [ts7→τs]σ ⇝f[τs ′] · mk-nths ds nns
+(FG-TAPP)
+c /∈dom concepts Γ
+concepts Γ |=d rs ⇝τs
+concepts Γ |= σs ⇝σs ′
+Γ,concept c ci ⊢e : τ ⇝f
+ci = (|params = ts, rfn = rs, mem-nms = xs, mem-tys = σs|)
+distinct ts
+|xs| = |σs|
+[
+(map (λp.
+[
+(map ftvg (snd p))) rs) ⊆set ts
+[
+(map ftvg σs) ⊆set ts
+(c, τ) /∈c-occurs-ty
+Γ ⊢(concept c ts { reﬁnes rs; xs : σs; } in e) : τ ⇝f
+(FG-
+CPT)
+¬ model-deﬁned c ϱs (models Γ)
+(c, ci) ∈concepts Γ
+concepts Γ |= ϱs ⇝ϱs ′
+xs = mem-nms ci
+Γ |= es : σs ⇝fs
+σs = {params ci7→ϱs}mem-tys ci
+concepts Γ |=d rfn ci ⇝dts
+models Γ |= {|params ci7→ϱs|}rfn ci ⇝ds,ns
+de = ⟨mk-nths ds ns @ fs⟩
+|params ci| = |ϱs|
+Γ,model (c, ϱs, d, []) ⊢e : τ ⇝f
+Γ ⊢(model c ϱs { xs = es; } in e) : τ ⇝let d := de in f
+(FG-
+MDL)
+(c, τs, d, ns) ∈models Γ
+concepts Γ ⊢♭x c τs ns ⇒τ ns ′
+Γ ⊢(⟨cτs⟩.x) : τ ⇝mk-nth (‘d) ns ′
+(FG-MEM)
+(x, τ) ∈vars Γ
+Γ ⊢‘x : τ ⇝‘x(FG-VAR)
+Γ ⊢e : fn σs →τ ⇝f
+Γ |= es : σs ′ ⇝fs
+id |= σs = σs ′
+Γ ⊢e · es : τ ⇝f · fs
+(FG-APP)
+Γ,xs:σs ⊢e : τ ⇝f
+concepts Γ |= σs ⇝σs ′
+|xs| = |σs|
+Γ ⊢λ xs:σs. e : fn σs →τ ⇝λ xs:σs ′. f
+(FG-ABS)
+Γ ⊢BooleanG b : BoolG ⇝Boolean b(FG-BOOL)
+Γ ⊢IntegerG i : IntG ⇝Integer i(FG-INT)
+Γ |= [] : [] ⇝[]
+Γ ⊢e : τ ⇝f
+Γ |= es : τs ⇝fs
+Γ |= e·es : τ·τs ⇝f·fs
+Γ |= [] ⇝[],[]
+(c, τs, d, ns) ∈M
+M |= ws ⇝ds,nns
+M |= (c, τs)·ws ⇝d·ds,ns·nns
+34
+
+Figure 16: Concept Environment Sanity
+C |=d rfn c ⇝τs
+C |= mem-tys c ⇝σs
+distinct (params c)
+|mem-nms c| = |mem-tys c|
+[
+(map (λp.
+[
+(map ftvg (snd p))) (rfn c)) ⊆set (params c)
+[
+(map ftvg (mem-tys c)) ⊆set (params c)
+C ⊢c ok
+(WF-C)
+∅ok (WF-CS-NIL)
+n /∈dom C
+C ⊢c ok
+C ok
+{(n, c)} ∪C ok
+(WF-CS-CONS)
+must be bound in S to the dictionary type τ for that model. If the path ns ̸= [], then the
+dictionary variable d must be bound to some dictionary type τ in S and following the
+path ns from τ yields the sub-dictionary type τ ′ for this model. The following is the
+inductive deﬁnition for following a path through a dictionary type.
+τ−[]→τ (P-NIL)
+τs[n]−ns→τ ′
+⟨τs⟩−n·ns→τ ′ (P-CONS)
+The environment correspondence is used in four cases of the main theorem. The fg-var
+case uses the correspondence to obtain the System F type for the variable. The fg-tapp,
+fg-mdl, and fg-mem cases use the correspondence to show that their use of dictionaries
+is well typed.
+8.3
+Properties of Sane Concept Environments
+This section collects a few properties of sane concept environments.
+1. For a given concept name there is at most one concept deﬁnition.
+2. Adding to the concept environment does not affect concept sanity judgements.
+3. All concepts in a sane concept environment are sane.
+The ﬁrst lemma and its corollary prove that each concept has a unique deﬁnition.
+lemma unique-concept-mutual:
+(C ⊢cd ok −→True) ∧(C ok −→(c,cd) ∈C ∧(c,cd ′) ∈C −→cd = cd ′)
+by (induct rule: wf-concept-wf-concept-env.induct, auto)
+35
+
+Figure 17: Correspondence between the FG typeing environment and the System F
+environment needed to type the output of the translation. This correspondence is an
+invariant that is maintained by the translation.
+Γ ⇝S ≡∃Sv Sm. concepts Γ ⊢v vars Γ ⇝Sv ∧concepts Γ ⊢m models Γ ⇝Sm ∧tvars S =
+tyvars Γ ∧tys S = Sm ∪Sv
+C ⊢v ∅⇝∅(CV-NIL)
+C ⊢v V ⇝S
+C ⊢τ ⇝τ ′
+C ⊢v V,x:τ ⇝S,x:τ ′
+(CV-CONS)
+C ⊢m ∅⇝∅(CM-NIL)
+C ⊢m M ⇝S
+C ⊢d c τs ⇝τ
+C ⊢m {(c, τs, d, [])} ∪M ⇝S,d:τ (CM-CONS)
+C ⊢m M ⇝S
+ns ̸= []
+(d, τ) ∈S
+C ⊢d c τs ⇝τ ′
+τ−ns→τ ′
+C ⊢m {(c, τs, d, ns)} ∪M ⇝S
+(CM-DROP)
+corollary unique-concept: [[ C ok; (c,cd) ∈C; (c,cd ′) ∈C ]] =⇒cd = cd ′
+using unique-concept-mutual by blast
+The next properties is that “weakening” the environment by adding more concept deﬁ-
+nition does not affect judgements about a concept deﬁnition’s sanity.
+lemma grow-env-pres-wf-concepts: (C ⊢cd ok −→
+(∀C ′. C ⊆C ′ ∧C ′ ok −→C ′ ⊢cd ok)) ∧(C ok −→True)
+apply (induct rule: wf-concept-wf-concept-env.induct)
+prefer 2 apply simp prefer 2 apply simp
+proof clarify
+ﬁx C σs τs and c::concept-info and C ′
+assume rs: C |=d rfn c ⇝τs and ms: C |= mem-tys c ⇝σs
+and dp: distinct (params c) and len: length (mem-nms c) = length (mem-tys c)
+and rftv: S (map (λp. S (map ftvg (snd p))) (rfn c)) ⊆set (params c)
+and mftv: S (map ftvg (mem-tys c)) ⊆set (params c)
+and ccp: C ⊆C ′ and cpok: C ′ ok
+from ccp cpok rs have rsp: C ′ |=d rfn c ⇝τs using grow-env-pres-trans by blast
+from ccp cpok ms have msp: C ′ |= mem-tys c ⇝σs using grow-env-pres-trans by blast
+from rsp msp dp len rftv mftv show C ′ ⊢c ok using wf-c by blast
+qed
+corollary grow-env-pres-c-ok: [[ C ⊢cd ok; C ′ ok; C ⊆C ′ ]] =⇒C ′ ⊢cd ok
+using grow-env-pres-wf-concepts apply blast done
+The third property is that if a concept is in a sane concept environment, then the concept
+36
+
+is sane.
+lemma c-mem-implies-c-ok-mutual:
+(C ⊢ci ok −→True) ∧(C ok −→(∀c ci. C ok ∧(c,ci) ∈C −→C ⊢ci ok))
+apply (induct rule: wf-concept-wf-concept-env.induct)
+apply simp+ apply clarify apply (case-tac (ca,ci) = (n,c))
+using grow-env-pres-c-ok apply blast using grow-env-pres-c-ok by blast
+corollary c-mem-implies-c-ok: [[ C ok; (c,ci) ∈C ]] =⇒C ⊢ci ok
+using c-mem-implies-c-ok-mutual by blast
+8.4
+Properties of the Type Translation
+This section establishes several properties of the translation from types in FG to types
+in System F.
+The inversion lemma for the translation of a concept instantiation to a dictionary type is
+heavily used. The following lemma is an easier to use variant of that inversion lemma.
+Instead of a conclusion that gives the existence of a concept deﬁnition for concept c, the
+lemma instead includes a premise for the concept deﬁnition cd which the conclusion
+gives its results in terms of.
+lemma inv-r-d2:
+assumes D: C ⊢d c ϱs ⇝τ and Cok: C ok and cC: (c,cd) ∈C
+shows ∃δs σs τs ′. C |= ϱs ⇝τs ′ ∧C |=d rfn cd ⇝δs
+∧C |= mem-tys cd ⇝σs ∧length ϱs = length (params cd)
+∧τ = ⟨{params cd7→τs ′}(δs @ σs)⟩
+proof −
+from D obtain δs σs ϱs ′ cd ′ where cpC: (c,cd ′) ∈C and rs-rsp: C |= ϱs ⇝ϱs ′
+and Ds: C |=d rfn cd ′ ⇝δs and ms-ss: C |= mem-tys cd ′ ⇝σs
+and lrsp: length ϱs = length (params cd ′)
+and T: τ = ⟨{params cd ′ 7→ϱs ′}(δs@σs)⟩by (rule inv-r-d, auto)
+from Cok cC cpC have cd-cdp: cd = cd ′ by (rule unique-concept)
+from cd-cdp have Ds2: C |=d rfn cd ⇝δs by simp
+from cd-cdp have ms-ss2: C |= mem-tys cd ⇝σs by simp
+from cd-cdp lrsp have lrsp2: length ϱs = length (params cd) by simp
+from cd-cdp T have T2: τ = ⟨{params cd 7→ϱs ′}(δs@σs)⟩by simp
+from rs-rsp Ds2 ms-ss2 lrsp2 T2 show ?thesis by auto
+qed
+The next lemma states that the type translation is a function. The proof is a mutual
+induction on the four type translation judegements.
+lemma fun-dict-trans-ty:
+(C ⊢τ ⇝τ ′ −→C ok −→(∀τ ′′. C ⊢τ ⇝τ ′′ −→τ ′ = τ ′′))
+∧(C |= τs ⇝τs ′ −→C ok −→(∀τs ′′. C |= τs ⇝τs ′′ −→τs ′ = τs ′′))
+∧(C ⊢d c ϱs ⇝dt −→C ok −→(∀dt ′. C ⊢d c ϱs ⇝dt ′ −→dt ′ = dt))
+∧(C |=d ws ⇝dts −→C ok −→(∀dts ′. C |=d ws ⇝dts ′ −→dts ′ = dts))
+(is (C ⊢τ ⇝τ ′ −→?P1 C τ τ ′) ∧(C |= τs ⇝τs ′ −→?P2 C τs τs ′)
+∧(C ⊢d c ϱs ⇝dt −→?P3 C c ϱs dt) ∧(C |=d ws ⇝dts −→?P4 C ws dts))
+37
+
+apply (induct rule: trans-ty-trans-tys-req-dict-reqs-dicts.induct)
+apply clarify apply (rule inv-trans-var) apply simp apply simp
+prefer 3 apply clarify apply (rule inv-trans-bool) apply simp apply simp
+prefer 3 apply clarify apply (rule inv-trans-int) apply simp apply simp
+prefer 3 apply clarify apply (rule inv-trans-nil) apply simp apply simp
+prefer 5 apply clarify apply (rule inv-rs-ds-nil) apply simp apply simp
+proof −
+ﬁx C τ τ ′ τs τs ′ assume ?P2 C τs τs ′ and ?P1 C τ τ ′
+thus ?P1 C (fn τs →τ) (fn τs ′ →τ ′) apply clarify by (rule inv-trans-fun, auto)
+next
+ﬁx C δs τ τ ′ ts ws assume ?P4 C ws δs and ?P1 C τ τ ′
+thus ?P1 C (∀ts where ws. τ) (∀ts. fn δs →τ ′)
+apply clarify by (rule inv-trans-all2, auto)
+next
+ﬁx C τ τ ′ τs τs ′ assume ?P1 C τ τ ′ and ?P2 C τs τs ′
+thus ?P2 C (τ # τs) (τ ′ # τs ′) apply clarify by (rule inv-trans-cons, auto)
+next
+ﬁx C δs σs τs τs ′ c and ci::concept-info assume cC: (c,ci) ∈C
+and IH1: ?P2 C τs τs ′ and IH2: ?P4 C (rfn ci) δs and IH3: ?P2 C (mem-tys ci) σs
+show ?P3 C c τs ([params ci7→τs ′](⟨δs @ σs⟩))
+proof clarify
+ﬁx dt ′ assume Cok: C ok and D: C ⊢d c τs ⇝dt ′
+from D Cok cC obtain δs ′ σs ′ τs ′′
+where ts-tspp: C |= τs ⇝τs ′′ and r-dsp: C |=d rfn ci ⇝δs ′
+and ms-sp: C |= mem-tys ci ⇝σs ′
+and dtp: dt ′ = ⟨{params ci7→τs ′′}(δs ′@σs ′)⟩using inv-r-d2 by blast
+from IH1 Cok ts-tspp have tseq: τs ′ = τs ′′ by simp
+from IH2 Cok r-dsp have dseq: δs = δs ′ by simp
+from IH3 Cok ms-sp have mseq: σs = σs ′ by simp
+from dtp tseq dseq mseq show dt ′ = [params ci7→τs ′](⟨δs @ σs⟩) by simp
+qed
+next
+ﬁx C δ δs τs c rs assume ?P3 C c τs δ and ?P4 C rs δs
+thus ?P4 C ((c,τs)#rs) (δ#δs) apply clarify by (rule inv-rs-ds-cons, auto)
+qed
+The length of type list is invariant under translation. The number of requirements in
+where clause is equal the length of the list of dictionary types.
+lemma trans-length:
+(C ⊢τ ⇝τ ′ −→True) ∧(C |= σs ⇝σs ′ −→length σs = length σs ′)
+∧(C ⊢d c ϱs ⇝dt −→True) ∧(C |=d rs ⇝dts −→length rs = length dts)
+by (induct rule: trans-ty-trans-tys-req-dict-reqs-dicts.induct, auto)
+corollary trans-length-tys: C |= σs ⇝σs ′ =⇒length σs = length σs ′
+using trans-length apply blast done
+corollary trans-length-r-d: C |=d rs ⇝dts =⇒length rs = length dts
+using trans-length apply blast done
+38
+
+If the list of types σs translates to σs ′, then the ith element of σs translates to the ith
+element of σs ′.
+lemma trans-nth-helper:
+(C ⊢τ ⇝τ ′ −→True) ∧(C |= σs ⇝σs ′ −→(∀i < length σs. C ⊢σs!i ⇝σs ′!i))
+∧(C ⊢d c ϱs ⇝dt −→True) ∧(C |=d rs ⇝dts −→True)
+apply (induct rule: trans-ty-trans-tys-req-dict-reqs-dicts.induct)
+apply auto apply (case-tac i) apply auto done
+corollary trans-nth: [[ C |= σs ⇝σs ′; i < length σs ]] =⇒C ⊢σs!i ⇝σs ′!i
+using trans-nth-helper by blast
+The next few lemmas and deﬁnitions build up to the proof that type translation re-
+spects substitution. The following fact characterizes the affect of substitution on free
+variables.
+lemma ftv-subst-ty: length ts = length σs =⇒ftv [ts7→σs]τ ⊆(ftv τ −set ts) ∪S (map ftv σs)
+The proof will be a induction on the structure of types, and thus a mutual induction
+proving the following two statements.
+constdefs ftv-subst-ty :: ty ⇒bool
+ftv-subst-ty τ ≡
+(∀ts (σs::ty list). length ts = length σs
+−→ftv [ts7→σs]τ ⊆(ftv τ −set ts) ∪S (map ftv σs))
+constdefs ftv-subst-tys :: ty list ⇒bool
+ftv-subst-tys τs ≡(∀ts (σs::ty list).
+length ts = length σs
+−→S (map ftv (sub-tys ts σs τs)) ⊆(S (map ftv τs) −set ts) ∪S (map ftv σs))
+The case for variables is the only interesting case. There are two subcases to consider,
+when t is substituted, and when it is not.
+lemma ftv-subst-var: ftv-subst-ty (‘t)
+proof (simp only: ftv-subst-ty-def, clarify)
+ﬁx ts σs x assume xfv: x ∈ftv [ts7→σs]‘t and xfss: x /∈S (map ftv σs)
+and len: length ts = length σs
+show x ∈ftv (‘t) −set ts
+proof (cases t ∈set ts)
+assume tts: t ∈set ts
+from tts len obtain i where I: i < length ts and L: lookup t ts σs 0 = Some (σs!i,i)
+using lookup-succeeds[of t ts σs 0] by auto
+hence st: [ts7→σs]‘t = σs!i by simp
+from I len have iss: i < length (map ftv σs) using length-map by simp
+from iss have (map ftv σs)!i ⊆S (map ftv σs) using union-list-elem-subset by blast
+with st iss have ftv [ts7→σs]‘t ⊆S (map ftv σs) using nth-map by simp
+with xfv xfss have False by auto thus ?thesis by simp
+next
+assume tts: t /∈set ts
+from tts have lookup t ts σs 0 = None by (rule lookup-fails)
+39
+
+with xfv tts show ?thesis by simp
+qed
+qed
+lemma ftv-subst-mutual: ftv-subst-ty τ ∧ftv-subst-tys τs ∧ftv-subst-tys τs
+apply (induct rule: ty.induct) apply (rule ftv-subst-var)
+apply (simp, blast)+ apply simp+ apply blast apply simp by (simp, blast)
+corollary ftv-subst-ty: length ts = length σs
+=⇒ftv [ts7→σs]τ ⊆(ftv τ −set ts) ∪S (map ftv σs)
+using ftv-subst-mutual by simp
+corollary ftv-subst-tys: length ts = length σs
+=⇒S (map ftv {ts7→σs}τs) ⊆(S (map ftv τs) −set ts) ∪S (map ftv σs)
+using ftv-subst-mutual by simp
+corollary ftv-subst-ty2:
+assumes ftts: ftv τ ⊆set ts and len: length ts = length σs
+shows ftv [ts7→σs]τ ⊆S (map ftv σs)
+proof −
+from len have ftv [ts7→σs]τ ⊆(ftv τ −set ts) ∪S (map ftv σs)
+by (rule ftv-subst-ty)
+with ftts show ?thesis by auto
+qed
+corollary ftv-subst-tys2:
+assumes ftts: S (map ftv τs) ⊆set ts and len: length ts = length σs
+shows S (map ftv {ts7→σs}τs) ⊆S (map ftv σs)
+proof −
+from len have S (map ftv {ts7→σs}τs) ⊆(S (map ftv τs) −set ts) ∪S (map ftv σs)
+by (rule ftv-subst-tys)
+with ftts show ?thesis by auto
+qed
+The translation never adds free variables to a type. This is proved by induction on the
+translation judgments, with the only interesting case being the case for a requirement
+in a where clause.
+lemma trans-reduces-ftv:
+(C ⊢τ ⇝τ ′ −→C ok −→ftv τ ′ ⊆ftvg τ)
+∧(C |= τs ⇝τs ′ −→C ok −→S (map ftv τs ′) ⊆S (map ftvg τs))
+∧(C ⊢d c ϱs ⇝dt −→C ok −→ftv dt ⊆S (map ftvg ϱs))
+∧(C |=d rs ⇝dts −→C ok −→S (map ftv dts) ⊆S (map (λ p. S (map ftvg (snd p))) rs))
+apply (induct rule: trans-ty-trans-tys-req-dict-reqs-dicts.induct)
+apply simp apply (simp, blast) apply (simp,blast) apply simp apply simp apply simp
+apply (simp, blast) prefer 2 apply simp prefer 2 apply (simp, blast)
+proof clarify
+ﬁx C and δs::ty list and σs τs τs ′ c ci x
+assume cC: (c, ci) ∈C and ts-tsp: C |= τs ⇝τs ′
+and xfds: x ∈ftv [params ci7→τs ′](⟨δs@σs⟩)
+40
+
+and IH1: S (map ftv τs ′) ⊆S (map ftvg τs)
+and IH2: S (map ftv δs) ⊆S (map (λp. S (map ftvg (snd p))) (rfn ci))
+and IH3: S (map ftv σs) ⊆S (map ftvg (mem-tys ci))
+and lts: length τs = length (params ci) and Cok: C ok
+from Cok cC have ciok: C ⊢ci ok by (rule c-mem-implies-c-ok)
+from ciok have rsps: S (map (λp. S (map ftvg (snd p))) (rfn ci)) ⊆set (params ci)
+by (rule inv-wf-c, simp)
+from ciok have msps: S (map ftvg (mem-tys ci)) ⊆set (params ci) by (rule inv-wf-c, simp)
+from ts-tsp lts have ltsp: length (params ci) = length τs ′ by (simp add: trans-length)
+from IH2 rsps have fdsps: S (map ftv δs) ⊆set (params ci) by simp
+from fdsps ltsp have
+A: S (map ftv ({params ci7→τs ′}δs)) ⊆S (map ftv τs ′) by (rule ftv-subst-tys2)
+from IH3 msps have fssps: S (map ftv σs) ⊆set (params ci) by simp
+from fssps ltsp have
+B: S (map ftv ({params ci7→τs ′}σs)) ⊆S (map ftv τs ′) by (rule ftv-subst-tys2)
+from A B have ftv [params ci7→τs ′](⟨δs@σs⟩) ⊆S (map ftv τs ′)
+by (induct δs rule: list.induct, auto)
+with IH1 xfds show x ∈S (map ftvg τs) by auto
+qed
+Substitution respects type translation That is, if τ translates to τ ′, then [ts7→τs]τ trans-
+lates to [ts7→τs ′]τ ′, provided that τs translates to τs ′. The proof is by induction on
+the derivation of the translation. There are two interesting cases, for translating type
+variables, and the case for translating a concept instantiation in a where clause. This
+ﬁrst lemma handles the translation of type variables.
+lemma subst-respects-trans-var: (C ⊢(VarTG t) ⇝(VarT t)
+−→(∀ts τs τs ′. distinct ts ∧length ts = length τs ∧C |= τs ⇝τs ′
+−→C ⊢[ts7→τs](VarTG t) ⇝[ts7→τs ′](VarT t)))
+proof (clarify)
+ﬁx ts::var list and τs τs ′
+assume D: distinct ts and L: length ts = length τs and ts-tsp: C |= τs ⇝τs ′
+show C ⊢[ts7→τs](VarTG t) ⇝[ts7→τs ′](VarT t)
+proof (cases t ∈set ts)
+assume tm: t ∈set ts
+from tm L obtain i where il: i < length ts and tsi: ts!i = t
+and lts: lookup t ts τs 0 = Some (τs!i,i)
+using lookup-succeeds[of t ts τs 0] by auto
+from ts-tsp have length τs = length τs ′ by (rule trans-length-tys)
+with L have L2: length ts = length τs ′ by simp
+from tm L2 obtain i ′ τ ′ where
+ipl: i ′ < length ts and tsip: ts!i ′ = t and tausip: τs ′!i ′ = τ ′
+and ltsp: lookup t ts τs ′ 0 = Some (τs ′!i ′,i ′)
+using lookup-succeeds[of t ts τs ′ 0] by auto
+from D il ipl tsi tsip have i-ip: i = i ′ using distinct-conv-nth by auto
+note ts-tsp
+moreover from L il have i < length τs by simp
+ultimately have C ⊢τs!i ⇝τs ′!i by (rule trans-nth)
+with lts ltsp tausip i-ip show ?thesis by auto
+next
+41
+
+assume tm: t /∈set ts
+from tm have lookup t ts τs 0 = None by (rule lookup-fails)
+moreover from tm have lookup t ts τs ′ 0 = None by (rule lookup-fails)
+ultimately show ?thesis by (simp add: trans-var)
+qed
+qed
+The following abbreviations are used for the conclusions of the statements that will be
+proved.
+constdefs srt-ty :: [Cenv,tyg,ty] ⇒bool
+srt-ty C τ τ ′ ≡(∀ts τs τs ′. C |= τs ⇝τs ′ ∧C ok ∧distinct ts ∧length ts = length τs
+−→C ⊢sub-tyg(ts,τs,τ) ⇝sub-ty(ts,τs ′,τ ′))
+constdefs srt-tys :: [Cenv,tyg list,ty list] ⇒bool
+srt-tys C τs τs ′ ≡(∀ts σs σs ′. C |= σs ⇝σs ′ ∧C ok ∧distinct ts ∧length ts = length σs
+−→C |= sub-tygs ts σs τs ⇝sub-tys ts σs ′ τs ′)
+constdefs srt-dict :: [Cenv, var, tyg list, ty] ⇒bool
+srt-dict C c ϱs dt ≡(∀ts τs τs ′. (C |= τs ⇝τs ′ ∧C ok ∧distinct ts ∧length ts = length τs
+−→C ⊢d c (sub-tygs ts τs ϱs) ⇝sub-ty(ts,τs ′,dt)))
+constdefs srt-ds :: [Cenv, where-clause, ty list] ⇒bool
+srt-ds C rs dts ≡(∀ts τs τs ′. C |= τs ⇝τs ′ ∧C ok ∧distinct ts ∧length ts = length τs
+−→C |=d {|ts7→τs|}rs ⇝{ts7→τs ′}dts)
+The case for translating a requirement in a where clause is handled by the following
+lemma.
+lemma subst-respects-trans-dict:
+assumes cC: (c, ci) ∈C and ts-tsp: C |= τs ⇝τs ′ and IH1: srt-tys C τs τs ′
+and Rs: C |=d rfn ci ⇝δs and IH2: srt-ds C (rfn ci) δs
+and Ms: C |= mem-tys ci ⇝σs and IH3: srt-tys C (mem-tys ci) σs
+and lts: length τs = length (params ci)
+shows srt-dict C c τs [params ci7→τs ′](⟨δs @ σs⟩)
+proof (simp only: srt-dict-def, clarify)
+ﬁx ts::var list and τsa::tyg list and τsa ′::ty list
+assume tsa-tsap: C |= τsa ⇝τsa ′
+and Cok: C ok and dist: distinct ts and len: length ts = length τsa
+let ?dt = [params ci7→τs ′](⟨δs @ σs⟩)
+let ?ts = {ts7→τsa}τs and ?tsp = {ts7→τsa ′}τs ′
+let ?ms = {ts7→τsa}mem-tys ci and ?ss = {ts7→τsa ′}σs
+let ?rs = {|ts7→τsa|}(rfn ci) and ?ds = {ts7→τsa ′}δs
+note cC moreover from tsa-tsap Cok dist len IH1 have
+ts-tsp: C |= ?ts ⇝?tsp by simp
+moreover note Rs and Ms
+moreover from lts have length {ts7→τsa}τs = length (params ci)
+using substg-length by simp
+ultimately have C ⊢d c ?ts ⇝[params ci7→?tsp](⟨δs@σs⟩) by (rule r-d)
+moreover have [params ci7→?tsp](⟨δs@σs⟩) = [ts7→τsa ′]?dt
+proof −
+— We can alpha-convert to change the concept parameters so that they are distinct from ts and
+from the variables in τsa ′.
+have A: set (params ci) ∩set ts = {} sorry
+42
+
+have B: set (params ci) ∩S (map otv τsa ′) = {} sorry
+have C: set ts ∩otv (⟨δs @ σs⟩) = {}
+proof −
+have ofb: otv (⟨δs @ σs⟩) = ftv (⟨δs @ σs⟩) ∪btv (⟨δs @ σs⟩)
+using otv-ftv-btv by simp
+from Cok cC have ciok: C ⊢ci ok by (rule c-mem-implies-c-ok)
+from ciok have frsps: S (map (λp. S (map ftvg (snd p))) (rfn ci)) ⊆set (params ci)
+by (rule inv-wf-c, simp)
+from ciok have fmsps: S (map ftvg (mem-tys ci)) ⊆set (params ci)
+by (rule inv-wf-c, simp)
+from Rs Cok have S (map ftv δs) ⊆S (map (λp. S (map ftvg (snd p))) (rfn ci))
+using trans-reduces-ftv by simp
+with frsps have fdsps: S (map ftv δs) ⊆set (params ci) by simp
+from Ms Cok have S (map ftv σs) ⊆S (map ftvg (mem-tys ci))
+using trans-reduces-ftv by simp
+with fmsps have fssps: S (map ftv σs) ⊆set (params ci) by simp
+have ftv (⟨δs @ σs⟩) = S (map ftv δs) ∪S (map ftv σs)
+by (induct δs rule: list.induct, auto)
+with fdsps fssps have ftv (⟨δs @ σs⟩) ⊆set (params ci) by auto
+with A have tsfds: set ts ∩ftv (⟨δs @ σs⟩) = {} by auto
+— We can alpha-convert the bound variables to be distinct from ts.
+have tsbds: set ts ∩btv (⟨δs @ σs⟩) = {} sorry
+from tsfds tsbds ofb show ?thesis by auto
+qed
+from ts-tsp have length ?ts = length ?tsp using trans-length by blast
+with lts have D: length (params ci) = length τs ′
+by (simp add: subst-length substg-length)
+from tsa-tsap have length τsa = length τsa ′ using trans-length by blast
+with len have E: length ts = length τsa ′ by simp
+from Cok cC have C ⊢ci ok by (rule c-mem-implies-c-ok)
+hence F: distinct (params ci) by (rule inv-wf-c, auto)
+from A B C D E F have [ts7→τsa ′]?dt = [params ci7→?tsp](⟨δs@σs⟩)
+using substitution-lemma2 apply blast done
+thus ?thesis by simp
+qed
+ultimately show C ⊢d c {ts7→τsa}τs ⇝sub-ty(ts,τsa ′,?dt) by simp
+qed
+The rest of the cases are trivial and proved automatically by Isabelle.
+lemma subst-respects-trans:
+(C ⊢τ ⇝τ ′ −→srt-ty C τ τ ′) ∧(C |= τs ⇝τs ′ −→srt-tys C τs τs ′)
+∧(C ⊢d c ϱs ⇝dt −→srt-dict C c ϱs dt) ∧(C |=d rs ⇝dts −→srt-ds C rs dts)
+apply (induct rule: trans-ty-trans-tys-req-dict-reqs-dicts.induct)
+using subst-respects-trans-var apply simp apply simp apply simp
+apply simp apply simp apply simp apply simp
+using subst-respects-trans-dict by simp+
+corollary subst-r-d:
+assumes D: C ⊢d c ϱs ⇝dt and Cok: C ok and dist: distinct ts
+43
+
+and L: length ts = length τs and ts-tsp: C |= τs ⇝τs ′
+shows C ⊢d c {ts7→τs}ϱs ⇝[ts 7→τs ′]dt
+proof −
+have C ⊢d c ϱs ⇝dt −→srt-dict C c ϱs dt using subst-respects-trans by simp
+with Cok D dist L ts-tsp show ?thesis by auto
+qed
+corollary subst-ds:
+assumes Ds: C |=d rs ⇝dts and Cok: C ok and dist: distinct ts
+and L: length ts = length τs and ts-tsp: C |= τs ⇝τs ′
+shows C |=d {|ts 7→τs|}rs ⇝{ts 7→τs ′}dts
+proof −
+have C |=d rs ⇝dts −→srt-ds C rs dts using subst-respects-trans by simp
+with Cok Ds dist L ts-tsp show ?thesis by auto
+qed
+corollary subst-trans-ty:
+assumes Ds: C ⊢τ ⇝τ ′ and Cok: C ok and dist: distinct ts
+and L: length ts = length τs and ts-tsp: C |= τs ⇝τs ′
+shows C ⊢[ts 7→τs]τ ⇝[ts 7→τs ′]τ ′
+proof −
+have C ⊢τ ⇝τ ′ −→srt-ty C τ τ ′ using subst-respects-trans by simp
+with Cok Ds dist L ts-tsp show ?thesis by auto
+qed
+corollary subst-trans-tys:
+assumes Ds: C |= σs ⇝σs ′ and Cok: C ok and dist: distinct ts
+and L: length ts = length τs and ts-tsp: C |= τs ⇝τs ′
+shows C |= {ts 7→τs}σs ⇝{ts 7→τs ′}σs ′
+proof −
+have C |= σs ⇝σs ′ −→srt-tys C σs σs ′ using subst-respects-trans by simp
+with Cok Ds dist L ts-tsp show ?thesis by auto
+qed
+If a concept is never referred to in a type, removing the concept from the environment
+does not affect the translation of that type. We skip the proof of this straightforward
+lemma due to time constraints.
+lemma remove-concept-pres-trans:
+(insert (c,ci) C ⊢τ ⇝τ ′ −→(c,τ) /∈c-occurs-ty −→C ⊢τ ⇝τ ′)
+∧(insert (c,ci) C |= σs ⇝σs ′ −→(c,τ) /∈c-occurs-ty −→C |= σs ⇝σs ′)
+∧(insert (c,ci) C ⊢d c ϱs ⇝dt −→(c,τ) /∈c-occurs-ty −→C ⊢d c ϱs ⇝dt)
+∧(insert (c,ci) C |=d rs ⇝dts −→(c,τ) /∈c-occurs-ty −→C |=d rs ⇝dts)
+sorry
+corollary remove-concept-pres-trans-ty:
+[[ insert (c,ci) C ⊢τ ⇝τ ′; (c,τ) /∈c-occurs-ty ]] =⇒C ⊢τ ⇝τ ′
+using remove-concept-pres-trans by blast
+Adding concepts to the environment (weakening) does not affect the translation of
+44
+
+types.
+lemma add-concept-pres-trans:
+(C ⊢τ ⇝τ ′ −→(∀c ci. insert (c,ci) C ⊢τ ⇝τ ′))
+∧(C |= σs ⇝σs ′ −→(∀c ci. insert (c,ci) C |= σs ⇝σs ′))
+∧(C ⊢d c ϱs ⇝dt −→(∀c ′ ci ′. insert (c ′,ci ′) C ⊢d c ϱs ⇝dt))
+∧(C |=d rs ⇝dts −→(∀c ci. insert (c,ci) C |=d rs ⇝dts))
+apply (induct rule: trans-ty-trans-tys-req-dict-reqs-dicts.induct)
+using r-d by auto
+The type translation is a function. The premise C ok is need to ensure that the concept
+environment contains no more than one deﬁnition for each concept name. Again, we
+skip the proof due to time constraints.
+lemma unique-trans-tys: [[ C |= τs ⇝σs; C ok; C |= τs ⇝σs ′ ]] =⇒σs = σs ′
+sorry
+Next we prove a lemma concerning substitution and the translation of reﬁnments to
+dictionary types. The proof will use this basic fact about list append.
+lemma append-eq-len: V ls1 ′ ls2 ls2 ′. [[ length ls1 = length ls1 ′; ls1 @ ls2 = ls1 ′ @ ls2 ′ ]]
+=⇒ls1 = ls1 ′ ∧ls2 = ls2 ′ by (induct ls1, simp, case-tac ls1 ′, simp, simp)
+lemma reﬁne-dict-types:
+assumes D: C ⊢d c τs ⇝⟨dts@σs⟩and Cok: C ok and cC: (c, ci) ∈C
+and L: length dts = length (rfn ci)
+shows C |=d {|params ci7→τs|}rfn ci ⇝dts
+proof −
+from D Cok cC obtain dts ′ σs ′ τs ′ where ts-tsp: C |= τs ⇝τs ′
+and Ds: C |=d rfn ci ⇝dts ′
+and lpts: length τs = length (params ci)
+and tp: ⟨dts@σs⟩= ⟨{params ci7→τs ′}(dts ′@σs ′)⟩using inv-r-d2 by blast
+from tp have ⟨dts@σs⟩= ⟨{params ci7→τs ′}dts ′@{params ci7→τs ′}σs ′⟩
+by (simp only: subst-append)
+hence T: dts@σs = {params ci7→τs ′}dts ′@{params ci7→τs ′}σs ′ by simp
+from L have length dts = length (rfn ci) .
+also from Ds have . . . = length dts ′ by (rule trans-length-r-d)
+also have . . . = length {params ci7→τs ′}dts ′ using subst-length by simp
+ﬁnally have L1: length dts = length {params ci7→τs ′}dts ′ by simp
+from T L1 append-eq-len have dts: dts = {(params ci) 7→τs ′}dts ′ by simp
+from T L1 append-eq-len have ss: σs = {params ci7→τs ′}σs ′ by simp
+— So we ﬁnally have the dictionary types for the reﬁnements.
+have C |=d {|params ci7→τs|}rfn ci ⇝{params ci7→τs ′}dts ′
+proof −
+from Cok cC have ciok: C ⊢ci ok by (rule c-mem-implies-c-ok)
+from ciok have dist: distinct (params ci) by (rule inv-wf-c, simp)
+from Cok Ds dist lpts ts-tsp show ?thesis by (simp only: subst-ds)
+qed
+with dts show ?thesis by simp
+qed
+45
+
+Given that a list of FG types translates to a list of F types, the ith FG type translates to
+the ith F type.
+lemma trans-tys-nth: V C σs ′ i τ. [[ C |= σs ⇝σs ′; i < length σs; σs! i = τ ]]
+=⇒C ⊢τ ⇝σs ′!i
+proof (induct σs rule: list.induct, simp)
+ﬁx a list C σs ′ i τ
+assume IH: VC σs ′ i τ. [[C |= list ⇝σs ′; i < length list; list ! i = τ]] =⇒C ⊢τ ⇝σs ′ ! i
+and alss: C |= a # list ⇝σs ′ and il: i < length (a # list) and alit: (a # list) ! i = τ
+from alss obtain τ ′ τs ′ where t-tp: C ⊢a ⇝τ ′ and ssp: σs ′ = τ ′#τs ′
+and ltsp: C |= list ⇝τs ′ by (rule inv-trans-cons, auto)
+show C ⊢τ ⇝σs ′ ! i
+proof (cases i)
+assume iz: i = 0 from iz alit have at: a = τ by simp
+from at t-tp ssp iz show ?thesis by simp
+next ﬁx j assume I: i = Suc j
+from alit I have ljt: list!j = τ by simp
+from il I have jl: j < length list by simp
+from ltsp jl ljt IH have C ⊢τ ⇝τs ′!j by blast
+with I ssp show ?thesis by simp
+qed
+qed
+8.5
+Paths Through Dictionaries
+There are several places in Figure 15 where the environment is extended with concepts,
+models, or variables. In Section 8.6 we show that the environment correspondence
+is maintained in each case. However, ﬁrst we need several lemmas regarding paths
+through dictionaries.
+The following two lemmas extend a path through a dictionary. The ﬁrst extends the
+path to the sub-dictionary for a reﬁnement. The second extends the path to a member
+of the dictionary. Both lemmas are straightforward inductions on the path ns.
+lemma dict-path-to-super:
+V dts dt σs i τ. [[ i < length dts; dt = ⟨dts@σs⟩; τ−ns→dt ]] =⇒τ−ns@[i]→dts!i
+proof (induct ns)
+ﬁx dts dt σs i τ
+assume I: i < length dts and dt: dt = ⟨dts@σs⟩and t-dt: τ−[]→dt
+from t-dt have eq: τ = dt apply (rule inv-path-nil) apply simp done
+from I have (dts@σs)!i = dts!i apply (simp add: nth-append) done
+hence (dts@σs)!i−[]→dts!i by (simp add: p-nil)
+hence ⟨dts @ σs⟩−i#[]→dts!i by (rule p-cons)
+with eq dt show τ−[]@[i]→dts!i by simp
+next ﬁx a list dts dt σs i τ
+assume IH: Vdts dt σs i τ. [[i < length dts; dt = ⟨dts@σs⟩; τ−list→dt]] =⇒τ−list@[i]→dts!i
+and I: i < length dts and dt: dt = ⟨dts @ σs⟩
+and P: (τ, a # list, dt) ∈path-ty
+from P obtain τs where P2: (τs!a, list, dt) ∈path-ty
+46
+
+and T: τ = ⟨τs⟩apply (rule inv-path-cons) apply simp done
+from I dt P2 IH have P3: τs!a−list@[i]→dts!i by simp
+hence ⟨τs⟩−a#(list @ [i])→dts!i by (rule p-cons)
+with T have τ−a#(list@[i])→dts!i by simp
+thus τ−(a#list)@[i]→dts!i by auto
+qed
+lemma dict-path-to-member:
+V dts dt σs i τ. [[ i < length σs; dt=⟨dts@σs⟩; τ−ns→dt ]] =⇒τ−ns@[length dts+i]→σs!i
+proof (induct ns)
+ﬁx dts dt σs i τ
+assume I: i < length σs and dt: dt = ⟨dts@σs⟩and t-dt: τ−[]→dt
+from t-dt have eq: τ = dt apply (rule inv-path-nil) apply simp done
+from I have (dts@σs)!(length dts + i) = σs!i
+apply (simp add: nth-append-length-plus) done
+hence (dts@σs)!(length dts + i)−[]→σs!i by (simp add: p-nil)
+hence ⟨dts@σs⟩−(length dts+i)#[]→σs!i by (rule p-cons)
+with eq dt show τ−[]@[length dts + i]→σs!i by simp
+next ﬁx a list dts dt σs i τ
+assume IH: Vdts dt σs i τ. [[i < length σs; dt = ⟨dts @ σs⟩; τ−list→dt ]]
+=⇒τ−list@[length dts + i]→σs!i
+and I: i < length σs and dt: dt = ⟨dts@σs⟩and P: τ−a#list→dt
+from P obtain τs where P2: τs!a−list→dt
+and T: τ = ⟨τs⟩apply (rule inv-path-cons) apply simp done
+from I dt P2 IH have P3: τs!a−list@[length dts + i]→σs!i by simp
+hence ⟨τs⟩−a#(list @ [length dts + i])→σs!i by (rule p-cons)
+with T have τ−a#(list@[length dts + i])→σs!i by simp
+thus τ−(a#list)@[length dts + i]→σs!i by auto
+qed
+The next lemma states that the ith entry in the dictionary type for concept c is the
+dictionary type for the “super” concept c ′. This lemma is proved by induction on the
+reﬁnement list rs.
+lemma dict-at-i: V C dts i c ′ τs ′. [[ C |=d rs ⇝dts; rs!i = (c ′,τs ′); Suc i ≤length dts ]]
+=⇒(∃dts ′ σs ′ ci ′. C ⊢d c ′ τs ′ ⇝dts!i ∧dts!i = ⟨dts ′@σs ′⟩
+∧(c ′,ci ′) ∈C ∧length (rfn ci ′) = length dts ′)
+apply (induct rs rule: list.induct) prefer 2 apply clarify prefer 2
+proof −
+ﬁx C dts i and c ′::var and τs ′::tyg list
+assume Ds: C |=d [] ⇝dts and L: Suc i ≤length dts
+from Ds have dts = [] by (rule inv-rs-ds-nil, simp)
+with L have False by simp
+thus ∃dts ′ σs ′ ci ′. C ⊢d c ′ τs ′ ⇝dts!i ∧dts!i = ⟨dts ′ @ σs ′⟩
+∧(c ′,ci ′) ∈C ∧length (rfn ci ′) = length dts ′ by simp
+next ﬁx a b list C dts i c ′ τs ′
+assume IH: V C dts i c ′ τs ′. [[ C |=d list ⇝dts; list!i = (c ′, τs ′); Suc i ≤length dts ]]
+=⇒(∃dts ′ σs ′ ci ′. C ⊢d c ′ τs ′ ⇝dts!i ∧dts!i = ⟨dts ′ @ σs ′⟩
+∧(c ′,ci ′) ∈C ∧length (rfn ci ′) = length dts ′)
+and Ds: C |=d (a, b) # list ⇝dts
+47
+
+and at: ((a, b) # list) ! i = (c ′, τs ′)
+and I: Suc i ≤length dts
+from Ds obtain τ τs where D: C ⊢d a b ⇝τ and Ds2: C |=d list ⇝τs
+and dts: dts = τ#τs by (rule inv-rs-ds-cons, simp)
+show ∃dts ′ σs ′ ci ′. C ⊢d c ′ τs ′ ⇝dts!i ∧dts!i = ⟨dts ′ @ σs ′⟩∧(c ′,ci ′) ∈C
+∧length (rfn ci ′) = length dts ′
+proof (cases i)
+assume iz: i = 0
+from iz at have eq: (a,b) = (c ′,τs ′) by simp
+from D eq have D2: C ⊢d c ′ τs ′ ⇝τ by simp
+from D2 obtain δs σs τs ′′ ci where cC: (c ′,ci) ∈C and ts-tsp: C |= τs ′ ⇝τs ′′
+and Ds: C |=d rfn ci ⇝δs and Ms: C |= mem-tys ci ⇝σs
+and tp: τ = ⟨{params ci7→τs ′′}(δs@σs)⟩by (rule inv-r-d, auto)
+from tp have T: τ = ⟨({params ci7→τs ′′}δs@{params ci7→τs ′′}σs)⟩
+by (simp only: subst-append)
+from T D2 have
+D3: C ⊢d c ′ τs ′ ⇝⟨({params ci7→τs ′′}δs @ {params ci7→τs ′′}σs)⟩by simp
+from T iz dts have
+dtsi: dts ! i = ⟨({params ci7→τs ′′}δs @ {params ci7→τs ′′}σs)⟩by simp
+from Ds trans-length have length (rfn ci) = length δs by blast
+hence L: length (rfn ci) = length {(params ci) 7→τs ′′}δs using subst-length by simp
+from D3 dtsi have D4: C ⊢d c ′ τs ′ ⇝dts!i by simp
+from D4 dtsi cC L show ?thesis by blast
+next ﬁx j assume ij: i = Suc j
+from I ij dts have J: Suc j ≤length τs by simp
+from ij at have at2: list ! j = (c ′,τs ′) by simp
+from Ds2 at2 J IH obtain dts ′ σs ′ ci ′ where D2: C ⊢d c ′ τs ′ ⇝τs!j
+and at3: τs!j = ⟨dts ′ @ σs ′⟩and cC: (c ′,ci ′) ∈C
+and L: length (rfn ci ′) = length dts ′ by blast
+from D2 dts ij have D3: C ⊢d c ′ τs ′ ⇝dts!i by simp
+from dts ij at3 have at4: dts!i = ⟨dts ′@σs ′⟩by simp
+from D3 at4 cC L show ?thesis by auto
+qed
+qed
+8.6
+Preserving the Environment Correspondence
+The environment correspondence deﬁned in Figure 17 must be preserved in the face of
+changes made to the environment. For example, in fg-abs, the variables xs are added to
+the variable environment, bound to the types τs. To maintain the correspondence, we
+also add the variables xs to the System F environment, bound to the types τs ′, where
+concepts Γ |= τs ⇝τs ′. The following lemma is proved by induction on the judgment
+C |= τs ⇝τs ′ (and the other judgments that it was mutually deﬁned with).
+lemma add-vars-preserves-var-env:
+(C ⊢τ ⇝τ ′ −→True)
+∧(C |= τs ⇝τs ′ −→(∀xs. C ⊢v V ⇝S ∧length xs = length τs
+−→C ⊢v V,xs:τs ⇝S,xs:τs ′))
+∧(C ⊢d c ϱs ⇝dt −→True) ∧(C |=d rs ⇝dts −→True)
+48
+
+apply (induct rule: trans-ty-trans-tys-req-dict-reqs-dicts.induct)
+apply auto apply (case-tac xs) using cv-cons by auto
+The following lemma provides a convenient way to use the invariants captured in C ⊢v
+V ⇝S. This lemma is used in the fg-var case of the main theorem.
+lemma var-mem-trans-implies:
+[[ C ⊢v V ⇝S; (x,τ) ∈V ]] =⇒(∃τ ′. C ⊢τ ⇝τ ′ ∧(x,τ ′) ∈S)
+by (induct rule: trans-var-env.induct, auto)
+The next two “weakening” lemmas show that adding a concept to the environment does
+not affect variable and model environment correspondences.
+lemma add-concept-preserves-var-env: C ⊢v V ⇝S =⇒insert (c,ci) C ⊢v V ⇝S
+apply (induct rule: trans-var-env.induct)
+apply (simp add: cv-nil) using add-concept-pres-trans cv-cons by auto
+lemma add-concept-preserves-model-env: C ⊢m M ⇝S =⇒insert (c,ci) C ⊢m M ⇝S
+apply (induct rule: trans-model-env.induct)
+apply (simp add: cm-nil) using add-concept-pres-trans cm-cons apply simp
+proof −
+ﬁx C M S τ τ ′ τs ca d ns
+assume m-s: insert (c, ci) C ⊢m M ⇝S and N: ns ̸= []
+and dt: (d, τ) ∈S and D: C ⊢d ca τs ⇝τ ′ and P: path-ty τ ns τ ′
+from D have D2: insert (c,ci) C ⊢d ca τs ⇝τ ′ using add-concept-pres-trans by simp
+from m-s N dt D2 P show insert (c, ci) C ⊢m insert (ca, τs, d, ns) M ⇝S
+by (rule cm-drop)
+qed
+Next we prove several lemmas that show how the correspondence with a System F typ-
+ing environment is preserved as models are added to the environment. First we show
+that adding models for the where clause of a type abstraction preserves the correspon-
+dence . In particular, if we start with some model environment M in correspondence
+with some System F environment S, and if ds are the dictionary variables for the added
+models, and dts are the types of the dictionaries for the models, then the new model
+environment M ′ will correspond to S,ds:dts.
+lemma add-models-where-preserves:
+[[ C ⊢ws ds M ⇒M ′; C ok; C |=d ws ⇝dts; C ⊢m M ⇝S ]] =⇒C ⊢m M ′ ⇝S,ds:dts
+The judgment C ⊢ws ds M ⇒M ′ processes each requirement in the where clause
+using ⊢♭. The judgment ⊢♭adds a model to the environment and then uses |=♭to
+add models for all of its concept reﬁnements. We prove two lemmas with regards
+to how ⊢♭and |=♭preserve the environment correspondence while adding models to
+the environment. The ﬁrst lemma, in Figure 18, handles the case when ⊢♭is used on
+a reﬁnement, and thus the dictionary for the model will be a sub-dictionary of some
+other model. The dictionary path will be non-empty in this case. The second lemma,
+in Figure 19, handles when ⊢♭is applied to a requirement in a where clause, when the
+dictionary path for the model is empty. Figure 20 uses this lemma to show preservation
+of the correspondence for all the requirements in the where clause.
+49
+
+Figure 18: Adding models to the model environment for concept reﬁnements preserves
+the environment correspondence.
+lemma add-models-rfns-pres:
+(C ⊢♭c ϱs d ns M ⇒M ′ −→(∀S τ dts σs ci. C ok ∧ns ̸= []
+∧C ⊢d c ϱs ⇝⟨dts@σs⟩∧(d,τ) ∈S ∧(c,ci) ∈C
+∧length (rfn ci) = length dts ∧τ−ns→⟨dts@σs⟩∧C ⊢m M ⇝S
+−→C ⊢m M ′ ⇝S))
+∧(C |=♭i rs d ns M ⇒M ′ −→(∀S dts τ σs. C ok ∧C |=d rs ⇝dts
+∧(d,τ) ∈S ∧τ−ns→⟨dts@σs⟩∧i ≤length dts ∧C ⊢m M ⇝S
+−→C ⊢m M ′ ⇝S))
+(is (C ⊢♭c ϱs d ns M ⇒M ′ −→?P C c ϱs d ns M M ′)
+∧(C |=♭i rs d ns M ⇒M ′ −→?PS C i rs d ns M M ′))
+proof (induct rule: ﬂat-m-ﬂat-ms.induct)
+ﬁx C::Cenv and M M ′ M ′′ τs c ci d i ns
+assume cC: (c, ci) ∈C and Mp: M ′ = insert (c, τs, d, ns) M
+and IH: ?PS C (length (rfn ci)) ({|params ci7→τs|}rfn ci) d ns M ′ M ′′
+show ?P C c τs d ns M M ′′
+proof clarify ﬁx S τ dts σs ci ′ assume Cok: C ok and N: ns ̸= []
+and D: C ⊢d c τs ⇝⟨dts@σs⟩and DT: (d,τ) ∈S
+and cpC: (c,ci ′) ∈C and L: length(rfn ci ′) = length dts
+and P: τ−ns→⟨dts@σs⟩and m-s: C ⊢m M ⇝S
+from Cok cC cpC have ci-cip: ci = ci ′ by (rule unique-concept)
+from L ci-cip have L2: length dts = length (rfn ci) by simp
+from D Cok cC L2 have Ds2: C |=d {|params ci7→τs|}rfn ci ⇝dts
+by (rule reﬁne-dict-types)
+from L2 have L3: length (rfn ci) ≤length dts by simp
+from m-s N DT D P have C ⊢m insert (c,τs,d,ns) M ⇝S by (rule cm-drop)
+with Mp have mp-s: C ⊢m M ′ ⇝S by simp
+from Cok Ds2 DT P L3 mp-s IH show C ⊢m M ′′ ⇝S by auto
+qed
+next ﬁx C M d ns rs show ?PS C 0 rs d ns M M by simp
+next ﬁx C M M ′ M ′′ τs ′ c ′ d i ns rs assume rsi: rs ! i = (c ′, τs ′)
+and IH1: ?P C c ′ τs ′ d (ns@[i]) M M ′ and IH2: ?PS C i rs d ns M ′ M ′′
+show ?PS C (Suc i) rs d ns M M ′′
+proof clarify
+ﬁx S dts τ σs assume Cok: C ok and Rs: C |=d rs ⇝dts
+and DT: (d, τ) ∈S and P: τ−ns→⟨dts @ σs⟩
+and I: Suc i ≤length dts and m-s: C ⊢m M ⇝S
+from Rs rsi I Cok obtain dts ′ σs ′ ci ′ where
+D: C ⊢d c ′ τs ′ ⇝dts!i and dtsp: dts!i = ⟨dts ′@σs ′⟩
+and cC: (c ′,ci ′) ∈C and LR: length (rfn ci ′) = length dts ′
+using dict-at-i by blast
+from D dtsp have D2: C ⊢d c ′ τs ′ ⇝⟨dts ′@σs ′⟩by simp
+from I P have τ−ns@[i]→dts!i by (simp add: dict-path-to-super)
+with I dtsp have P2: τ−ns@[i]→⟨dts ′ @ σs ′⟩by simp
+from Cok D2 DT cC LR P2 m-s IH1 have mp-s: C ⊢m M ′ ⇝S by blast
+from I have I2: i ≤length dts by simp
+from Cok Rs DT P I2 mp-s IH2 show C ⊢m M ′′ ⇝S by auto
+qed
+qed
+50
+
+The following corollary captures ﬁrst half of Lemma add-models-rfns-pres, which we
+use in Lemma add-models-req-preserves.
+corollary add-models-rfns-preserves: [[ C ⊢♭c τs d ns M ⇒M ′; C ok; ns ̸= [];
+C ⊢d c τs ⇝⟨dts@σs⟩; (d,τ) ∈S; (c,ci) ∈C; length (rfn ci) = length dts;
+τ−ns→⟨dts@σs⟩; C ⊢m M ⇝S ]] =⇒C ⊢m M ′ ⇝S
+using add-models-rfns-pres by blast
+The other place the model environment is extended is, of course, at model deﬁnitions.
+The lemma in Figure 21 proves that we can add model (c,ϱs,d,[]) to the environment,
+and the corresponding System F environment will be S,d:⟨[params ci7→ϱs ′]dts @ σs ′⟩,
+where d is bound to the dictionary type for the model. The main work of the proof is
+to show Dt which states that the dictionary type is correct.
+8.7
+Model Member Lookup
+In preparation for proving the case in the main theorem for model member access, we
+need to show that the member access judgment ⊢♭returns a type τ and dictionary path
+ns ′ such that the path leads to a type τ ′ that is the translation of τ.
+lemma dict-member: [[ C ⊢♭x c τs ns ⇒τ ns ′; C ok; C ⊢d c τs ⇝dt ′; dt−ns→dt ′ ]]
+=⇒(∃τ ′. dt−ns ′→τ ′ ∧C ⊢τ ⇝τ ′)
+The member access judgment ⊢♭is mutually recursive with the judgment |=♭which
+looks for a member among the reﬁnements. Thus, our proof is an induction on the
+derivation of both judgments. There are four cases to consider. The proof is fairly long
+and tedious, so we summarize the proof here before presenting the proof itself. The
+ﬁrst case of the proof is when the member x appears in the current concept c. We rely
+on the Lemma lookup-succeeds to get the type and position of the member. We then
+use Lemma dict-path-to-member to show that we can extend the current path to this
+member. The second case is for when ⊢♭uses |=♭to ﬁnd the member in a reﬁnement.
+We simply use the assumptions with the induction hypothesis. The third case is when
+the ith reﬁnement, concept c ′ with type arguments τs ′ has the member. This case is
+complicated by the substitutions that occur for the type parameters of the concept .
+The fourth case is for continuing on to the next reﬁnement in concept c. This case is
+trivial, since we just use the assumptions with the induction hypothesis. The following
+is the proof in its entirety.
+lemma lookup-found: V x τs i j τ. lookup x ts τs i = Some (τ, j) =⇒x ∈set ts
+apply (induct ts) apply simp apply (case-tac τs) apply simp apply simp
+apply (case-tac a = x) by simp+
+lemma dict-member-helper:
+(C ⊢♭x c τs ns ⇒τ ns ′ −→(∀dt dt ′. C ok ∧C ⊢d c τs ⇝dt ′ ∧dt−ns→dt ′
+−→(∃τ ′. dt−ns ′→τ ′ ∧C ⊢τ ⇝τ ′)))
+∧(C |=♭x i c τs ns ⇒τ ns ′ −→(∀dt dt ′ ci. C ok ∧C ⊢d c τs ⇝dt ′ ∧dt−ns→dt ′
+51
+
+Figure 19: Adding models for a requirement in a where clause preserves the environ-
+ment correspondence.
+lemma add-models-req-preserves:
+(C ⊢♭c ϱs d ns M ⇒M ′ −→(∀S τ. C ok ∧C ⊢d c ϱs ⇝τ ∧ns = []
+∧C ⊢m M ⇝S −→C ⊢m M ′ ⇝(S,d:τ)))
+∧(C |=♭i rs d ns M ⇒M ′ −→(∀S dts τ σs. C ok ∧C |=d rs ⇝dts ∧(d,τ) ∈S
+∧τ−ns→⟨dts@σs⟩∧i ≤length dts ∧C ⊢m M ⇝S −→C ⊢m M ′ ⇝S))
+(is (C ⊢♭c ϱs d ns M ⇒M ′ −→?P C c ϱs d ns M M ′)
+∧(C |=♭i rs d ns M ⇒M ′ −→?PS C i rs d ns M M ′))
+proof (induct rule: ﬂat-m-ﬂat-ms.induct)
+ﬁx C M M ′ M ′′ τs τs ′ c ci d ns
+assume C: (c,ci) ∈C and Mp: M ′ = insert (c,τs,d,ns) M
+and IH: ?PS C (length (rfn ci)) ({|params ci7→τs|}(rfn ci)) d ns M ′ M ′′
+{ ﬁx S τ assume Cok: C ok and D: C ⊢d c τs ⇝τ and N: ns = []
+and m-s: C ⊢m M ⇝S
+from m-s D have mp-s: C ⊢m insert (c,τs,d,[]) M ⇝S,d:τ by (rule cm-cons)
+from D obtain dts σs τs ′ ci ′ where cip: (c,ci ′) ∈C and ts-tsp: C |= τs ⇝τs ′
+and Dsp: C |=d rfn ci ′ ⇝dts and lts: length τs = length (params ci ′)
+and tp: τ = ⟨{params ci ′7→τs ′}(dts@σs)⟩by (rule inv-r-d, auto)
+from Cok C cip have ci-cip: ci = ci ′ by (rule unique-concept)
+let ?Tup = ⟨{params ci7→τs ′}dts @ {params ci7→τs ′}σs⟩
+from ci-cip tp have T: τ = ?Tup by (simp only: subst-append)
+from T N have P: τ−ns→?Tup using p-nil by simp
+from Cok cip ci-cip have distinct (params ci)
+using c-mem-implies-c-ok inv-wf-c by blast
+with Cok Dsp ci-cip lts ts-tsp have
+Ds2: C |=d {|params ci7→τs|}(rfn ci) ⇝{params ci7→τs ′}dts by (simp only: subst-ds)
+have DT: (d,τ) ∈S,d:τ by simp
+from Dsp ci-cip have L: length (rfn ci) ≤length {params ci7→τs ′}dts
+using trans-length-r-d subst-length by simp
+from Cok Ds2 DT P L mp-s Mp N IH have C ⊢m M ′′ ⇝S,d:τ by blast
+} thus ?P C c τs d ns M M ′′ by simp
+next ﬁx C M d ns rs show ?PS C 0 rs d ns M M by simp
+next ﬁx C M M ′ M ′′ τs ′ c ′ d i ns rs assume rsi: rs ! i = (c ′, τs ′)
+and F: C ⊢♭c ′ τs ′ d ns @ [i] M ⇒M ′ and IH2: ?PS C i rs d ns M ′ M ′′
+show ?PS C (Suc i) rs d ns M M ′′
+proof clarify ﬁx S dts τ σs assume Cok: C ok and Rs: C |=d rs ⇝dts
+and DT: (d, τ) ∈S and P: τ−ns→⟨dts@σs⟩
+and I: Suc i ≤length dts and m-s: C ⊢m M ⇝S
+from Rs rsi I Cok obtain dts ′ σs ′ ci ′ where D: C ⊢d c ′ τs ′ ⇝dts!i
+and dtsp: dts!i = ⟨dts ′@σs ′⟩and cpC: (c ′,ci ′) ∈C
+and LR: length (rfn ci ′) = length dts ′ using dict-at-i by blast
+from I P have τ−ns@[i]→dts!i by (simp add: dict-path-to-super)
+with dtsp have P2: τ−ns@[i]→⟨dts ′@σs ′⟩by simp
+from F Cok D dtsp DT cpC LR P2 m-s have
+mp-s: C ⊢m M ′ ⇝S by (simp add: add-models-rfns-preserves)
+from I have I3: i ≤length dts by simp
+from Cok Rs DT P I3 mp-s IH2 show C ⊢m M ′′ ⇝S by auto
+qed
+qed
+52
+
+Figure 20: Adding models for the where clause of a type abstraction preserves the
+environment correspondence.
+lemma add-models-where-preserves:
+C ⊢ws ds M ⇒M ′ =⇒(V dts S. [[ C ok; C |=d ws ⇝dts; C ⊢m M ⇝S ]]
+=⇒C ⊢m M ′ ⇝S,ds:dts ∧length ds = length dts)
+proof (induct rule: add-models.induct)
+ﬁx C M dts S assume D: C |=d [] ⇝dts and m-s: C ⊢m M ⇝S
+from D have dn: dts = [] by (rule inv-rs-ds-nil, simp)
+hence S = S,[]:dts by simp
+with m-s dn show C ⊢m M ⇝S,[]:dts ∧length [] = length dts by auto
+next ﬁx C M M ′ M ′′ ϱs c d ds ws dts S
+assume F: C ⊢♭c ϱs d [] M ⇒M ′
+and IH: V dts S. [[ C ok; C |=d ws ⇝dts; C ⊢m M ′ ⇝S]]
+=⇒C ⊢m M ′′ ⇝S,ds:dts ∧length ds = length dts
+and Cok: C ok and Ds: C |=d (c,ϱs)#ws ⇝dts and m-s: C ⊢m M ⇝S
+from Ds obtain dt dts ′ where D: C ⊢d c ϱs ⇝dt and Dsp: C |=d ws ⇝dts ′
+and DTS: dts = dt#dts ′ by (rule inv-rs-ds-cons, auto)
+from F Cok D m-s add-models-req-preserves have
+mp-sd: C ⊢m M ′ ⇝S,d:dt by blast
+from Cok Dsp mp-sd IH have
+mpp-sp: C ⊢m M ′′ ⇝(S,d:dt),ds:dts ′ ∧length ds = length dts ′ by simp
+from DTS have (S,d:dt),ds:dts ′ = S,(d#ds):dts by (simp only: pushs-env-assoc)
+with mpp-sp DTS show C ⊢m M ′′ ⇝S,(d#ds):dts ∧length (d#ds) = length dts by simp
+qed
+53
+
+Figure 21: Adding a model to the model environment for a model deﬁnition preserves
+the environment correspondence.
+lemma add-model-preserves:
+assumes g-s: Γ ⇝S and Cok: concepts Γ ok and C: (c, ci) ∈concepts Γ
+and rs-rsp: concepts Γ |= ϱs ⇝ϱs ′ and Ds: concepts Γ |=d rfn ci ⇝dts
+and ss-ssp: concepts Γ |= σs ⇝σs ′ and memtys: σs = {params ci7→ϱs}(mem-tys ci)
+and lps: length (params ci) = length ϱs
+shows Γ,model (c,ϱs,d,[]) ⇝S(| tys := (tys S),d:(⟨{params ci7→ϱs ′}dts@σs ′⟩)|)
+proof −
+let ?Gp = Γ,model (c, ϱs, d, []) and ?sdts = {params ci7→ϱs ′}dts
+from g-s obtain Sv Sm where v-s: concepts Γ ⊢v vars Γ ⇝Sv
+and m-s: concepts Γ ⊢m models Γ ⇝Sm and tvsg: tvars S = tyvars Γ
+and s: tys S = Sm ∪Sv by auto
+from v-s have v-s2: concepts ?Gp ⊢v vars ?Gp ⇝Sv by simp
+from m-s have m-s2: concepts ?Gp ⊢m models Γ ⇝Sm by simp
+have Dt: concepts ?Gp ⊢d c ϱs ⇝⟨?sdts @ σs ′⟩
+proof −
+from C have C2: (c,ci) ∈concepts ?Gp by simp
+from rs-rsp have rs-rsp2: concepts ?Gp |= ϱs ⇝ϱs ′
+by (simp add: add-concept-pres-trans)
+from Ds have Ds2: concepts ?Gp |=d (rfn ci) ⇝dts
+by (simp add: add-concept-pres-trans)
+from Cok C have ciok: concepts Γ ⊢ci ok by (rule c-mem-implies-c-ok)
+from ciok obtain σs ′′ where ms-ssp: concepts Γ |= mem-tys ci ⇝σs ′′
+by (rule inv-wf-c, auto)
+from ms-ssp have ms-ssp2: concepts ?Gp |= mem-tys ci ⇝σs ′′
+by (simp add: add-concept-pres-trans)
+from lps have lrs: length ϱs = length (params ci) by simp
+from C2 rs-rsp2 Ds2 ms-ssp2 lrs
+have concepts ?Gp ⊢d c ϱs ⇝[params ci7→ϱs ′](⟨dts@σs ′′⟩) by (rule r-d)
+hence D: concepts ?Gp ⊢d c ϱs ⇝(⟨?sdts @ {params ci7→ϱs ′}σs ′′⟩)
+using subst-append by simp
+from Cok C have dist: distinct (params ci) using c-mem-implies-c-ok inv-wf-c by blast
+from Cok ms-ssp2 dist lps rs-rsp2 have
+concepts ?Gp |= {params ci7→ϱs}(mem-tys ci) ⇝{params ci7→ϱs ′}σs ′′
+using subst-trans-tys by simp
+with memtys have concepts ?Gp |= σs ⇝{params ci7→ϱs ′}σs ′′ by simp
+with Cok ss-ssp have σs ′ = {params ci7→ϱs ′}σs ′′ using fun-dict-trans-ty by simp
+with D show ?thesis by simp
+qed
+from m-s2 Dt have m-s3: concepts ?Gp ⊢m models ?Gp ⇝Sm,d:⟨?sdts @ σs ′⟩
+using cm-cons by simp
+from s have s2: tys S,d:⟨?sdts @ σs ′⟩= Sm,d:⟨?sdts@σs ′⟩∪Sv by simp
+from v-s2 m-s3 s2 tvsg show ?thesis by auto
+qed
+54
+
+∧(c,ci) ∈C ∧i ≤length (rfn ci) −→(∃τ ′. dt−ns ′→τ ′ ∧C ⊢τ ⇝τ ′)))
+(is (C ⊢♭x c τs ns ⇒τ ns ′ −→?P C x c τs ns τ ns ′)
+∧(C |=♭x i c τs ns ⇒τ ns ′ −→?PS C x i c τs ns τ ns ′))
+proof (induct rule: lookup-mem-lookup-mem-rs.induct)
+ﬁx C::Cenv and τ τs c ci i ns x
+assume cC: (c, ci) ∈C and F: lookup x (mem-nms ci) (mem-tys ci) 0 = Some (τ, i)
+show ?P C x c τs ns [params ci7→τs]τ (ns @ [length (rfn ci) + i])
+proof clarify ﬁx dt dt ′
+assume Cok: C ok and D: C ⊢d c τs ⇝dt ′ and P: dt−ns→dt ′
+from D Cok cC obtain δs σs τs ′ where ts-tsp: C |= τs ⇝τs ′
+and Ds: C |=d rfn ci ⇝δs and ms-ss: C |= mem-tys ci ⇝σs
+and ltsp: length τs = length (params ci)
+and T: dt ′ = ⟨{params ci7→τs ′}(δs@σs)⟩using inv-r-d2 by blast
+let ?DS = {params ci7→τs ′}δs and ?SS = {params ci7→τs ′}σs
+from T have T2: dt ′ = ⟨?DS@?SS⟩using subst-append by auto
+from Cok cC have C ⊢ci ok by (rule c-mem-implies-c-ok)
+hence ltn: length (mem-tys ci) = length (mem-nms ci) by (rule inv-wf-c, simp)
+from F have xms: x ∈set (mem-nms ci) by (rule lookup-found)
+from xms ltn obtain i ′ where Ip: i ′ < length (mem-nms ci)
+and mipt: (mem-nms ci)!i ′ = x
+and F2: lookup x (mem-nms ci) (mem-tys ci) 0 = Some((mem-tys ci)!i ′,i ′)
+using lookup-succeeds[of x mem-nms ci mem-tys ci 0] by auto
+from F F2 mipt have mit: (mem-tys ci)!i = τ by auto
+from F F2 Ip have I1: i < length (mem-nms ci) by simp
+from ms-ss have length (mem-tys ci) = length ?SS
+using trans-length-tys subst-length by simp
+with I1 ltn have I2: i < length ?SS by arith
+from I2 T2 P have dt−(ns @ [length ?DS + i])→?SS!i by (rule dict-path-to-member)
+moreover from Ds have length ?DS = length (rfn ci)
+using trans-length-r-d subst-length by auto
+ultimately have A: dt−(ns @ [length (rfn ci) + i])→?SS!i by simp
+have B: C ⊢[params ci7→τs]τ ⇝?SS!i
+proof −
+from Cok cC have dist: distinct (params ci)
+using c-mem-implies-c-ok inv-wf-c by blast
+from Cok ms-ss dist ltsp ts-tsp have mss: C |= {params ci7→τs}(mem-tys ci) ⇝?SS
+by (simp only: subst-trans-tys)
+have length (mem-tys ci) = length {params ci7→τs}(mem-tys ci)
+using substg-length by simp
+with I1 ltn have ilsm: i < length {params ci7→τs}(mem-tys ci) by arith
+from mit I1 ltn have mit2: ({params ci7→τs}mem-tys ci)!i = [params ci7→τs]τ
+using substg-nth by simp
+from mss ilsm mit2 show ?thesis by (rule trans-tys-nth)
+qed
+from A B show ∃τ ′. dt−(ns @ [length (rfn ci) + i])→τ ′ ∧C ⊢[params ci7→τs]τ ⇝τ ′
+by auto
+qed
+next
+ﬁx C τ τs c ci ns ns ′ x
+assume cC: (c, ci) ∈C and F: lookup x (mem-nms ci) (mem-tys ci) 0 = None
+55
+
+and L: C |=♭x length (rfn ci) c τs ns ⇒τ ns ′
+and IH: ?PS C x (length(rfn ci)) c τs ns τ ns ′
+show ?P C x c τs ns τ ns ′
+proof clarify
+ﬁx dt dt ′ assume Cok: C ok and D: C ⊢d c τs ⇝dt ′ and P: dt−ns→dt ′
+from D Cok cC obtain δs σs τs ′ where ts-tsp: C |= τs ⇝τs ′
+and Ds: C |=d rfn ci ⇝δs and ms-ss: C |= mem-tys ci ⇝σs
+and ltsp: length τs = length (params ci)
+and T: dt ′ = ⟨{params ci 7→τs ′}(δs@σs)⟩using inv-r-d2 by blast
+from Cok D P cC IH show ∃τ ′. dt−ns ′→τ ′ ∧C ⊢τ ⇝τ ′ by blast
+qed
+next
+ﬁx C τ τs τs ′ c c ′ ci i ns ns ′ x
+assume cC: (c, ci) ∈C and ri: rfn ci ! i = (c ′, τs ′)
+and L: C ⊢♭x c ′ {params ci7→τs}τs ′ ns @ [i] ⇒τ ns ′
+and IH: ?P C x c ′ {params ci7→τs}τs ′ (ns@[i]) τ ns ′
+show ?PS C x (Suc i) c τs ns τ ns ′
+proof clarify
+ﬁx dt dt ′ cia
+assume Cok: C ok and D: C ⊢d c τs ⇝dt ′ and P: dt−ns→dt ′
+and ciaC: (c, cia) ∈C and I: Suc i ≤length (rfn cia)
+from Cok cC ciaC have ci-cia: ci = cia by (rule unique-concept)
+from D Cok cC obtain δs σs τs ′′ where ts-tsp: C |= τs ⇝τs ′′
+and Ds: C |=d rfn ci ⇝δs and ms-ss: C |= mem-tys ci ⇝σs
+and lts: length τs = length (params ci)
+and T: dt ′ = ⟨{params ci 7→τs ′′}(δs@σs)⟩using inv-r-d2 by blast
+let ?DS = {params ci 7→τs ′′}δs and ?SS = {params ci 7→τs ′′}σs
+from T subst-append have T2: dt ′ = ⟨?DS@?SS⟩by auto
+have D2: C ⊢d c ′ {params ci7→τs}τs ′ ⇝?DS!i
+proof −
+have sil: Suc i ≤length δs
+proof −
+from Ds have length (rfn ci) = length δs by (rule trans-length-r-d)
+moreover with I ci-cia have Suc i ≤length (rfn ci) by simp
+ultimately show ?thesis by simp
+qed
+from Ds ri sil obtain dts ′ σs ′ ci ′ where cpD: C ⊢d c ′ τs ′ ⇝δs!i
+and cpC: (c ′,ci ′) ∈C
+using dict-at-i by blast
+from Cok cC have dist: distinct (params ci)
+using c-mem-implies-c-ok inv-wf-c by blast
+from Cok cpD dist lts ts-tsp
+have C ⊢d c ′ {params ci7→τs}τs ′ ⇝[params ci7→τs ′′](δs!i) by (simp only: subst-r-d)
+moreover from sil have ?DS!i = [params ci 7→τs ′′](δs!i) by (simp only: subst-nth)
+ultimately show ?thesis by simp
+qed
+from Ds ci-cia have length δs = length (rfn cia) using trans-length-r-d by simp
+hence length ?DS = length (rfn cia) using subst-length by simp
+with I have I2: i < length ?DS by simp
+from I2 T2 P have P2: dt−ns@[i]→?DS!i by (rule dict-path-to-super)
+from Cok D2 P2 IH show ∃τ ′. dt−ns ′→τ ′ ∧C ⊢τ ⇝τ ′ by auto
+56
+
+qed
+next
+ﬁx C τ τs c i ns ns ′ x
+assume C |=♭x i c τs ns ⇒τ ns ′
+and IH: ∀dt dt ′ ci. C ok ∧C ⊢d c τs ⇝dt ′ ∧dt−ns→dt ′ ∧(c, ci) ∈C
+∧i ≤length (rfn ci) −→(∃τ ′. dt−ns ′→τ ′ ∧C ⊢τ ⇝τ ′)
+show ∀dt dt ′ ci. C ok ∧C ⊢d c τs ⇝dt ′ ∧dt−ns→dt ′ ∧(c, ci) ∈C
+∧Suc i ≤length (rfn ci) −→(∃τ ′. dt−ns ′→τ ′ ∧C ⊢τ ⇝τ ′)
+proof clarify
+ﬁx dt dt ′ ci
+assume Cok: C ok and D: C ⊢d c τs ⇝dt ′
+and P: dt−ns→dt ′ and cC: (c, ci) ∈C
+and I: Suc i ≤length (rfn ci)
+from I have I2: i ≤length (rfn ci) by simp
+from Cok D P cC I2 IH
+show ∃τ ′. dt−ns ′→τ ′ ∧C ⊢τ ⇝τ ′ by auto
+qed
+qed
+corollary dict-member:
+[[ C ⊢♭x c τs ns ⇒τ ns ′; C ok; C ⊢d c τs ⇝dt ′; dt−ns→dt ′ ]]
+=⇒(∃τ ′. dt−ns ′→τ ′ ∧C ⊢τ ⇝τ ′)
+using dict-member-helper apply blast done
+8.8
+Properties of Dictionary Access
+There are three places in the translation where the translation must produce System F
+terms that evaluates to a dictionary. In fg-tapp, a list of dictionaries is needed to satisfy
+the requirements of the where clause of the type abstraction. In the fg-mdl, dictionaries
+corresponding to the reﬁnements in the concept are needed. In fg-mem, the dictionary
+for the speciﬁed model must be accessed, and then the appropriate member extracted.
+The function mk-nth is used to construct a System F term to access a dictionary, and
+the mk-nths function constructs a list of terms that access a list of dictionaries. In this
+section we prove that mk-nth and mk-nths produce well typed System F terms.
+The ﬁrst lemma states that mk-nth produces well typed terms and is a proof by induction
+on the derivation of the path τ−ns→dt.
+lemma mk-nth-wt: τ−ns→dt =⇒(V S de. S ⊢F de : τ =⇒S ⊢F mk-nth de ns : dt)
+proof (induct rule: path-ty.induct)
+ﬁx τ S de assume S ⊢F de : τ
+thus S ⊢F mk-nth de [] : τ by simp
+next ﬁx τ ′ τs n ns S de
+assume IH: VS de. S ⊢F de : τs!n =⇒S ⊢F mk-nth de ns : τ ′ and d-wt: S ⊢F de : ⟨τs⟩
+from d-wt have S ⊢F Nth de n : τs!n by (simp add: wt-f-nth)
+with IH show S ⊢F mk-nth de (n # ns) : τ ′ by simp
+qed
+The following lemma is needed to prove that mk-nths produces well typed terms. This
+57
+
+lemma provides a more convenient way to access the invariants expressed by C ⊢m M
+⇝S. The proof is by induction on the derivation of C ⊢m M ⇝S.
+lemma model-trans: [[ C ⊢m M ⇝S; (c,τs,d,ns) ∈M ]]
+=⇒(∃τ τ ′. C ⊢d c τs ⇝τ ′ ∧(d, τ) ∈S ∧τ−ns→τ ′)
+proof (induct rule: trans-model-env.induct, simp)
+ﬁx C M S τ τsa ca da
+assume IH: (c, τs, d, ns) ∈M =⇒∃τ τ ′. C ⊢d c τs ⇝τ ′ ∧(d, τ) ∈S ∧path-ty τ ns τ ′
+and D: C ⊢d ca τsa ⇝τ and M: (c, τs, d, ns) ∈insert (ca, τsa, da, []) M
+show ∃τa τ ′. C ⊢d c τs ⇝τ ′ ∧(d, τa) ∈S,da:τ ∧path-ty τa ns τ ′
+proof (cases (c, τs, d, ns) = (ca, τsa, da, []))
+assume eq: (c, τs, d, ns) = (ca, τsa, da, [])
+from eq D have D2: C ⊢d c τs ⇝τ by simp
+from eq have dt: (d, τ) ∈S,da:τ by simp
+from eq have P: τ−ns→τ using p-nil by simp
+from D2 dt P show ?thesis by auto
+next assume neq: (c, τs, d, ns) ̸= (ca, τsa, da, [])
+from neq M have M2: (c, τs, d, ns) ∈M by auto
+from M2 IH show ?thesis by auto
+qed
+next ﬁx C M S τ τ ′ τsa ca da nsa
+assume C ⊢m M ⇝S and IH: (c, τs, d, ns) ∈M =⇒
+∃τ τ ′. C ⊢d c τs ⇝τ ′ ∧(d, τ) ∈S ∧τ−ns→τ ′
+and nsa ̸= [] and dt: (da, τ) ∈S and D: C ⊢d ca τsa ⇝τ ′
+and P: τ−nsa→τ ′ and M: (c, τs, d, ns) ∈insert (ca, τsa, da, nsa) M
+show ∃τ τ ′. C ⊢d c τs ⇝τ ′ ∧(d, τ) ∈S ∧path-ty τ ns τ ′
+proof (cases (c, τs, d, ns) = (ca, τsa, da, nsa))
+assume eq: (c, τs, d, ns) = (ca, τsa, da, nsa)
+from eq D have D2: C ⊢d c τs ⇝τ ′ by simp
+from eq dt have dt2: (d,τ) ∈S by simp
+from eq P have P2: τ−ns→τ ′ by simp
+from D2 dt2 P2 show ?thesis by auto
+next assume neq: (c, τs, d, ns) ̸= (ca, τsa, da, nsa)
+from neq M have M2: (c, τs, d, ns) ∈M by auto
+from M2 IH show ?thesis by auto
+qed
+qed
+The proof of Lemma mk-nths-wt, that mk-nths produces well typed terms, is by induc-
+tion on the derivation of the translation M |= ws ⇝ds,nns.
+lemma mk-nths-wt: M |= ws ⇝ds, nns =⇒(V T C V S dts. [[ C ok;
+(|tyvars = T, vars = V, concepts = C, models = M|) ⇝S; C |=d ws ⇝dts ]]
+=⇒S |=F (mk-nths ds nns) : dts)
+proof (induct rule: fg-where.induct)
+ﬁx Γ T C V S dts
+assume Ds: C |=d [] ⇝dts
+from Ds have dts = [] by (rule inv-rs-ds-nil, simp)
+also have S |=F mk-nths [] [] : [] by (simp add: wt-f-nil)
+ultimately show S |=F mk-nths [] [] : dts by simp
+next ﬁx M τs c d ds nns ns ws T C V S dts
+58
+
+assume M: (c, τs, d, ns) ∈M and W: M |= ws ⇝ds, nns
+and IH: VT C V S dts. [[ C ok; (|tyvars = T, vars = V, concepts = C, models = M|) ⇝S;
+C |=d ws ⇝dts ]] =⇒S |=F mk-nths ds nns : dts
+and Cok: C ok and g-s: (|tyvars = T, vars = V, concepts = C, models = M|) ⇝S
+and D: C |=d (c,τs)#ws ⇝dts
+from g-s obtain Sv Sm where T: C ⊢m M ⇝Sm and TV: tvars S = T
+and S: tys S = Sm ∪Sv by auto
+from M T model-trans obtain τ τ ′ where D2: C ⊢d c τs ⇝τ ′
+and dt-sm: (d,τ) ∈Sm and P: τ−ns→τ ′ by blast
+from dt-sm S have dt-s: (d,τ) ∈tys S by simp
+from dt-s have wt-d: S ⊢F ‘d : τ by (rule wt-f-var)
+from P wt-d have A: S ⊢F mk-nth (‘d) ns : τ ′ by (rule mk-nth-wt)
+from D obtain dt dts ′ where Dt: C ⊢d c τs ⇝dt and Ds: C |=d ws ⇝dts ′
+and dts: dts = dt#dts ′ by (rule inv-rs-ds-cons, auto)
+from D2 Cok Dt have τ ′ = dt using fun-dict-trans-ty apply blast done
+with dts have dts2: dts = τ ′#dts ′ by simp
+from Cok g-s Ds IH have B: S |=F mk-nths ds nns : dts ′ by simp
+from A B have S |=F (mk-nth (‘d) ns)#(mk-nths ds nns) : τ ′#dts ′ by (rule wt-f-cons)
+with dts2 have S |=F (mk-nth (‘d) ns)#(mk-nths ds nns) : dts by simp
+thus S |=F mk-nths (d # ds) (ns # nns) : dts by simp
+qed
+8.9
+The Main Theorem
+The main theorem, that the translation produces well-typed terms of System F, is
+proved by mutual induction on derivations of Γ ⊢e : τ ⇝f and of Γ |= es : τs ⇝
+fs. Comments are embedded in the proof that summarize the main points of each sub-
+case.
+theorem fg-pres-ty:
+(Γ ⊢e : τ ⇝f −→
+(∀S. concepts Γ ok ∧Γ ⇝S −→(∃τ ′. S ⊢F f : τ ′ ∧concepts Γ ⊢τ ⇝τ ′)))
+∧(Γ |= es : τs ⇝fs −→
+(∀S. concepts Γ ok ∧Γ ⇝S −→(∃τs ′. S |=F fs : τs ′ ∧concepts Γ |= τs ⇝τs ′)))
+(is (Γ ⊢e : τ ⇝f −→?P Γ τ f) ∧(Γ |= es : τs ⇝fs −→?PS Γ τs fs))
+proof (induct rule: fg-fg-list.induct)
+— Case fg-tabs: The sub-term e is translated in an environment extended with models for each
+requirement in the where clause. We use the lemma from Figure 20 to show that the environment
+correspondence holds for the extended environment. We then invoke the induction hypothesis
+for Γ(|models := M|) ⊢e : σ ⇝f and assemble the typing derivation for the output term Λ ts. (λ
+ds:τs. f).
+ﬁx M Γ σ τs ds e f and ts::var list and ws
+assume Ds:concepts Γ |=d ws ⇝τs and M: concepts Γ ⊢ws ds (models Γ) ⇒M
+and dist: distinct ts and e-f: Γ(|models := M|)(|tyvars := tyvars Γ ∪set ts|) ⊢e : σ ⇝f
+and IH: ?P (Γ(|models := M|)(|tyvars := tyvars Γ ∪set ts|)) σ f
+show ?P Γ (∀ts where ws. σ) (Λ ts. (λ ds:τs. f))
+proof clarify
+ﬁx S assume Cok: concepts Γ ok and g-s: Γ ⇝S
+from g-s obtain Sv Sm where v-s: concepts Γ ⊢v vars Γ ⇝Sv
+and m-s: concepts Γ ⊢m models Γ ⇝Sm and sv: tvars S = tyvars Γ
+59
+
+and s-svm: tys S = Sm ∪Sv by auto
+from M Cok Ds m-s have mp-sd: concepts Γ ⊢m M ⇝Sm,ds:τs ∧length ds = length τs
+by (rule add-models-where-preserves)
+let ?Gp = Γ(| models := M |)(| tyvars := tyvars Γ ∪set ts|)
+and ?Sp = (|tys = (Sm ∪Sv),ds:τs, tvars = tvars S ∪set ts|)
+have eq: (Sm,ds:τs) ∪Sv = (Sm ∪Sv),ds:τs by (simp only: push-union-commute)
+from sv v-s mp-sd have ?Gp ⇝(|tys = (Sm,ds:τs) ∪Sv, tvars = tvars S ∪set ts|) by auto
+with eq have gp-sp: ?Gp ⇝?Sp by simp
+from Cok have Gpok: concepts ?Gp ok by simp
+from Gpok gp-sp IH obtain τ ′ where wt-f: ?Sp ⊢F f : τ ′ and s-tp: concepts ?Gp ⊢σ ⇝τ ′
+by blast
+from wt-f have ft: ?Sp ⊢F f : τ ′ by simp
+let ?Sp2 = (|tys = Sm∪Sv, tvars = tvars S ∪set ts|)
+from ft have wtf: ?Sp2(|tys := (tys ?Sp2),ds:τs|) ⊢F f : τ ′ by simp
+have dsty: set ds ∩dom (tys ?Sp2) = {} sorry — Can alpha-convert to get this
+from wtf mp-sd dsty have wtlf: ?Sp2 ⊢F λ ds:τs. f : fn τs →τ ′ using wt-f-abs by auto
+let ?Sp3 = (|tys = Sm∪Sv, tvars = tvars S|)
+from wtlf have wtlf2: ?Sp3(| tvars := tvars ?Sp3 ∪set ts|) ⊢F λ ds:τs. f : fn τs →τ ′ by simp
+have tstsp: set ts ∩tvars ?Sp3 = {} sorry — alpha-convert to get this
+have tsfs: set ts ∩FTV (tys ?Sp3) = {} sorry — alpha-convert to get this
+from wtlf2 tstsp tsfs dist have sp3: ?Sp3 ⊢F (Λ ts. (λ ds:τs. f)) : (∀ts. fn τs →τ ′)
+by (rule wt-f-tabs)
+from s-svm have S = ?Sp3 by simp
+with sp3 have A: S ⊢F (Λ ts. (λ ds:τs. f)) : (∀ts. fn τs →τ ′) by auto
+from s-tp have s-tp2: concepts Γ ⊢σ ⇝τ ′ by simp
+from Ds s-tp2 dist have B: concepts Γ ⊢∀ts where ws. σ ⇝(∀ts. fn τs →τ ′)
+by (rule trans-all)
+from A B show (∃τ ′. S ⊢F Λ ts. (λ ds:τs. f) : τ ′ ∧concepts Γ ⊢∀ts where ws. σ ⇝τ ′)
+by auto
+qed
+next — Case fg-tapp: We must show that the output term, which is the application f[τs ′] ·
+mk-nths ds nns is well typed. We use the induction hypothesis to show that f is well typed and
+Lemma mk-nths-wt from Section 8.8 to show that the result of mk-nths is well typed.
+ﬁx Γ σ τs τs ′ ds e f nns ts ws
+assume e-f: Γ ⊢e : ∀ts where ws. σ ⇝f and IH: ?P Γ (∀ts where ws. σ) f
+and lts: length ts = length τs and Ws: models Γ |= {|ts7→τs|}ws ⇝ds, nns
+and ts-tsp: concepts Γ |= τs ⇝τs ′
+show ?P Γ ([ts7→τs]σ) (f[τs ′] · mk-nths ds nns)
+proof clarify
+ﬁx S assume Cok: concepts Γ ok and g-s: Γ ⇝S
+from Cok g-s IH obtain τ ′ where wt-f: S ⊢F f : τ ′
+and alls-tp: concepts Γ ⊢∀ts where ws. σ ⇝τ ′ by blast
+from alls-tp obtain τ ′′ σs where Rs: concepts Γ |=d ws ⇝σs
+and s-tpp: concepts Γ ⊢σ ⇝τ ′′ and dist: distinct ts
+and tp: τ ′ = ∀ts. fn σs →τ ′′ by (rule inv-trans-all2, simp)
+from wt-f tp have wt-f2: S ⊢F f : ∀ts. fn σs →τ ′′ by simp
+from ts-tsp have length τs = length τs ′ by (simp add: trans-length)
+with lts have ltsp: length ts = length τs ′ by simp
+from wt-f2 ltsp have S ⊢F f[τs ′] : [ts7→τs ′](fn σs →τ ′′) by (rule wt-f-tapp)
+hence A: S ⊢F f[τs ′] : (fn (sub-tys ts τs ′ σs) →([ts7→τs ′]τ ′′)) by simp
+60
+
+from Rs Cok dist lts ts-tsp have Rs2: concepts Γ |=d {|ts7→τs|}ws ⇝{ts7→τs ′}σs
+by (rule subst-ds)
+from Ws Cok g-s Rs2 have B: S |=F mk-nths ds nns : {ts7→τs ′}σs by (simp add: mk-nths-wt)
+have eq: id |=F {ts7→τs ′}σs = {ts7→τs ′}σs by (rule f-eqs-reﬂ)
+from A B eq have C: S ⊢F (f[τs ′] · mk-nths ds nns) : [ts7→τs ′]τ ′′ by (rule wt-f-app)
+from s-tpp Cok dist lts ts-tsp have D: concepts Γ ⊢[ts7→τs]σ ⇝[ts7→τs ′]τ ′′
+by (rule subst-trans-ty)
+from C D show ∃τ ′. S ⊢F f[τs ′] · mk-nths ds nns : τ ′ ∧
+concepts Γ ⊢[ts7→τs]σ ⇝τ ′ by blast
+qed
+next — Case fg-cpt: The sub-term e is translated in an environment extended with the new con-
+cept. To invoke the induction hypothesis we must show that the new environment corresponds to
+a System F environment, which is handled by the lemmas from Section 8.6. From the induction
+hypothesis we get {(c, ci)} ∪concepts Γ ⊢τ ⇝τ ′, from which we have concepts Γ ⊢τ ⇝τ ′
+because c is not permitted to appear in τ.
+ﬁx C Γ and σs::tyg list and σs ′ τ τs c and ci::concept-info
+and e f and rs::where-clause and ts xs
+assume CD: c /∈dom (concepts Γ) and R: concepts Γ |=d rs ⇝τs
+and ss-ssp: concepts Γ |= σs ⇝σs ′
+and CI: ci = (|params = ts, rfn = rs, mem-nms = xs, mem-tys = σs|)
+and e-f: (Γ,concept c ci) ⊢e : τ ⇝f and IH: ?P (Γ,concept c ci) τ f
+and lxs: length xs = length σs and dist: distinct ts
+and frs: S (map (λp. S (map ftvg (snd p))) rs) ⊆set ts
+and fms: S (map ftvg σs) ⊆set ts
+and O: (c,τ) /∈c-occurs-ty
+show ?P Γ τ f
+proof clarify
+ﬁx S assume Cok: concepts Γ ok and g-s: Γ ⇝S
+have Cok2: concepts (Γ,concept c ci) ok
+proof simp
+from R ss-ssp dist lxs CI frs fms have CIok: concepts Γ ⊢ci ok by (simp add: wf-c)
+from CD CIok Cok show insert (c,ci) (concepts Γ) ok by (simp add: wf-cs-cons)
+qed
+from g-s obtain Sv Sm where v-s: concepts Γ ⊢v vars Γ ⇝Sv
+and m-s: concepts Γ ⊢m models Γ ⇝Sm and sv: tvars S = tyvars Γ
+and s-svm: tys S = Sv ∪Sm by auto
+from v-s have v-s2: concepts (Γ,concept c ci) ⊢v vars Γ ⇝Sv
+using add-concept-preserves-var-env by simp
+from m-s have m-s2: concepts (Γ,concept c ci) ⊢m models Γ ⇝Sm
+using add-concept-preserves-model-env by simp
+from sv v-s2 m-s2 s-svm have g-s2: Γ,concept c ci ⇝S by auto
+from Cok2 g-s2 IH obtain τ ′ where wt-f: (S, f, τ ′) ∈wt-f
+and t-tp: concepts (Γ,concept c ci) ⊢τ ⇝τ ′ by blast
+from t-tp have t-tpb: insert (c, ci) (concepts Γ) ⊢τ ⇝τ ′ by simp
+from t-tpb O have t-tp2: concepts Γ ⊢τ ⇝τ ′
+by (rule remove-concept-pres-trans-ty)
+from wt-f t-tp2 show ∃τ ′. (S, f, τ ′) ∈wt-f ∧concepts Γ ⊢τ ⇝τ ′ by blast
+qed
+next — Case fg-mdl: The output term will be (let d := de in f), where de is the term for the
+dictionary for the model. We use Lemma mk-nths-wt to show that the part of the dictionary for
+61
+
+reﬁnements is well typed. We will use the induction hypothesis to get a well-typed f. However,
+we ﬁrst show that adding the model to the environment preserves the environment correspon-
+dence. We invoke Lemma add-model-preserves to prove this.
+ﬁx Γ ϱs ϱs ′ σs τ c ci d de ds dts e es f fs ns xs
+assume C: (c, ci) ∈concepts Γ and rs-rsp: concepts Γ |= ϱs ⇝ϱs ′
+and memns: xs = mem-nms ci and es-fs: Γ |= es : σs ⇝fs
+assume IH1: ?PS Γ σs fs and memtys: σs = {params ci7→ϱs}(mem-tys ci)
+and Ds: concepts Γ |=d rfn ci ⇝dts
+assume W: models Γ |= {|params ci7→ϱs|}rfn ci ⇝ds, ns
+and D: de = ⟨mk-nths ds ns @ fs⟩and lps: length (params ci) = length ϱs
+and IH2: ?P (Γ,model (c,ϱs,d,[])) τ f
+let ?Gp = Γ,model (c, ϱs, d, [])
+show ?P Γ τ (let d := de in f)
+proof clarify
+ﬁx S assume Cok: concepts Γ ok and g-s: Γ ⇝S
+from Cok g-s IH1 obtain σs ′ where
+wt-fs: S |=F fs : σs ′ and ss-ssp: concepts Γ |= σs ⇝σs ′ by blast
+from Cok C have dist: distinct (params ci)
+using c-mem-implies-c-ok inv-wf-c by blast
+let ?sdts = {params ci7→ϱs ′}dts
+from Ds Cok dist lps rs-rsp have
+Ds2: concepts Γ |=d {|params ci7→ϱs|}(rfn ci) ⇝?sdts by (rule subst-ds)
+from W Cok g-s Ds2 have
+wt-mk: S |=F mk-nths ds ns : ?sdts by (simp add: mk-nths-wt)
+from wt-mk wt-fs have S |=F (mk-nths ds ns) @ fs : ?sdts @ σs ′
+by (simp add: wt-f-append)
+hence S ⊢F ⟨mk-nths ds ns @ fs⟩: ⟨?sdts @ σs ′⟩by (rule wt-f-tuple)
+with D have wt-de: S ⊢F de : ⟨?sdts @ σs ′⟩by simp
+from Cok have Cok2: concepts ?Gp ok by simp
+let ?Sp = S(|tys := (tys S),d:⟨?sdts @ σs ′⟩|)
+from g-s Cok C rs-rsp Ds ss-ssp memtys lps
+have g2-s: ?Gp ⇝?Sp by (rule add-model-preserves)
+from Cok2 g2-s IH2 obtain τ ′ where wt-f: ?Sp ⊢F f : τ ′
+and t-tp: concepts (Γ,model (c,ϱs,d,[])) ⊢τ ⇝τ ′ by blast
+have dS: d /∈dom (tys S) sorry — d is fresh
+from wt-de wt-f dS have A: S ⊢F let d := de in f : τ ′ by (rule wt-f-let)
+from t-tp have B: concepts Γ ⊢τ ⇝τ ′ by simp
+from A B show ∃τ ′. (S, let d := de in f, τ ′) ∈wt-f ∧concepts Γ ⊢τ ⇝τ ′ by auto
+qed
+next — Case fg-mem: We take advantage of the environment correspondence Γ ⇝S to obtain
+the path σ−ns→dt from the dictionary d to the appropriate sub-dictionary for this model. We
+then use Lemma dict-member from Section 8.7 to extend the path to the appropriate member.
+Lemma mk-nth-wt shows that mk-nth (‘d) ns ′ is well typed.
+ﬁx Γ::FGenv and τ τs c d ns ns ′ x
+assume M: (c, τs, d, ns) ∈models Γ and F: concepts Γ ⊢♭x c τs ns ⇒τ ns ′
+show ?P Γ τ (mk-nth (‘d) ns ′)
+proof clarify
+ﬁx S assume Cok: concepts Γ ok and g-s: Γ ⇝S
+from g-s obtain Sv Sm where v-s: concepts Γ ⊢v vars Γ ⇝Sv
+and m-s: concepts Γ ⊢m models Γ ⇝Sm and sv: tvars S = tyvars Γ
+62
+
+and s-svm: tys S = Sv ∪Sm by auto
+from M m-s model-trans obtain σ dt where D: concepts Γ ⊢d c τs ⇝dt
+and DS: (d,σ) ∈Sm and P: σ−ns→dt by blast
+from DS s-svm have DS2: (d,σ) ∈tys S by auto
+from F Cok D P dict-member obtain τ ′ where P2: σ−ns ′→τ ′
+and t-tp: concepts Γ ⊢τ ⇝τ ′ by blast
+from DS2 have wt-d: S ⊢F ‘d : σ by (rule wt-f-var)
+from P2 wt-d have wt-nth: S ⊢F mk-nth (‘d) ns ′ : τ ′ by (rule mk-nth-wt)
+from wt-nth t-tp show
+∃τ ′. (S, mk-nth (‘d) ns ′, τ ′) ∈wt-f ∧concepts Γ ⊢τ ⇝τ ′ by auto
+qed
+next — Case fg-var: Again we rely on the environment correspondence Γ ⇝S. This time we
+use it to obtain the translation of type τ for variable x.
+ﬁx Γ::FGenv and τ x assume XT: (x,τ) ∈vars Γ
+show ?P Γ τ (‘x)
+proof clarify
+ﬁx S assume Cok: concepts Γ ok and g-s: Γ ⇝S
+from g-s obtain Sv Sm where v-s: concepts Γ ⊢v vars Γ ⇝Sv
+and m-s: concepts Γ ⊢m models Γ ⇝Sm and sv: tvars S = tyvars Γ
+and s-svm: tys S = Sv ∪Sm by auto
+from v-s XT var-mem-trans-implies obtain τ ′ where
+t-tp: concepts Γ ⊢τ ⇝τ ′ and XTP: (x,τ ′) ∈Sv by blast
+from XTP s-svm have XTP2: (x,τ ′) ∈tys S by simp
+from XTP2 have wt-x: S ⊢F ‘x : τ ′ by (rule wt-f-var)
+from wt-x t-tp show ∃τ ′. S ⊢F ‘x : τ ′ ∧concepts Γ ⊢τ ⇝τ ′ by auto
+qed
+next — Case fg-app: This case is straightforward.
+ﬁx Γ σs σs ′ τ e es f fs assume IH1: ?P Γ (fn σs →τ) f and IH2: ?PS Γ σs ′ fs
+and ss-sp: id |= σs = σs ′
+show ?P Γ τ (f · fs)
+proof clarify
+ﬁx S assume Cok: concepts Γ ok and g-s: Γ ⇝S
+from Cok g-s IH1 obtain τ ′ where wt-f: S ⊢F f : τ ′
+and t-tp: concepts Γ ⊢fn σs →τ ⇝τ ′ by blast
+from Cok g-s IH2 obtain τs ′ where wt-fs: S |=F fs : τs ′
+and ss-tp: concepts Γ |= σs ′ ⇝τs ′ by blast
+from t-tp obtain τ ′′ τs ′′ where ss-tpp: concepts Γ |= σs ⇝τs ′′
+and s-tpp: concepts Γ ⊢τ ⇝τ ′′ and tp: τ ′ = fn τs ′′ →τ ′′
+by (rule inv-trans-fun, blast)
+from tp wt-f have wt-f2: S ⊢F f : fn τs ′′ →τ ′′ by simp
+— Need to change lemma fun-dict-trans-ty to take into accound alpha-equal types
+from Cok ss-tp ss-tpp ss-sp have eq: id |=F τs ′ = τs ′′ using fun-dict-trans-ty sorry
+from eq have eq2: id |=F τs ′′ = τs ′ by (rule f-eqs-symm)
+from wt-fs eq have wt-fs2: S |=F fs : τs ′′ by (rule equal-preserves-wts)
+from wt-f2 wt-fs eq2 have wt-ap: S ⊢F f · fs : τ ′′ by (rule wt-f-app)
+from s-tpp wt-ap show ∃τ ′. S ⊢F f · fs : τ ′ ∧concepts Γ ⊢τ ⇝τ ′ by auto
+qed
+next — Case fg-abs: In this case the sub-term is translated in an environment extended with vari-
+able bindings for the parameters. We use a lemma from Section 8.6 to show that the environment
+correspondence is maintained.
+63
+
+ﬁx Γ σs σs ′ τ e f xs assume IH: ?P (Γ,xs:σs) τ f and ss-ssp: concepts Γ |= σs ⇝σs ′
+and lxs: length xs = length σs
+from ss-ssp have length σs = length σs ′ by (simp add: trans-length)
+with lxs have lxs2: length xs = length σs ′ by simp
+show ?P Γ (fn σs →τ) (λ xs:σs ′. f)
+proof clarify
+ﬁx S assume Cok: concepts Γ ok and g-s: Γ ⇝S
+have eq: concepts (Γ,xs:σs) = concepts Γ by (simp add: push-vars-def)
+have meq: models (Γ,xs:σs) = models Γ by (simp add: push-vars-def)
+from g-s obtain Sv Sm where v-s: concepts Γ ⊢v vars Γ ⇝Sv
+and m-s: concepts Γ ⊢m models Γ ⇝Sm and sv: tvars S = tyvars Γ
+and s-svm: tys S = Sv ∪Sm by auto
+from ss-ssp v-s lxs have concepts Γ ⊢v (vars Γ),xs:σs ⇝Sv,xs:σs ′
+using add-vars-preserves-var-env by simp
+with eq have v-s2: concepts (Γ,xs:σs) ⊢v (vars Γ),xs:σs ⇝Sv,xs:σs ′ by simp
+from m-s eq meq have m-s2: concepts (Γ,xs:σs) ⊢m models (Γ,xs:σs) ⇝Sm by simp
+have (Sv,xs:σs ′) ∪Sm = (Sv ∪Sm),xs:σs ′ using push-union-commute by simp
+hence s-svm2: (Sv ∪Sm),xs:σs ′ = Sm ∪(Sv,xs:σs ′) by auto
+obtain S ′ where sp: S ′ = (Sv ∪Sm),xs:σs ′ by simp
+from s-svm2 sp have sp-svm: S ′ = Sm ∪(Sv,xs:σs ′) by simp
+let ?Sp = S(|tys := (tys S),xs:σs ′|)
+from sv v-s2 m-s2 sp-svm have Γ,xs:σs ⇝S(|tys := S ′|)
+using trans-env-def push-vars-def by auto
+with s-svm sp have g-s2: Γ,xs:σs ⇝?Sp by simp
+from eq Cok have Cok2: concepts (Γ,xs:σs) ok by simp
+from Cok2 g-s2 IH obtain τ ′ where wt-f: ?Sp ⊢F f : τ ′
+and t-tp: concepts (Γ,xs:σs) ⊢τ ⇝τ ′ by blast
+from t-tp eq have t-tp2: concepts Γ ⊢τ ⇝τ ′ by simp
+have xsds: set xs ∩dom (tys S) = {} sorry — can alpha-convert xs to get this
+from wt-f xsds lxs2 have wt-l: S ⊢F λ xs:σs ′. f : fn σs ′ →τ ′ by (rule wt-f-abs)
+from ss-ssp t-tp2
+have T: concepts Γ ⊢fn σs →τ ⇝fn σs ′ →τ ′ by (rule trans-fun)
+from wt-l T
+show ∃τ ′. S ⊢F λ xs:σs ′. f : τ ′ ∧concepts Γ ⊢fn σs →τ ⇝τ ′
+by auto
+qed
+next — Case fg-bool: This case is trivial.
+ﬁx Γ::FGenv and b
+{ ﬁx S
+have S ⊢F Boolean b : BoolT by (rule wt-f-bool)
+moreover have concepts Γ ⊢BoolG ⇝BoolT by (rule trans-bool)
+ultimately have ∃τ ′. S ⊢F Boolean b : τ ′ ∧concepts Γ ⊢BoolG ⇝τ ′
+by blast
+} thus ∀S. concepts Γ ok ∧Γ ⇝S −→
+(∃τ ′. S ⊢F Boolean b : τ ′ ∧concepts Γ ⊢BoolG ⇝τ ′) by simp
+next — Case fg-int: This case is trivial.
+ﬁx Γ::FGenv and i
+{ ﬁx S have S ⊢F Integer i : IntT by (rule wt-f-int)
+moreover have concepts Γ ⊢IntG ⇝IntT by (rule trans-int)
+ultimately have ∃τ ′. S ⊢F Integer i : τ ′ ∧concepts Γ ⊢IntG ⇝τ ′ by blast
+64
+
+} thus ∀S. concepts Γ ok ∧Γ ⇝S −→(∃τ ′. S ⊢F Integer i : τ ′ ∧concepts Γ ⊢IntG ⇝τ ′)
+by simp
+next — Case fg-nil: This case is trivial.
+ﬁx Γ show ∀S. concepts Γ ok ∧Γ ⇝S −→(∃τs ′. S |=F [] : τs ′ ∧concepts Γ |= [] ⇝τs ′)
+proof clarify
+ﬁx S have A: S |=F [] : [] by (rule wt-f-nil)
+have B: concepts Γ |= [] ⇝[] by (rule trans-nil)
+from A B show ∃τs ′. S |=F [] : τs ′ ∧concepts Γ |= [] ⇝τs ′ by auto
+qed
+next — Case fg-cons: This case is straightforward.
+ﬁx Γ τ τs e es f fs
+assume IH1: ∀S. concepts Γ ok ∧Γ ⇝S −→(∃τ ′. S ⊢F f : τ ′ ∧concepts Γ ⊢τ ⇝τ ′)
+and IH2: ∀S. concepts Γ ok ∧Γ ⇝S −→(∃τs ′. S |=F fs : τs ′ ∧concepts Γ |= τs ⇝τs ′)
+show ∀S. concepts Γ ok ∧Γ ⇝S −→(∃τs ′. S |=F f # fs : τs ′ ∧concepts Γ |= τ # τs ⇝
+τs ′)
+proof clarify
+ﬁx S assume Cok: concepts Γ ok and g-s: Γ ⇝S
+from Cok g-s IH1 obtain τ ′ where wt-f: S ⊢F f : τ ′
+and t-tp: concepts Γ ⊢τ ⇝τ ′ by blast
+from Cok g-s IH2 obtain τs ′ where wt-fs: S |=F fs : τs ′
+and ts-tsp: concepts Γ |= τs ⇝τs ′ by blast
+from wt-f wt-fs have A: S |=F f#fs : τ ′#τs ′ by (rule wt-f-cons)
+from t-tp ts-tsp have B: concepts Γ |= τ#τs ⇝τ ′#τs ′ by (rule trans-cons)
+from A B show ∃τs ′. S |=F f # fs : τs ′ ∧concepts Γ |= τ # τs ⇝τs ′ by auto
+qed
+qed
+9
+Conclusion
+The main contribution of this report is the development of a language, named FG, that
+captures the essence of concepts and thus language support for generic programming.
+We present a formal type system for the language and provide semantics via a transla-
+tion to System F. We prove the translation preserves typing, and thus type soundness
+for FG.
+The language deﬁnition was formalized using the Isabelle proof assistant, and the proof
+of soundness for the translation was written in the Isar language and veriﬁed using
+Isabelle. This was a fairly difﬁcult proof engineering task, but the deﬁnition of FG was
+sharpened considerably as a result. One aspect of the proof we did not formalize in
+Isabelle was the use of the variable convention: we assumed that bound variable could
+be renamed. The standard solution to this issue is to change to De Bruijn indices. We
+chose not to use De Bruijn indices for this report because they are more difﬁcult to
+reason about. However, rewriting the proof to use De Bruijn indices should now be a
+straightforward, but tedious, task.
+There are several language features that are important for generic programming that
+we do not cover in this report. Those features include:
+65
+
+Associated Types. Part 2 of this report will extend FG with associated types.
+Implicit instantiation of type abstractions. Ideally we would introduce a subsump-
+tion rule based on Mitchell’s containment relation [31]. However, that relation is unde-
+cidable [47]. There are two interesting restrictions that are decidable: no coercion un-
+der a function arrow [25] and restriction of type arguments to monomorphic types [36].
+We plan further investigation in this area.
+Statically resolved function overloading, as is found in C++ and Java. This is needed
+to remove the clutter of model member access such as <Monoid(t)>.binary op.
+Named models, as in [20]. This provides a mechanism for managing overlapping
+models, and is a straightforward addition to FG.
+Parameterized models (equivalent to parameterized instances in Haskell) are impor-
+tant for models that use parameterized type such as list<T>.
+Defaults for concept members (as in Haskell) provide a mechanism for implementing
+a rich interface in terms of a few functions.
+Algorithm specialization is used in C++ to provide automatic dispatching to different
+versions of an algorithm based on properties of a type, such as an iterator providing ran-
+dom access. The natural way to add this to FG would be to have function overloading
+based on the where clauses of generic functions [17].
+Acknowledgments
+We would like to thank Ronald Garcia, Jeremiah Willcock, Doug Gregor, Jaakko J¨arvi,
+Dave Abrahams, Dave Musser, and Alexander Stepanov for many discussions and col-
+laborations that informed this work. We thank Simon Peyton Jones for an interesting
+email discussion with regards to associated types. This work was supported by NSF
+grant EIA-0131354 and by a grant from the Lilly Endowment.
+References
+[1] Ada 95 Reference Manual, 1997.
+[2] L. Augustsson. Implementing Haskell overloading. In Functional Programming
+Languages and Computer Architecture, pages 65–73, 1993.
+[3] H. Barendregt. The Lambda Calculus, volume 103 of Studies in Logic. Elsevier,
+1984.
+[4] J.-D. Boissonnat, F. Cazals, F. Da, O. Devillers, S. Pion, F. Rebufat, M. Teil-
+laud, and M. Yvinec. Programming with CGAL: the example of triangulations.
+In Proceedings of the ﬁfteenth annual symposium on Computational geometry,
+pages 421–422. ACM Press, 1999.
+66
+
+[5] Boost. Boost C++ Libraries. http://www.boost.org/.
+[6] G. Bracha, N. Cohen, C. Kemper, S. Marx, et al. JSR 14: Add Generic Types to
+the Java Programming Language, April 2001. http://www.jcp.org/en/jsr/detail?
+id=014.
+[7] P. Canning, W. Cook, W. Hill, W. Olthoff, and J. C. Mitchell. F-bounded poly-
+morphism for object-oriented programming. In Proceedings of the fourth inter-
+national conference on functional programming languages and computer archi-
+tecture, 1989.
+[8] L. Cardelli and P. Wegner. On understanding types, data abstraction, and poly-
+morphism. ACM Computing Surveys, 17(4):471–522, 1985.
+[9] M. Chakravarty, G. Keller, S. P. Jones, and S. Marlow. Associated types with
+class. In POPL, 2005. submitted.
+[10] K. Chen, P. Hudak, and M. Odersky. Parametric type classes. In LISP and Func-
+tional Programming, pages 170–181, 1992.
+[11] G. J. Ditchﬁeld. Overview of Cforall. University of Waterloo, August 1996.
+[12] R. Garcia, J. J¨arvi, A. Lumsdaine, J. Siek, and J. Willcock. A comparative study
+of language support for generic programming. In Proceedings of the 18th ACM
+SIGPLAN conference on Object-oriented programing, systems, languages, and
+applications, pages 115–134. ACM Press, Oct. 2003.
+[13] J.-Y. Girard.
+Interprtation Fonctionnelle et ´Elimination des Coupures de
+l’Arithmtique d’Ordre Suprieur. Thse de doctorat d’tat, Universit Paris VII, Paris,
+France, 1972.
+[14] J. A. Goguen, T. Winker, J. Meseguer, K. Futatsugi, and J.-P. Jouannaud. Intro-
+ducing OBJ. In Applications of Algebraic Speciﬁcation using OBJ. Cambridge
+University Press, 1992.
+[15] C. V. Hall, K. Hammond, S. L. P. Jones, and P. L. Wadler. Type classes in Haskell.
+ACM Trans. Program. Lang. Syst., 18(2):109–138, 1996.
+[16] International Standardization Organization (ISO).
+ANSI/ISO Standard 14882,
+Programming Language C++. 1 rue de Varemb´e, Case postale 56, CH-1211
+Gen`eve 20, Switzerland, 1998.
+[17] J. J¨arvi, J. Willcock, and A. Lumsdaine. Algorithm specialization and concept
+constrained genericity. In Concepts: a Linguistic Foundation of Generic Pro-
+gramming. Adobe Systems, Apr. 2004.
+[18] M. P. Jones. Dictionary-free overloading by partial evaluation. In Partial Evalu-
+ation and Semantics-Based Program Manipulation, Orlando, Florida, June 1994
+(Technical Report 94/9, Department of Computer Science, University of Mel-
+bourne), pages 107–117, 1994.
+67
+
+[19] M. P. Jones. Type classes with functional dependencies. In European Sympo-
+sium on Programming, number 1782 in LNCS, pages 230–244. Springer-Verlag,
+March 2000.
+[20] W. Kahl and J. Scheffczyk. Named instances for Haskell type classes. In R. Hinze,
+editor, Proc. Haskell Workshop 2001, volume 59 of ENTCS, 2001. See also:
+http://ist.unibw-muenchen.de/Haskell/NamedInstances/.
+[21] D. Kapur and D. Musser.
+Tecton: a framework for specifying and verifying
+generic system components. Technical Report RPI–92–20, Department of Com-
+puter Science, Rensselaer Polytechnic Institute, Troy, New York 12180, July
+1992.
+[22] D. Kapur, D. R. Musser, and X. Nie. An overview of the tecton proof system.
+Theoretical Computer Science, 133:307–339, Oct. 1994.
+[23] A. Kennedy and D. Syme. Design and implementation of generics for the .NET
+Common Language Runtime.
+In Proceedings of the ACM SIGPLAN Confer-
+ence on Programming Language Design and Implementation (PLDI), pages 1–
+12, Snowbird, Utah, June 2001.
+[24] U. K¨othe. Handbook on Computer Vision and Applications, volume 3, chapter
+Reusable Software in Computer Vision. Acadamic Press, 1999.
+[25] D. Le Botlan and D. R´emy. MLF: Raising ML to the power of System-F. In
+Proceedings of the International Conference on Functional Programming (ICFP
+2003), Uppsala, Sweden, pages 27–38. ACM Press, aug 2003.
+[26] B. Liskov, A. Snyder, R. Atkinson, and C. Schaffert. Abstraction mechanisms in
+CLU. Communications of the ACM, 20(8):564–576, 1977.
+[27] D. MacQueen. An implementation of Standard ML modules. In Proceedings of
+the 1988 ACM Conference on LISP and Functional Programming, Snowbird, UT,
+pages 212–223, New York, NY, 1988. ACM.
+[28] B. Meyer. Eiffel: the Language. Prentice Hall, New York, NY, ﬁrst edition, 1992.
+[29] Microsoft Corporation. Generics in C#, September 2002. Part of the Gyro dis-
+tribution of generics for .NET available at http://research.microsoft.com/projects/
+clrgen/.
+[30] R. Milner, M. Tofte, and R. Harper. The Deﬁnition of Standard ML. MIT Press,
+1990.
+[31] J. C. Mitchell. Polymorphic type inference and containment. Information and
+Computation, 76(2-3):211–249, 1988.
+[32] D. R. Musser and A. A. Stepanov. A library of generic algorithms in Ada. In
+Using Ada (1987 International Ada Conference), pages 216–225, New York, NY,
+Dec. 1987. ACM SIGAda.
+68
+
+[33] D. R. Musser and A. A. Stepanov. Generic programming. In P. P. Gianni, editor,
+Symbolic and algebraic computation: ISSAC ’88, Rome, Italy, July 4–8, 1988:
+Proceedings, volume 358 of Lecture Notes in Computer Science, pages 13–25,
+Berlin, 1989. Springer Verlag.
+[34] T. Nipkow. Structured Proofs in Isar/HOL. In H. Geuvers and F. Wiedijk, editors,
+Types for Proofs and Programs (TYPES 2002), volume 2646, pages 259–278,
+2003.
+[35] T. Nipkow, L. C. Paulson, and M. Wenzel. Isabelle/HOL — A Proof Assistant for
+Higher-Order Logic, volume 2283 of LNCS. Springer, 2002.
+[36] M. Odersky and K. L¨aufer. Putting type annotations to work. In Proceedings
+of the 23rd ACM SIGPLAN-SIGACT symposium on Principles of programming
+languages, pages 54–67. ACM Press, 1996.
+[37] B. C. Pierce. Intersection types and bounded polymorphism. Mathematical Struc-
+tures in Computer Science, 11, 1996.
+[38] W. R. Pitt, M. A. Williams, M. Steven, B. Sweeney, A. J. Bleasby, and D. S.
+Moss. The bioinformatics template library: generic components for biocomput-
+ing. Bioinformatics, 17(8):729–737, 2001.
+[39] E. Poll and S. Thompson. The Type System of Aldor. Technical Report 11-99,
+Computing Laboratory, University of Kent at Canterbury, Kent CT2 7NF, UK,
+July 1999.
+[40] J. C. Reynolds. Towards a theory of type structure. In B. Robinet, editor, Pro-
+gramming Symposium, volume 19 of Lecture Notes in Computer Science, pages
+408–425, Berlin, 1974. Springer-Verlag.
+[41] J. Siek, L.-Q. Lee, and A. Lumsdaine. The generic graph component library. In
+Proceedings of the 1999 ACM SIGPLAN conference on Object-oriented program-
+ming, systems, languages, and applications, pages 399–414. ACM Press, 1999.
+[42] J. Siek, L.-Q. Lee, and A. Lumsdaine. The Boost Graph Library: User Guide and
+Reference Manual. Addison-Wesley, 2002.
+[43] J. G. Siek and A. Lumsdaine. Advances in Software Tools for Scientiﬁc Com-
+puting, chapter A Modern Framework for Portable High Performance Numerical
+Linear Algebra. Springer, 2000.
+[44] Silicon Graphics, Inc. SGI Implementation of the Standard Template Library,
+2004. http://www.sgi.com/tech/stl/.
+[45] A. A. Stepanov and M. Lee. The Standard Template Library. Technical Report
+X3J16/94-0095, WG21/N0482, ISO Programming Language C++ Project, May
+1994.
+[46] B. Stroustrup. Parameterized types for C++. In USENIX C++ Conference, Octo-
+ber 1988.
+69
+
+[47] J. Tiuryn and P. Urzyczyn.
+The subtyping problem for second-order types is
+undecidable. Information and Computation, 179(1):1–18, 2002.
+[48] M. Troyer, S. Todo, S. Trebst, and A. F. and. ALPS: Algorithms and Libraries for
+Physics Simulations. http://alps.comp-phys.org/.
+[49] P. Wadler and S. Blott. How to make ad-hoc polymorphism less ad-hoc. In ACM
+Symposium on Principles of Programming Languages, pages 60–76. ACM, Jan.
+1989.
+[50] J. Walter and M. Koch. uBLAS. Boost. http://www.boost.org/libs/numeric/ublas/
+doc/index.htm.
+[51] J. Willcock, J. J¨arvi, A. Lumsdaine, and D. Musser. A formalization of concepts
+for generic programming. In Concepts: a Linguistic Foundation of Generic Pro-
+gramming at Adobe Tech Summit. Adobe Systems, Apr. 2004.
+70
+

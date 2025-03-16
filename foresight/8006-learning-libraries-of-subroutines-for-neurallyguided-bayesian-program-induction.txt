@@ -1,0 +1,786 @@
+Library learning for neurally-guided Bayesian program induction
+The MIT Faculty has made this article openly available. Please share 
+how this access benefits you. Your story matters.
+Citation
+Ellis, Kevin et al. "Learning Libraries of Subroutines for Neurally–
+Guided Bayesian Program Induction." Advances in Neural
+Information Processing Systems 31 (NIPS 2018) © 2018 Curran
+Associates Inc
+As Published
+https://papers.nips.cc/paper/8006-learning-libraries-of-
+subroutines-for-neurallyguided-bayesian-program-induction
+Publisher
+Curran Associates
+Version
+Final published version
+Citable link
+https://hdl.handle.net/1721.1/121592
+Terms of Use
+Article is made available in accordance with the publisher's
+policy and may be subject to US copyright law. Please refer to the
+publisher's site for terms of use.
+
+Library Learning for Neurally-Guided Bayesian
+Program Induction
+Kevin Ellis
+MIT
+ellisk@mit.edu
+Lucas Morales
+MIT
+lucasem@mit.edu
+Mathias Sablé-Meyer
+ENS Paris-Saclay
+mathsm@mit.edu
+Armando Solar-Lezama
+MIT
+asolar@csail.mit.edu
+Joshua B. Tenenbaum
+MIT
+jbt@mit.edu
+Abstract
+Successful approaches to program induction require a hand-engineered domain-
+speciﬁc language (DSL), constraining the space of allowed programs and imparting
+prior knowledge of the domain. We contribute a program induction algorithm
+called EC2 that learns a DSL while jointly training a neural network to efﬁciently
+search for programs in the learned DSL. We use our model to synthesize functions
+on lists, edit text, and solve symbolic regression problems, showing how the model
+learns a domain-speciﬁc library of program components for expressing solutions to
+problems in the domain.
+1
+Introduction
+Much of everyday human thinking and learning can be understood in terms of program induction:
+constructing a procedure that maps inputs to desired outputs, based on observing example input-
+output pairs. People can induce programs ﬂexibly across many different domains, and remarkably,
+often from just one or a few examples. For instance, if shown that a text-editing program should map
+“Jane Morris Goodall” to “J. M. Goodall”, we can guess it maps “Richard Erskine Leakey” to “R. E.
+Leakey”; if instead the ﬁrst input mapped to “Dr. Jane”, “Goodall, Jane”, or ”Morris”, we might have
+guessed the latter should map to “Dr. Richard”, “Leakey, Richard”, or “Erskine”, respectively.
+The FlashFill system [1] developed by Microsoft researchers and now embedded in Excel solves
+problems such as these and is probably the best known practical program-induction algorithm, but
+researchers in programming languages and AI have built successful program induction algorithms
+for many applications, such as handwriting recognition and generation [2], procedural graphics [3],
+cognitive modeling [4], question answering [5] and robot motion planning [6], to name just a few.
+These systems work in different ways, but most hinge upon having a carefully engineered Domain
+Speciﬁc Language (DSL). This is especially true for systems such as FlashFill that aim to induce
+a wide range of programs very quickly, in a few seconds or less. DSLs constrain the search over
+programs with strong prior knowledge in the form of a restricted set of programming primitives tuned
+to the needs of the domain: for text editing, these are operations like appending strings and splitting
+on characters.
+In this work, we consider the problem of building agents that learn to solve program induction tasks,
+and also the problem of acquiring the prior knowledge necessary to quickly solve these tasks in a new
+domain. Representative problems in three domains are shown in Table 1. Our solution is an algorithm
+that grows or boostraps a DSL while jointly training a neural network to help write programs in the
+increasingly rich DSL.
+32nd Conference on Neural Information Processing Systems (NeurIPS 2018), Montréal, Canada.
+
+List Functions
+Text Editing
+Symbolic Regression
+Programs & Tasks
+[7 2 3]→[7 3]
+[1 2 3 4]→[3 4]
+[4 3 2 1]→[4 3]
+f(ℓ) =(f0 ℓ(λ (x)
+(> x 2)))
+[2 7 8 1]→8
+[3 19 14]→19
+f(ℓ) =(f1 ℓ)
+[7 3]→False
+[3]→False
+[9 0 0]→True
+[0]→True
+[0 7 3]→True
+f(ℓ) =(f2 ℓ0)
++106 769-438→106.769.438
++83 973-831→83.973.831
+f(s) =(f0 "." "-"
+(f0 "." " "
+(cdr s)))
+Temple Anna H →TAH
+Lara Gregori→LG
+f(s) =(f2 s)
+f(x) =(f1 x)
+f(x) =(f6 x)
+f(x) =(f4 x)
+f(x) =(f3 x)
+DSL
+f0(ℓ,p) = (foldr ℓnil (λ (x a)
+(if (p x) (cons x a) a)))
+(f0: Higher-order ﬁlter function)
+f1(ℓ) = (foldr ℓ0 (λ (x a)
+(if (> a x) a x)))
+(f1: Maximum element in list ℓ)
+f2(ℓ,k) = (foldr ℓ(is-nil ℓ)
+(λ (x a) (if a a (= k x))))
+(f2: Whether ℓcontains k)
+f0(s,a,b) = (map (λ (x)
+(if (= x a) b x)) s)
+(f0: Performs character substitution)
+f1(s,c) = (foldr s s (λ (x a)
+(cdr (if (= c x) s a))))
+(f1: Drop characters from s until c reached)
+f2(s) = (unfold s is-nil car
+(λ (z) (f1 z " ")))
+(f2: Abbreviates a sequence of words)
+f3(a,b) = (foldr a b cons)
+(f3: Concatenate strings a and b)
+f0(x) = (+ x real)
+f1(x) = (f0 (* real x))
+f2(x) = (f1 (* x (f0 x)))
+f3(x) = (f0 (* x (f2 x)))
+f4(x) = (f0 (* x (f3 x)))
+(f4: 4th order polynomial)
+f5(x) = (/ real x)
+f6(x) = (f4 (f0 x))
+(f6: rational function)
+Table 1: Top: Tasks from each domain, each followed by the programs EC2 discovers for them.
+Bottom: Several examples from learned DSL. Notice that learned DSL primitives can call each other,
+and that EC2 rediscovers higher-order functions like filter (f0 in List Functions)
+Because any computable learning problem can in principle be cast as program induction, it is important
+to delimit our focus. In contrast to computer assisted programming [7] or genetic programming [8],
+our goal is not to automate software engineering, to learn to synthesize large bodies of code, or to
+learn complex programs starting from scratch. Ours is a basic AI goal: capturing the human ability
+to learn to think ﬂexibly and efﬁciently in new domains — to learn what you need to know about a
+domain so you don’t have to solve new problems starting from scratch. We are focused on the kinds
+of problems that humans can solve relatively quickly, once they acquire the relevant domain expertise.
+These correspond to tasks solved by short programs — if you have an expressive DSL. Even with a
+good DSL, program search may be intractable; so we amortize the cost of search by training a neural
+network to assist the search procedure.
+Our algorithm takes inspiration from several ways that skilled human programmers have learned to
+code: skilled coders build libraries of reusable subroutines that are shared across related programming
+tasks, and can be composed to generate increasingly complex and powerful subroutines. In text
+editing, a good library should support routines for splitting on characters, but also specialize these
+routines to split on particular characters such as spaces or commas that are frequently used to delimit
+substrings across tasks. Skilled coders also learn to recognize what kinds of programming idioms
+and library routines would be useful for solving the task at hand, even if they cannot instantly work
+out the details. In text editing, one might learn that if outputs are consistently shorter than inputs,
+removing characters is likely to be part of the solution; if every output contains a constant substring
+(e.g., “Dr.”), inserting or appending that constant string is likely to be a subroutine.
+Our EC2 (ECC, for Explore/Compress/Compile) algorithm incorporates these insights by iterating
+through three steps. The Explore step takes a given set of tasks, typically several hundred, and
+explores the space of programs, searching for compact programs that solve these tasks, guided by the
+current DSL and neural network. The Compress step grows the library (or DSL) of domain-speciﬁc
+subroutines which allow the agent to more compactly write programs in the domain; it modiﬁes
+the structure of the DSL by discovering regularities across programs found during the Explore step,
+compressing them to distill out common code fragments across successful programs. The Compile
+step improves the search procedure by training a neural network to write programs in the current
+DSL, in the spirit of “amortized” or “compiled” inference [9, 10].
+The learned DSL effectively encodes a prior on programs likely to solve tasks in the domain, while
+the neural net looks at the example input-output pairs for a speciﬁc task and produces a “posterior” for
+programs likely to solve that speciﬁc task. The neural network thus functions as a recognition model
+supporting a form of approximate Bayesian program induction, jointly trained with a generative
+model for programs encoded in the DSL, in the spirit of the Helmholtz machine [11]). The recognition
+2
+
+model ensures that searching for programs remains tractable even as the DSL (and hence the search
+space for programs) expands.
+We apply EC2 to three domains: list processing; text editing (in the style of FlashFill [1]); and
+symbolic regression. For each of these we initially provide a generic set of programming primitives.
+Our algorithm then constructs its own DSL for expressing solutions in the domain (Tbl. 1).
+Prior work on program learning has largely assumed a ﬁxed, hand-engineered DSL, both in classic
+symbolic program learning approaches (e.g., Metagol: [12], FlashFill: [1]), neural approaches (e.g.,
+RobustFill: [13]), and hybrids of neural and symbolic methods (e.g., Neural-guided deductive
+search: [14], DeepCoder: [15]). A notable exception is the EC algorithm [16], which also learns
+a library of subroutines. We ﬁnd EC motivating, and go beyond it and other prior work through
+the following contributions: (1) We show how to learn-to-learn programs in an expressive Lisp-like
+programming language, including conditionals, variables, and higher-order recursive functions; (2)
+We give an algorithm for learning DSLs, built on a formalism known as Fragment Grammars [17];
+and (3) We give a hierarchical Bayesian framing of the problem that allows joint inference of the
+DSL and neural recognition model.
+2
+The EC2 Algorithm
+We ﬁrst mathematically describe our 3-step algorithm as an inference procedure for a hierarchical
+Bayesian model (Section 2.1), and then describe each step algorithmically in detail (Section 2.2-2.4).
+2.1
+Hierarchical Bayesian Framing
+EC2 takes as input a set of tasks, written X, each of which is a program synthesis problem. It has at
+its disposal a domain-speciﬁc likelihood model, written P[x|p], which scores the likelihood of a task
+x ∈X given a program p. Its goal is to solve each of the tasks by writing a program, and also to
+infer a DSL, written D. We equip D with a real-valued weight vector θ, and together (D, θ) deﬁne a
+generative model over programs. We frame our goal as maximum a posteriori (MAP) inference of
+(D, θ) given X. Writing J for the joint probability of (D, θ) and X, we want the D∗and θ∗solving:
+J(D, θ) ≜P[D, θ]
+Y
+x∈X
+X
+p
+P[x|p]P[p|D, θ]
+D∗= arg max
+D
+Z
+J(D, θ) dθ
+θ∗= arg max
+θ
+J(D∗, θ)
+(1)
+The above equations summarize the problem from the point of view of an ideal Bayesian learner.
+However, Eq. 1 is wildly intractable because evaluating J(D, θ) involves summing over the inﬁnite
+set of all programs. In practice we will only ever be able to sum over a ﬁnite set of programs. So, for
+each task, we deﬁne a ﬁnite set of programs, called a frontier, and only marginalize over the frontiers:
+Deﬁnition. A frontier of task x, written Fx, is a ﬁnite set of programs s.t. P[x|p] > 0 for all p ∈Fx.
+Using the frontiers we deﬁne the following intuitive lower bound on the joint probability, called L :
+J ≥L ≜P[D, θ]
+Y
+x∈X
+X
+p∈Fx
+P[x|p]P[p|D, θ]
+(2)
+EC2 does approximate MAP inference by maximizing this lower bound on the joint probability,
+alternating maximization w.r.t. the frontiers (Explore) and the DSL (Compress):
+Explore: Maxing L w.r.t. the frontiers. Here (D, θ) is ﬁxed and we want to ﬁnd new programs
+to add to the frontiers so that L increases the most. L most increases by ﬁnding programs where
+P[x|p]P[p|D, θ] is large.
+Compress: Maxing
+R
+L dθ w.r.t. the DSL. Here {Fx}x∈X is held ﬁxed, and so we can evaluate
+L . Now the problem is that of searching the discrete space of DSLs and ﬁnding one maximizing
+R
+L dθ. Once we have a DSL D we can update θ to arg maxθ L (D, θ, {Fx}).
+Searching for programs is hard because of the large combinatorial search space. We ease this difﬁculty
+by training a neural recognition model, q(·|·), during the Compile step: q is trained to approximate
+3
+
+the posterior over programs, q(p|x) ≈P[p|x, D, θ] ∝P[x|p]P[p|D, θ], thus amortizing the cost of
+ﬁnding programs with high posterior probability.
+Compile: learning to tractably maximize L w.r.t. the frontiers. Here we train q(p|x) to assign
+high probability to programs p where P[x|p]P[p|D, θ] is large, because including those programs in
+the frontiers will most increase L . We train q both on programs found during the Explore step and
+on samples from the current DSL.
+Search for
+programs: p
+DSL: D
+Recognition
+model: q
+Trains
+(Compress)
+Trains
+(Compile)
+Trains
+(Compile)
+Inductive bias
+(Explore)
+Makes tractable
+(Explore)
+Figure 1: How these steps bootstrap each other.
+Crucially, each of these three steps
+bootstraps the others (Fig. 1): improv-
+ing either the DSL or the recognition
+model makes search easier, so we ﬁnd
+more programs solving tasks; both im-
+proving the DSL and solving more
+tasks expands the training data for the
+recognition model; and ﬁnding more
+programs that solve tasks gives more
+data from which to learn a DSL.
+2.2
+Explore: Searching for Programs
+Now our goal is to search for programs solving the tasks. We use the simple approach of enumerating
+programs from the DSL in decreasing order of their probability, and then checking if a program p
+assigns positive probability to a task (P[x|p] > 0); if so, we incorporate p into the frontier Fx.
+To make this concrete we need to deﬁne what programs actually are and what form P[p|D, θ] takes.
+We represent programs as λ-calculus expressions. λ-calculus is a formalism for expressing functional
+programs that closely resembles Lisp, including variables, function application, and the ability to
+create new functions. Throughout this paper we will write λ-calculus expressions in Lisp syntax. Our
+programs are all strongly typed. We use the Hindley-Milner polymorphic typing system [18] which
+is used in functional programming languages like OCaml and Haskell. We now deﬁne DSLs:
+Deﬁnition: (D, θ). A DSL D is a set of typed λ-calculus expressions. A weight vector θ for a DSL
+D is a vector of |D| + 1 real numbers: one number for each DSL element e ∈D, written θe and
+controlling the probability of e occurring in a program, and a weight controlling the probability of a
+variable occurring in a program, θvar.
+Together with its weight vector, a DSL deﬁnes a distribution over programs, P[p|D, θ]. In the
+supplement, we deﬁne this distribution by specifying a procedure for drawing samples from P[p|D, θ].
+Why enumerate, when the program synthesis community has invented many sophisticated algorithms
+that search for programs? [7, 19, 20, 21, 22, 23]. We have two reasons: (1) A key point of our work is
+that learning the DSL, along with a neural recognition model, can make program induction tractable,
+even if the search algorithm is very simple. (2) Enumeration is a general approach that can be applied
+to any program induction problem. Many of these more sophisticated approaches require special
+conditions on the space of programs.
+However, a drawback of enumerative search is that we have no efﬁcient means of solving for arbitrary
+constants that might occur in a program. In Sec. 4, we will show how to ﬁnd programs with real-
+valued constants by automatically differentiating through the program and setting the constants using
+gradient descent.
+2.3
+Compile: Learning a Neural Recognition Model
+The purpose of training the recognition model is to amortize the cost of searching for programs. It
+does this by learning to predict, for each task, programs with high likelihood according to P[x|p]
+while also being probable under the prior (D, θ). Concretely, the recognition model q predicts, for
+each task x ∈X, a weight vector q(x) = θ(x) ∈R|D|+1. Together with the DSL, this deﬁnes a
+distribution over programs, P[p|D, θ = q(x)]. We abbreviate this distribution as q(p|x). The crucial
+aspect of this framing is that the neural network leverages the structure of the learned DSL, so it is not
+responsible for generating programs wholesale. We share this aspect with DeepCoder [15] and [24].
+4
+
+How should we get the data to train q? This is non-obvious because we are considering a weakly
+supervised setting (i.e., learning only from tasks and not from task/program pairs). One approach is
+to sample programs from the DSL, run them to get their input/outputs, and then train q to predict the
+program from the input/outputs. This is like how the wake-sleep algorithm for the Helmholtz machine
+trains its recognition model during its sleep phase [25]. The advantage of training on samples, or
+“fantasies,” is that we can draw unlimited samples from the DSL, training on a large amount of data.
+Another approach is to train q on the (program, task) pairs discovered by the Explore step. The
+advantage here is that the training data is much higher quality, because we are training on real tasks.
+Due to these complementary advantages, we train on both these sources of data.
+Formally, q should approximate the true posteriors over programs: minimizing the expected KL-
+divergence, E [KL (P[p|x, D, θ]∥q(p|x))], equivalently maximizing E[P
+p P[p|x, D, θ] log q(p|x)],
+where the expectation is taken over tasks. Taking this expectation over the empirical distribution of
+tasks trains q on the real data; taking it over samples from the generative model trains q on “fantasies.”
+The objective for a recognition model (LRM) combines the fantasy (Lf) and real-data (Lr) objectives,
+LRM = Lr + Lf:
+Lf = E(p,x)∼(D,θ) [log q(p|x)]
+Lr = Ex∼X
+
+X
+p∈Fx
+P [x, p|D, θ]
+P
+p′∈Fx P [x, p′|D, θ] log q(p|x)
+
+
+2.4
+Compress: Learning a Generative Model (a DSL)
+The purpose of the DSL is to offer a set of abstractions that allow an agent to easily express solutions
+to the tasks at hand. Intuitively, we want the algorithm to look at the frontiers and generalize beyond
+them, both so the DSL can better express the current solutions, and also so that the DSL might expose
+new abstractions which will later be used to discover more programs. Formally, we want the DSL
+maximizing
+R
+L dθ (Sec. 2.1). We replace this marginal with an AIC approximation, giving the
+following objective for DSL induction:
+log P[D] + arg max
+θ
+X
+x∈X
+log
+X
+p∈Fx
+P[x|p]P[p|D, θ] + log P[θ|D] −∥θ∥0
+(3)
+We induce a DSL by searching locally through the space of DSLs, proposing small changes to D
+until Eq. 3 fails to increase. The search moves work by introducing new λ-expressions into the
+DSL. We propose these new expressions by extracting fragments of programs already in the frontiers
+(Tbl. 2). An important point here is that we are not simply adding subexpressions of programs to
+D, as done in the EC algorithm [16] and other prior work [26]. Instead, we are extracting fragments
+that unify with programs in the frontiers. This idea of storing and reusing fragments of expressions
+comes from Fragment Grammars [17] and Tree-Substitution Grammars [27], and is closely related
+to the idea of antiuniﬁcation [28, 29]. Care must be taken to ensure that this ‘fragmenting’ obeys
+variable scoping rules; Section 4 of the supplement gives an overview of Fragment Grammars and
+how we adapt them to the lexical scoping rules of λ-calculus. To deﬁne the prior distribution over
+(D, θ), we penalize the syntactic complexity of the λ-calculus expressions in the DSL, deﬁning
+P[D] ∝exp(−λ P
+p∈D size(p)) where size(p) measures the size of the syntax tree of program p,
+and place a symmetric Dirichlet prior over the weight vector θ.
+Putting all these ingredients together, Alg. 1 describes how we combine program search, recognition
+model training, and DSL induction. For added robustness, we interleave an extra program search step
+(Explore) before training the recognition model, and just enumerate from the prior (D, θ) during this
+extra Explore step.
+3
+Programs that manipulate sequences
+We apply EC2 to list processing (Section 3.1) and text editing (Section 3.2). For both these domains
+we use a bidirectional GRU [30] for the recognition model, and initially provide the system with a
+generic set of list processing primitives: foldr, unfold, if, map, length, index, =, +, -, 0, 1, cons,
+car, cdr, nil, and is-nil.
+5
+
+program
++
+1
+1
+cons
++
+1
+car
+z
+program
++
+1
+fragment
+Example programs in frontiers
+Proposed λ-expression
+(λ (ℓ) (map (λ (x) (index x ℓ))
+(range (- (length ℓ) 1))))
+(λ (ℓ) (map (λ (x) (index x ℓ))
+(range (+ 1 1))))
+(map (λ (x) (index x ℓ))
+(range α))
+(λ (s) (map (λ (x)
+(if (= x '.')
+'-' x))) s)
+(λ (s) (map (λ (x)
+(if (= x '-') ',' x))) s)
+(λ (s) (map (λ (x)
+(if (= x α) β x))) s)
+Figure 2: Left: syntax trees of two programs sharing common structure, highlighted in orange,
+from which we extract a fragment and add it to the DSL (bottom). Right: actual programs, from
+which we extract fragments that (top) slice from the beginning of a list or (bottom) perform character
+substitutions.
+Algorithm 1 The EC2 Algorithm
+Input: Initial DSL D, set of tasks X, iterations I
+Hyperparameters: Enumeration timeout T
+Initialize θ ←uniform
+for i = 1 to I do
+For each task x ∈X, set Fθ
+x ←{p|p ∈enum(D, θ, T) if P[x|p] > 0}
+(Explore)
+q ←train recognition model, maximizing LRM (see Sec. 2.3)
+(Compile)
+For each task x ∈X, set Fq
+x ←{p|p ∈enum(D, q(x), T) if P[x|p] > 0} (Explore)
+D, θ ←induceDSL({Fθ
+x ∪Fq
+x}x∈X) (see Sec. 2.4)
+(Compress)
+end for
+return D, θ, q
+3.1
+List Processing
+Synthesizing programs that manipulate data structures is a widely studied problem in the programming
+languages community [20]. We consider this problem within the context of learning functions that
+manipulate lists, and which also perform arithmetic operations upon lists of numbers.
+Name
+Input
+Output
+repeat-2
+[7 0]
+[7 0 7 0]
+drop-3
+[0 3 8 6 4]
+[6 4]
+rotate-2
+[8 14 1 9]
+[1 9 8 14]
+count-head-in-tail
+[1 2 1 1 3]
+2
+keep-mod-5
+[5 9 14 6 3 0]
+[5 0]
+product
+[7 1 6 2]
+84
+Table 2: Some tasks in our list function domain. See the
+supplement for the complete data set.
+We created 236 human-interpretable list
+manipulation tasks, each with 15 input/out-
+put examples (Tbl. 2). Our data set is in-
+teresting in three major ways: many of
+the tasks require complex solutions; the
+tasks were not generated from some latent
+DSL; and the agent must learn to solve
+these complicated problems from only 236
+tasks. Our data set assumes arithmetic op-
+erations as well as sequence operations, so
+we additionally provide our system with
+the following arithmetic primitives: mod, *,
+>, is-square, is-prime.
+We evaluated EC2 on random 50/50 test/train split. Interestingly, we found that the recognition
+model provided little beneﬁt for the training tasks. However, it yielded faster search times on held out
+tasks, allowing more tasks to be solved before timing out. The system composed 38 new subroutines,
+yielding a more expressive DSL more closely matching the domain (left of Tbl. 1, right of Fig. 2).
+See the supplement for a complete list of DSL primitives discovered by EC2.
+6
+
+3.2
+Text Editing
+Synthesizing programs that edit text is a classic problem in the programming languages and AI
+literatures [24, 31], and algorithms that learn text editing programs ship in Microsoft Excel [1].
+This prior work presumes a hand-engineered DSL. We show EC2 can instead start out with generic
+sequence manipulation primitives and recover many of the higher-level building blocks that have
+made these other text editing systems successful.
+Because our enumerative search procedure cannot generate string constants, we instead enumerate
+programs with string-valued parameters. For example, to learn a program that prepends “Dr.”, we
+enumerate (f3 string s) – where f3 is the learned appending primitive (Fig. 1) — and then deﬁne
+P[x|p] by approximately marginalizing out the string parameters via a simple dynamic program. In
+Sec. 4, we will use a similar trick to synthesize programs containing real numbers, but using gradient
+descent instead of dynamic programming.
+We trained our system on a corpus of 109 automatically generated text editing tasks, with 4 input/out-
+put examples each. After three iterations, it assembles a DSL containing a dozen new functions (center
+of Fig. 1) that let it solve all of the training tasks. But, how well does the learned DSL generalized to
+real text-editing scenarios? We tested, but did not train, on the 108 text editing problems from the
+SyGuS [32] program synthesis competition. Before any learning, EC2 solves 3.7% of the problems
+with an average search time of 235 seconds. After learning, it solves 74.1%, and does so much faster,
+solving them in an average of 29 seconds. As of the 2017 SyGuS competition, the best-performing
+algorithm solves 82.4% of the problems. But, SyGuS comes with a different hand-engineered DSL
+for each text editing problem.1 Here we learned a single DSL that applied generically to all of the
+tasks, and perform comparably to the best prior work.
+4
+Symbolic Regression: Programs from visual input
+We apply EC2 to symbolic regression problems. Here, the agent observes points along the curve
+of a function, and must write a program that ﬁts those points. We initially equip our learner with
+addition, multiplication, and division, and task it with solving 100 symbolic regression problems, each
+either a polynomial of degree 1–4 or a rational function. The recognition model is a convolutional
+network that observes an image of the target function’s graph (Fig. 3) — visually, different kinds of
+polynomials and rational functions produce different kinds of graphs, and so the recognition model
+can learn to look at a graph and predict what kind of function best explains it. A key difﬁculty,
+however, is that these problems are best solved with programs containing real numbers. Our solution
+to this difﬁculty is to enumerate programs with real-valued parameters, and then ﬁt those parameters
+by automatically differentiating through the programs the system writes and use gradient descent to
+ﬁt the parameters. We deﬁne the likelihood model, P[x|p], by assuming a Gaussian noise model for
+the input/output examples, and penalize the use of real-valued parameters using the BIC [33].
+Figure 3: Recognition model input for symbolic regres-
+sion. DSL learns subroutines for polynomials (top row)
+and rational functions (bottom row) while the recog-
+nition model jointly learns to look at a graph of the
+function (above) and predict which of those subroutines
+best explains the observation.
+EC2 learns a DSL containing 13 new func-
+tions, most of which are templates for poly-
+nomials of different orders or ratios of poly-
+nomials. It also learns to ﬁnd programs
+that minimize the number of continuous de-
+grees of freedom. For example, it learns to
+represent linear functions with the program
+(* real (+ x real)), which has two con-
+tinuous degrees of freedom, and represents
+quartic functions using the invented DSL
+primitive f4 in the rightmost column of
+Fig. 1 which has ﬁve continuous param-
+eters. This phenomenon arises from our
+Bayesian framing — both the implicit bias
+towards shorter programs and the likeli-
+hood model’s BIC penalty.
+1SyGuS text editing problems also prespecify the set of allowed string constants for each task. For these
+experiments, our system did not use this assistance.
+7
+
+5
+Quantitative Results
+We compare with ablations of our model on held out tasks. The purpose of this ablation study is
+both to examine the role of each component of EC2, as well as to compare with prior approaches
+in the literature: a head-to-head comparison of program synthesizers is complicated by the fact that
+each system, including ours, makes idiosyncratic assumptions about the space of programs and the
+statement of tasks. Nevertheless, much prior work can be modeled within our setup. We compare
+with the following ablations (Tbl 3; Fig 4):
+No NN: lesions the recognition model.
+NPS, which does not learn the DSL, instead learning the recognition model from samples drawn
+from the ﬁxed DSL. We call this NPS (Neural Program Synthesis) because this is closest to how
+RobustFill [13] and DeepCoder [15] are trained.
+SE, which lesions the recognition model and restricts the DSL learning algorithm to only add
+SubExpressions of programs in the frontiers to the DSL. This is how most prior approaches have
+learned libraries of functions [16, 34, 26].
+PCFG, which lesions the recognition model and does not learn the DSL, but instead learns the
+parameters of the DSL (θ), learning the parameters of a PCFG while not learning any of the structure.
+Enum, which enumerates a frontier without any learning — equivalently, our ﬁrst Explore step.
+Ours No NN
+SE
+NPS PCFG Enum
+List Processing
+% solved
+94%
+79%
+71% 35%
+62%
+37%
+Solve time
+88s
+39s
+11s
+35s
+44s
+20s
+Text Editing
+% solved
+74%
+43%
+30% 33%
+0%
+4%
+Solve time
+29s
+49s
+38s
+80s
+–
+235s
+Symbolic Regression
+% solved
+84%
+75%
+62% 38%
+38%
+37%
+Solve time
+24s
+40s
+28s
+31s
+55s
+29s
+Table 3: % held-out test tasks solved. Solve time: aver-
+aged over solved tasks.
+We are interested both in how many tasks
+the agent can solve and how quickly it can
+ﬁnd those solutions. Tbl. 3 compares our
+model against these alternatives. We con-
+sistently improve on the baselines, and also
+ﬁnd that lesioning the recognition model
+impairs the convergence of the algorithm,
+causing it to hit a lower ‘plateau’ after
+which it stops solving new tasks, following
+an initial spurt of learning (Fig. 4) – with-
+out the neural network, search becomes in-
+tractable. This lowered ‘plateau’ supports
+a view of the recognition model as a way
+of amortizing the cost of search.
+0
+1
+2
+3
+4
+5
+Iteration
+0
+20
+40
+60
+80
+100
+% Solved (solid)
+0
+20
+40
+60
+80
+Solve time (dashed)
+Symbolic Regression
+Figure 4: Learning curves for EC2 both with (in orange) and without (in teal) the recognition model.
+Solid lines: % holdout testing tasks solved. Dashed lines: Average solve time.
+6
+Related Work
+Our work is far from the ﬁrst for learning to learn programs, an idea that goes back to Solomonoff [35]:
+Deep learning: Much recent work in the ML community has focused on creating neural networks
+that regress from input/output examples to programs [13, 6, 24, 15]. EC2’s recognition model draws
+heavily from this line of work, particularly from [24]. We see these prior works as operating in
+a different regime: typically, they train with strong supervision (i.e., with annotated ground-truth
+programs) on massive data sets (i.e., hundreds of millions [13]). Our work considers a weakly-
+supervised regime where ground truth programs are not provided and the agent must learn from at
+most a few hundred tasks, which is facilitated by our “Helmholtz machine” style recognition model.
+8
+
+Inventing new subroutines for program induction: Several program induction algorithms, most
+prominently the EC algorithm [16], take as their goal to learn new, reusable subroutines that are shared
+in a multitask setting. We ﬁnd this work inspiring and motivating, and extend it along two dimensions:
+(1) we propose a new algorithm for inducing reusable subroutines, based on Fragment Grammars [17];
+and (2) we show how to combine these techniques with bottom-up neural recognition models. Other
+instances of this related idea are [34], Schmidhuber’s OOPS model [36], MagicHaskeller [37],
+Bayesian program merging [29], and predicate invention in Inductive Logic Programming [26].
+Closely allied ideas have been applied to mining ‘code idioms’ from programs [38], and, concurrent
+with this work, using those idioms to better synthesize functional programs from natural language [39].
+Bayesian Program Learning: Our work is an instance of Bayesian Program Learning (BPL;
+see [2, 16, 40, 34, 41]). Previous BPL systems have largely assumed a ﬁxed DSL (but see [34]), and
+our contribution here is a general way of doing BPL with less hand-engineering of the DSL.
+7
+Discussion
+We contribute an algorithm, EC2, that learns to program by bootstrapping a DSL with new domain-
+speciﬁc primitives that the algorithm itself discovers, together with a neural recognition model that
+learns how to efﬁciently deploy the DSL on new tasks. We believe this integration of top-down
+symbolic representations and bottom-up neural networks — both of them learned — helps make
+program induction systems more generally useful for AI.
+A feature of our system is that it learns from (and also, critically needs) a corpus of training tasks.
+Is constructing (or curating) corpra of tasks any easier or better than hand-engineering DSLs? In
+the immediate future, we expect some degree of hand-engineering of DSLs to continue, especially
+in domains where humans have strong intuitions about the underlying system of domain-speciﬁc
+concepts, like text editing. However, if program induction is to become a standard part of the AI
+toolkit, then, in the long-term, we need to build agents that autonomously acquire the knowledge
+needed to navigate a new domain. So, through the lens of program synthesis, EC2 carries the
+restriction that it requires a high-quality corpus of training tasks; but, for the program-induction
+approach to AI, this restriction is a feature, not a bug.
+Many directions remain open. Two immediate goals are to integrate more sophisticated neural
+recognition models [13] and program synthesizers [7], which may improve performance in some
+domains over the generic methods used here: while our focus in this work was learning to quickly
+write small programs, we believe more sophisticated neural models, coupled with more powerful
+program search algorithms, could extend our approach to synthesize larger bodies of code. Another
+direction is to explore DSL meta-learning: can we ﬁnd a single universal primitive set that could
+effectively bootstrap DSLs for new domains, including the three domains considered, but also many
+others?
+Acknowledgments
+We are grateful for collaborations with Eyal Dechter, whose EC algorithm directly inspired this work,
+and for funding from the NSF GRFP, AFOSR award FA9550-16-1-0012, the MIT-IBM Watson AI
+Lab, the MUSE program (Darpa grant FA8750-14-2-0242), and an AWS ML Research Award. This
+material is based upon work supported by the Center for Brains, Minds and Machines (CBMM),
+funded by NSF STC award CCF-1231216.
+References
+[1] Sumit Gulwani. Automating string processing in spreadsheets using input-output examples. In ACM
+SIGPLAN Notices, volume 46, pages 317–330. ACM, 2011.
+[2] Brenden M Lake, Ruslan Salakhutdinov, and Joshua B Tenenbaum. Human-level concept learning through
+probabilistic program induction. Science, 350(6266):1332–1338, 2015.
+[3] Kevin Ellis, Daniel Ritchie, Armando Solar-Lezama, and Joshua B Tenenbaum. Learning to infer graphics
+programs from hand-drawn images. NIPS, 2018.
+[4] Ute Schmid and Emanuel Kitzelmann. Inductive rule learning on the knowledge level. Cognitive Systems
+Research, 12(3-4):237–248, 2011.
+9
+
+[5] Justin Johnson, Bharath Hariharan, Laurens van der Maaten, Li Fei-Fei, C Lawrence Zitnick, and Ross
+Girshick. Clevr: A diagnostic dataset for compositional language and elementary visual reasoning. In
+CVPR.
+[6] Jacob Devlin, Rudy R Bunel, Rishabh Singh, Matthew Hausknecht, and Pushmeet Kohli. Neural program
+meta-induction. In NIPS, 2017.
+[7] Armando Solar Lezama. Program Synthesis By Sketching. PhD thesis, 2008.
+[8] John R. Koza. Genetic programming - on the programming of computers by means of natural selection.
+MIT Press, 1993.
+[9] Tuan Anh Le, Atılım Güne¸s Baydin, and Frank Wood. Inference Compilation and Universal Probabilistic
+Programming. In AISTATS, 2017.
+[10] Andreas Stuhlmüller, Jacob Taylor, and Noah Goodman. Learning stochastic inverses. NIPS, 2013.
+[11] Geoffrey E Hinton, Peter Dayan, Brendan J Frey, and Radford M Neal. The "wake-sleep" algorithm for
+unsupervised neural networks. Science, 268(5214):1158–1161, 1995.
+[12] Stephen H Muggleton, Dianhuan Lin, and Alireza Tamaddoni-Nezhad. Meta-interpretive learning of
+higher-order dyadic datalog: Predicate invention revisited. Machine Learning, 100(1):49–73, 2015.
+[13] Jacob Devlin, Jonathan Uesato, Surya Bhupatiraju, Rishabh Singh, Abdel-rahman Mohamed, and Pushmeet
+Kohli. Robustﬁll: Neural program learning under noisy i/o. ICML, 2017.
+[14] Ashwin Kalyan, Abhishek Mohta, Oleksandr Polozov, Dhruv Batra, Prateek Jain, and Sumit Gulwani.
+Neural-guided deductive search for real-time program synthesis from examples. ICLR, 2018.
+[15] Matej Balog, Alexander L Gaunt, Marc Brockschmidt, Sebastian Nowozin, and Daniel Tarlow. Deepcoder:
+Learning to write programs. ICLR, 2016.
+[16] Eyal Dechter, Jon Malmaud, Ryan P. Adams, and Joshua B. Tenenbaum. Bootstrap learning via modular
+concept discovery. In IJCAI, 2013.
+[17] Timothy J. O’Donnell. Productivity and Reuse in Language: A Theory of Linguistic Computation and
+Storage. The MIT Press, 2015.
+[18] Benjamin C. Pierce. Types and programming languages. MIT Press, 2002.
+[19] Eric Schkufza, Rahul Sharma, and Alex Aiken. Stochastic superoptimization. In ACM SIGARCH Computer
+Architecture News, volume 41, pages 305–316. ACM, 2013.
+[20] John K Feser, Swarat Chaudhuri, and Isil Dillig. Synthesizing data structure transformations from input-
+output examples. In PLDI, 2015.
+[21] Peter-Michael Osera and Steve Zdancewic. Type-and-example-directed program synthesis. In ACM
+SIGPLAN Notices, volume 50, pages 619–630. ACM, 2015.
+[22] Oleksandr Polozov and Sumit Gulwani. Flashmeta: A framework for inductive program synthesis. ACM
+SIGPLAN Notices, 50(10):107–126, 2015.
+[23] Nadia Polikarpova, Ivan Kuraj, and Armando Solar-Lezama. Program synthesis from polymorphic
+reﬁnement types. ACM SIGPLAN Notices, 51(6):522–538, 2016.
+[24] Aditya Menon, Omer Tamuz, Sumit Gulwani, Butler Lampson, and Adam Kalai. A machine learning
+framework for programming by example. In ICML, pages 187–195, 2013.
+[25] Peter Dayan, Geoffrey E Hinton, Radford M Neal, and Richard S Zemel. The helmholtz machine. Neural
+computation, 7(5):889–904, 1995.
+[26] Dianhuan Lin, Eyal Dechter, Kevin Ellis, Joshua B. Tenenbaum, and Stephen Muggleton. Bias reformula-
+tion for one-shot function induction. In ECAI 2014, 2014.
+[27] Trevor Cohn, Phil Blunsom, and Sharon Goldwater. Inducing tree-substitution grammars. JMLR.
+[28] Robert John Henderson. Cumulative learning in the lambda calculus. PhD thesis, Imperial College
+London, 2013.
+[29] Irvin Hwang, Andreas Stuhlmüller, and Noah D Goodman. Inducing probabilistic programs by bayesian
+program merging. arXiv preprint arXiv:1110.5667, 2011.
+10
+
+[30] Kyunghyun Cho, Bart Van Merriënboer, Caglar Gulcehre, Dzmitry Bahdanau, Fethi Bougares, Holger
+Schwenk, and Yoshua Bengio. Learning phrase representations using rnn encoder-decoder for statistical
+machine translation. arXiv preprint arXiv:1406.1078, 2014.
+[31] Tessa Lau. Programming by demonstration: a machine learning approach. PhD thesis, 2001.
+[32] Rajeev Alur, Dana Fisman, Rishabh Singh, and Armando Solar-Lezama. Sygus-comp 2016: results and
+analysis. arXiv preprint arXiv:1611.07627, 2016.
+[33] Christopher M. Bishop. Pattern Recognition and Machine Learning. 2006.
+[34] Percy Liang, Michael I. Jordan, and Dan Klein. Learning programs: A hierarchical bayesian approach. In
+ICML, 2010.
+[35] Ray J Solomonoff. A system for incremental learning based on algorithmic probability. Sixth Israeli
+Conference on Artiﬁcial Intelligence, Computer Vision and Pattern Recognition, 1989.
+[36] Jürgen Schmidhuber. Optimal ordered problem solver. Machine Learning, 54(3):211–254, 2004.
+[37] Susumu Katayama. Towards human-level inductive functional programming. In International Conference
+on Artiﬁcial General Intelligence, pages 111–120. Springer, 2015.
+[38] Miltiadis Allamanis and Charles Sutton. Mining idioms from source code. In Proceedings of the 22Nd
+ACM SIGSOFT International Symposium on Foundations of Software Engineering, FSE 2014, pages
+472–483, New York, NY, USA, 2014. ACM.
+[39] Richard Shin, Marc Brockschmidt, Miltiadis Allamanis, and Oleksandr Polozov. Program synthesis with
+learned code idioms. Under review, 2018.
+[40] Kevin Ellis, Armando Solar-Lezama, and Josh Tenenbaum. Sampling for bayesian program learning. In
+Advances in Neural Information Processing Systems, 2016.
+[41] Kevin Ellis, Armando Solar-Lezama, and Josh Tenenbaum. Unsupervised learning by program synthesis.
+In NIPS.
+11
+

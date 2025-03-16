@@ -1,0 +1,615 @@
+F L O O R M A P P E R , A N I N T E R A C T I V E M A P I N S TA L L AT I O N U S I N G T H E
+M I C R O S O F T K I N E C T
+john wika haakseth
+TDT69 - Artistic Software
+Faculty of Information Technology, Mathematics and Electrical Engineering
+Department of Computer and Information Science
+November 2012
+
+John Wika Haakseth: FloorMapper, an Interactive map installation using
+the Microsoft Kinect, TDT69 - Artistic Software, c⃝November 2012
+Course coordinator: Letizia Jaccheri
+
+A B S T R A C T
+FloorMapper is an interactive installation developed by a student as
+part of a specialization project of Geomatics in the fall of 2012 at
+NTNU. It is a mapping application that projects a large map onto
+the ﬂoor and allows people walking by to interact with it using their
+bodies and gestures.
+The hardware part of FloorMapper consists of an Xbox Kinect that
+tracks the audience’s joints as they cross the map, a standard projector
+that displays the map and a computer that runs the application. The
+software was developed using the Processing IDE and language with
+the SimpleOpenNI and Unfolding Maps libraries.
+FloorMapper can be described as a piece of computer art and as a
+software engineering product, with deﬁned stakeholders. The inter-
+action categorization of FloorMapper are static, triggered by humans
+and pre-deﬁned content, that may be dynamically manipulated by
+the audience.
+iii
+
+
+C O N T E N T S
+i
+preface
+1
+1
+introduction
+3
+1.1
+Related work . . . . . . . . . . . . . . . . . . . . . . . . .
+3
+ii
+materials and methods
+5
+2
+development
+7
+2.1
+Context . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+7
+2.2
+FloorMapper in a Computer Art Context . . . . . . . .
+7
+3
+hardware components
+9
+3.1
+The Microsoft Kinect . . . . . . . . . . . . . . . . . . . .
+9
+3.1.1
+Introduction . . . . . . . . . . . . . . . . . . . . .
+9
+3.1.2
+Technological speciﬁcations, motion sensing prin-
+ciples and accuracy . . . . . . . . . . . . . . . . .
+10
+4
+software components
+11
+4.1
+Processing . . . . . . . . . . . . . . . . . . . . . . . . . .
+11
+4.1.1
+Programming in Processing . . . . . . . . . . . .
+12
+4.1.2
+Libraries in Processing . . . . . . . . . . . . . . .
+13
+iii
+result and conclusion
+15
+5
+floormapper
+17
+5.1
+Setup . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+17
+5.2
+Features
+. . . . . . . . . . . . . . . . . . . . . . . . . . .
+18
+5.2.1
+Hotbox based . . . . . . . . . . . . . . . . . . . .
+18
+5.2.2
+Skeleton tracking based . . . . . . . . . . . . . .
+19
+6
+conclusion
+21
+bibliography
+23
+v
+
+L I S T O F F I G U R E S
+Figure 1
+The Processing IDE . . . . . . . . . . . . . . . .
+12
+Figure 2
+GraduatedColors
+. . . . . . . . . . . . . . . . .
+13
+Figure 3
+Hardware setup of FloorMapper. . . . . . . . .
+17
+Figure 4
+Interactive ﬂoor map. . . . . . . . . . . . . . . .
+18
+Figure 5
+Illustration of the concept of hot boxes.
+. . . .
+19
+Figure 6
+Area under foot displays aerial photo. . . . . .
+20
+L I S T O F TA B L E S
+Table 1
+Hardware components of FloorMapper . . . .
+9
+Table 2
+Software components of FloorMapper . . . . .
+11
+vi
+
+A C R O N Y M S A N D T E R M I N O L O G Y
+Kinect/The kinect Refers to the (depth) sensor Microsoft Kinect.
+Currently, there are two models: One designed for the Xbox
+360 gaming console, the Xbox Kinect, and one designed
+speciﬁcally for Windows computers, the Xbox for Windows.
+Processing Open source Java based framework for creating
+cross-platform applications, focusing on images, animations
+and interactions.
+Unfolding/Unfolding Maps Processing library that allows displaying
+and interacting with maps.
+NI
+Natural Interaction
+OpenNI Non-proﬁt organization focused on improving and
+certiﬁcating frameworks and APIs for development for natural
+interaction devices.
+SimpleOpenNI Processing library for accessing the data from the
+Kinect.
+SDK
+Software Development Kit: Set of tools to aid development of
+applications of a speciﬁc purpose.
+API
+Application Programming Interface: Speciﬁcation intended to
+be used as an interface for communication between software
+components.
+NTNU Norwegian University of Science and Technology
+IVT
+Faculty of Engineering Science and Technology (Fakultet for
+ingeniørvitenskap og teknologi)
+BAT
+Department of Civil and Transport Engineering (Institutt for
+bygg, anlegg og transport)
+vii
+
+
+Part I
+P R E FA C E
+This paper is written as part of theory module, TDT69,
+at the Department of Computer and Information Science
+and the Faculty of Information Technology, Mathematics
+and Electrical Engineering at the Norwegian University of
+Science and Technology in the fall of 2012.
+November 2012
+John Wika Haakseth
+
+
+1
+I N T R O D U C T I O N
+A girl, attending a science fair, notices a giant map projected onto
+the ﬂoor of the convention center. As she crosses it, the area below
+her turns into a "looking glass" into the real world as it displays an
+orthophoto in the area just underneath her feet. She is told to raise
+her arm over her head, and as she does, icons appear in a menu on
+the map. She points at an arrow symbol and as she gestures with
+her arms, the map pans to her desired location. She then chooses the
+crosshair symbol and points to her school. A marker is placed at that
+location.
+The previous paragraph describes one of the possible scenarios
+of the FloorMapper installation. It was designed and developed by
+the author of this paper as part of the course TBA4560 – Geomatics,
+Specialization Project during the fall semester of 2012 at the Norwe-
+gian University of Science and Technology. Supervisors for the project
+were Professor Terje Midtbø and Alexander Nossum of the Depart-
+ment of Civil and Transport Engineering (BAT).
+The Microsoft Kinect is a low-cost technology for three dimen-
+sional, controller-free gaming technology. It’s great availability has
+made it popular within research environments and artst- and maker-
+communities since its release in 2010.
+This project focused on implementing prototypes of interactive map-
+ping installations (FloorMapper), as well as discussing various con-
+cepts of interaction. This paper also draws some lines into the com-
+puter art domain as proposed by Oates [14].
+1.1
+related work
+Many projects working with the Kinect and similar sensors exist al-
+ready. ??? remove if no time.
+3
+
+
+Part II
+M AT E R I A L S A N D M E T H O D S
+
+
+2
+D E V E L O P M E N T
+2.1
+context
+The installation was developed by the author of this paper as part
+of the course TBA4560 – Specialization Project in Geomatics at the
+Faculty of Engineering Science and Technology (IVT) at the Norwe-
+gian University of Science and Technology (NTNU) in the fall of 2012.
+Supervisors for the project were Prof. Terje Midtbø and Alexander
+Nossum of the Department of Civil and Transport Engineering (BAT)
+at NTNU.
+BAT is a part of a recruitment project initiated by Geoforum that
+is aimed towards high school students to get more people to study
+Geomatics. In this context, the institute has installations relating to
+the subject at stands at various education and science fairs, such as
+Researcher’s Night [13] and a Norwegian higher education fair (Ut-
+danningsmessa) [11].
+Recognizing the kinect as a possibility to blend Geomatics-related
+topics such as laser scanning and map interaction, a project topic was
+formulated with the possibility of contributing to these recruitment
+efforts.
+"Microsoft Kinect for use in interactive map installations" was the
+working title. The result of this is FloorMapper, an interactive map
+installation designed for use at fairs and other recruitment events.
+2.2
+floormapper in a computer art context
+Oates [14] suggests looking at computer art as information systems,
+stating that it is not desirable to draw boundries around the concept
+of information systems as the different contexts are not fully known
+and continue to evolve.
+Trifonova, Jaccheri and Bergaust [16] takes this cue to provide a
+roadmap for artists and engineers to communicate. They talk about
+interactive installations as software engineering products. This in-
+cludes the ﬁnal product, which consists of both the hardware and
+software components of the installation, as well as documentation.
+These are presented in chapters 3 and 4.
+The different stakeholders of a project are identiﬁned. The artist, who
+comes up with the idea of, as well as the global view of, the project.
+Software/hardware engineer(s) converts the artist’s vision into require-
+ments that later will be implemented into the ﬁnal product. The audi-
+7
+
+8
+development
+ence, who participate in the ﬁnal stage, either by interacting with the
+artwork, or as passive onlookers.
+The artist, in the case of FloorMapper, can be deﬁned as both the
+student implementing it and the supervisor of the project, as the su-
+pervisor came up with the concept, but the student developed it fur-
+ther with help from the supervisor. The same can be said of the en-
+gineer role, but with the student having most of the responsible. The
+audience is typically high school students or other interested guests
+attending the events where the installation is featured.
+[16] also talks about three perspectives of interaction to take into
+consideration:
+what content is shown to the user?
+what triggers interaction?
+how is the artwork influenced by the surroundings?
+Using these properties we can describe the interactive artwork by
+the following three perspectives of interaction. These are interaction
+rules, triggering parameters and content origin, and are described in
+5.2.2, which presents the ﬁnal product.
+The tools and development environment are presented in the fol-
+lowing chapters.
+
+3
+H A R D WA R E C O M P O N E N T S
+To make sure the installation is easy to use, the needed hardware is
+held to a minimum. The prototypes in part 3 consist of:
+• Computer
+• Kinect
+• Projector
+The installation should be able to run on a computer running any
+of the three main operating systems (Windows, MacOS, Linux) as
+both Processing and SimpleOpenNI work on all three, more on this
+in chapter 4. The kinect have to be the version designed for the Xbox
+360 and not the newer Kinect for Windows.
+The speciﬁc hardware used during the development are as follows:
+Table 1: Hardware components of FloorMapper
+Computer
+Kinect
+Projector
+MacBook Pro running
+MacOS X Lion (10.7.5)
+Kinect for Xbox 360
+Dell 3200MP
+3.1
+the microsoft kinect
+3.1.1
+Introduction
+Originally known as Project Natal [15], the Microsoft Kinect is a 3D
+capable motion sensor, designed to allow users to use their bodies
+as controllers when playing speciﬁcally designed games on the Xbox
+360 console.
+Released in November 2010, it quickly gained popularity among
+users and currently holds the Guinness’World Record in the category
+"fastest selling gaming peripheral" with an average of 133.333 units
+sold per day over the ﬁrst 60 days [3].
+Independent development interest in this "new"1, affordable tech-
+nology was high and at the kinect’s release Adafruit [1], an open
+1 "New" because similar technology has existed for years, but not aimed at consumers
+9
+
+10
+hardware components
+source DIY electronics company, announced a price of $3.000 to who-
+ever released the ﬁrst open source driver for the kinect. The ﬁrst was
+released within a week.
+Initially, Microsoft stated that they do not condone third-party ven-
+dors tampering with the kinect in this way, but later changed their
+statement, saying they intentionally left the USB connection open to
+allow to read the inputs from the sensor [6].
+Microsoft provides it’s own kinect SDK [2], which works with both
+of the kinect versions. However, it is proprietary and works only with
+Windows. There are several open-source libraries available
+For this project, SimpleOpenNI [7] was used. SimpleOpenNI was
+chosen as it is cross-platform and designed for Processing. It is further
+presented in Chapter 4.
+3.1.2
+Technological speciﬁcations, motion sensing principles and accuracy
+The kinect measures depth using the triangulation principle [8, 9].
+It consists of an infrared laser emitter, an infrared camera and an
+RGB camera. The emitter projects a beam that is split into a constant
+pattern of light onto the scene. The pattern is then captured by the
+IR camera and compared to that of a reference pattern stored in the
+sensor.
+The kinect is intended to be used at a distance of between 1.2 −
+3.5m, but captures data beyond that and as close as 0.7m. Khoshel-
+ham and Oude Elberink [9] presented an accuracy analysis of the
+kinect and compared the output data to that of a high-end laser
+scanner point-cloud. It concluded that the random error increases
+and depth resolution decreases quadratically with increasing distance
+from the sensor. The error reaches a maximum of 4cm at 5m whilst
+the resolution is 7cm at this distance.
+
+4
+S O F T WA R E C O M P O N E N T S
+Two prototypes were created over the course of the project. The differ-
+ence between these were mainly the interaction concepts by which the
+user controlled the map. In this report "the application" or "FloorMap-
+per" can refer to either.
+Table 2: Software components of FloorMapper
+Name
+Description
+FloorMapper
+Applications written in Processing (about 300 lines
+of code).
+SimpleOpenNI
+Processing library for accessing kinect data.
+UnfoldingMaps
+Processing library for displaying and interacting
+with maps.
+4.1
+processing
+Processing [4] is an open source, cross-platform (Windows, MacOS,
+Linux and more) Java-based language and IDE 1 for developing cre-
+ative applications that focus on visualizations, animations and inter-
+actions.
+The strength of Processing is that it is fairly simple to get started,
+but it still offers full Java functionality and the possibility to add li-
+braries to extend its functionality.
+1 Processing also comes as a library to be imported into any Java-application
+11
+
+12
+software components
+Figure 1: The Processing IDE
+4.1.1
+Programming in Processing
+At the base of any Processing application lies two methods, setup()
+and draw(), and understanding the use of these is the key to mastering
+Processing.
+setup() is called one time when the application starts. draw() is
+called after setup(), and then once every time the application window
+updates (the default frame rate of a Processing application is 60 fps,
+but this can be set manually by calling framerate(int framerate)).
+The code in ﬁgure 1 makes a simple application that displays a
+window of size 200x200 pixels where the background color gradu-
+ally changes from black to red depending on the cursor’s location
+horizontally over the window as seen in ﬁgure 2.
+
+4.1 processing
+13
+Figure 2: GraduatedColors, the resulting application from ﬁgure 1
+4.1.2
+Libraries in Processing
+Processing, as Java, enables the user to import libraries in order to add
+desired functionality. In addition to OpenGL, which comes bundled
+with Processing, two libraries were used for FloorMapper.
+Unfoldning Maps [12] is a library that adds mapping functionality
+that allows for common map interactions, such as panning, zooming
+and rotating maps. The maps themselves are tile-based, and can be
+designed by the developer, using a service like TileMill [10].
+SimpleOpenNI is an open-source library for Processing, that allows
+Processing to read the data from the kinect.
+
+
+Part III
+R E S U LT A N D C O N C L U S I O N
+
+
+5
+F L O O R M A P P E R
+The result of this project is FloorMapper, an interactive map installa-
+tion to be used at education fairs and other arenas where BAT wants
+to market Geomatics.
+At the time of this writing, two prototypes have been made, using
+different concepts for interaction. The second one, based on skeleton
+tracking, described in Section 5.2.2, is the one that is closest to the
+"ﬁnal product". Common for both of them is the setup and basic idea
+projecting a map on to the ground where people can pass by, having
+the map react to user interactions.
+5.1
+setup
+As described in Chapter 3, the setup is made up of three components:
+The kinect, a projector and a computer. The projector is mounted high
+on a tripod, and angled down towards the ground in front of it, so
+that the map appears about 2 meters in front of the projector.
+Figure 3: Hardware setup of FloorMapper.
+17
+
+18
+floormapper
+The kinect is then placed on the ground , or on a low tripod under-
+neath the projector tripod, facing towards the map. The location of
+the kinect needs to be ﬁne-tuned after the application has launched
+for some of the features to work properly.
+The computer is kept on a table behind the tripod, allowing curious
+students to have a closer look at the code or look at the kinect.
+5.2
+features
+5.2.1
+Hotbox based
+Developed in time for the annual Researcher’s Night [SOURCE] at
+NTNU, this application displays a map on the ground where people
+are expected to walk by, and reacts as they enter one (or more) of
+eight "boxes" deﬁned in the space above the map.
+Figure 4: Interactive ﬂoor map.
+c⃝Alexander Nossum
+The interaction method used is described by Borenstein [5]. The
+kinect is able to record a live point cloud. A hot box is then a box
+deﬁned in space (in this case, relative to the kinect), that counts how
+
+5.2 features
+19
+many points are located within itself. The application is then able to
+start events as enough points are found within the box.
+Figure 5: Illustration of the concept of hot boxes
+For the FloorMapper, 8 boxes were deﬁned in the area above the
+map (distributed like the numeric keypad (numpad) on a standard
+keyboard, excluding the number 5). Then, as people would pass over
+the map, the map would react and grab their attention.
+The user is then able to stand in the middle of the map (at "number
+5") without anything happening, and take a step toward any of the
+other "buttons" to interact with the map. This application used the
+metaphor of the arrow keys on the numpad to allow the user to pan
+the map up (8), down (2), left (4) and right (6). At the boxes corre-
+sponding to 7 and 9 on the numpad, the map would rotate left and
+right, while 1 would reset it (as it was easy to get lost while panning).
+5.2.2
+Skeleton tracking based
+This version takes advantage of SimpleOpenNI’s skeleton tracking ca-
+pabilities for more natural interactions. When a user is calibrated, the
+kinect is able to track all the main joints, which allows for more natu-
+ral interactions. The calibration requires the user to stand awkwardly
+in front of the kinect with his hands in the air, but this can be by-
+passed by bundling a pre-made calibration ﬁle with the application,
+so this has been done here.
+When a user enters the space and is automatically calibrated, to
+notify him that "something is happening", an area underneath his
+foot shows the corresponding area as an aerial photo, using a sort of
+loupe metaphor as shown in the screenshot in ﬁgure 6.
+The user can then raise his arm over his head to call up a control
+panel. This displays four different tools the user can then point at to
+select:
+
+20
+floormapper
+Figure 6: Area under foot displays aerial photo.
+pan: When the pan tool is active, the user either swipe with his arms
+or take a step towards a direction to allow the map to move.
+zoom: This tool allows the user to zoom in our out in the map us-
+ing "pinch" motions, known to users of touch surfaces, with his
+arms.
+rotate: The rotate tool allows the user to rotate the map by holding
+his arms up and moving them opposite directions over the map.
+place marker: When this tool is selected, a place marker is put un-
+der the user’s shoe, and the coordinates of this location is stored
+in a text ﬁle. The idea is that users can pin their hometown or a
+place dear to them on the map, and these can be presented later
+on a web page.
+The control panel has not been implemented visually at the time
+of this writing, but the user now instead points to one of the four
+corners to select one of the tools.
+5.2.2.1
+Interaction
+Trifonova et al. [16] lists three categories of interactions in interactive
+installation art, as described in section 2.2. For FloorMapper they are:
+interaction rules: The interactions of FloorMapper are all pre-
+designed, so the interaction rules are static.
+triggering parameters: The application triggers to human ac-
+tions (a person crosses the map space, is calibrated by the kinect
+and the area under the person appears as an aerial photo).
+content origin: FloorMapper has pre-deﬁned content, that may
+be dynamically manipulated by the audience as they add mark-
+ers to the map.
+
+6
+C O N C L U S I O N
+This paper have presented the project FloorMapper, an interactive
+mapping application that allows the user to interact with a map pro-
+jected onto the ﬂoor using gestures. It puts the project into a computer
+art context, categorizing its interaction methods as described by Tri-
+fonova et al [16].
+The Microsoft Kinect is presented as an exiting tool that opens up
+new possibilities for creators in ways previously impossible.
+21
+
+
+B I B L I O G R A P H Y
+[1] Adafruit industries, unique & fun diy electronics and kits. web.
+URL http://www.adafruit.com.
+[2] Download
+the
+kinect
+sdk
+&
+developer
+toolkit
+|
+kinect
+for
+windows.
+URL
+http://www.microsoft.com/en-us/
+kinectforwindows/develop/developer-downloads.aspx.
+[3] Fastest-selling
+gaming
+peripheral,
+guinness
+world
+records,
+January 2011.
+URL http://www.guinnessworldrecords.com/
+records-9000/fastest-selling-gaming-peripheral/.
+[4] Processing.org, September 2012. URL http://www.processing.
+org.
+[5] Greg Borenstein. Making Things See: 3D vision with Kinect, Pro-
+cessing, Arduino, and MakerBot. Make: Books. O’Reilly Media, In-
+corporated, 1 edition, 2012.
+ISBN 9781449307073.
+URL http:
+//makingthingssee.com.
+[6] Josh
+Catone.
+Microsoft
+now
+"excited"
+by
+kinect
+hacks.
+Web, November 2010. URL http://mashable.com/2010/11/20/
+microsoft-kinect-hacks/.
+[7] Google Code. Simple-openni. Google Code. URL https://code.
+google.com/p/simple-openni/.
+[8] Barak Freedman, Alexander Shpunt, Meir Machline, and Yoel
+Arieli. Depth mapping using projected patterns, 2012.
+[9] Kourosh Khoshelham and Sander Oude Elberink. Accuracy and
+resolution of kinect depth data for indoor mapping applications.
+Sensors, 12:1437–1454, 2012. doi: 10.3390/s120201437.
+[10] MapBox. Tilemill | fast and beautiful maps. Web. URL http:
+//mapbox.com/tilemill/.
+[11] Marianne Meinich.
+Geomatikkbransjen på utdanningsmessen.
+Web, January 2012.
+URL http://www.geoforum.no/Members/
+mmeinich/nyheter-2012/x-y-og-z-over-og-under-bakken/
+?searchterm=lillestr\T1\om.
+[12] Till Nagel. Unfolding maps: Unfolding is a library to create inter-
+active maps and geovisualizations in processing and java. URL
+http://unfoldingmaps.org.
+23
+
+24
+Bibliography
+[13] Alexander Nossum.
+Tråkkekart og researcher’s night en suk-
+sess. Blog, October 2012. URL http://alexanno.net/2012/10/
+trakkekart-og-researchers-night-en-suksess/.
+[14] Briony J. Oates. New frontiers for information systems research:
+computer art as an information system. European Journal of Infor-
+mation Systems, 15:617–626, October 2006.
+[15] Daniel Terdiman. Microsoft’s project natal: What does it mean
+for game industry? CNET, 2009. URL http://news.cnet.com/
+8301-10797_3-10253892-235.html.
+[16] Anna Trifonova, Letizia Jaccheri, and Kristin Bergaust. Software
+engineering issues in interactive installation art. Int. J. Arts and
+Technology, 1(1):43–65, 2008.
+

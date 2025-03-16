@@ -1,0 +1,1276 @@
+Agents.jl: A performant and feature-full
+agent based modelling software of
+minimal code complexity
+Journal Title
+XX(X):1–10
+©The Author(s) 2020
+Reprints and permission:
+sagepub.co.uk/journalsPermissions.nav
+DOI: 10.1177/ToBeAssigned
+www.sagepub.com/
+SAGE
+George Datseris1, Ali R. Vahdati2 and Timothy C. DuBois3
+Abstract
+Agent based modelling is a simulation method in which autonomous agents react to their environment, given a
+predeﬁned set of rules. It is an integral method for modelling and simulating complex systems, such as socio-economic
+problems. Since agent based models are not described by simple and concise mathematical equations, code that
+generates them is typically complicated, large, and slow. Here we present Agents.jl, a Julia-based software that provides
+an ABM analysis platform with minimal code complexity. We compare our software with some of the most popular ABM
+packages in other programming languages. We ﬁnd that Agents.jl is not only the most performant, but also the least
+complicated software, providing the same (and sometimes more) features as the competitors with less input required
+from the user. Agents.jl also integrates excellently with the entire Julia ecosystem, including interactive applications,
+differential equations, parameter optimization, and more. This removes any “extensions library” requirement from
+Agents.jl, which is paramount in many other tools.
+Keywords
+Agent based modelling, ABM, software, framework, Julia, NetLogo, Mesa, MASON, complex systems
+Introduction
+Many
+processes
+in
+biology,
+ecology,
+sociology,
+and
+economics are characterized by interactions between their
+constituent parts (1; 2; 3; 4; 5; 6; 7; 8; 9). The large number
+of interactions leads to numerous possible states within each
+system. Such systems, with many interacting components
+are complex: where a single component cannot generally
+determine system behavior. Each component may have a
+negligible effect in isolation, but a signiﬁcant effect when
+interacting with other components.
+To model and analyze complex systems, bottom-up
+approaches such as agent-based simulations are common,
+and sometimes the only feasible approach. Agent-based
+models (ABMs) consist of autonomous agents or individuals
+that behave according to a set of predeﬁned rules. The rules
+specify how agents interact with one another, as well as with
+their environment.
+ABMs differ from other analytical models, such as
+differential equations. Analytical models use variables that
+characterize the whole system, they are top-down. ABMs use
+variables that describe the components of a system, rather
+than the behavior of the whole system. A modeler chooses
+ABM variables based on an understanding of the system,
+but not to ﬁt some expectation of outcome. The outcome
+emerges (10) from all these lower-level interactions, which
+are often nonlinear and cannot be captured by aggregating
+them. By incorporating spatial and temporal heterogeneity,
+each agent may only interact with a local neighborhood.
+Such heterogeneity allows for more realistic models that can
+show behaviors not captured in top-down approaches (11).
+Despite being widely used, efﬁcient and reproducible
+ABMs are not common. Many studies use ABMs written
+from scratch, which increases the probability of bugs in code,
+and makes model validation and veriﬁcation difﬁcult.
+An agent-based modeling frameworks help deﬁne a gen-
+eral structure for ABMs. The structure makes it easier for
+model developers to deﬁne models, explore parameters, and
+collect data. As well as enabling the target audience to
+better understand, compare, reproduce, and modify models
+(Figure 1). This is especially important at present, since
+increasingly complex models are being developed in collabo-
+ration, where each party focuses on a single component of the
+model. A well-deﬁned and simple framework fosters mutual
+understanding between collaborators. ABMs can be com-
+putationally heavy programs, and it is important to exploit
+available computing resources. An agent-based simulation
+framework makes it easier to use all computing resources
+through distributed computing. Such a framework separates
+the tasks of deﬁning a model from running it, collecting and
+merging model outputs, as well as analysis of results.
+We developed an agent-based simulation framework:
+Agents.jl (12), that fulﬁlled many of the mentioned tasks.
+Various agent-based simulation frameworks exists in differ-
+ent programming languages (13). Notable examples include
+Swarm (14), NetLogo (15), MASON (16), Repast (17) and
+Mesa (18) (for a comprehensive review, see (19)). These
+frameworks differ in their capabilities, scope, learning curve,
+1Max Planck Institute for Meteorology, Germany
+2Department of Anthropology, University of Zurich, Zurich, Switzerland
+3Stockholm
+Resilience
+Centre,
+Stockholm
+University,
+Stockholm,
+Sweden
+Corresponding author:
+George Datseris
+Email: datseris.george@gmail.com
+Prepared using sagej.cls [Version: 2017/01/17 v1.20]
+arXiv:2101.10072v1  [cs.MA]  25 Jan 2021
+
+2
+Journal Title XX(X)
+ABM
+Visualize
+Scatter plot
+Interactive app
+Analyze
+Julia ecosystem tools:
+DataFrames.jl,
+DataVoyager.jl, etc.
+Collect Data
+What: agent & model
+data, aggregated or
+filtered aggregate
+When: specified times,
+programmatic times
+Space
+Graph
+Grid
+Continuous
+Agent
+struct(s)
+Agent & model
+stepping
+functions
+Ecosystem Integration
+DifferentialEquations.jl
+BlackBoxOptim.jl
+...
+Run
+For 'n' steps, or a
+condition is met
+With replicates
+In parallel
+...
+Utilities
+Add agents
+Move agents
+Kill agents
+Find neighbors
+...
+Julia
+Ecosystem
+Agents.jl
+API
+User
+Input
+Schedule
+Fastest
+Random
+By property
+...
+User-defined
+Figure 1. Flow chart representation of the Agents.jl framework.
+amount of code needed to develop a model, speed of exe-
+cution, as well as data collection and visualization features.
+Our framework is written using the Julia language. This
+programming language choice brings advantages over other
+frameworks: quick and intuitive model development, fast
+model execution, and easy integration with many analytical
+tools in the Julia ecosystem (removing the need for plugins
+or extensions).
+Here we discuss Agents.jl v4.0 with many more features
+and improvements over the initial release (20). Speciﬁcally,
+it supports three additional space types (continuous space,
+directed graphs and OpenStreetMap), better visualization
+functions, more ﬂexible data collection, simpler source
+code, automatic parameter exploration, as well as interactive
+model execution & visualization. We show the advantages
+of Agents.jl through a detailed comparison with three
+other commonly used frameworks: Mesa, NetLogo and
+MASON (Table 1 and comparison section). We also
+demonstrate its integration with other Julia packages to
+create interactive applications, include differential equations
+in ABMs, optimize model parameters and create novel space
+types.
+Simulations with Agents.jl
+The design of Agents.jl separates a simulation into simple
+components, following the philosophy of giving as much
+freedom to the user as possible, whilst also minimising
+the usage complexity. Each of these components integrates
+with each other through the help of the Agents.jl API, as
+illustrated in Figure 1. In this section we will describe the
+design of Agents.jl, by going through a typical workﬂow of
+an Agents.jl simulation, referencing all aspects of Figure 1.
+Our goal here is not to highlight the full list of features of
+Agents.jl (for this please see the comparison section and the
+online documentation), but instead to highlight the simplicity
+of using Agents.jl.
+We will use the Schelling segregation model as an example
+(a fully detailed version of this model is available in our
+documentation, the example herein is provided solely to
+outline the basic principles of Agents.jl). Below we will be
+including code snippets that implement the Schelling model
+in Agents.jl. These code snippets are typically stored in a
+single script, but could also be inputted interactively into
+a Julia console or separated into multiple ﬁles. All code
+snippets are based on standard, generic Julia functions, as
+Agents.jl can be used like any other Julia package. This is in
+contrast to requiring you to code in a speciﬁc environment
+(NetLogo), defaulting to using a dedicated “server” (Mesa)
+or distributing model ﬁles in a binary format (MASON). This
+makes models from Agents.jl easier to share and reproduce,
+but also easier to integrate with the Julia ecosystem and
+therefore easier to learn.
+Model creation
+In Agents.jl, an agent based model is represented by a bundle
+called AgentBasedModel, that contains all currently alive
+agents, the space they reside in, and other model-level
+parameters. To create such an AgentBasedModel, the
+user must provide:
+1. the type of agents the model will contain (but not the
+agents themselves)
+2. the properties of the space they can occupy
+3. the order the agents will activate (optional)
+4. model-level parameters (optional)
+The agent type is deﬁned via a Julia mutable struct, which
+in principle is a container of arbitrary data (in the case of a
+mixed-agent models, one struct for each agent type needs
+to be provided). Such a struct must always have a ﬁeld id
+and pos (for position). For our Schelling model, the struct
+looks like:
+mutable struct Schelling <: AbstractAgent
+id::Int
+pos::Dims{2}
+mood::Bool
+group::Int
+end
+Notice that the ﬁelds of such a struct (besides the mandatory
+ﬁelds id, pos) can be any possible data structure
+supported by the Julia language. Their value can be altered
+at any point during the simulation. Rather than writing
+this out manually, Agents.jl also provides an @agent
+macro that simpliﬁes this process. Next, the user creates a
+space structure which can be populated by agents. Agents.jl
+provides three spaces: grid, graph, and continuous. A grid
+space (for example) is initialized by
+dims = (10, 10)
+space = GridSpace(dims; periodic = false)
+All spaces have their appropriate set of conﬁguration options.
+The ﬁnal setup step is to choose model-level parameters
+and agent activation order. In Agents.jl, agents activate
+sequentially, according to a dynamically determined order
+(arbitrary user-deﬁned function which can include arbitrary
+events at arbitrary times). In this example the activation order
+does not matter and we use the default (random) activation.
+After creating a model-parameter container, we instantiate
+the AgentBasedModel with
+Prepared using sagej.cls
+
+Datseris, Vahdati and DuBois
+3
+properties = Dict(:min_to_be_happy => 3)
+schelling = ABM(Schelling, space;
+properties = properties)
+(where ABM is an alias of AgentBasedModel). In the Julia
+console, the output of the above command would be:
+AgentBasedModel with 0 agents of type
+Schelling
+space: GridSpace with size (10, 10),
+metric=chebyshev and periodic=false
+scheduler: fastest
+properties: Dict(:min_to_be_happy => 3)
+One can populate the model immediately now, by taking
+advantage of the API of Agents.jl, and functions like
+add_agent! or fill_space!, but we skip this step here
+for conciseness.
+Before actually running a simulation, the user must also
+deﬁne the dynamics of the model. This is done by providing
+two functions (which of course themselves can be composed
+by simpler parts). First, an agent-stepping function which
+decides what happens when each agent is activated, and
+second, a model-step function which is called either before or
+after every scheduled agent has performed their operations,
+and acts on the model as a whole (all agents are still
+accessible by the model if needed). Both functions are
+optional, depending on the simulation’s requirements. The
+user creates these two functions by taking advantage of the
+API of Agents.jl. For example, the Schelling model has the
+rules that
+1. Agents belong to one of two groups (0 or 1).
+2. If an agent is in a location with at least three neighbors
+of the same group, then it is happy.
+3. If an agent is unhappy, it keeps moving to new
+locations until it is happy.
+This can be implemented with the function shown in
+Listing 1. This function uses several functions from the API
+of Agents.jl. Speciﬁcally:
+• model.x returns the model-level property called x
+(agent.x behaves in the same manner).
+• nearby_positions(agent, model)
+returns
+ids of all positions near agent.
+• nearby_agents(agent, model) returns a list
+of agents nearby.
+• move_agent_single!(agent, model)
+moves the agent to a random, but empty location (if
+possible).
+In a similar manner, one deﬁnes a model step function. A
+full list of functions available from the API is described in
+our documentation.
+Simulation run, data collection
+Once the aforementioned structures and functions have been
+deﬁned, the model can be evolved for one step by simply
+doing
+step!(model, agent_step!)
+which internally takes care of scheduling agents, activating
+them one by one, and applying the given rules to them. The
+full form of step! is
+step!(model, agent_step!, model_step!, n)
+where n is either an integer (step for n steps), or an
+arbitrary Julia function n(model, s) with s the current
+step number. In this case, evolution goes on until n returns
+true. Model evolution is in a sense interactive (since Julia
+is an interactive language, and all data structures involved
+in Agents.jl are mutable). Thus, after stepping the model,
+the contained agents and/or model parameters have changed
+values according to model rules.
+Data collection in Agents.jl is also as simple and as general
+as constructing a model. This is accomplished via a two
+step process. First, the user decides which data should be
+collected, which can be any combination of:
+1. Agent properties
+2. Aggregated agent properties
+3. Aggregated agent properties, conditional on a user-
+deﬁned ﬁlter
+4. Model properties
+This is done by providing vectors of appropriate entries for
+data collection. For example, if the user wanted to collect
+data for the property mood and position of the agents, they
+would deﬁne
+adata = [:mood, :pos]
+It is also possible to collect arbitrary data from an agent by
+providing a function, e.g.
+f(a::Schelling) = a.pos[2]-a.pos[1]
+adata = [:mood, f]
+This process works identically for model parameters.
+As noted above, it is also possible to aggregate agent
+data during data collection. For example, while get-
+ting the ‘mood‘ of each individual agent as data is
+sometimes desired, other scenarios may only require
+an aggregated result. We can achieve this by modify-
+ing the adata vector above, so that its entries are
+(:value, aggregation_function) instead of just
+:value. For example,
+using Statistics # access `mean`
+right(a::Schelling) = a.pos[1] > 5
+adata = [(:mood, sum),
+(f, mean),
+(:mood, sum, right)]
+would sum the mood property (and thus in our example
+count how many agents are happy), provide the average value
+of the f function, and ﬁnally the number of agents that are
+happy, provided they are in the right side of the space.
+Once the user has deﬁned adata (and mdata for model
+parameters), they can simply call
+Prepared using sagej.cls
+
+4
+Journal Title XX(X)
+function agent_step!(agent, model)
+agent.mood == true && return # do nothing if already happy
+minhappy = model.min_to_be_happy
+neighbor_positions = nearby_positions(agent, model)
+count_neighbors_same_group = 0
+# For each neighbor, get group and compare to current agent's group
+# and increment count_neighbors_same_group as appropriately.
+for neighbor in nearby_agents(agent, model)
+if agent.group == neighbor.group
+count_neighbors_same_group += 1
+end
+end
+# After counting the neighbors, decide whether or not to move the agent.
+# If count_neighbors_same_group is at least the min_to_be_happy, set the
+# mood to true. Otherwise, move the agent to a random position.
+if count_neighbors_same_group >= minhappy
+agent.mood = true
+else
+move_agent_single!(agent, model)
+end
+end
+Listing 1: Agent stepping function for the Schelling model.
+run!(model, agent_step!, model_step!, n;
+adata = adata)
+The run! function evolves the model in the same manner as
+step!, but collects data in addition. It provides the results in
+the form of a DataFrame: the most common Julia tabular
+data format. An example output of the executable version of
+the Schelling model (from our documentation) is
+|
+step | sum_mood | maximum_x |
+| Int64 |
+Int64 |
+Int64 |
+|-------|----------|-----------|
+|
+0 |
+0 |
+20 |
+|
+1 |
+219 |
+20 |
+|
+2 |
+278 |
+20 |
+|
+3 |
+299 |
+20 |
+|
+4 |
+312 |
+20 |
+|
+5 |
+313 |
+20 |
+Visualization
+Visualization follows the same principles as data collection.
+The user provides a few simple functions which decide how
+an agent should be represented. These user-deﬁned functions
+are then given to the main plotting function abm_plot that
+is provided by InteractiveDynamics.jl (a package providing
+visualization and interactive applications for the packages of
+the JuliaDynamics organization).
+Using the current Schelling example, we can deﬁne two
+functions for the color and shape of the agents as follows
+# access plotting functions & backend
+using InteractiveDynamics, GLMakie
+groupcolor(a) =
+ifelse(a.group == 1, :blue, :orange)
+groupmarker(a) =
+ifelse(a.group == 1, :circle, :rect)
+fig, _ abm_plot(model; ac = groupcolor,
+Figure 2. An example plot of an implementation of the
+Schelling segregation model in Agents.jl.
+am = groupmarker, as = 4)
+fig # display figure
+the keywords ac, am, as decide the agent color, marker
+type and size respectively. The output of the above code
+block (for the documentation version of the Schelling model)
+is an image like Figure 2.
+Interactive applications
+By adding only a couple of lines of code to the existing
+simple interface for data collection and plotting within
+Prepared using sagej.cls
+
+Datseris, Vahdati and DuBois
+5
+Figure 3. An interactive application of an agent based model. Controls on the bottom left are created automatically and tune the
+simulation speed. Red vertical lines in the timeseries of the collected data denote when the “reset” button was pressed. Here it was
+pressed after the slider of the parameter “minimum to be happy” was changed from 3 to 6, and then to 8.
+Agents.jl, we can immediately explore an ABM in an
+interactive application that looks like Figure 3.
+Provided that the user has already created an ABM and has
+deﬁned the necessary stepping functions, launching such an
+application is trivial. The data-collection ﬂags adata and
+mdata are re-used to make the timeseries plot in the right
+side of the window. The arguments ac, am, as of the
+function abm_plot are re-used as-is. Lastly, the user can
+choose some model-level parameters to vary interactively
+during the simulation, by providing a dictionary that maps
+parameter names to value ranges. All in all, the only extra
+lines of code the user has to write can be expressed as (we
+continue with the Schelling example used throughout the
+article)
+using InteractiveDynamics, GLMakie
+parange = Dict(:min_to_be_happy => 0:8)
+alabels = ["happy", "avg. x"]
+fig, adf, mdf = abm_data_exploration(
+model, agent_step!, dummystep, parange;
+ac=groupcolor, am=groupmarker, as=10,
+adata, alabels
+)
+The only new thing the user had to deﬁne was the parange
+and alabels variables, where the latter only affects the
+shown labels of the timeseries. This is in striking contrast
+to the user-deﬁned input necessary by competing ABM
+software, e.g. Mesa (Python) where several pages of code are
+necessary to reach the same level of interactive application.
+Framework Comparison
+ABMs have had a long history, with many tools which
+enabled their construction along the way. In Table 1
+we compare Agents.jl with three current and popular
+frameworks:
+Mesa,
+Netlogo
+and
+MASON,
+to
+assess
+where Agents.jl excels and also may need some future
+improvement. This assessment is quantitative where it can
+be, although many aspects of the comparison are qualitative
+by nature. We categorise our results ﬁrst by having either
+Poor/None (red color), Basic (yellow color), or Good
+functionality (green color). If there is a clear category winner,
+this is labelled as Current Best (blue color).
+Our major goal in this paper is to highlight that Agents.jl is
+a framework that is simple and easy-to-use (something hard
+to showcase in a comparison table, but already illustrated
+in the “Simulations with Agents.jl” section). Regardless,
+even though Agents.jl is a new-comer ABM software
+(development started Dec. 2018 (20)), it becomes clear
+from Table 1 that we already match the main functionality
+of decades-old competitors (all of which are under active
+development), most of the time exceeding it, with only a
+few aspects being available in the competitors and not in
+Agents.lj (e.g. GIS integration).
+Worth noting is our design of space types, which allows
+fundamentally new spaces to be created with relatively low
+effort. Speciﬁcally, a new space can be created by deﬁning
+a new Julia struct and extending only 5 methods (i.e.
+deﬁning 5 functions). The resulting space then integrates
+with all of the Agents.jl API as any other space would. For
+example, the entire implementation of our graph space is
+only 75 lines of code. We showcase the new OpenStreetMap
+space in the Ecosystem interaction section below as a more
+complex example.
+There are two API categories listed in the table that show
+new features that only Agents.jl provides.
+• Agent sampling: the ability to select randomised
+subsets of the model population based on certain
+properties. Useful in biological applications.
+Prepared using sagej.cls
+
+6
+Journal Title XX(X)
+Table 1. A comparison of four ABM frameworks: ease of use, available functionality and performance. Colours represent
+implementation quality. Red: poor/none, Yellow: basic, Green: good, Blue: clear class leader.
+Agents.jl 4.0
+Mesa 0.8.7
+Netlogo 6.1.1
+Mason 20.0
+Core
+Core design decisions and aspects that cannot be changed or implemented by users
+Continuous
+Space
+Yes
+Yes
+Yes
+Yes
+OpenStreetMap
+Space
+Yes
+No
+No
+No
+Graph Space
+Yes, and mutable
+Only undirectional
+Link Agents
+(not a Space)
+Networks (not a
+Space)
+Grid Space
+Yes
+Yes (+Hexagonal)
+Yes
+Yes (+Hexagonal,
+Triangular)
+Dimensionality
+Any
+2D
+2D & 3D (separate
+applications)
+2D & 3D
+(complicated install
+for 3D)
+License
+permissiveness
+MIT
+Apache v2.0
+GPL v2
+Academic Free
+License
+Mixed-agent
+models
+Type Unions
+Yes
+Breed
+Separate Class
+Simulation
+termination
+After ‘n’ steps or
+user-provided boolean
+condition of model
+state
+Explicitly written user
+loop
+Manually by pressing
+a button on the
+interface, stop
+command in code
+When Schedule is
+empty, or user
+provided custom
+ﬁnish function
+Parameter types
+Anything
+Anything
+Float64, Lists
+Hashtables and
+Assoc. Arrays in the
+Table extension
+Anything
+Ease of
+Installation
+One-click for Julia,
+one command for
+package
+One-click for Python,
+one command for
+package
+One-click JRE install
+Run jar ﬁle
+One-click JRE, install
+libraries, complex
+Java3D install
+Run jar ﬁle
+Modeling and
+Analysis in the
+same language
+Yes, Julia v1.5+
+Yes, Python v3+
+No
+Yes, Java but
+designed to work
+within the console or
+GUI of the applet
+Language
+ecosystem
+integration
+By Design. Examples:
+black box
+optimization,
+differential equations
+Any of Python’s
+analytical tools can be
+used
+Complex. Must create
+plugins or use Control
+API
+Warned against (e.g.
+Random), provides
+custom types in place
+of Java primitives
+Documentation
+quality
+Short, with tutorials,
+15+ executable
+examples, API
+listings & integration
+examples.
+Short, has a tutorial
+but no hosted run
+examples online
+Extensive, split over
+website and GitHub
+wiki. Difﬁcult to
+search.
+Extensive, over 350
+pages in pdf and a
+developer dump of
+class properties. Hard
+to navigate.
+Data collection
+Any chosen parameter
+/ property or function
+mapped over them.
+Aggregating and
+ﬁltered aggregate
+functions
+Any chosen parameter
+/ property.
+Aggregating
+functions. No
+conditional options
+boolean, number,
+string and lists of
+these types.
+Inspectors track &
+chart any parameter /
+property. Entire
+model saved to disk
+via checkpointing, no
+custom export
+Model
+complexity (19)
+Simple
+Moderate
+Simple
+High
+Prepared using sagej.cls
+
+Datseris, Vahdati and DuBois
+7
+Agents.jl
+Mesa
+Netlogo
+Mason
+API, Utilities
+How users interface with the framework, overview of convenience functions
+Finding nearest
+neighbors
+Same API for all
+spaces, custom ranges
+Covers all spaces
+Covers graphs,
+cardinal directions
+and city blocks on
+grids and continuous
+space
+Cardinal, city block,
+Von Neumann and
+radial types. No 3D
+search in continuous
+space
+Adding agents to
+space
+speciﬁed position,
+random, random
+empty, ﬁll
+Speciﬁed position,
+random empty
+speciﬁed position
+speciﬁed position
+Agent creation
+from values
+Yes
+No
+Yes
+No
+Moving agents
+Uniﬁed API for all
+space types.
+Uniﬁed API for all
+space types.
+specify position, only
+Turtle Agents move
+specify position,
+move with mouse in
+GUI
+Killing agents
+Individual, all,
+speciﬁed by function.
+Individual, all.
+individual, all,
+speciﬁed by function
+individual, all
+Random number
+distributions
+Any
+Any
+Normal, Poisson,
+Exponential, Gamma
+Uniform, Gaussian
+Can use COLT library
+but not recommended
+Agent sample
+and replacement
+Yes
+No
+No
+No
+GIS data
+No
+No
+GIS Extension
+GeoMason Extension
+Parameter
+scanning
+paramscan
+batch runner
+Behaviour Space
+ParameterSweep
+New space types
+API
+Yes
+No
+No
+No
+Advanced API
+for continuous
+space
+Yes
+No
+No
+No
+Data collection
+low-level API
+Yes
+No
+Yes
+Yes, but only
+exportable via
+check-pointing
+Scheduling
+As added, by
+property, by type,
+ﬁltered, random,
+custom function
+As added, random,
+staged
+custom function
+custom function
+Visualization
+primitives for
+provided spaces
+Yes
+Yes
+Yes
+Yes
+Complexity of
+visualization
+Single function with 3
+helper functions (5
+LOC)
+Complex API, many
+LOC
+Simple, function
+based. Extend agent
+properties and plot
+Complex API, many
+LOC
+GUI for
+simulation setup
+No
+User implemented
+Yes
+User implemented
+Numeric
+Performance features, benchmarks where possible and lines of code (LOC) for implementations
+Maximum
+memory capacity
+Hardware limits
+Hardware limits
+1 GB
+Manually expanded
+by increasing JVM
+heap
+1 GB
+Manually expanded
+by increasing JVM
+heap
+Flocking
+(continuous)
+implementation
+1 (normalised)
+66 LOC
+29.7x
+120 LOC
+10.3x
+82 (689)
+2.1x
+369 LOC
+Wolf-Sheep-
+Grass (grid)
+implementation
+1 (normalised)
+137 LOC
+7.1x
+273 LOC
+2.1x
+137 (871) LOC
+No Implementation
+Available
+Forest Fire (grid)
+implementation
+1 (normalised)
+27 LOC
+29.1x
+61 LOC
+4.1x
+68 (732) LOC
+No Implementation
+Available
+Schelling (grid)
+implementation
+1 (normalised)
+34 LOC
+31.5x
+63 LOC
+8.0x
+68 (732) LOC
+14.3x
+248 LOC
+Prepared using sagej.cls
+
+8
+Journal Title XX(X)
+• Advanced continuous space API: due to the time
+of publication, COVID-19 social distancing models
+have been very important. Agents.jl provides such an
+example in the documentation, with methods such
+as interacting_pairs (sets of nearby agents
+with many possible methods of ﬁnding these sets)
+and elastic_collision! to resolve interactions
+between agents on crossing paths who may not want
+to closely interact.
+In addition, many categories we have scored Agents.jl in
+blue (class leader). One example reason for this can be seen
+in the Battle Royale example in our documentation. Here we
+show an N-dimensional space, with a 2D spatial grid and
+the higher order dimensions representing agent categories.
+While agent categories can be represented as standard
+agent properties, using additional “spatial” dimensions for
+them instead allows ﬁnding nearest neighbors along these
+dimensions, which would become cumbersome to do via the
+property approach.
+Analysing performance between the frameworks was
+difﬁcult, since each system implements example models
+in their own unique manner. This highlights the lack of
+standardised bench-marking models, perhaps stemming from
+the lack of communication between the ABM communities.
+Since the Wolf-Sheep-Grass model requires frameworks
+to utilise most of the common machinery (multiple agent
+types, adding, deleting and moving agents, etc.), we
+would appreciate if the MASON community (and ABM
+communities as a whole) could provide an implementation
+of this model for future comparisons. From the analysis we
+present here, Agents.jl is a clear winner in performance, most
+of the time by an order of magnitude. Since typical ABM
+simulations can cover hours of run time, even a 2x speed up
+is a large gain.
+Ecosystem interaction examples
+In this section we want to showcase how easily Agents.jl
+interacts with the rest of the Julia ecosystem. This is possible
+for two reasons: ﬁrst, the minimal design of Agents.jl, as well
+as the support it provides for low-level interfaces. Second,
+the design of the core of the Julia language itself, which
+allows straightforward inter-package communication. Notice
+that the examples we showcase here have fully detailed
+documentation online, explaining precisely how they work.
+Our goal here is to highlight how easy it is for Agents.jl
+to “communicate” with other Julia packages, removing any
+need for a plugin or extension ecosystem and thus making
+the user experience smoother.
+ODEs with DifferentialEquations.jl
+Coupling a set of differential equations (DE) to an ABM has
+historically led to a complex set of validation and sensitivity
+tests (21), which stem from discretizing a DE in some
+manner (predominantly via the forward Euler method) to
+conform with the step function of the ABM framework. The
+tests outlined in Martin et al. (21) concerning sensitivity
+can be handled automatically by integrating Agents.jl with
+DifferentialEquations.jl (22).
+To demonstrate this, our documentation (under the
+“Ecosystem Integration” section) describes a small ﬁshery
+model where ﬁsh stocks are managed on a yearly basis. A
+number of ﬁshers, with differing competence at catching ﬁsh,
+work in a common catchment. This is managed by some
+agency that makes sure the catchment is not over-ﬁshed. The
+ﬁsh population in the catchment is modelled via a logistic
+function
+ds
+dt = s
+
+1 −
+s
+120
+
+−h,
+(1)
+where s is the ﬁsh stock with some maximum carry capacity
+(120 here) and a harvest rate h.
+The status-quo method to implement such a hybrid
+dynamical system-agent based model is to discretize this
+equation to
+st+1 = st + st(1 −st/120) −h
+(2)
+with a timestep of 1 normalised unit initially. To validate
+this result, it would be important to undertake a step size
+analysis as a bare minimum, and to be thorough, use a
+scheme such as the one outlined in Martin et al. (21).
+Thankfully, the issues caused by discretization do not need
+to exist within an Agents.jl model, as we can couple our
+model with a continuous implementation of the DE from
+DifferentialEquations.jl.
+Figure 4. Comparative result of a continuous DE solution
+(Tsit5) and a non-optimal Eulerian discretisation. This error
+comes about due to oversimpliﬁcation of a continuous function
+into a discrete solution, which occurs frequently in published
+ABM examples.
+We can see in Figure 4 that a forward Euler method with
+no step size optimisation performed (or further sensitivity
+checks as discussed above) will yield an average discrepancy
+of 30 ﬁsh. Integration with DifferentialEquations.jl has
+provided us with a stable, valid solution—with an added
+bonus of efﬁciency. Since the chosen solver (in this case
+Tsit5) required less allocations and computations to obtain
+the result, we achieved a 6x speedup for this model.
+Agents on Maps
+With our new space type API, building ABMs on novel
+spaces is no-longer a months-long development process. An
+Prepared using sagej.cls
+
+Datseris, Vahdati and DuBois
+9
+Figure 5. Agents following planned routes on a map,
+interacting with passers-by. Black markers: agents, green
+markers: zombies!
+OpenStreetMapSpace has been introduced in Agents.jl
+4.0, which is a continuous space that constrains agents onto
+roads and streets of any provided real-world map obtained
+from Open Street Map. We leverage the OpenStretMapX.jl
+package and build methods speciﬁc to agent navigation and
+neighbor searching, which culminates in incredibly simple,
+yet powerful map based models.
+Our Zombie Outbreak example (see documentation
+online) explains how a simple agent constructor:
+@agent Zombie OSMAgent begin
+infected::Bool
+end
+coupled with 8 lines of movement dynamics can depict a city
+in chaos after a zombie infection (Figure 5).
+Parameter optimization
+Describing the logic of an ABM is usually not complicated,
+even when ABMs have a large number of heterogeneous
+agents (23). However, exploring the effect of model
+parameters has the possibility to become infeasible. ABMs
+are often computationally more expensive than analytical
+models, and brute force algorithms do not suit parameter
+exploration since the size of the parameter space of a
+simple model with 10 parameters and 10 possible values
+per parameter is 1010. Even if each simulation takes only
+one second, exploring the entire parameter space would
+take more than 300 years. Additionally, each parameter
+setting needs to be run multiple times and an average taken,
+since ABMs are stochastic. Machine learning algorithms
+handle the large parameter space by differentiation. ABMs,
+however, are not (universally) differentiable.
+We must resort to optimization strategies for non-
+differentiable functions. One such strategy is evolutionary
+algorithms (24). They are inspired from how living
+organisms evolve in a constantly changing environment and
+with large parameter spaces, similar to how ABMs often
+need to explore large parameter spaces.
+The
+Agents.jl
+documentation
+demonstrates
+how
+an
+epidemiological model can be optimized with evolutionary
+algorithms
+using
+the
+BlackBoxOptim.jl
+package.
+We
+optimize a number of parameters of a SIR* model explicitly
+accounting for multiple cities/regions. Speciﬁcally we tune
+transmission rates, death rate, migration rate, infection and
+detection times, and reinfection probability to minimize the
+number of infections. We note that to optimize the ABM,
+the simulation code does not need to be changed. All we
+need is a cost function that takes model parameters as input,
+runs the model one or more times, and returns one or
+more numbers as the objectives that need to be minimized
+(here, the number of infected individuals and the negative
+of the number of individuals). With our initial values,
+94% of the population gets the infection. The optimization
+ﬁnds that reducing the transmission rate is enough for
+reducing death rate and infections to 0.3% and 0.04%
+of the population, respectively. That is despite increasing
+the reinfection probability, migration rate, and death rate.
+Accessibility of optimization tools in the Julia ecosystem and
+their easy integration with Agents.jl makes ABM analysis
+much easier.
+Conclusions and Future Work
+We
+have
+presented
+an
+overview
+of
+the
+capabilities
+of
+Agents.jl,
+showing
+the
+simplicity
+and
+power
+of
+this framework compared to long-established frameworks
+(NetLogo, Meson), as well as contemporaries (Mesa). From
+our perspective, the biggest take-away of this paper is that
+Agents.jl is a framework that is simple to use, requiring
+small amount of written code from the user and overall easy
+to learn. Despite this, our comparison shows that Agents.jl
+always exceeds other frameworks in performance, and often
+also in capability. An added bonus is how simple it is for
+a user to incorporate other parts of the already large, and
+constantly evolving, Julia ecosystem into their model. With
+this, we hope to motivate more users to try out Agents.jl,
+which will enable them to extend the frontier of possibilities
+in the world of ABMs, due to faster prototyping and faster
+code execution.
+Several possible future directions already exist for
+Agents.jl, some planned by the developers while some
+requested by users. A useful new feature would be crowd
+dynamics and obstacle avoidance, as well as a new type
+of grid space based on hexagonal grids, rather than the
+existing rectangular. Adding even more examples (currently
+18 online and constantly increasing), is always useful, and
+the near future focus will be highlighting more 3D models.
+Integrations into the greater Julia ecosystem are useful to
+highlight as well, with current ideas targeting automatic error
+propagation and Bayesian inference for decision making
+among others. Given that Agents.jl is an open source
+project, we welcome new users to add to the wish-list
+of functionalities by opening a new issue in our GitHub
+repository, or even better to contribute new features via a pull
+request.
+∗SIR stands for Susceptible-Infected-Recovered and is a simple model for
+infection dynamics commonly used in ABMs.
+Prepared using sagej.cls
+
+10
+Journal Title XX(X)
+Acknowledgements
+We acknowledge all users of Agents.jl that contributed in the form
+of reporting bugs, suggesting new features, and even contributing
+code directly via pull requests.
+Funding
+T.C.D. acknowledges funding from the EU project LimnoScenES
+(2017–2018 Belmont Forum and BiodivERsA joint call under the
+BiodivScen ERA-Net COFUND with funding from the Swedish
+Research Council FORMAS).
+Author Contribution Statement
+G.D. provided direction to the team, refactored and optimised
+much of the current codebase, oversaw critical design decisions
+regarding the representation of spaces and plotting, and served as
+lead developer from v2.0 until v4.0. A.R.D. is the original author of
+Agents.jl and has been continuously active in development since.
+T.C.D. is the current lead developer of Agents.jl, has been active
+in development since version v2.0, implementing and optimising
+a large portion of the framework and contributing several new
+features and examples.
+A.R.D. drafted the introduction section, G.D. drafted the usage
+section and the outline of the comparison table. Mesa comparisons
+were compiled by A.R.D., all other frameworks by T.C.D.
+Benchmarks were run and listed by T.C.D. A.R.D. and T.C.D. wrote
+the Ecosystem Integration. All authors contributed to draft revisions
+and editing.
+References
+[1] V. Grimm and S. F. Railsback, “Agent-Based Models in
+Ecology: Patterns and Alternative Theories of Adaptive
+Behaviour,” in Agent-Based Computational Modelling (F. C.
+Billari, T. Fent, A. Prskawetz, and J. Scheffran, eds.), pp. 139–
+152, Heidelberg: Physica-Verlag, 2006.
+[2] I. Politopoulos, “Review and analysis of agent-based models
+in biology,” University of Liverpool.—2007, no. September,
+pp. 1–14, 2007.
+[3] J. D. Farmer and D. Foley, “The economy needs agent-based
+modelling,” Nature, vol. 460, pp. 685–686, Aug. 2009.
+[4] S. Heckbert, T. Baynes, and A. Reeson, “Agent-based
+modeling in ecological economics: Agent-based modeling in
+ecological economics,” Annals of the New York Academy of
+Sciences, vol. 1185, pp. 39–53, Jan. 2010.
+[5] A. J. McLane, C. Semeniuk, G. J. McDermid, and D. J.
+Marceau, “The role of agent-based models in wildlife ecology
+and management,” Ecological Modelling, vol. 222, pp. 1544–
+1556, Apr. 2011.
+[6] T. Lekvam, B. Gamb¨ack, and L. Bungum, “Agent-based
+modeling of language evolution,” in Proceedings of the 5th
+Workshop on Cognitive Aspects of Computational Language
+Learning (CogACLL), (Gothenburg, Sweden), pp. 49–54,
+Association for Computational Linguistics, 2014.
+[7] J. Schulze, B. M¨uller, J. Groeneveld, and V. Grimm,
+“Agent-Based
+Modelling
+of
+Social-Ecological
+Systems:
+Achievements, Challenges, and a Way Forward,” Journal of
+Artiﬁcial Societies and Social Simulation, vol. 20, no. 2, p. 8,
+2017.
+[8] S¸.
+Bora
+and
+S.
+Emek,
+“Agent-Based
+Modeling
+and
+Simulation
+of
+Biological
+Systems,”
+in
+Modeling
+and
+Computer Simulation (D. Cvetkovi´c, ed.), IntechOpen, Apr.
+2019.
+[9] M. Lippe, M. Bithell, N. Gotts, D. Natalini, P. Barbrook-
+Johnson, C. Giupponi, M. Hallier, G. J. Hofstede, C. Le Page,
+R. B. Matthews, M. Schl¨uter, P. Smith, A. Teglio, and
+K. Thellmann, “Using agent-based modelling to simulate
+social-ecological systems across scales,” GeoInformatica,
+vol. 23, pp. 269–298, Apr. 2019.
+[10] J. O. Dada and P. Mendes, “Multi-scale modelling and
+simulation in systems biology,” Integrative Biology, vol. 3,
+no. 2, p. 86, 2011.
+[11] S. F. Railsback, Agent-Based and Individual-Based Modeling:
+A Practical Introduction. Princeton, NJ: Princeton University
+Press, 2nd edition ed., 2019.
+[12] G.
+Datseris,
+A.
+Vahdati,
+and
+T.
+DuBois,
+“Agents.jl
+online
+repository
+and
+documentation:
+https://github.com/juliadynamics/agents.jl.”
+[13] S. F. Railsback, S. L. Lytinen, and S. K. Jackson, “Agent-
+based Simulation Platforms: Review and Development
+Recommendations,” SIMULATION, vol. 82, pp. 609–623,
+Sept. 2006.
+[14] H. Iba, Agent-Based Modeling and Simulation with Swarm.
+Chapman and Hall/CRC, zeroth ed., June 2013.
+[15] L. Wilensky, “Netlogo.” Center for Connected Learning and
+Computer-Based Modeling, Northwestern University, 1999.
+[16] S. Luke, C. Ciofﬁ-Revilla, L. Panait, K. Sullivan, and
+G. Balan, “MASON: A Multiagent Simulation Environment,”
+SIMULATION, vol. 81, pp. 517–527, July 2005.
+[17] M. J. North, N. T. Collier, J. Ozik, E. R. Tatara, C. M. Macal,
+M. Bragen, and P. Sydelko, “Complex adaptive systems
+modeling with Repast Simphony,” Complex Adaptive Systems
+Modeling, vol. 1, p. 3, Dec. 2013.
+[18] D. Masad and J. Kazil, “Mesa: An Agent-Based Modeling
+Framework,” in Python in Science Conference, (Austin,
+Texas), pp. 51–58, 2015.
+[19] S. Abar, G. K. Theodoropoulos, P. Lemarinier, and G. M.
+O’Hare, “Agent Based Modelling and Simulation tools:
+A review of the state-of-art software,” Computer Science
+Review, vol. 24, pp. 13–33, May 2017.
+[20] A. Vahdati, “Agents.jl: Agent-based modeling framework in
+Julia,” Journal of Open Source Software, vol. 4, p. 1611, Oct.
+2019.
+[21] R. Martin and M. Schl¨uter, “Combining system dynamics
+and
+agent-based
+modeling
+to
+analyze
+social-ecological
+interactions—an example from modeling restoration of a
+shallow lake,” Frontiers in Environmental Science, vol. 3, Oct.
+2015.
+[22] C. Rackauckas and Q. Nie, “Differentialequations. jl–a
+performant and feature-rich ecosystem for solving differential
+equations in julia,” Journal of Open Research Software, vol. 5,
+no. 1, 2017.
+[23] T. Terano, H. Deguchi, and K. Takadama, eds., Meeting the
+Challenge of Social Problems via Agent-Based Simulation.
+Springer Japan, 2003.
+[24] P. A. Vikhar, “Evolutionary algorithms: A critical review and
+its future prospects,” in 2016 International conference on
+global trends in signal processing, information computing and
+communication (ICGTSPICC), pp. 261–265, IEEE, 2016.
+Prepared using sagej.cls
+

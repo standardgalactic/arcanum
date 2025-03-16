@@ -1,0 +1,343 @@
+What can a single neuron compute? 
+Blaise Agiiera y Areas, l Adrienne L. Fairhall,2 and William Bialek2 
+1 Rare Books Library, Princeton University, Princeton, New Jersey 08544 
+2NEC Research Institute, 4 Independence Way, Princeton, New Jersey 08540 
+blaisea@prineeton. edu {adrienne, bialek} @researeh. nj. nee. com 
+Abstract 
+In this paper we formulate a description of the computation per-
+formed by a neuron as a combination of dimensional reduction 
+and nonlinearity. We implement this description for the Hodgkin-
+Huxley model, identify the most relevant dimensions and find the 
+nonlinearity. A two dimensional description already captures a 
+significant fraction of the information that spikes carry about dy-
+namic inputs. This description also shows that computation in the 
+Hodgkin-Huxley model is more complex than a simple integrate-
+and-fire or perceptron model. 
+1 
+Introduction 
+Classical neural network models approximate neurons as devices that sum their 
+inputs and generate a nonzero output if the sum exceeds a threshold. From our 
+current state of knowledge in neurobiology it is easy to criticize these models as over-
+simplified: where is the complex geometry of neurons, or the many different kinds 
+of ion channel, each with its own intricate multistate kinetics? Indeed, progress at 
+this more microscopic level of description has led us to the point where we can write 
+(almost) exact models for the electrical dynamics of neurons, at least on short time 
+scales. These nearly exact models are complicated by any measure, including tens 
+if not hundreds of differential equations to describe the states of different channels 
+in different spatial compartments of the cell. Faced with this detailed microscopic 
+description, we need to answer a question which goes well beyond the biological 
+context: given a continuous dynamical system, what does it compute? 
+Our goal in this paper is to make this question about what a neuron computes some-
+what more precise, and then to explore what we take to be the simplest example, 
+namely the Hodgkin- Huxley model [1],[2] (and refs therein). 
+2 
+What do we mean by the question? 
+Real neurons take as inputs signals at their synapses and give as outputs sequences 
+of discrete, identical pulses-action potentials or 'spikes'. The inputs themselves 
+are spikes from other neurons, so the neuron is a device which takes N '" 103 pulse 
+trains as inputs and generates one pulse train as output. If the system operates at 2 
+msec resolution and the window of relevant inputs is 20 msec, then we can think of 
+a single neuron as having an input described by a '" x 104 bit word-the presence 
+or absence of a spike in each 2 msec bin for each presynaptic cell-which is then 
+mapped to a one (spike) or zero (no spike). More realistically, if the average spike 
+
+rates are'" 10 sec-1, the input words can be compressed by a factor of ten. Thus we 
+might be able to think about neurons as evaluating a Boolean function of roughly 
+1000 Boolean variables, and then characterizing the computational function of the 
+cell amounts to specifying this Boolean function. 
+The above estimate, though crude, makes clear that there will be no direct empirical 
+attack on the question of what a neuron computes: there are too many possibilities 
+to learn the function by brute force from any reasonable set of experiments. Progress 
+requires the hypothesis that the function computed by a neuron is not arbitrary, but 
+belongs to a simple class. Our suggestion is that this simple class involves functions 
+that vary only over a low dimensional subspace of the inputs, and in fact we will 
+start by searching for linear subspaces. 
+Specifically, we begin by simplifying away the spatial structure of neurons and take 
+inputs to be just injected currents into a point- like neuron. While this misses some 
+of the richness in real cells, it allows us to focus on developing our computational 
+methods. Further, it turns out that even this simple problem is not at all trivial. If 
+the input is an injected current, then the neuron maps the history of this current, 
+I(t < to), into the presence or absence of a spike at time to. More generally we might 
+imagine that the cell (or our description) is noisy, so that there is a probability of 
+spiking P[spike@toII(t < to)] which depends on the current history. We emphasize 
+that the dependence on the history of the current means that there still are many 
+dimensions to the input signal even though we have collapsed any spatial variations. 
+If we work at time resolution flt and assume that currents in a window of size T 
+are relevant to the decision to spike, then the inputs live in a space of D = T / flt, 
+of order 100 dimensions in many interesting cases. 
+If the neuron is sensitive only to a low dimensional linear subspace, we can define 
+a set of signals S1, S2,···, SK by filtering the current, 
+s,.. = 1
+00 dtf,..(t)I(to - t), 
+(1) 
+so that the probability of spiking depends only on this finite set of signals, 
+P[spike@toII(t < to)] = P[spike@to]g(s1,s2,· .. ,SK), 
+(2) 
+where we include the average probability of spiking so that 9 is dimensionless. If we 
+think of the current I(t < to) as a vector, with one dimension for each time sample, 
+then these filtered signals are linear projections of this vector. 
+In this formulation, characterizing the computation done by a neuron means esti-
+mating the number of relevant stimulus dimensions (K, hopefully much less than 
+D), identifying the filters which project into this relevant subspace,! and then char-
+acterizing the nonlinear function g(8). The classical perceptron- like cell of neural 
+network theory has only one relevant dimension and a simple form for g. 
+3 
+Identifying low-dimensional structure 
+The idea that neurons might be sensitive only to low-dimensional projections of 
+their inputs was developed explicitly in work on a motion sensitive neuron of the 
+fly visual system [3]. Rather than looking at the distribution P[spike@tols(t < to)], 
+with s(t) the input signal (velocity of motion across the visual field in [3]), that 
+work considered the distribution of signals conditional on the response, P[s(t < 
+to)lspike@to]; these are related by Bayes' rule, 
+P[spike@tols(t < to)] = P[s(t < to)lspike@to] 
+(3) 
+______ 
+----'P=-[=sp=ik=e:..::@=to]P[s(t<to)] 
+lNote that the individual filters don't really have any meaning; what is meaningful is 
+the projection operator that is formed by the whole set of these filters. Put another way, 
+the individual filters specify both a K - dimensional subspace and a coordinate system on 
+this subspace, but there is no reason to prefer one coordinate system over another. 
+
+Within the response conditional ensemble P[s(t < to)lspike@to] we can compute 
+various moments. Thus the spike triggered average stimulus, or reverse correlation 
+function [4], is the first moment 
+ST A(T) = j [ds] P[s(t < to)lspike@to]s(to - T). 
+(4) 
+We can also compute the covariance matrix of fluctuations around this average, 
+Cspike(T,T') = j[dS] P[s(t < to)lspike@to]s(to-T)s(to-T')-STA(T)STA(T'). (5) 
+In the same way that we compare the spike triggered average to some constant 
+average level ofthe signal (which we can define to be zero) in the whole experiment, 
+we want to compare the covariance matrix Cspike with the covariance of the signal 
+averaged over the whole experiment, 
+Cprior(T,T') = j[dS] P[s(t < to)]s(to - T)S(tO - T'). 
+(6) 
+Notice that all of these covariance matrices are D x D in size. The surprising find-
+ing of [3] was that the change in the covariance matrix, t1C = Cs ike - Cprior, had 
+only a very small number of nonzero eigenvalues. In fact it can be shown that if 
+the probability of spiking depends on K linear projections of the stimulus as in eq. 
+(2), and if the inputs s(t) are chosen from a Gaussian distribution, then the rank 
+of the matrix t1C is exactly K. Further, the eigenvectors associated with nonzero 
+eigenvalues span the relevant subspace (up to a rotation associated with the auto-
+correlations in the inputs. Thus eigenvalue analysis of the spike triggered covariance 
+matrix gives us a direct way to search for a low dimensional linear subspace that 
+captures the relevant stimulus features. 
+4 
+The Hodgkin-Huxley model 
+We recall the details of the Hodgkin-Huxley model and note some special features 
+that guide our analysis. Hodgkin and Huxley [1] modeled the dynamics of the 
+current through a patch of membrane by flow through ion-specific conductances: 
+dV 
+I(t) = Cdt + 9Kn4 (V - VK) + 9Nam3h (V - VNa) + 91 (V - VI), 
+(7) 
+where K and N a subscripts denote potassium- and sodium-related variables, re-
+spectively, and l (for 'leakage') terms are a catch-all for other ion species with slower 
+dynamics. C is the membrane capacitance. The subscripted voltages VI and VNa 
+are ion-specific reversal potentials. 91, 9K and 9Na are empirically determined max-
+imal conductances for the different ions,2 and the gating variables n, m and h (on 
+the interval [0,1]) have their own voltage dependent dynamics: 
+dn/dt = 
+dm/dt 
+= 
+dh/dt = 
+(O.OlV + 0.1)(1 - n) exp( -O.lV) - 0.125n exp(V/80) 
+(0.1 V + 2.5)(1- m) exp( -0.1 V - 1.5) - 4m exp(V/18) 
+0.07(1 - h) exp(0.05V) - h exp( -0.1 V - 4), 
+with V in m V and t in msec. 
+(8) 
+Here we are interested in dynamic inputs I(t), but it is important to remember 
+that for constant inputs the Hodgkin-Huxley model undergoes a Hopf bifurcation 
+to spike at a constant frequency; further, this frequency is rather insensitive to the 
+precise value of the input above onset. This 'rigidity' of the system is felt also in 
+2We have used the original parameters, with a sign change for voltages: C = lJ.tF /cm2, 
+gK = 36mU/cm2, gNa = 120mU/cm2, gl = O.3mU/cm2, VK = -12mV, VNa = +115mV, 
+Vi = +10.613mV. We have taken our system to be a 7r x 302J.tm 2 patch of membrane. 
+
+many regimes of dynamic stimulation, and can be thought of as a strong interaction 
+among successive spikes. These interactions lead to long memory times, reflecting 
+the infinite phase memory of the periodic orbit which exists for constant input. 
+While spike interactions are interesting, we want to focus on the way that input 
+current modulates the probability of spiking. To separate these effects we consider 
+only 'isolated' spikes. These are defined by accumulating the interspike interval 
+distribution and noticing that for some intervals t > tc the distribution decays 
+exponentially, which means that the system has lost memory of the previous spike; 
+thus spikes which are more than tc after the previous spike are isolated. 
+In what follows we consider the response of the Hodgkin- Huxley model to currents 
+I(t) with zero mean, 0.275 nA standard deviation, and 0.5 msec correlation time. 
+5 
+How many dimensions? 
+Fig. 1 shows the change in covariance matrix f1C( r, r') for isolated spikes in our HH 
+simulation, and fig. 2(a) shows the resulting spectrum of eigenvalues as a function 
+of sample size. The result strongly suggests that there are many fewer than D 
+relevant dimensions. In particular, there seem to be two outstanding modes; the 
+STA itself lies largely in the subspace of these modes, as shown in Fig. 2(b). 
+0.01 
+~ 0.00 
+S 
+~ 
+t' ({l\sec) 
+Figure 1: The isolated spike triggered covariance matrix f1C(r,r'). 
+The filters themselves, shown in fig. 3, have simple forms; in particular the second 
+mode is almost exactly the derivative of the first. If the neuron filtered its inputs 
+and generated a spike when the output of the filter crosses threshold, we would 
+find that there are two significant dimensions, corresponding to the filter and its 
+derivative. It is tempting to suggest, then, that this is a good approximation to the 
+HH model, but we will see that this is not correct. Notice also that both filters have 
+significant differentiating components- the cell is not simply integrating its inputs. 
+Although fig. 2(a) suggests that two modes dominate, it also demonstrates that the 
+smaller nonzero eigenvalues of the other modes are not just noise. The width of any 
+spectral band of eigenvalues near zero due to finite sampling should decline with 
+increasing sample size. However, the smaller eigenvalues seen in fig. 2(a) are stable. 
+Thus while the system is primarily sensitive to two dimensions, there is something 
+
+02 
+(a) 
+10+3 
+10+4 
+10+5 
+10+6 
+number of spikes accu mulated 
+0.5 
+2 
+.§ 0.0 
+Cl'=O_ iQ- =-- - _ _ """'_ 
+13 
+OJ "e-
+"-
+-0.5 
+-1.0 
+1 
+(b) 
+20 
+Figure 2: (a) Convergence ofthe largest 32 eigenvalues of the isolated spike triggered 
+covariance with increasing sample size_ (b) Projections of the isolated STA onto 
+the covariance modes_ 
+-
+eigenmodes 1 and 2 
+........ normalized derivative of mode 1 
+-30 
+-25 
+-20 
+Figure 3: Most significant two modes of the spike-triggered covariance_ 
+missing in this picture. To quantify this, we must first characterize the nonlinear 
+function g(81' 82). 
+6 
+Nonlinearity and information 
+At each instant of time we can find the relevant projections of the stimulus 81 and 
+82. By construction, the distribution of these signals over the whole experiment, 
+P(81, 82), is Gaussian. On the other hand, each time we see a spike we get a sample 
+from the distribution P(81' 82Ispike@to), leading to the picture in fig. 4. The prior 
+and spike conditional distributions clearly are better separated in two dimensions 
+than in one, which means that our two dimensional description captures more than 
+the spike triggered average. Further, we see that the spike conditional distribution 
+is curved, unlike what we would expect for a simple thresholding device. 
+Combining eq's. (2) and (3), we have 
+( 
+) _ P(81,82Ispike@to) 
+9 81, 82 -
+P( 
+) 
+, 
+81,82 
+(9) 
+so that these two distributions determine the input/output relation of the neuron 
+in this 2D space. We emphasize that although the subspace is linear, 9 can have 
+arbitrary nonlinearity. Fig. 4 shows that this input/output relation has sharp 
+edges, but also some fuzziness. The HH model is deterministic, so in principle the 
+input/output relation should be a c5 function: spikes occur only when certain exact 
+conditions are met. Of course we have blurred things a bit by working at finite time 
+
+-w 2 
+o 
+~ 
+.~ 
+"0 
+"E a 
+'" 
+"0 
+~ 
+:§.. 
+N 
+en 
+-2 
+-4 
+4 
+~ 
+a 
+2 
+s, (standard deviations) 
+Figure 4: 104 spike-conditional stimuli projected along the first 2 covariance modes. 
+The circles represent the cumulative radial integral of the prior distribution from 
+00; the ring marked 10-4, for example, encloses 1 - 10-4 of the prior. 
+resolution. Given that we work at finite llt, spikes carry only a finite amount of 
+information, and the quality of our 2D approximation can be judged by asking how 
+much of this information is captured by this description. 
+As explained in [5], the arrival time of a single spike provides an information 
+lonespike = ( r~) log2 [r~)] ), 
+(10) 
+where r(t) is the time dependent spike rate, f is the average spike rate, and ( . . . ) 
+denotes an average over time. With a deterministic model like HH, the rate r(t) 
+either is zero or corresponds to one spike occurring in one bin of size llt, that is 
+r = l/11t. The result is that lonespike = -log2(fllt). 
+On the other hand, if the probability of spiking really depends only on the stimulus 
+dimensions 81 and 82, we can substitute 
+r(t) 
+P(81,82Ispike@t) 
+-
+-+ ---'--=::::-:-=--'--=----:---"-
+f 
+P(81,82)' 
+(11) 
+and use the ergodicity of the stimulus to replace time averages in Eq. (10). Then 
+we find [3, 5] 
+(12) 
+If our two dimensional approximation were exact we would find l~~~s:pike = lone spike; 
+more generally we will find 1~~~ss2pike ~ lone spike, and the fraction of the information 
+we capture measures the quality of the approximation. This fraction is plotted in 
+fig. 5 as a function of time resolution. For comparison, we also show the information 
+captured by considering only the stimulus projection along the STA. 
+
+-+- Covariance modes 1 and 2 (2D) 
+02 ~~----~~----~----~--~ 
+6 
+B 
+10 
+time discretization (msec) 
+Figure 5: Fraction of spike timing information captured by STA (lower curve) and 
+projection onto covariance modes 1 and 2 (upper curve). 
+7 
+Discussion 
+The simple, low-dimensional model described captures a substantial amount of 
+information about spike timing for a HH neuron. The fraction is maximal near 
+bot = 5.5msec, reaching nearly 70%. However, the absolute information captured 
+saturates for both the 1D and 2D cases, at RJ 3.5 and 5 bits respectively, for smaller 
+bot. Hence the information fraction captured plummets; recovering precise spike 
+timing requires a more complex, higher dimensional representation of the stimulus. 
+Is this effect important, or is timing at this resolution too noisy for this extra 
+complexity to matter in a real neuron? Stochastic HH simulations have suggested 
+that, when realistic noise sources are taken into account, the timing of spikes in 
+response to dynamic stimuli is reproducible to within 1- 2 msec [6]. This suggests 
+that such timing details may indeed be important. 
+Even in 2D, one can observe that the spike conditional distribution is curved (fig. 4); 
+it is likely to curve along other dimensions as well. It may be possible to improve our 
+approximation by considering the computation to take place on a low-dimensional 
+but curved manifold, instead of a linear subspace. The curvature in Fig. 4 also 
+implies that the computation in the HH model is not well approximated by an 
+integrate and fire model, or a perceptron model limited to linear separations. 
+Characterizing the complexity of the computation is an important step toward 
+understanding neural systems. How to quantify this complexity theoretically is 
+an area for future work; here, we have made progress toward this goal by describing 
+such computations in a compact way and then evaluating the completeness of the 
+description using information. The techniques presented are applicable to more 
+complex models, and of course to real neurons. How does the addition of more 
+channels increase the complexity of the computation? Will this add more relevant 
+dimensions or does the non-linearity change? 
+References 
+[1] A. Hodgkin and A. Huxley. J. Physiol., 117, 1952. 
+[2] C. Koch. Biophysics of computation. New York: Oxford University Press, 1999. 
+[3] W. Bialek and R. de Ruyter van Steveninck. Proc. R. Soc. Lond. B, 234, 1988. 
+[4] F. Rieke, D. Warland, R. de Ruyter van Steveninck and W. Bialek. Spikes: exploring 
+the neural code. Cambridge, MA: MIT Press, 1997. 
+[5] N. Brenner, S. Strong, R. Koberle, W. Bialek and R. de Ruyter van Steveninck. 
+Neural Comp., 12, 2000. 
+[6] E. Schneidman, R. Freedman and I. Segev. Neural Comp., 10, 1998. 
+

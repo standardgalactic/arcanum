@@ -1,0 +1,1017 @@
+See discussions, stats, and author profiles for this publication at: https://www.researchgate.net/publication/3916473
+The Mobius execution policy
+Conference Paper · February 2001
+DOI: 10.1109/PNPM.2001.953363 · Source: IEEE Xplore
+CITATIONS
+9
+READS
+17
+2 authors, including:
+Some of the authors of this publication are also working on these related projects:
+A Quantitative Methodology for Security Monitor Deployment View project
+P4AIG: Circuit-Level Verification of P4 Programs View project
+William Sanders
+University of Illinois, Urbana-Champaign
+381 PUBLICATIONS   8,766 CITATIONS   
+SEE PROFILE
+All content following this page was uploaded by William Sanders on 08 November 2015.
+The user has requested enhancement of the downloaded file.
+
+The M¨obius Execution Policy ∗
+Daniel D. Deavours and William H. Sanders
+Coordinated Science Laboratory and
+Department of Electrical and Computer Engineering
+University of Illinois at Urbana-Champaign
+1308 W. Main St., Urbana, IL, U.S.A.
+E-mail: {deavours,whs}@crhc.uiuc.edu
+Abstract
+M¨obius is an extensible framework and tool for perfor-
+mance and dependability modeling, and supports multiple
+modeling formalisms and solvers. As a framework, M¨obius
+must be sufﬁciently general to capture the various formal-
+ism behaviors. Speciﬁcally, the M¨obius execution policy
+must be ﬂexible enough to accommodate the execution poli-
+cies of all formalisms implemented in the framework. We
+know of no existing execution policy which is capable of do-
+ing this and meeting the many other goals of the framework.
+We present the M¨obius execution policy that addresses these
+needs. In developing the policy, we have generalized the
+various preemption policies and made all aspects of the exe-
+cution policy state-dependent, which has never before been
+considered. Because all aspects may be state-dependent,
+we also had to relax the assumption that work proceeds at
+a constant rate; this is also novel. Finally, we show that
+within the context of M¨obius, the extra structure and over-
+head needed to implement a particular behavior can largely
+be avoided except when that behavior is present in a model.
+1
+Introduction
+M¨obius [6, 7, 13] is an extensible multi-formalism multi-
+solution performance and dependability modeling frame-
+work for modeling discrete event systems. M¨obius allows
+models to be expressed in a variety of different formalisms,
+and allows models to be solved with a variety of different
+solvers. Some parts of a model may be described in one
+∗This material is based upon work supported in part by the National
+Science Foundation under Grant No. 9975019 and by the Motorola Center
+for High-Availability System Validation at the University of Illinois (un-
+der the umbrella of the Motorola Communications Center). Any opinions,
+ﬁndings and conclusions or recommendations expressed in this material
+are those of the authors and do not necessarily reﬂect the views of the Na-
+tional Science Foundation or of Motorola.
+formalism, and other parts in another. The parts may be
+composed using a third, “composition” formalism. An ex-
+ample of a composition formalism is the formalism, such
+as SGSPNs superposed generalized stocahstic Petri nets
+(SGSPNs) [8], where submodels are synchronized on tran-
+sitions. In the M¨obius framework, any solver may be used
+to solve a model so long as the requirements for that solver
+are met. Thus, models expressed in different formalisms
+may interact, and solvers may be applied (whenever model
+properties allow) independent of the formalisms used to ex-
+press a model. New formalisms and solvers may also be
+added with a minimum of change to existing formalisms
+and solvers.
+An important aspect of any modeling formalism is the
+deﬁnition of its execution policy. An execution policy is
+a set of rules for unambiguously deﬁning the underlying
+stochastic process of a model. Deﬁning an execution pol-
+icy for a formalism involves specifying when certain state-
+change events in a model can occur, and what happens
+when they occur. Execution policies have been studied for
+some time. Examples of execution policies include vari-
+ous preemption policies such as preemptive resume (prs,
+also called race with enabling memory), preemptive repeat
+different (prd), and preemptive repeat identical (pri) [4], as
+well as reactivation [12], which we review in detail below.
+While each of these execution policies is suitable for rep-
+resenting behaviors within the formalism for which it was
+intended, it is not suitable for a general modeling framework
+such as M¨obius. In particular, the multi-formalism, multi-
+solution nature of the M¨obius framework makes it neces-
+sary to develop a execution policy that is ﬂexible, and can be
+tuned to represent a wide variety of behaviors. This require-
+ment necessitated research in several areas that have not
+been examined in previously existing research, such as how
+to integrate the concept of reactivation with the prs and pri
+policies. Furthermore, the M¨obius execution policy must
+support the speciﬁcation of a variety of state-dependent be-
+
+haviors, and many existing execution policies do not sup-
+port this generality. It is therefore important to develop a
+new execution policy, designed for models expressed with
+the M¨obius framework, that can support the wide variety of
+behaviors expressible by formalisms within the framework.
+The execution policy we developed for the M¨obius
+framework is not simply a union of the existing execution
+policies; it extends the concepts presented by various exe-
+cution policies. In doing so, it generalizes the various pre-
+emption policies and allows them to be completely state-
+dependent. It allows for completely state-dependent delay
+distributions. M¨obius also provides a general mechanism
+for converting the concept of age between different delay
+distributions. To accomplish these things, M¨obius uses an
+“action” to represent the various formalism state-change
+mechanisms. The state of an action can be captured us-
+ing ﬁve variables. The execution policy is deﬁned by a few
+simple rules. It is possible to express the various policies by
+making three independent decisions, resulting in eight pos-
+sibilities. These possibilities capture and extend the various
+execution policy behaviors in a state-dependent way.
+As we have just argued, the execution policy we have
+developed for the M¨obius framework is more general than
+that deﬁned for most formalisms, and hence can represent
+behaviors that have not previously been considered. For this
+reason, it not only solves the practical problem we face in
+M¨obius, but also may be of interest to the larger community.
+It is structured, regular, and coherent. It allows all aspects
+of the execution policy to be state-dependent, allows for ar-
+bitrary changes in delay distribution, and does both of these
+things in a consistent way. We believe that the resulting ex-
+ecution policy is elegant and is simpler than it would have
+been if it had been based on the union of a number of dif-
+ferent execution policies.
+In this paper, we begin in Section 2 by reviewing pre-
+vious work, concerning both M¨obius and other execution
+policies, and include a motivating example. Section 3 then
+shows the details of the our solution for M¨obius in the ac-
+tion state and execution policy rules. In Section 4, we derive
+the equations needed to describe the behavior of an action,
+and discuss issues with solvers in Section 5. We conclude
+in Section 6.
+2
+Motivation
+2.1
+M¨obius framework description
+We refer to [7, 13] for a more detailed description of
+the M¨obius framework.
+For our discussions, it is sufﬁ-
+cient to know that M¨obius makes it possible to use mul-
+tiple formalisms to describe a single model. This means,
+for example, that a portion of a model may be described
+using one formalism, such as generalized stochastic Petri
+nets (GSPNs) [2], while another part of the model is de-
+scribed with a different formalism, such as PEPA [11]. Sub-
+models of different formalisms may be combined into a sin-
+gle, larger model using a technique called model composi-
+tion, e.g., Replicate/Join [14], or SGSPNs.
+2.2
+Execution policies
+One of the major challenges in developing the M¨obius
+execution policy was to ﬁnd an execution policy that en-
+compasses all the policies used in various formalisms. We
+begin with a brief survey of the major existing execution
+policies we considered in developing the M¨obius execution
+policy.
+For consistency, we use the term action for the basic
+state-change mechanism of all formalisms. The most com-
+monly used policy is prd [4, 1]. With prd, an action will
+complete in some random time after it becomes enabled. If,
+in the interval between enabling and completion, it becomes
+disabled or otherwise interrupted, then when the action be-
+comes enabled again, it must choose a new completion time
+and essentially start over.
+With prs, if an action becomes disabled before it com-
+pletes, then the action is suspended. When the action be-
+comes enabled again, it may resume, that is, continue as if
+it had not been disabled.
+In a third policy, pri [3], when an action becomes dis-
+abled before it completes, the process must start over when
+it becomes enabled again, but it keeps the same completion
+time. Consequently, if the action is enabled for t time be-
+fore becoming disabled, the action must be enabled for at
+least t time before there is any possibility that the action
+may complete.
+While these three policies are commonly used, other
+interesting extensions have been proposed. For example,
+SANs [12] include the concept of reactivation. An action
+reactivates when the model reaches some particular state
+or states, and the action is enabled. When reactivation oc-
+curs, the action must start over and choose a new comple-
+tion time. This is the same thing as prd when an action be-
+comes disabled, and is essentially the equivalent of a “reset
+button.”
+GSMPs [10, 5] are commonly used to describe a class of
+simulation languages in which the inter-event distribution
+may be generally distributed, but the next state is only de-
+pendent on the current state. Taking this as the deﬁnition,
+our approach is within the GSMP class, and can express
+GSMP models. However, we add structure and methodol-
+ogy. Just as the prs and pri policies described in [4] use
+an age and resample variable, we have additional variables,
+and with these variables we are able to address complex and
+
+useful behaviors systematically.
+2.3
+Generalizing execution policies
+We are presented with several challenges in developing
+the M¨obius execution policy. On one hand, we have sev-
+eral preemption policies, such as prs, prd, and pri [4]. As
+deﬁned in [4], these preemption policies are static in that
+the policies do not change as a model changes state, and the
+delay characteristics of an action also do not change as a
+model changes state. Elsewhere, e.g., [9], delays that are al-
+lowed to change only by a constant scaling factor have been
+considered, but the policies are still not allowed to change
+as a function of model state.
+On the other hand, many other formalisms, e.g., SANs
+[12], allow the delays of actions to change arbitrarily as a
+function of the model state. Early work on this generaliza-
+tion led to a problem of deﬁning on which state the delay
+should depend: the state in which the action becomes en-
+abled, the state in which it completes, or perhaps some state
+in the interim. This led to the concept of “reactivation,”
+which requires the action to “start over” as an aid to con-
+trolling state-dependent behavior.
+Integrating these various execution policies is necessary
+because of model composition. Since a M¨obius model may
+be made up of submodels of different formalisms, each of
+which has different execution policies, M¨obius must be able
+to accommodate each formalism execution policy. This is
+challenging because many aspects of these policies have
+not been considered in combination with others.
+Since
+many formalisms implement general state-dependent be-
+havior, M¨obius must accommodate this behavior.
+How-
+ever, if we allow general state-dependent delays, we have
+no mechanism for providing prd and pri. Furthermore, a
+composition formalism may synchronize a GSPN transition
+with a pri policy and a SAN activity; how can one accom-
+modate both pri and reactivation?
+One possibility would be to take a union of all the exist-
+ing execution policies of formalisms and use that union as
+the M¨obius execution policy. This is an adequate solution,
+but it has several problems. First, it precludes the possibility
+of synchronizing the GSPN transition and the SAN activity.
+Another problem is that it restricts the possible expressible
+behaviors. If, for example, a new execution policy is dis-
+covered, or some innovations cause some restriction on an
+existing policy to be relaxed, M¨obius would have no way of
+accommodating this, and hence would not be extensible.
+An ideal solution would be to ﬁnd a generalization of
+the various execution policies. This generalization would
+allow for complete state dependence. For example, an ac-
+tion could change not only its distribution, but its execution
+policy. Further, it would be able to capture both pri and re-
+activation, allowing for synchronization of a transition and
+activity. We note that many of the restrictions placed on the
+execution policies exist so that analytic solution is possible
+or tractable. M¨obius has properties [7], which is able to
+capture these restrictions, so a generalized execution policy
+does not preclude efﬁcient solution.
+We propose such a generalized execution policy. A con-
+sequence of this is the relaxation of what we call the “con-
+stant work assumption.” For example, consider the formu-
+lation of the generalized semi-Markov process, or GSMP,
+given in [5, 10]. Once an event is enabled, the “event rate”
+can change only by a constant as a function of model state;
+that is, the delay distribution can change only by a linear
+scaling. What is speciﬁcally absent is the ability for the
+delay to change in an arbitrary way while the event is still
+enabled. Adding this feature does require some additional
+structure. However, we believe that the resulting execution
+policy is more regular, simpler, and more extensible than
+one based on a union of a number of different execution
+policies.
+2.4
+Motivating example
+This example illustrates not only the speciﬁc needs of the
+M¨obius execution policy, but also the deﬁciencies of current
+execution policies in capturing interesting behaviors. The
+example is somewhat simplistic for the sake of conciseness,
+but is based on reasonable behaviors.
+Consider a system that has failed due to the failure of
+one component. Three repairpeople, using three different
+but simplistic approaches, may perform the repair. Each
+repairperson keeps notes of whatever he or she has done.
+The ﬁrst repairperson performs a complex diagnostic
+process that takes a ﬁxed amount of time, but is certain
+to ﬁnd the failed component. At the beginning of the pro-
+cess, all components are suspect and belong to a suspect
+set. As the diagnostic process continues, certain compo-
+nents are eliminated from the suspect set. Eventually, in a
+predictable, ﬁxed amount of time, the ﬁrst repairperson will
+deduce which component has failed and be able to replace
+it. Components are eliminated from the suspect set roughly
+linearly with time. Let c be the time to repair. Thus, the
+distribution function describing the time between enanbing
+and completion of the action, called Delay, is deﬁned so
+that Delay1(t) = 0 for t < c and 1 for t ≥c.
+Note
+that since components are eliminated from the suspect set
+at a constant rate, we can say that in some sense, the rate at
+which work is being performed is constant.
+The second repairperson uses a random algorithm for
+performing the repair of the system. He randomly chooses
+a component and replaces it with a component known to
+work.
+If the system becomes operational, the repair is
+
+complete; if it doesn’t, he replaces the original component
+and randomly selects a new component (without checking
+whether he has already tested it). Assuming a large number
+of components and some small variance among replacement
+times, we can approximate the time to repair as an expo-
+nential random variable (as opposed to a geometric). Thus,
+Delay2(t) = 1 −e−λt. Note that in some sense the ef-
+ﬁciency of the repair process decreases over time. At the
+beginning, the repairperson is unlikely to select a compo-
+nent that has already been selected, but as time progresses,
+the chances increase. Thus, the “work” performed by the
+repairperson decreases (exponentially) over time.
+A third repairperson uses a more systematic approach.
+She also randomly chooses components to swap, but she
+only chooses components that have not been eliminated
+from the suspect set, either by diagnostics or previous swap-
+ping. (We assume that the time she takes to check her notes
+is negligible compared to the time needed to perform the
+replacement.) Again, we can approximate the time to repair
+as a uniform random variable. Thus, Delay3(t) = t/b for
+0 ≤t ≤b. Note that for this repairperson, the efﬁciency
+of the repair process does not decrease over time, but re-
+mains constant. Thus, the “work” performed by this third
+repairperson is constant.
+Any of these repair processes may be modeled using any
+formalism in which the delays may be generally distributed.
+However, consider the following scenario. Repairperson 1
+works on the repair for some time t1 and stops. Repairper-
+son 2 then works on the repair for some time t2 and stops.
+Finally, repairperson 3 starts working on the repair. She
+uses the information about the diagnostics performed by re-
+pairperson 1 and the components swapped by repairperson
+2. How long does it take her to complete the repair, or,
+stated differently, what is the residual delay for repairperson
+3? More importantly, how can we express this problem?
+The difﬁculty in expressing this behavior using any ex-
+isting formalism is this: the amount of time it takes repair-
+person 1 to perform e work is not linear in the amount of
+time it takes repairperson 2 to perform the same amount of
+work. Thus, there is no simple scaling relationship of the
+repair times, or the residual times, so the linear scaling ap-
+proaches taken by GSMPs, for example, are inadequate. We
+also do not know of any way to express this behavior using
+multiple GSMP events (or stochastic Petri net (SPN) transi-
+tions).
+One solution might be to allow the user to express the be-
+havior in terms of the simulation “clocks.” While accessing
+clocks directly is technically outside the scope of GSMPs,
+some simulators allow users to do this. The primary difﬁ-
+culty with this within the context of M¨obius is that express-
+ing any interesting behavior presupposes simulation as the
+solution technique. As shown in [9], a number of interest-
+ing non-Markovian execution policies can be solved ana-
+lytically, and these solution techniques may be eliminated
+from the scope of M¨obius if we express non-trivial execu-
+tion policies in terms of simulation clocks.
+We need a more structured way to express these inter-
+esting behaviors, not in terms of simulation clocks, but in
+terms of useful descriptions of general behaviors.
+That
+would yield an approach to describing the execution policy
+that is more disciplined and structured, yet general enough
+to capture all the previously described execution policies.
+3
+Realization of M¨obius execution policy
+3.1
+Process paradigm
+We begin by building a simple, intuitive terminology for
+describing behaviors that we wish to model. We use the
+term “process” for the basic unit of behavior that corre-
+sponds to the basic state-changing mechanism of a formal-
+ism. We say that a process is a worker performing work
+on a task. Thus, we appeal to the basic language construct
+of a subject and a verb, plus some criterion for completion,
+to describe behaviors. This serves as the basis of our con-
+ceptual model. An example of a process may be a program
+execution, where the worker is the CPUs, the work is the
+execution of machine instructions, and the task is the per-
+formance of some computation. Similarly, a repair process
+may be a repairperson (worker) performing diagnosis and
+repair (work) on a system until the system is made opera-
+tional (task).
+A process exists in an environment and interacts with
+that environment. The process can affect the environment
+in one simple way: when the process completes, the state of
+the system is changed to reﬂect the completion of the pro-
+cess. For example, when the computer completes execution
+of the program, the number of jobs in the system may be
+decreased by one, or when a repair is completed, the system
+may become operational.
+The environment can affect a process in a number of
+ways. The most simple way is by allowing or disallowing
+the performance of work. This corresponds to the enabling
+or disabling of an action. The environment can change the
+degree of favorability of the work; in particular, the envi-
+ronment may be more or less favorable, and thus the worker
+may perform work at a faster or slower rate. This corre-
+sponds to state-dependent rates, for which the delay can
+change by a constant scaling factor. The constant work as-
+sumption holds if these ways are the only ways the environ-
+ment can affect a process. For example, a deep space probe
+may require a reduction in power consumption, so the mi-
+crocontroller may operate at a slower clock frequency. The
+
+delay and work characteristics are changed by a constant
+scaling factor.
+A more interesting way the environment may affect a
+process is by causing the worker to change. This is the case
+in our motivating example. Different repairpeople with dif-
+ferent delay and work characteristics are operating on the
+same task.
+The environment may change and cause the task to
+change as well. Sometimes an action is associated with the
+worker, sometimes with the task, and sometimes with the
+pair. Although less frequently used, our approach addresses
+the possibility that an action is associated with a worker and
+that the task assigned to the worker changes. This is useful
+when the work performed by the ﬁrst worker may be trans-
+ferred to the new task. That may be the case, for example,
+when a real-time program misses a deadline. The program,
+having missed the deadline, may work on a more difﬁcult
+problem to which the previous computation may be applied.
+Changes in either the worker or the task can affect the
+characteristics of the delay, and the changes may be more
+complex than scaling factors. As the example in Section 2.4
+illustrates, the delay may change from a deterministic to
+an exponential to a uniform random variable, and the work
+characteristics may change as well. In order to model this
+kind of behavior, we must develop mechanisms to describe
+this kind of complex behavior precisely. To do this, we de-
+ﬁne the notion of an event.
+3.2
+Events
+An event is a state change that occurs in a model. For-
+mally, an event is the 4-tuple (σ, τ, a, σ′): the current state,
+the sojourn time, the action that completes, and the resulting
+next state. Note that the current state and action completion
+uniquely deﬁne the next state. (We include the next state be-
+cause model composition may change what the unique next
+state may be.)
+In order to describe our execution policy, we must cat-
+egorize events, because different behaviors may occur for
+different types of events. Each event is categorized with
+respect to a particular action a0.
+Enabling event: any event in which an action becomes en-
+abled, i.e., for (σ, τ, a, σ′), a0 is not enabled in σ but is
+enabled in σ′.
+Disabling event: any event in which an action becomes dis-
+abled, i.e., for (σ, τ, a, σ′), a0 is enabled in σ but not
+enabled in σ′, and a0 ̸= a.
+Completing event: any event in which an action completes,
+i.e., for (σ, τ, a, σ′), a0 = ai.
+Interrupting event: any event in which the action remains
+enabled may be an interrupting event. An interrupting
+event causes an action to behave much as it would if
+it encountered a disabling event followed immediately
+by an enabling event. I.e., any event (σ, τ, a, σ′) in
+which a0 is enabled in σ and σ′ and a0 ̸= a may be an
+interrupting event.
+Deﬁning event: any enabling, disabling, or interrupting
+event.
+Finally, we use a prime to distinguish the action state af-
+ter an event occurs. For example, Start and Start′ are the
+action state, before and after an event, respectively.
+3.3
+Action state
+Recall that an action is the basic state-change mecha-
+nism of the M¨obius model. An action is composed of ac-
+tion functions, which describe how an action behaves and
+are discussed in [7], and action state, which captures the
+current state of an action. The action state is made up of
+ﬁve action state variables.
+Start
+:
+R≥
+Delay
+:
+(R→[0, 1]) ∪{∅}
+Eﬀort
+:
+(R→[0, 1]) ∪{∅}
+WE
+:
+[0, 1]
+MTE
+:
+[0, 1]
+We begin by describing the action state that we use. Then
+we compare and contrast our choice of action state with
+those of other formalisms, and explain and justify the dif-
+ferences.
+Start : R The most recent time that the associated action
+became enabled or was interrupted.
+Delay : R→[0, 1] The delay distribution function is de-
+ﬁned such that Delay(t) is the probability that the as-
+sociated action will complete by time t.
+Eﬀort : R→[0, 1] The effort function is deﬁned such that
+Eﬀort(t) is the amount of work performed in t time.
+We require it to have certain properties that are identi-
+cal to the properties of a valid cumulative distribution
+function. These are straightforward: Eﬀort(0−) = 0
+(to enforce causality), Eﬀort(∞) = 1, Eﬀort is non-
+decreasing, and Eﬀort is right-continuous. Since both
+the delay distribution and effort functions describe how
+the action evolves over time, the two functions are al-
+ways tied together. For example, if the environment
+changes the degree of favorability, both the delay dis-
+tribution and effort functions will change. Note that
+work is unitless.
+
+WE : [0, 1] The worker effort is a measure of the amount
+of work the worker has performed on the task, and is
+computed by evaluating the effort function. For ex-
+ample, in our repairperson example, if the ﬁrst repair-
+person has eliminated half of the components from the
+suspect set in t1 time, then WE = Eﬀort(t1) = 0.5.
+MTE : [0, 1] The minimum task effort is the minimum ef-
+fort known to be required by the task.
+While the
+worker effort is the amount of work performed by
+the worker, the minimum task effort is the minimum
+amount of work that the worker must perform in order
+to complete the task. This is the concept used in pri,
+for example. Note the invariant WE ≤MTE.
+These ﬁve variables are sufﬁcient to capture the state
+of an action. They describe the delay characteristics, the
+work characteristics, how much work has already been per-
+formed, and how much we know is needed for the action to
+complete. Next, we give the rules for how these states are
+manipulated as the model evolves.
+3.4
+Rules for action state
+The rules for the start time are simple. The start time rep-
+resents the time of the most recent enabling or interrupting
+event for the associated action. It holds valid information
+only when an action is enabled. When an action completes,
+all the variables are set to 0 or the empty set.
+At any deﬁning event, the delay, effort, worker effort,
+and minimum task effort may be preserved or discarded.
+This means different things for each variable. If the de-
+lay and effort function are preserved, then Delay′ = Delay
+and Eﬀort′ = Eﬀort.
+If they are both discarded, then
+Delay′ = ∅and Eﬀort′ = ∅. By using separate action state
+variables for effort and delay, we avoid any ambiguity due
+to state-dependent delay distributions. In addition, the deﬁ-
+nition and use of interruptions allows for precise control in
+indicating the state on which any state-dependent behavior
+may depend.
+If the worker effort is preserved and the deﬁning event
+is an enabling event, then WE′ = WE. If the deﬁning
+event is an interrupting or disabling event, then the compu-
+tation is more difﬁcult. Let t0 be the amount of time the
+action would need to be enabled to perform WE effort, i.e.,
+t0 = Eﬀort−1(WE). Let τ be the current time minus Start.
+Then WE′ = Eﬀort(t0 + τ). This essentially says that the
+new worker effort is the old worker effort plus the effort per-
+formed since the last enabling or interrupting event. If the
+worker effort is discarded, then WE′ = 0. Our repair exam-
+ple in Section 2.4 is an example of a situation in which we
+would want to preserve the worker effort. This also occurs
+with the prs preemption policy.
+If the minimum task effort is preserved, then MTE′ is
+set to the greater of MTE and WE′. Following this rule
+maintains the desired property that WE ≤MTE, and sim-
+ply states that the amount of work known to be required is
+at least as large as the amount of work already applied. If
+the minimum task effort is discarded, then MTE′ = 0.
+3.5
+Enumeration of preserve and discard possi-
+bilities
+In the previous section, we introduced the ﬁve variables
+used to capture the behavior of a process. Note that for
+deﬁning events, there are three independent decisions that
+must be made: preserve or discard WE, preserve or discard
+MTE, and preserve or discard Delay and Eﬀort functions.
+This results in eight possibilities, each of which we discuss
+in turn. We label each of them with three letters, each a P or
+a D. The ﬁrst letter indicates whether we preserve or discard
+the worker effort, the second indicates whether we preserve
+or discard the minimum task effort, and the third indicates
+whether we preserve or discard the delay distribution and
+effort functions.
+Note that in our framework, at a deﬁning event we can
+only make a binary decision: preserve or discard. We do not
+allow for partial discarding. This is an intended limitation of
+our approach. However, more complex behaviors that may
+include partial discarding may be expressed using several
+actions and state variables.
+PPP: preserve WE, preserve MTE, preserve Delay and
+Eﬀort. This is the same as the prs of queueing for-
+malisms or stochastic Petri nets. At a deﬁning event,
+all the variables are preserved so that when the action is
+enabled, it may continue where it left off. This would
+be the case, for example, when a computer program
+has been suspended and later resumes execution, and
+the program execution continues where it left off.
+PPD: preserve WE, preserve MTE, discard Delay and
+Eﬀort. This is a signiﬁcant generalization of the PPP
+or prs case, because it allows distributions to change
+at deﬁning events. Here, the action continues where
+it left off, but it continues with (potentially) different
+delay and work characteristics. This is a condition that
+other approaches fail to consider adequately. The need
+for PPD is illustrated in our example in Section 2.4.
+PDP: preserve WE, discard MTE, preserve Delay and
+Eﬀort. This is an interesting and unusual case in which
+everything but the minimum task effort is preserved. It
+corresponds to a situation in which the action resumes,
+but the information about the minimum task effort is
+lost. This behavior occurs infrequently, but it is impor-
+tant to be able to model it accurately when it does.
+
+PDD: preserve WE, discard MTE, discard Delay and
+Eﬀort. This is a generalization of the previous PDP
+case. As with PDP, this behavior occurs infrequently,
+but the ability to represent it is useful.
+DPP: discard WE, preserve MTE, preserve Delay and
+Eﬀort. This is the same as the pri policy that is dis-
+cussed in [3]. The action must start over, but keeps the
+same completion time.
+DPD: discard WE, preserve MTE, discard Delay and
+Eﬀort. This is a generalization of the DPP or pri case.
+Here, the worker must start over on the task, but new
+delay and work characterizations may apply. Unless
+the new delay and work characteristics are changed
+only by a scaling factor, existing methods are unable
+to express this possibility.
+DDP: discard WE, discard MTE, preserve Delay and
+Eﬀort. This is similar to the prd preemption policy
+and is perhaps the policy most frequently used in mod-
+eling. The delay and effort functions are preserved
+across multiple instances of being enabled as long as
+the action does not complete. If a formalism does not
+allow state-dependent behavior, then this case is iden-
+tical to the DDD case.
+DDD: discard WE, discard MTE, discard Delay and
+Eﬀort. This is similar to the frequently used prd policy
+and DDP. If a formalism uses state-dependent delays,
+the state-dependent information is lost across deﬁning
+events.
+The clear distinction between DDP and DDD illustrates
+how the M¨obius execution policy manages state-dependent
+behavior explicitly and consistently.
+3.6
+Justiﬁcation for variables
+Due to space limitations, we can offer only informal ar-
+guments to justify the selection and use of these variables
+to represent the state of an action. First, we note that the
+GSMP formalism [10, 5] uses only a clock structure to keep
+track of the residual delay for each action. This is equiva-
+lent to our use of the start variable and the delay distribution
+function.
+The work of [4] uses three variables: the ﬁring time, the
+age variable, and the resample indicator variable. The dif-
+ference between the ﬁring time and age variables is roughly
+equivalent to a clock in GSMPs. However, there is more
+ﬂexibility with using an age variable and ﬁring time than
+with clocks. For prs, the age variable and ﬁring time are
+roughly equivalent to the M¨obius worker effort, start time,
+and delay distribution. For pri, the age variable and ﬁring
+Always
+preserve
+Always
+discard
+Always
+discard
+Always
+preserve
+Sometimes
+preserve
+preserve
+prs
+pri
+Sometimes
+Effort
+Worker
+Minimum
+Task
+Effort
+Interruption
+race-resample
+Sometimes
+Always
+Never
+prd
+reactivation
+Figure 1. M¨obius policy space.
+time are roughly equivalent to the minimum task effort and
+delay distribution. The M¨obius execution policy allows an
+action to exhibit both prs-like and pri-like behavior. It is
+to achieve this ﬂexibility that we use three real-valued vari-
+ables (Start, WE, and MTE) instead of two (age variable
+and ﬁring time).
+Furthermore, since M¨obius allows for general state-
+dependent behavior, we store the delay and effort functions
+as variables to allow the user to determine on which state
+any state-dependent behavior depends. The use of an effort
+function is also necessary in order to translate the worker ef-
+fort and minimum task effort between different delay char-
+acteristics when there is no simple linear translation avail-
+able. We argue that our relatively large number of variables
+is necessary in order to express the full generality of be-
+haviors that we may encounter in the context of modeling
+formalisms implemented in the M¨obius framework.
+We illustrate the modeling expressiveness possible with
+the M¨obius execution policy in Figure 1. The origin is the
+“simplest” case (prd), in which a disabled action has no
+state. The “Worker Effort” axis illustrates a qualitative in-
+crease in generality, with selective preservation of worker
+effort being the most general. Similarly, the “Minimum
+Task Effort” and “Interruption” axes increase from never to
+always to sometimes. The open circles illustrate points in
+the space that are implemented in existing execution poli-
+cies. The M¨obius execution policy allows an action to op-
+erate anywhere within the space. What the ﬁgure fails to
+capture is that our execution policy allows for complete
+state-dependent behavior, including relaxation of the con-
+stant work assumption.
+
+4
+Derivation of action delay characteristics
+In this section, we describe how to calculate the delay
+characteristics of an action, given the action state described
+in the previous section.
+4.1
+Unique inverse of Eﬀort
+Our derivations require the inverse of the effort function.
+There is no guarantee that a unique inverse exists, because
+the effort function is non-decreasing. We need a unique in-
+verse to compute the delay characteristics of an action.
+For some time t, let Te = {t : e = Eﬀort(t)} be
+the set of elements that satisfy the inverse.
+We choose
+the unique inverse to be the smallest time in Te, that is,
+t = Eﬀort−1(e) = min Te. Finding a unique inverse is
+only a problem when the effort function is non-increasing
+for some interval. We chose the smallest time to be the
+unique inverse for two reasons. First, if an action is inter-
+rupted while the effort function is in a non-increasing inter-
+val, then we interpret this to mean that no useful work is
+being performed in that interval. If the action resumes, then
+it must start over at the beginning of the interval. Another
+reason we chose the smallest time to be the unique inverse
+is that if we chose some other time, there is the possibil-
+ity that when the action resumes, it could “skip over” some
+time and possibly some probability mass, which seems il-
+logical.
+4.2
+Effective delay distribution
+Here, we derive the delay distribution of an action, tak-
+ing into account its state. To do this, we use the unique
+inverse of the effort function discussed above. We call this
+the effective delay distribution or the conditional delay dis-
+tribution because it is the delay distribution conditioned on
+the values of WE and MTE.
+We can compute the effective delay distribution for an
+action at any deﬁning event. Let ew be the worker effort,
+em be the minimum task effort, and Delay and Eﬀort be
+the distribution and effort functions for the action. First,
+we note that since WE ≤MTE, ew ≤em. Let tw =
+Eﬀort−1(ew) and tm = Eﬀort−1(em). We know that be-
+cause Eﬀort is nondecreasing, tw ≤tm.
+Let X be a random variable with the distribution func-
+tion Delay. Let the action have a worker effort ew and min-
+imum task effort em, and let t0 = Start be the time of the
+last enabling or interrupting event. Let tw be the effective
+worker time, which we can compute using the unique in-
+verse tw = Eﬀort−1(ew), and tm be the effective minimum
+task time, again computed as tm = Eﬀort−1(em). The ef-
+fective delay distribution, d(t0 + t), gives the probability
+that the action will complete by time t0 + t.
+The information that we have is that the action has al-
+ready performed work effectively for tw time, and that it
+must run tm time for there to be any chance the action will
+complete. We can write this precisely.
+d(t0 + t)
+=
+Pr[X ≤t + tw|X > tm]
+=
+Pr[tm < X ≤t + tw]
+1 −Pr[X ≤tm]
+=
+(
+0
+: t + tw ≤tm,
+Delay(t+tw)−Delay(tm)
+1−Delay(tm)
+: otherwise.
+Note that the equation has two regions. First, for time t ∈
+[0, tm −tw], the probability of the action completing is zero
+because the action has not been enabled for the minimum
+task time. In the second region, in which t > tm −tw,
+the action has performed more work than the minimum task
+effort. In this region, the conditional distribution is like the
+original distribution shifted to the right by tw and scaled so
+that the remaining probability mass is scaled appropriately.
+4.3
+Solution to example
+Using this solution, we are now able to solve the problem
+we posed in Section 2.4. Note that we implement the PPD
+policy each time the repairperson begins or ends working.
+The delay and effort function is determined by the identity
+of the repairperson, which is presumably indicated through
+a state variable.
+Let Eﬀort1(t)
+=
+t/c for the ﬁrst repairperson,
+Eﬀort2(t) = 1 −e−λt for the second repairperson, and
+Eﬀort3(t) = t/b for the third.
+The amount of effort
+performed by the ﬁrst repairperson is calculated by e1 =
+Eﬀort1(t1), which is used for both WE and MTE. The
+amount of time the second repairperson would need to work
+in order to perform e1 work is given by t1e = Eﬀort−1
+2 (e1).
+The amount of work performed by the second repairperson
+is then Eﬀort2(t2 + t1e) −e1, and the total amount of ef-
+fort applied to the repair by the ﬁrst two repairpeople is ex-
+pressed as e2 = Eﬀort2(t2 + t1e).
+Finally, the amount of time the third repairperson would
+have to work to produce e2 work is given by t2e
+=
+Eﬀort−1
+3 (e2). If t0 is the time at which the third repairper-
+son begins working, then the probability that she will ﬁnish
+in t time is given as
+d(t0 + t) = Delay3(t + t2e) −Delay3(t2e)
+1 −Delay3(t2e)
+.
+
+0
+1   
+Delay1
+0
+e1
+1
+t1
+Effort1
+0
+1   
+Delay2
+0
+e1
+e2
+1
+t1e
+t1e+t2
+Effort2
+0
+1   
+Delay3
+0
+e2
+1
+t2e
+Effort3
+Figure 2. Example problem illustrated.
+5
+Model solution
+The simulation of a model using the M¨obius execution
+policy in its full generality is straightforward and has little
+additional performance overhead when compared to stan-
+dard practices. The execution policy’s greatest source of
+additional overhead comes from the possibility of having
+to perform an evaluation of the effort function and its in-
+verse. The evaluation of the effort function must be per-
+formed only for disabling events when MTE or WE is pre-
+served; otherwise, there is no additional overhead.
+The evaluation of the inverse of the effort function occurs
+when an action becomes enabled and either WE or MTE is
+not zero and must be preserved. It is frequently the case
+(2 of our 3 repairpeople) that for continuous distributions,
+the delay distribution function is a good choice for the ef-
+fort function. Note that performing the evaluation of the
+inverse of the delay distribution is commonly used to gen-
+erate random numbers for many distributions, and can be
+done efﬁciently, so most simulators already provide many
+commonly used inverse functions. Again, the evaluation is
+little overhead, and is only incurred when the unique fea-
+tures of this execution policy are used.
+As compared to implementing pri, when an action that
+is enabled becomes disabled and then becomes enabled, the
+pri method requires the multiplication and division of a real
+number, while our approach requires the evaluation of a
+function and its inverse. Our approach results in a slightly
+larger overhead than the pri approach. However, it allows
+for much greater ﬂexibility, and the overhead is only neces-
+sary when the full ﬂexibility of M¨obius is needed. As we
+previously noted, no current formalism’s execution policy
+takes advantage of the full generality of the M¨obius execu-
+tion policy. Formalisms may use “properties” (deﬁned in
+[7]) to state the restrictions of the M¨obius execution policy
+and avoid all additional overhead. Thus, M¨obius provides a
+mechanism for avoiding any overhead penalty, except when
+the overhead is truly needed to express the intended behav-
+ior.
+We have not addressed the issue of analytical solutions
+based on our approach. Again, through the use of prop-
+erties, the analytic approach that others have explored for
+certain policies (e.g., [4, 9]) can be implemented within
+the M¨obius framework. Since policies that are analytically
+tractable can be expressed in M¨obius, and since the knowl-
+edge of the particular policy that an action implements can
+be preserved through properties, M¨obius indirectly supports
+these analytic solutions.
+6
+Conclusion
+The M¨obius execution policy is able to capture the be-
+havior of many different formalisms and execution policies,
+and is able to integrate them in a consistent way. In do-
+ing so, it is both a uniﬁcation and signiﬁcant generalization
+of existing policies. In particular, we are able to integrate
+many different execution policies, namely prd, prs, pri, and
+reactivation, into our execution policy in a consistent way.
+We are also able to integrate state-dependent behavior into
+our approach, in that every decision can be state-dependent.
+By giving the user complete control and ﬂexibility, we pro-
+vide a mechanism for resolving any ambiguities that arise
+in any state-dependent behavior. We relaxed the assump-
+tion that work proceeds at a constant rate and developed
+a mechanism for translating work between disparate delay
+distributions.
+We described an interesting example (in Section 2.4) that
+showed the inability of previous work to capture realistic
+behavior, and illustrated how our approach solves the prob-
+lem posed in this example. We built a simple, conceptual
+model for describing the limitations of other policies. We
+then formalized the discussion by quantifying the various
+behaviors with ﬁve action variables and a set of rules. We
+then enumerated all the possibilities and related them to
+other execution policies and examples.
+In addition to solving the practical problem of integrat-
+ing various execution policies, we were able to generalize
+them in many respects. This generalization gives us insight
+into behaviors and policies previously not considered. Fi-
+nally, we described the little or no overhead involved in im-
+
+plementing this approach in a simulator, and explained how
+we are able to support the analytical solution of policies pre-
+viously considered.
+References
+[1] M. Ajmone Marsan, G. Balbo, A. Bobbio, G. Chiola,
+G. Conte, and A. Cumani. The effect of execution policies
+on the semantics and analysis of stochastic Petri nets. IEEE
+Transactions on Software Engineering, 15:832–846, 1989.
+[2] M. Ajmone Marsan, G. Balbo, and G. Conte. A class of
+generalized stochastic Petri nets for the performance evalua-
+tion of multiprocessor systems. ACM Trans. Comput. Syst.,
+2:93–122, 1984.
+[3] A. Bobbio, V. Kulkarni, A. Puliaﬁto, M. Telek, and
+K. Trivedi.
+Preemptive repeat identical transitions in
+Markov regenerative stochastic Petri nets.
+In 6th Inter-
+national Conference on Petri Nets and Performance Mod-
+els (PNPM ’95), pages 113–122, Durham, North Carolina,
+USA, Oct. 1995.
+[4] A. Bobbio, A. Puliaﬁto, and M. Telek. A modeling frame-
+work to implement preemption policies in non-Markovian
+SPNs. IEEE Trans. Softw. Eng., 26(1):36–54, Jan. 2000.
+[5] C. G. Cassandras. Discrete Event Systems: Modeling and
+Performance Analysis. Aksen Associates Incorporated Pub-
+lishers, Homewood, IL, USA, 1993.
+[6] G. Clark, T. Courtney, D. Daly, D. D. Deavours, S. De-
+risavi, J. M. Doyle, W. H. Sanders, and P. G. Webster. The
+M¨obius modeling tool. In Proceedings of Petri Nets and Per-
+formance Models (PNPM 2001), Aachen, Germany, Sept.
+2001.
+[7] D. D. Deavours and W. H. Sanders. M¨obius: Framework
+and atomic models. In Proceedings of Petri Nets and Per-
+formance Models (PNPM 2001), Aachen, Germany, Sept.
+2001.
+[8] S. Donatelli. Superposed generalized stochastic Petri nets:
+Deﬁnition and efﬁcient solution. In R. Valette, editor, Ap-
+plication and Theory of Petri Nets 1994, Lecture Notes in
+Computer Science 815 (Proc. 15th International Conference
+on Application and Theory of Petri Nets, Zaragoza, Spain),
+pages 258–277. Springer-Verlag, June 1994.
+[9] R. German. Performance Analysis of Communication Sys-
+tems with Non-Markovian Stochastic Petri Nets.
+Wiley-
+Interscience Series in Systems and Optimization. John Wi-
+ley & Sons, Chichester, England, 2000.
+[10] P. W. Glynn. A GSMP formalism for discrete event systems.
+Proceedings of the IEEE, 77(1):14–23, Jan. 1989.
+[11] J. Hillston.
+A Compositional Approach to Performance
+Modelling. Cambridge University Press, 1996.
+[12] J. F. Meyer, A. Movaghar, and W. H. Sanders.
+Stochas-
+tic activity networks: Structure, behavior, and application.
+In Proc. International Workshop on Timed Petri Nets, pages
+106–115, Torino, Italy, July 1985.
+[13] W. H. Sanders. Integrated frameworks for multi-level and
+multi-formalism modeling. In Proceedings of the 8th Inter-
+national Workshop on Petri Nets and Performance Models,
+pages 2–9, Zaragoza, Spain, Sept. 1999.
+[14] W. H. Sanders and J. F. Meyer. Reduced base model con-
+struction methods for stochastic activity networks.
+IEEE
+Journal on Selected Areas in Communications, special is-
+sue on Computer-Aided Modeling, Analysis, and Design of
+Communication Networks, 9(1):25–36, Jan. 1991.
+View publication stats
+View publication stats
+

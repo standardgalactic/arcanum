@@ -1,0 +1,1064 @@
+A Method for Symbolic Computation
+of Abstract Operations⋆
+Aditya Thakur1 and Thomas Reps1,2
+1 University of Wisconsin; Madison, WI, USA
+2 GrammaTech, Inc.; Ithaca, NY, USA
+Abstract. This paper helps to bridge the gap between (i) the use of
+logic for specifying program semantics and performing program analy-
+sis, and (ii) abstract interpretation. Many operations needed by an ab-
+stract interpreter can be reduced to the problem of symbolic abstraction:
+the symbolic abstraction of a formula ϕ in logic L, denoted by bα(ϕ),
+is the most-precise value in abstract domain A that over-approximates
+the meaning of ϕ.
+We present a parametric framework that, given L
+and A, implements bα. The algorithm computes successively better over-
+approximations of bα(ϕ). Because it approaches bα(ϕ) from “above”, if it
+is taking too much time, a safe answer can be returned at any stage.
+Moreover, the framework is“dual-use”: in addition to its applications in
+abstract interpretation, it provides a new way for an SMT (Satisﬁability
+Modulo Theories) solver to perform unsatisﬁability checking: given ϕ ∈
+L, the condition bα(ϕ) = ⊥implies that ϕ is unsatisﬁable.
+1
+Introduction
+This paper concerns the connection between abstract interpretation and logic.
+Like several previous papers [29, 37, 21, 12], our work is based on the insight that
+many of the key operations needed by an abstract interpreter can be reduced to
+the problem of symbolic abstraction [29].
+Suppose that A is an abstract domain with concretization function γ : A →
+C. Given a formula ϕ in logic L, let [[ϕ]] denote the meaning of ϕ—i.e., the set of
+concrete states that satisfy ϕ. The symbolic abstraction of ϕ, denoted by bα(ϕ),
+is the best A value that over-approximates [[ϕ]]: bα(ϕ) is the unique value A ∈A
+such that (i) [[ϕ]] ⊆γ(A), and (ii) for all A′ ∈A for which [[ϕ]] ⊆γ(A′), A ⊑A′.
+This paper presents a new framework for performing symbolic abstraction,
+discusses its properties, and presents several instantiations for various logics and
+abstract domains. In addition to providing insight on fundamental limits, the
+⋆This research is supported, in part, by NSF under grants CCF-{0810053, 0904371},
+by ONR under grants N00014-{09-1-0510, 10-M-0251}, by ARL under grant
+W911NF-09-1-0413, by AFRL under grants FA9550-09-1-0279 and FA8650-10-C-
+7088; and by DARPA under cooperative agreement HR0011-12-2-0012. Any opin-
+ions, ﬁndings, and conclusions or recommendations expressed in this publication are
+those of the authors, and do not necessarily reﬂect the views of the sponsoring agen-
+cies. T. Reps has an ownership interest in GrammaTech, Inc., which has licensed
+elements of the technology reported in this publication.
+
+2
+Aditya Thakur and Thomas Reps
+new algorithm for bα also performs well: our experiments show that it is 11.3
+times faster than a competing method [29, 21, 12], while ﬁnding dataﬂow facts
+(i.e., invariants) that are equally precise at 76.9% of a program’s basic blocks,
+better (tighter) at 19.8% of the blocks, and worse (looser) at only 3.3% of the
+blocks.
+Most-Precise Abstract Interpretation. Suppose that G = C −−−→
+←−−−
+α
+γ
+A is a
+Galois connection between concrete domain C and abstract domain A. Then the
+“best transformer” [7], or best abstract post operator for transition τ, denoted
+by d
+Post[τ] : A →A, is the most-precise abstract operator possible, given A, for
+the concrete post operator for τ, Post[τ] : C →C. d
+Post[τ] can be expressed in
+terms of α, γ, and Post[τ], as follows [7]: d
+Post[τ] = α ◦Post[τ] ◦γ. This equation
+deﬁnes the limit of precision obtainable using abstraction A. However, it is non-
+constructive; it does not provide an algorithm, either for applying d
+Post[τ] or for
+ﬁnding a representation of the function d
+Post[τ]. In particular, in many cases, the
+application of γ to an abstract value would yield an intermediate result—a set
+of concrete states—that is either inﬁnite or too large to ﬁt in computer memory.
+Symbolic Abstract Operations. The aforementioned problem with applying
+γ can be side-stepped by working with symbolic representations of sets of states
+(i.e., using formulas in some logic L). The use of L formulas to represent sets
+of states is convenient because logic can also be used for specifying a language’s
+concrete semantics; i.e., the concrete semantics of a transformer Post[τ] can be
+stated as a formula ϕτ ∈L that speciﬁes the relation between input states
+and output states. However, the symbolic approach introduces a new challenge:
+how to bridge the gap between L and A [29]. In particular, we need to develop
+(i) algorithms to handle interconversion between formulas of L and abstract
+values in A, and (ii) symbolic versions of the operations that form the core
+repertoire at the heart of an abstract interpreter.
+1. bγ(A): Given an abstract value A ∈A, the symbolic concretization of A,
+denoted by bγ(A), maps A to a formula bγ(A) such that A and bγ(A) represent
+the same set of concrete states (i.e., γ(A) = [[bγ(A)]]).
+2. bα(ϕ): Given ϕ ∈L, the symbolic abstraction of ϕ, denoted by bα(ϕ), maps ϕ
+to the best value in A that over-approximates [[ϕ]] (i.e., bα(ϕ) = α([[ϕ]])).
+3.
+\
+Assume[ϕ](A): Given ϕ ∈L and A ∈A, \
+Assume[ϕ](A) returns the best value
+in A that over-approximates the meaning of ϕ in concrete states described
+by A. That is,
+\
+Assume[ϕ](A) equals α([[ϕ]] ∩γ(A)).
+4. Creation of a representation of d
+Post[τ]: Some intraprocedural [15] and many
+interprocedural [32, 22] dataﬂow-analysis algorithms operate on instances of
+an abstract datatype T that (i) represents a family of abstract functions
+(or relations), and (ii) is closed under composition and join. By “creation
+of a representation of d
+Post[τ]”, we mean ﬁnding the best instance in T that
+over-approximates Post[τ].
+Several other symbolic abstract operations are discussed in §6.
+Experience shows that, for most abstract domains, it is easy to write a bγ
+function (item 1) [29]. The other three operations are inter-related. bα (item 2)
+
+A Method for Symbolic Computation of Abstract Operations
+3
+can be reduced to
+\
+Assume (item 3) as follows: bα(ϕ) =
+\
+Assume[ϕ](⊤). Item 4 can
+be reduced to item 2 as follows: The concrete post operator Post[τ] corresponds
+to a formula ϕτ ∈L that expresses the transition relation between input states
+and output states. An instance of abstract datatype T in item 4 represents
+an abstract-domain element that denotes an over-approximation of [[ϕτ]]. bα(ϕτ)
+computes the best instance in T that over-approximates [[ϕτ]].
+This paper presents a parametric framework that, for some abstract domains,
+is capable of performing most-precise abstract operations in the limit. Because
+the method approaches its result from “above”, if the computation takes too
+much time, it can be stopped to yield a safe result—i.e., an over-approximation
+to the best abstract operation—at any stage. Thus, the framework provides
+a tunable algorithm that oﬀers a performance-versus-precision trade-oﬀ. We
+replace “ c ” with “ f ” to denote over-approximating operators—e.g., eα(ϕ),
+A^
+ssume[ϕ](A), and g
+Post[τ](A).3
+Key Insight. In [35], we showed how St˚almarck’s method [33], an algorithm for
+satisﬁability checking of propositional formulas, can be explained using abstract-
+interpretation terminology—in particular, as an instantiation of a more general
+algorithm, St˚almarck[A], that is parameterized by a (Boolean) abstract domain
+A and operations on A. The algorithm that goes by the name “St˚almarck’s
+method” is one instantiation of St˚almarck[A] with a certain abstract domain.
+Abstract value A′ is a semantic reduction [7] of A with respect to ϕ if
+(i) γ(A′) ∩[[ϕ]] = γ(A) ∩[[ϕ]], and (ii) A′ ⊑A. At each step, St˚almarck[A] holds
+some A ∈A; each of the so-called “propagation rules” employed in St˚almarck’s
+method improves A by ﬁnding a semantic reduction of A with respect to ϕ.
+The key insight of the present paper is that there is a connection between
+St˚almarck[A] and eαA. In essence, to check whether a formula ϕ is unsatisﬁable,
+St˚almarck[A] computes eαA(ϕ) and performs the test “eαA(ϕ) = ⊥A?” If the test
+succeeds, it establishes that [[ϕ]] ⊆γ(⊥A) = ∅, and hence that ϕ is unsatisﬁable.
+In this paper, we present a generalization of St˚almarck’s algorithm to richer
+logics, such as quantiﬁer-free linear rational arithmetic (QF LRA) and quantiﬁer-
+free bit-vector arithmetic (QF BV). Instead of only using a Boolean abstract
+domain, the generalized method of this paper also uses richer abstract domains,
+such as the polyhedral domain [8] and the bit-vector aﬃne-relations domain [12].
+By this means, we obtain algorithms for computing eα for these richer abstract
+domains. The bottom line is that our algorithm is “dual-use”: (i) it can be used
+by an abstract interpreter to compute eα (and perform other symbolic abstract
+operations), and (ii) it can be used in an SMT (Satisﬁability Modulo Theories)
+solver to determine whether a formula is satisﬁable.
+Because we are working with more expressive logics, our algorithm uses sev-
+eral ideas that go beyond what is used in either St˚almarck’s method [33] or
+in St˚almarck[A] [35]. The methods described in this paper are also quite dif-
+3 g
+Post[τ] is used by Graf and Sa¨ıdi [14] to mean a diﬀerent state transformer from the
+one that g
+Post[τ] denotes in this paper. Throughout the paper, we use g
+Post[τ] solely
+to mean an over-approximation of d
+Post[τ]; thus, our notation is not ambiguous.
+
+4
+Aditya Thakur and Thomas Reps
+ferent from the huge amount of recent work that uses decision procedures in
+program analysis. It has become standard to reduce program paths to formu-
+las by encoding a program’s actions in logic (e.g., by symbolic execution) and
+calling a decision procedure to determine whether a given path through the pro-
+gram is feasible. In contrast, the techniques described in this paper adopt—and
+adapt—the key ideas from St˚almarck’s method to create new algorithms for key
+program-analysis operations. Finally, the methods described in this paper are
+quite diﬀerent from previous methods for symbolic abstraction [29, 37, 21, 12],
+which all make repeated calls to an SMT solver.
+Contributions. The contributions of the paper can be summarized as follows:
+– We present a connection between symbolic abstraction and St˚almarck’s
+method for checking satisﬁability (§2).
+– We present a generalization of St˚almarck’s method that lifts the algorithm
+from propositional logic to richer logics (§3).
+– We present a new parametric framework that, for some abstract domains, is
+capable of performing most-precise abstract operations in the limit, includ-
+ing bα(ϕ) and
+\
+Assume[ϕ](A), as well as creating a representation of d
+Post[τ].
+Because the method approaches most-precise values from “above”, if the
+computation takes too much time it can be stopped to yield a sound result.
+– We present instantiations of our framework for two logic/abstract-domain
+pairs: QF BV/KS and QF LRA/Polyhedra, and discuss completeness (§4).
+– We present experimental results that illustrate the dual-use nature of our
+framework. One experiment uses it to compute abstract transformers, which
+are then used to generate invariants; another experiment uses it for checking
+satisﬁability (§5).
+§6 discusses other symbolic operations. §7 discusses related work. Proofs can be
+found in [36].
+2
+Overview
+We now illustrate the key points of our St˚almarck-inspired technique using two
+examples. The ﬁrst shows how our technique applies to computing abstract trans-
+formers; the second describes its application to checking unsatisﬁability.
+The top-level, overall goal of St˚almarck’s method can be understood in terms
+of the operation eα(ψ). However, St˚almarck’s method is recursive (counting down
+on a parameter k), and the operation performed at each recursive level is the
+slightly more general operation A^
+ssume[ψ](A). Thus, we will discuss A^
+ssume.
+Example 1. Consider the following x86 assembly code
+L1: cmp eax, 2
+L2: jz L4
+L3: ...
+The instruction at L1 sets the zero ﬂag (zf) to true if the value of register eax
+equals 2. At instruction L2, if zf is true the program jumps to location L4 (not
+seen in the code snippet) by updating the value of the program counter (pc)
+to L4; otherwise, control falls through to program location L3. The transition
+formula that expresses the state transformation from the beginning of L1 to the
+
+A Method for Symbolic Computation of Abstract Operations
+5
+beginning of L4 is thus ϕ = (zf ⇔(eax = 2)) ∧(pc′ = ITE(zf, L4, L3)) ∧(pc′ =
+L4) ∧(eax′ = eax). (ϕ is a QF BV formula.)
+Let A be the abstract domain of aﬃne relations over the x86 registers. Let
+A0 = ⊤A, the empty set of aﬃne constraints over input-state and output-state
+variables. We now describe how our algorithm creates a representation of the A
+transformer for ϕ by computing A^
+ssume[ϕ](A0). The result represents a sound
+abstract transformer for use in aﬃne-relation analysis (ARA) [27, 21, 12]. First,
+the ITE term in ϕ is rewritten as (zf ⇒(pc′ = L4)) ∧(¬zf ⇒(pc′ = L3)). Thus,
+the transition formula becomes ϕ = (zf ⇔(eax = 2)) ∧(zf ⇒(pc′ = L4)) ∧
+(¬zf ⇒(pc′ = L3)) ∧(pc′ = L4) ∧(eax′ = eax).
+Next, propagation rules are used to compute a semantic reduction with re-
+spect to ϕ, starting from A0. The main feature of the propagation rules is that
+they are “local”; that is, they make use of only a small part of formula ϕ to
+compute the semantic reduction.
+1. Because ϕ has to be true, we can conclude that each of the conjuncts of ϕ
+are also true; that is, zf ⇔(eax = 2), zf ⇒(pc′ = L4), ¬zf ⇒(pc′ = L3),
+pc′ = L4, and eax′ = eax are all true.
+2. Suppose that we have a function µeαA such that for a literal l ∈L, A′ =
+µeαA(l) is a sound overapproximation of bα(l). Because the literal pc′ = L4
+is true, we conclude that A′ = µeαA(pc′ = L4) = {pc′ −L4 = 0} holds, and
+thus A1 = A0 ⊓A′ = {pc′ −L4 = 0}, which is a semantic reduction of A0.
+3. Similarly, because the literal eax′ = eax is true, we obtain A2 = A1 ⊓
+µeαA(eax′ = eax) = {pc′ −L4 = 0, eax′ −eax = 0}.
+4. We know that ¬zf ⇒(pc′ = L3). Furthermore, µeαA(pc′ = L3) = {pc′ −L3 =
+0}. Now {pc′−L3 = 0}⊓A2 is ⊥, which implies that [[pc′ = L3]]∩γ({pc′−L4 =
+0, eax′ −eax = 0}) = ∅. Thus, we can conclude that ¬zf is false, and hence
+that zf is true. This value of zf, along with the fact that zf ⇔(eax = 2)
+is true, enables us to determine that A′′ = µeαA(eax = 2) = {eax −2 = 0}
+must hold. Thus, our ﬁnal semantic-reduction step produces A3 = A2⊓A′′ =
+{pc′ −L4 = 0, eax′ −eax = 0, eax −2 = 0}.
+Abstract value A3 is a set of aﬃne constraints over the registers at L1 (input-
+state variables) and those at L4 (output-state variables), and can be used for
+aﬃne-relation analysis using standard techniques (e.g., see [19] or [12, §5]).
+⊓⊔
+The above example illustrates how our technique propagates truth values
+to various subformulas of ϕ. The process of repeatedly applying propagation
+rules to compute A^
+ssume is called 0-assume. The next example illustrates the
+Dilemma Rule, a more powerful rule for computing semantic reductions.
+Example 2. Let L be QF LRA, and let A be the polyhedral abstract domain [8].
+Consider the formula ψ = (a0 < b0) ∧(a0 < c0) ∧(b0 < a1 ∨c0 < a1) ∧(a1 <
+b1) ∧(a1 < c1) ∧(b1 < a2 ∨c2 < a2) ∧(a2 < a0) ∈L (see Fig. 1(a)). Suppose
+that we want to compute A ^
+ssume[ψ](⊤A).
+To make the communication between the truth values of subformulas
+and the abstract value explicit, we associate a fresh Boolean variable with
+each subformula of ψ to give a set of integrity constraints I. In this case,
+
+6
+Aditya Thakur and Thomas Reps
+a0
+c0
+b0
+a1
+c1
+b1
+a2
+∨∨∨∨
+∨∨∨∨
+(P0,A0)
+(P1,A1)
+'
+'
+(P2,A2)
+'
+'
+(P0,A0) 6 (B,º) = (P2,A2)
+(P1,A1) = (P0,A0) 6 (B,º)
+(P3,A3) (P1,A1)
+'
+'
+(P2,A2)
+'
+'
+7
+=
+b
+t
+b
+b
+t
+t
+b
+(a)
+(b)
+Fig. 1. (a) Inconsistent inequalities in the (unsatisﬁable) formula used in Ex. 2. (b)
+Application of the Dilemma Rule to abstract value (P0, A0). The dashed arrows from
+(Pi, Ai) to (P ′
+i, A′
+i) indicate that (P ′
+i, A′
+i) is a semantic reduction of (Pi, Ai).
+Iψ = {u1 ⇔V8
+i=2 ui, u2 ⇔(a0 < b0), u3 ⇔(a0 < c0), u4 ⇔(u9 ∨u10), u5 ⇔(a1 <
+b1), u6 ⇔(a1 < c1), u7 ⇔(u11 ∨u12), u8 ⇔(a2 < a0), u9 ⇔(b0 < a1), u10 ⇔(c0 <
+a1), u11 ⇔(b1 < a2), u12 ⇔(c1 < a2)}. The integrity constraints encode the struc-
+ture of ψ via the set of Boolean variables U = {u1, u2, . . . , u12}. When I is used
+as a formula, it denotes the conjunction of the individual integrity constraints.
+We now introduce an abstraction over U; in particular, we use the Cartesian
+domain P = (U →{0, 1, ∗})⊥in which ∗denotes “unknown”, and each element
+in P represents a set of assignments in P(U →{0, 1}). We denote an element of
+the Cartesian domain as a mapping, e.g., [u1 7→0, u2 7→1, u3 7→∗], or [0, 1, ∗]
+if u1, u2, and u3 are understood. ⊤P is the element λu.∗. The “single-point”
+partial assignment in which variable v is set to b is denoted by ⊤P[v 7→b].
+The variable u1 ∈U represents the root of ψ; consequently, the single-point
+partial assignment ⊤P[u1 7→1] corresponds to the assertion that ψ is satisﬁable.
+In fact, the models of ψ are closely related to the concrete values in [[I]] ∩
+γ(⊤P[u1 7→1]). For every concrete value in [[I]] ∩γ(⊤P[u1 7→1]), its projection
+onto {ai, bi, ci | 0 ≤i ≤1} ∪{a2} gives us a model of ψ; that is, [[ψ]] = ([[I]] ∩
+γ(⊤P[u1 7→1]))|({ai,bi,ci|0≤i≤1}∪{a2}). By this means, the problem of computing
+A^
+ssume[ψ](⊤A) is reduced to that of computing A^
+ssume[I]((⊤P[u1 7→1], ⊤A)),
+where (⊤P[u1 7→1], ⊤A) is an element of the reduced product of P and A.
+Because u1 is true in ⊤P[u1 7→1], the integrity constraint u1 ⇔V8
+i=2 ui
+implies that u2 . . . u8 are also true, which reﬁnes ⊤P[u1
+7→1] to P0
+=
+[1, 1, 1, 1, 1, 1, 1, 1, ∗, ∗, ∗, ∗]. Because u2 is true and u2 ⇔(a0 < b0) ∈I, ⊤A can be
+reﬁned using µeαA(a0 < b0) = {a0−b0 < 0}. Doing the same for u3, u5, u6, and u8,
+reﬁnes ⊤A to A0 = {a0−b0 < 0, a0−c0 < 0, a1−b1 < 0, a1−c1 < 0, a2−a0 < 0}.
+These steps reﬁne (⊤P[u1 7→1], ⊤A) to (P0, A0) via 0-assume.
+To increase precision, we need to use the Dilemma Rule, a branch-and-merge
+rule, in which the current abstract state is split into two (disjoint) abstract
+states, 0-assume is applied to both abstract values, and the resulting abstract
+values are merged by performing a join. The steps of the Dilemma Rule are
+shown schematically in Fig. 1(b) and described below.
+
+A Method for Symbolic Computation of Abstract Operations
+7
+In our example, the value of u9 is unknown in P0. Let B ∈P be ⊤P[u9 7→0];
+then B, the abstract complement of B, is ⊤P[u9 7→1]. Note that γ(B)∩γ(B) = ∅,
+and γ(B) ∪γ(B) = γ(⊤). The current abstract value (P0, A0) is split into
+(P1, A1) = (P0, A0) ⊓(B, ⊤)
+and
+(P2, A2) = (P0, A0) ⊓(B, ⊤).
+Now consider 0-assume on (P1, A1). Because u9 is false, and u4 is true, we can
+conclude that u10 has to be true, using the integrity constraint u4 ⇔(u9 ∨u10).
+Because u10 holds and u10 ⇔(c0 < a1) ∈I, A1 can be reﬁned with the constraint
+c0 −a1 < 0. Because a0 −c0 < 0 ∈A1, a0 −a1 < 0 can be inferred. Similarly,
+when performing 0-assume on (P2, A2), a0 −a1 < 0 is inferred. Call the abstract
+values computed by 0-assume (P ′
+1, A′
+1) and (P ′
+2, A′
+2), respectively. At this point,
+the join of (P ′
+1, A′
+1) and (P ′
+2, A′
+2) is taken. Because a0 −a1 < 0 is present in both
+branches, it is retained in the join. The resulting abstract value is (P3, A3) =
+([1, 1, 1, 1, 1, 1, 1, 1, ∗, ∗, ∗, ∗], {a0 −b0 < 0, a0 −c0 < 0, a1 −b1 < 0, a1 −c1 <
+0, a2 −a0 < 0, a0 −a1 < 0}. Note that although P3 equals P0, A3 is strictly more
+precise than A0 (i.e., A3 ⊏A0), and hence (P3, A3) is a semantic reduction of
+(P0, A0) with respect to ψ.
+Now suppose (P3, A3) is split using u11. Using reasoning similar to that
+performed above, a1 −a2 < 0 is inferred on both branches, and hence so is
+a0 −a2 < 0. However, a0 −a2 < 0 contradicts a2 −a0 < 0; consequently, the ab-
+stract value reduces to (⊥P, ⊥A) on both branches. Thus, A ^
+ssume[ψ](⊤A) = ⊥A,
+and hence ψ is unsatisﬁable. In this way, A ^
+ssume instantiated with the polyhe-
+dral domain can be used to decide the satisﬁability of a QF LRA formula.
+⊓⊔
+The process of repeatedly applying the Dilemma Rule is called 1-assume.
+That is, repeatedly some variable u ∈U is selected whose truth value is unknown,
+the current abstract value is split using B = ⊤P[u 7→0] and B = ⊤P[u 7→1],
+0-assume is applied to each of these values, and the resulting abstract values
+are merged via join (Fig. 1(b)). Diﬀerent policies for selecting the next variable
+on which to split can aﬀect how quickly an answer is found; however, any fair
+selection policy will return the same answer. The eﬃcacy of the Dilemma Rule
+is partially due to case-splitting; however, the real power of the Dilemma Rule
+is due to the fact that it preserves information learned in both branches when a
+case-split is “abandoned” at a join point.
+The generalization of the 1-assume algorithm is called k-assume: repeatedly
+some variable u ∈U is selected whose truth value is unknown, the current
+abstract value is split using B = ⊤P[u 7→0] and B = ⊤P[u 7→1]; (k–1)-assume
+is applied to each of these values; and the resulting values are merged via join.
+However, there is a trade-oﬀ: higher values of k give greater precision, but are
+also computationally more expensive.
+For certain abstract domains and logics, A^
+ssume[ψ](⊤A) is complete—i.e.,
+with a high-enough value of k for k-assume, A^
+ssume[ψ](⊤A) always computes
+the most-precise A value possible for ψ. However, our experiments show that
+A^
+ssume[ψ](⊤A) has very good precision with k = 1 (see §5)—which jibes with
+the observation that, in practice, with St˚almarck’s method for propositional
+validity (tautology) checking “a formula is either [provable with k = 1] or not a
+tautology at all!” [18, p. 227].
+
+8
+Aditya Thakur and Thomas Reps
+Algorithm 1: A^
+ssume[ϕ](A)
+1 ⟨I, uϕ⟩←integrity(ϕ)
+2 P ←⊤P[uϕ 7→1]
+3 ( eP, e
+A) ←k-assume[I]((P, A))
+4 return e
+A
+Algorithm 2: 0-assume[I]((P, A))
+1 repeat
+2
+(P ′, A′) ←(P, A)
+3
+foreach J ∈I do
+4
+if J has the form u ⇔ℓthen
+5
+(P, A) ←LeafRule(J, (P, A))
+6
+else
+7
+(P, A) ←InternalRule(J, (P, A))
+8 until ((P, A) = (P ′, A′)) ∥timeout
+9 return (P, A)
+Algorithm 3: k-assume[I]((P, A))
+1 repeat
+2
+(P ′, A′) ←(P, A)
+3
+foreach u ∈U such that P(u) = ∗do
+4
+(P0, A0) ←(P, A)
+5
+(B, B) ←(⊤P[u 7→0], ⊤P[u 7→1])
+6
+(P1, A1) ←(P0, A0) ⊓(B, ⊤)
+7
+(P2, A2) ←(P0, A0) ⊓(B, ⊤)
+8
+(P ′
+1, A′
+1) ←(k–1)-assume[I]((P1, A1))
+9
+(P ′
+2, A′
+2) ←(k–1)-assume[I]((P2, A2))
+10
+(P, A) ←(P ′
+1, A′
+1) ⊔(P ′
+2, A′
+2)
+11 until ((P, A) = (P ′, A′)) ∥timeout
+12 return (P, A)
+ϕ := ℓ
+ℓ∈literal(L)
+uϕ ⇔ℓ∈I
+Leaf
+ϕ := ϕ1op ϕ2
+uϕ ⇔(uϕ1 op uϕ2) ∈I Internal
+Fig. 2. Rules used to convert a formula ϕ ∈L into a set of integrity constraints I. op
+represents any binary connective in L, and literal(L) is the set of atomic formulas and
+their negations.
+3
+Algorithm for A ^
+ssume[ϕ](A)
+This section presents our algorithm for computing A^
+ssume[ϕ](A) ∈A, for ϕ ∈L.
+The assumptions of our framework are as follows:
+1. There is a Galois connection C −−−→
+←−−−
+α
+γ
+A between A and concrete domain C.
+2. There is an algorithm to perform the join of arbitrary elements of A.
+3. Given a literal l ∈L, there is an algorithm µeα to compute a safe (overap-
+proximating) “micro-eα”—i.e., A′ = µeα(l) such that γ(A′) ⊇[[l]].
+4. There is an algorithm to perform the meet of an arbitrary element of A with
+an arbitrary element of {µeα(l) | ℓ∈literal(L)}.
+Note that A is allowed to have inﬁnite descending chains; because A ^
+ssume works
+from above, it is allowed to stop at any time, and the value in hand is an over-
+approximation of the most precise answer.
+Alg. 1 presents the algorithm that computes A^
+ssume[ϕ](A) for ϕ ∈L and
+A ∈A. Line (1) calls the function integrity, which converts ϕ into integrity
+constraints I by assigning a fresh Boolean variable to each subformula of ϕ,
+using the rules described in Fig. 2. The variable uϕ corresponds to formula ϕ.
+We use U to denote the set of Boolean variables created when converting ϕ to I.
+Alg. 1 also uses a second abstract domain P, each of whose elements represents
+a set of Boolean assignments in P(U →{0, 1}). For simplicity, in this paper P
+is the Cartesian domain (U →{0, 1, ∗})⊥, but other more-expressive Boolean
+domains could be used [35].
+
+A Method for Symbolic Computation of Abstract Operations
+9
+On line (2) of Alg. 1, an element of P is created in which uϕ is assigned the
+value 1, which asserts that ϕ is true. Alg. 1 is parameterized by the value of k
+(where k ≥0). Let γI((P, A)) denote γ((P, A)) ∩[[I]]. The call to k-assume on
+line (3) returns ( eP, eA), which is a semantic reduction of (P, A) with respect to I;
+that is, γI(( eP , eA)) = γI((P, A)) and ( eP, eA) ⊑(P, A). In general, the greater the
+value of k, the more precise is the result computed by Alg. 1. The next theorem
+states that Alg. 1 computes an over-approximation of Assume[ϕ](A).
+Theorem 1 ([36]). For all ϕ ∈L, A ∈A, if eA = A^
+ssume[ϕ](A), then γ( eA) ⊇
+[[ϕ]] ∩γ(A), and eA ⊑A.
+⊓⊔
+Alg. 3 presents the algorithm to compute k-assume, for k ≥1. Given the in-
+tegrity constraints I, and the current abstract value (P, A), k-assume[I]((P, A))
+returns an abstract value that is a semantic reduction of (P, A) with respect to
+I. The crux of the computation is the inner loop body, lines (4)–(10), which
+implements an analog of the Dilemma Rule from St˚almarck’s method [33].
+The steps of the Dilemma Rule are shown schematically in Fig. 1(b). At
+line (3) of Alg. 3, a Boolean variable u whose value is unknown is chosen. B =
+⊤P[u 7→0] and its complement B = ⊤P[u 7→1] are used to split the current
+abstract value (P0, A0) into two abstract values (P1, A1) = (P, A) ⊓(B, ⊤) and
+(P2, A2) = (P, A) ⊓(B, ⊤), as shown in lines (6) and (7).
+The calls to (k–1)-assume at lines (8) and (9) compute semantic reductions
+of (P1, A1) and (P2, A2) with respect to I, which creates (P ′
+1, A′
+1) and (P ′
+2, A′
+2),
+respectively. Finally, at line (10) (P ′
+1, A′
+1) and (P ′
+2, A′
+2) are merged by performing
+a join. (The result is labeled (P3, A3) in Fig. 1(b).)
+The steps of the Dilemma Rule (Fig. 1(b)) are repeated until a ﬁxpoint
+is reached, or some resource bound is exceeded. The next theorem states that
+k-assume[I]((P, A)) computes a semantic reduction of (P, A) with respect to I.
+Theorem 2 ([36]).
+For
+all
+P
+∈
+P
+and
+A
+∈
+A,
+if
+(P ′, A′)
+=
+k-assume[I]((P, A)), then γI((P ′, A′)) = γI((P, A)) and (P ′, A′) ⊑(P, A).
+⊓⊔
+Alg. 2 describes the algorithm to compute 0-assume: given the integrity con-
+straints I, and an abstract value (P, A), 0-assume[I]((P, A)) returns an abstract
+value (P ′, A′) that is a semantic reduction of (P, A) with respect to I. It is
+in this algorithm that information is passed between the component abstract
+values P ∈P and A ∈A via propagation rules, like the ones shown in Figs. 3
+and 4. In lines (4)–(7) of Alg. 2, these rules are applied by using a single integrity
+constraint in I and the current abstract value (P, A).
+Given J ∈I and (P, A), the net eﬀect of applying any of the propagation
+rules is to compute a semantic reduction of (P, A) with respect to J ∈I. The
+propagation rules used in Alg. 2 can be classiﬁed into two categories:
+1. Rules that apply on line (7) when J is of the form p ⇔(q op r), shown in
+Fig. 3. Such an integrity constraint is generated from each internal subfor-
+mula of formula ϕ. These rules compute a non-trivial semantic reduction of
+P with respect to J by only using information from P. For instance, rule
+
+10
+Aditya Thakur and Thomas Reps
+J = (u1 ⇔(u2 ∨u3)) ∈I
+P(u1) = 0
+(P ⊓⊤[u2 7→0, u3 7→0], A)
+Or1
+J = (u1 ⇔(u2 ∧u3)) ∈I
+P(u1) = 1
+(P ⊓⊤[u2 7→1, u3 7→1], A)
+And1
+Fig. 3. Boolean rules used by Alg. 2 in the call InternalRule(J, (P, A)).
+J = (u ⇔l) ∈I
+P(u) = 1
+(P, A ⊓µeαA(l))
+PtoA-1
+J = (u ⇔l) ∈I
+P(u) = 0
+(P, A ⊓µeαA(¬l))
+PtoA-0
+J = (u ⇔ℓ) ∈I
+A ⊓µeαA(l) = ⊥A
+(P ⊓⊤[u 7→0], A)
+AtoP-0
+Fig. 4. Rules used by Alg. 2 in the call LeafRule(J, (P, A)).
+And1 says that if J is of the form p ⇔(q ∧r), and p is 1 in P, then we can
+infer that both q and r must be 1. Thus, P ⊓⊤[q 7→1, r 7→1] is a semantic
+reduction of P with respect to J. (See Ex. 1, step 1.)
+2. Rules that apply on line (5) when J is of the form u ⇔ℓ, shown in Fig. 4. Such
+an integrity constraint is generated from each leaf of the original formula ϕ.
+This category of rules can be further subdivided into
+(a) Rules that propagate information from abstract value P to abstract value
+A; viz., rules PtoA-0 and PtoA-1. For instance, rule PtoA-1 states
+that given J = u ⇔l, and P(u) = 1, then A ⊓µeα(l) is a semantic
+reduction of A with respect to J. (See Ex. 1, steps 2 and 3.)
+(b) Rule AtoP-0, which propagates information from abstract value A to
+abstract value P. Rule AtoP-0 states that if J = (u ⇔ℓ) and A⊓µeα(l) =
+⊥A, then we can infer that u is false. Thus, the value of P ⊓⊤[u 7→0] is
+a semantic reduction of P with respect to J. (See Ex. 1, step 4.)
+Alg. 2 repeatedly applies the propagation rules until a ﬁxpoint is reached, or
+some resource bound is reached. The next theorem states that 0-assume com-
+putes a semantic reduction of (P, A) with respect to I.
+Theorem 3 ([36]).
+For all P ∈P, A ∈A, if (P ′, A′) = 0-assume[I]((P, A)),
+then γI((P ′, A′)) = γI((P, A)) and (P ′, A′) ⊑(P, A).
+⊓⊔
+4
+Instantiations
+In this section, we describe instantiations of our framework for two logical-
+language/abstract-domain pairs: QF BV/KS and QF LRA/Polyhedra. We say
+that an A^
+ssume algorithm is complete for a logic L and abstract domain A if it
+is guaranteed to compute the best value
+\
+Assume[ϕ](A) for ϕ ∈L and A ∈A.
+We give conditions under which the two instantiations are complete.
+
+A Method for Symbolic Computation of Abstract Operations
+11
+Bitvector Aﬃne-Relation Domain (QF BV/KS). King and Søndergaard
+[21] gave an algorithm for bα for an abstract domain of Boolean aﬃne relations.
+Elder et al. [12] extended the algorithm to arithmetic modulo 2w (i.e., bitvectors
+of width w). Both algorithms work from below, making repeated calls on a SAT
+solver (King and Søndergaard) or an SMT solver (Elder et al.), performing joins
+to create increasingly better approximations of the desired answer. We call this
+family of domains KS, and call the (generalized) algorithm bα↑
+KS.
+Given a literal l ∈QF BV, we compute µeαKS(l) by invoking bα↑
+KS(l). That is,
+we harness bα↑
+KS in service of A^
+ssumeKS, but only for µeαKS, which means that
+bα↑
+KS is only applied to literals. If an invocation of bα↑
+KS does not return an answer
+within a speciﬁed time limit, we use ⊤KS.
+Alg. 1 is not complete for QF BV/KS. Let x be a bitvector of width 2, and
+let ϕ = (x ̸= 0 ∧x ̸= 1 ∧x ̸= 2). Thus,
+\
+Assume[ϕ](⊤KS) = {x −3 = 0}.
+The KS domain is not expressive enough to represent disequalities. For instance,
+µeα(x ̸= 0) equals ⊤KS. Because Alg. 1 considers only a single integrity constraint
+at a time, we get A^
+ssume[ϕ](⊤KS) = µeα(x ̸= 0)⊓µeα(x ̸= 1)⊓µeα(x ̸= 2) = ⊤KS.
+The current approach can be made complete for QF BV/KS by making
+0-assume consider multiple integrity constraints during propagation (in the limit,
+having to call µeα(ϕ)). For the aﬃne subset of QF BV, an alternative approach
+would be to perform a 2w-way split on the KS value each time a disequal-
+ity is encountered, where w is the bit-width—in eﬀect, rewriting x ̸= 0 to
+(x = 1 ∨x = 2 ∨x = 3). Furthermore, if there is a µA^
+ssume operation, then the
+second approach can be extended to handle all of QF BV: µA^
+ssume[ℓ](A) would
+be used to take the current KS abstract value A and a literal ℓ, and return an
+over-approximation of A^
+ssume[ℓ](A). All these approaches would be prohibitively
+expensive. Our current approach, though theoretically not complete, works very
+well in practice (see §5).
+Polyhedral Domain (QF LRA/Polyhedra). The second instantiation that
+we implemented is for the logic QF LRA and the polyhedral domain [8]. Because
+a QF LRA disequality t ̸= 0 can be normalized to (t < 0∨t > 0), every literal l in
+a normalized QF LRA formula is merely a half-space in the polyhedral domain.
+Consequently, µeαPolyhedra(l) is exact, and easy to compute. Furthermore, because
+of this precision, the A^
+ssume algorithm is complete for QF LRA/Polyhedra. In
+particular, if k = |ϕ|, then k-assume is suﬃcient to guarantee that A^
+ssume[ϕ](A)
+returns
+\
+Assume[ϕ](A). For polyhedra, our implementation uses PPL [28].
+The observation in the last paragraph applies in general: if µeαA(l) is exact
+for all literals l ∈L, then Alg. 1 is complete for logic L and abstract domain A.
+5
+Experiments
+Bitvector Aﬃne-Relation Analysis (ARA). We compare two methods for
+computing the abstract transformers for the KS domain for ARA [21]:
+– the bα↑-based procedure described in Elder et al. [12].
+– the eα-based procedure described in this paper (“eα↓”), instantiated for KS.
+
+12
+Aditya Thakur and Thomas Reps
+Prog.
+Measures of size
+bα↑Performance
+name
+instrs CFGs BBs brs WPDS t/o post* query
+ﬁnger
+532
+18
+298
+48
+110.9
+4 0.266 0.015
+subst
+1093
+16
+609
+74
+204.4
+4 0.344 0.016
+label
+1167
+16
+573 103
+148.9
+2 0.344 0.032
+chkdsk
+1468
+18
+787 119
+384.4 16 0.219 0.031
+convert
+1927
+38 1013 161
+289.9
+9 1.047 0.062
+route
+1982
+40
+931 243
+562.9 14 1.281 0.046
+logoﬀ
+2470
+46 1145 306
+621.1 16 1.938 0.063
+setup
+4751
+67 1862 589
+1524.7 64 0.968 0.047
+Fig. 5. WPDS experiments (bα↑). The columns show the number of instructions (instrs);
+the number of procedures (CFGs); the number of basic blocks (BBs); the number of
+branch instructions (brs); the times, in seconds, for WPDS construction with bα↑
+KS
+weights, running post*, and ﬁnding one-vocabulary aﬃne relations at blocks that end
+with branch instructions (query). The number of basic blocks for which bα↑
+KS-weight
+generation timed out is listed under “t/o”.
+Our experiments were designed to answer the following questions:
+1. How does the speed of eα↓compare with that of bα↑?
+2. How does the precision of eα↓compare with that of bα↑?
+To address these questions, we performed ARA on x86 machine code, computing
+aﬃne relations over the x86 registers. Our experiments were run on a single core
+of a quad-core 3.0 GHz Xeon computer running 64-bit Windows XP (SP2),
+conﬁgured so that a user process has 4GB of memory. We analyzed a corpus of
+Windows utilities using the WALi [20] system for weighted pushdown systems
+(WPDSs). For the baseline bα↑-based analysis we used a weight domain of bα↑-
+generated KS transformers. The weight on each WPDS rule encodes the KS
+transformer for a basic block B of the program, including a jump or branch to a
+successor block. A formula ϕB is created that captures the concrete semantics of
+B, and then the KS weight for B is obtained by performing bα↑(ϕB) (cf. Ex. 1).
+We used EWPDS merge functions [24] to preserve caller-save and callee-save
+registers across call sites. The post* query used the FWPDS algorithm [23].
+Fig. 5 lists several size parameters of the examples (number of instructions,
+procedures, basic blocks, and branches) along with the times for constructing
+abstract transformers and running post*.4 Col. 6 of Fig. 5 shows that the calls
+to bα↑during WPDS construction dominate the total time for ARA.
+Each call to bα↑involves repeated invocations of an SMT solver. Although the
+overall time taken by bα↑is not limited by a timeout, we use a 3-second timeout
+for each invocation of the SMT solver (as in Elder et al. [12]). Fig. 5 lists the
+number of such SMT solver timeouts for each benchmark. In case the invocation
+of the SMT solver times out, bα↑is forced to return ⊤KS in order to be sound.
+(Consequently, it is possible for eα↓to return a more precise answer than bα↑.)
+4 Due to the high cost of the bα↑-based WPDS construction, all analyses excluded the
+code for libraries. Because register eax holds the return value from a call, library func-
+tions were modeled approximately (albeit unsoundly, in general) by “havoc(eax)”.
+
+A Method for Symbolic Computation of Abstract Operations
+13
+(a)
+(b)
+Fig. 6. (a) Performance: eα↓vs. bα↑. (b) Precision: % of control points at which eα↓has
+as good or better precision as bα↑; the lighter-color lower portion of each bar indicates
+the % of control points at which the precision is strictly greater for eα↓.
+(a)
+(b)
+Fig. 7. (a) Log-log scatter plot of transformer-construction time. (b) Semilog plot of
+Z3 vs. eα↓on χd formulas.
+The setup for the eα↓-based analysis is the same as the baseline bα↑-based
+analysis, except that we call eα↓when calculating the KS weight for a basic block.
+We use 1-assume in this experiment. Each basic-block formula ϕB is rewritten
+to a set of integrity constraints, with ITE-terms rewritten as illustrated in Ex. 1.
+The priority of a Boolean variable is its postorder-traversal number, and is used
+to select which variable is used in the Dilemma Rule. We bound the total time
+taken by each call to eα↓to a ﬁxed timeout T. Note that even when the call to
+eα↓times out, it can still return a sound non-⊤KS value. We ran eα↓using T = 1
+sec, T = 0.4 secs, and T = 0.1 secs.
+Fig. 6(a) shows the normalized time taken for WPDS construction when
+using eα↓with T = 1 sec, T = 0.4 secs, and T = 0.1 secs. The running time is
+normalized to the corresponding time taken by bα↑; lower numbers are better.
+
+14
+Aditya Thakur and Thomas Reps
+WPDS construction using eα↓with T = 1 sec. is about 11.3 times faster than bα↑
+(computed as the geometric mean), which answers question 1.
+Decreasing the timeout T makes the eα↓WPDS construction only slightly
+faster: on average, going from T = 1 sec. to T = .4 secs. reduces WPDS construc-
+tion time by only 17% (computed as the geometric mean). To understand this
+behavior better, we show in Fig. 7(a) a log-log scatter-plot of the times taken by
+bα↑versus the times taken by eα↓(with T = 1 sec.), to generate the transformers
+for each basic block in the benchmark suite. As shown in Fig. 7(a), the times
+taken by eα↓are bounded by 1 second. (There are a few calls that take more
+than 1 second; they are an artifact of the granularity of operations at which we
+check whether the procedure has timed out.) Most of the basic blocks take less
+than 0.4 seconds, which explains why the overall time for WPDS construction
+does not decrease much as we decrease T in Fig. 6(a). We also see that the bα↑
+times are not bounded, and can be as high as 50 seconds.
+To answer question 2 we compared the precision of the WPDS analysis when
+using eα↓with T equal to 1, 0.4, and 0.1 seconds with the precision obtained using
+bα↑. In particular, we compare the aﬃne relations (i.e., invariants) computed by
+the eα↓-based and bα↑-based analyses for each control point—i.e., the beginning of
+a basic block that ends with a branch. Fig. 6(b) shows the percentage of control
+points for which the eα↓-based analysis computes a better (tighter) or equally
+precise aﬃne relation. On average, when using T= 1 sec, eα↓-based analysis com-
+putes an equally precise invariant at 76.9% of the control points (computed as
+the arithmetic mean). Interestingly, the eα↓-based analysis computes an answer
+that is more precise compared to that computed by the bα↑-based analysis. That
+is not a bug in our implementation; it happens because bα↑has to return ⊤KS
+when the call to the SMT solver times out. In Fig. 6(b), the lighter-color lower
+portion of each bar shows the percentage of control points for which eα↓-based
+analysis provides strictly more precise invariants when compared to bα↑-based
+analysis; on average, eα↓-based analysis is more precise for 19.8% of the control
+points (arithmetic mean, for T = 1 second). eα↓-based analysis is less precise at
+only 3.3% of the control points. Furthermore, as expected, when the timeout for
+eα↓is reduced, the precision decreases.
+Satisﬁability Checking. The formula used in Ex. 2 is just one instance of a
+family of unsatisﬁable QF LRA formulas [25]. Let χd = (ad < a0) ∧Vd−1
+i=0 ((ai <
+bi)∧(ai < ci)∧((bi < ai+1)∨(ci < ai+1))). The formula ψ in Ex. 2 is χ2; that is,
+the number of “diamonds” is 2 (see Fig. 1(a)). We used the QF LRA/Polyhedra
+instantiation of our framework to check whether eα(χd) = ⊥for d = 1 . . . 25
+using 1-assume. We ran this experiment on a single processor of a 16-core 2.4
+GHz Intel Zeon computer running 64-bit RHEL Server release 5.7. The semilog
+plot in Fig. 7(b) compares the running time of eα↓with that of Z3, version
+3.2 [11]. The time taken by Z3 increases exponentially with d, exceeding the
+timeout threshold of 1000 seconds for d = 23. This corroborates the results of a
+similar experiment conducted by McMillan et al. [25], where the reader can also
+ﬁnd an in-depth explanation of this behavior.
+
+A Method for Symbolic Computation of Abstract Operations
+15
+On the other hand, the running time of eα↓increases linearly with d taking
+0.78 seconds for d = 25. The cross-over point is d = 12. In Ex. 2, we saw
+how two successive applications of the Dilemma Rule suﬃce to prove that ψ is
+unsatisﬁable. That explanation generalizes to χd: d applications of the Dilemma
+Rule are suﬃcient to prove unsatisﬁability of χd. The order in which Boolean
+variables with unknown truth values are selected for use in the Dilemma Rule has
+no bearing on this linear behavior, as long as no variable is starved from being
+chosen (i.e., a fair-choice schedule is used). Each application of the Dilemma
+Rule is able to infer that ai < ai+1 for some i.
+We do not claim that eα↓is better than mature SMT solvers such as Z3.
+We do believe that it represents another interesting point in the design space of
+SMT solvers, similar in nature to the GDPLL algorithm [25] and the k-lookahead
+technique used in the DPLL(⊔) algorithm [4].
+6
+Applications to Other Symbolic Operations
+The symbolic operations of bγ and bα can be used to implement a number of other
+useful operations, as discussed below. In each case, over-approximations result
+if bα is replaced by eα.
+– The operation of containment checking, A1 ⊑A2, which is needed by anal-
+ysis algorithms to determine when a post-ﬁxpoint is attained, can be imple-
+mented by checking whether bα(bγ(A1) ∧¬bγ(A2)) equals ⊥.
+– Suppose that there are two Galois connections G1 = C −−−→
+←−−−
+α1
+γ1
+A1 and
+G2 = C −−−→
+←−−−
+α2
+γ2
+A2, and one wants to work with the reduced product of
+A1 and A2 [7, §10.1]. The semantic reduction of a pair (A1, A2) can be per-
+formed by letting ψ be the formula bγ1(A1) ∧bγ2(A2), and creating the pair
+(bα1(ψ), bα2(ψ)).
+– Given A1 ∈A1, one can ﬁnd the most-precise value A2 ∈A2 that over-
+approximates A1 in A2 as follows: A2 = bα2(bγ1(A1)).
+– Given a loop-free code fragment F, consisting of one or more blocks of pro-
+gram statements and conditions, one can obtain a representation of its best
+transformer by symbolically executing F to obtain a transition formula ψF ,
+and then performing bα(ψF ).
+7
+Related Work
+Extensions of
+St˚almarck’s Method. Bj¨ork [3] describes extensions of
+St˚almarck’s method to ﬁrst-order logic. Like Bj¨ork, our work goes beyond the
+classical setting of St˚almarck’s method [33] (i.e., propositional logic) and ex-
+tends the method to more expressive logics, such as QF LRA or QF BV. How-
+ever, Bj¨ork is concerned solely with validity checking, and—compared with the
+propositional case—the role of abstraction is less clear in his method. Our algo-
+rithm not only uses an abstract domain as an explicit datatype, the goal of the
+algorithm is to compute an abstract value A′ = A^
+ssume[ϕ](A).
+Our approach was inﬂuenced by Granger’s method of using (in)equation
+solving as a way to implement semantic reduction and Assume as part of his
+
+16
+Aditya Thakur and Thomas Reps
+technique of local decreasing iterations [16]. Granger describes techniques for per-
+forming reductions with respect to (in)equations of the form x1 ⋊⋉F(x1, . . . , xn)
+and (x1 ∗F(x1, . . . , xn)) ⋊⋉G(x1, . . . , xn), where ⋊⋉stands for a single relational
+symbol of L, such as =, ̸=, <, ≤, >, ≥, or ≡(arithmetical congruence). Our
+framework is not limited to literals of these forms; all that we require is that for a
+literal l ∈L, there is an algorithm to compute an overapproximating value µeα(l).
+Moreover, Granger has no analog of the Dilemma Rule, nor does he present any
+completeness results (cf. §4).
+SMT Solvers. Most methods for SMT solving can be classiﬁed according to
+whether they employ lazy or eager translations to SAT. (The SAT procedure
+then employed is generally based on the DPLL procedure [10, 9].) In contrast,
+the algorithm for SMT described in this paper is not based on a translation to
+SAT; instead, it generalizes St˚almarck’s method for propositional logic to richer
+logics.
+Lazy approaches abstract each atom of the input formula to a distinct propo-
+sitional variable, use a SAT solver to ﬁnd a propositional model, and then check
+that model against the theory [1, 13, 11]. The disadvantage of the lazy approach
+is that it cannot use theory information to prune the search. In contrast, our
+algorithm is able to use theory-speciﬁc information to make deductions—in par-
+ticular, in the LeafRule function (Fig. 4) used in Alg. 2. The use of theory-speciﬁc
+information is the reason why our approach outperformed Z3, which uses the lazy
+approach, on the diamond example (§5).
+Eager approaches [5, 34] encode more of the theory into the propositional
+formula that is given to the SAT solver, and hence are able to constrain the
+solution space with theory-speciﬁc information. The challenge in designing such
+solvers is to ensure that the propositional formula does not blow up in size. In
+our approach, such an explosion in the set of literals in the formula is avoided
+because our learned facts are restricted by the abstract domain in use.
+A variant of the Dilemma Rule is used in DPLL(⊔), and allows the theory
+solver in a lazy DPLL-based SMT solver to produce joins of facts deduced along
+diﬀerent search paths. However, as pointed out by Bjørner et al. [4, §5], their
+system is weaker than St˚almarck’s method, because St˚almarck’s method can
+learn equivalences between literals.
+Another diﬀerence between our work and existing approaches to SMT is
+the connection presented in this paper between St˚almarck’s method and the
+computation of best abstract operations for abstract interpretation.
+Best Abstract Operations. Several papers about best abstract operations
+have appeared in the literature [14, 29, 37, 21,12]. Graf and Sa¨ıdi [14] showed
+that decision procedures can be used to generate best abstract transformers
+for predicate-abstraction domains. Other work has investigated more eﬃcient
+methods to generate approximate transformers that are not best transformers,
+but approach the precision of best transformers [2, 6].
+Several techniques work from below [29, 21, 12]—performing joins to incorpo-
+rate more and more of the concrete state space—which has the drawback that if
+they are stopped before the ﬁnal answer is reached, the most-recent approxima-
+
+A Method for Symbolic Computation of Abstract Operations
+17
+tion is an under-approximation of the desired value. In contrast, our technique
+works from above. It can stop at any time and return a safe answer.
+Yorsh et al. [37] developed a method that works from above to perform
+A^
+ssume[ϕ](A) for the kind of abstract domains used in shape analysis (i.e.,
+“canonical abstraction” of logical structures [30]). Their method has a splitting
+step, but no analog of the join step performed at the end of an invocation of the
+Dilemma Rule. In addition, their propagation rules are much more heavyweight.
+Template Constraint Matrices (TCMs) are a parametrized family of linear-
+inequality domains for expressing invariants in linear real arithmetic. Sankara-
+narayanan et al. [31] gave a parametrized meet, join, and set of abstract trans-
+formers for all TCM domains. Monniaux [26] gave an algorithm that ﬁnds the
+best transformer in a TCM domain across a straight-line block (assuming that
+concrete operations consist of piecewise linear functions), and good transform-
+ers across more complicated control ﬂow. However, the algorithm uses quan-
+tiﬁer elimination, and no polynomial-time elimination algorithm is known for
+piecewise-linear systems.
+Cover algorithms. Gulwani and Musuvathi [17] deﬁned the “cover problem”,
+which addresses approximate existential quantiﬁer elimination: Given a formula
+ϕ in logic L, and a set of variables V , ﬁnd the strongest quantiﬁer-free formula ϕ
+in L such that [[∃V : ϕ]] ⊆[[ϕ]]. They presented cover algorithms for the theories
+of uninterpreted functions and linear arithmetic, and showed that covers exist
+in some theories that do not support quantiﬁer elimination.
+The notion of a cover has similarities to the notion of symbolic abstraction,
+but the two notions are distinct. Our technical report [36] discusses the diﬀer-
+ences in detail, describing symbolic abstraction as over-approximating a formula
+ϕ using an impoverished logic fragment, while a cover algorithm only removes
+variables V from the vocabulary of ϕ. The two approaches yield diﬀerent over-
+approximations of ϕ, and the over-approximation obtained by a cover algorithm
+does not, in general, yield suitable abstract values and abstract transformers.
+References
+1. A. Armando, C. Castellini, and E. Giunchiglia. SAT-based procedures for temporal
+reasoning. In Recent Advances in AI Planning, 2000.
+2. T. Ball, A. Podelski, and S. Rajamani.
+Boolean and Cartesian abstraction for
+model checking C programs. In TACAS, 2001.
+3. M. Bj¨ork. First order St˚almarck. J. Autom. Reasoning, 42(1):99–122, 2009.
+4. N. Bjørner and L. de Moura. Accelerated lemma learning using joins–DPLL(⊔).
+In LPAR, 2008.
+5. R. E. Bryant and M. N. Velev. Boolean satisﬁability with transitivity constraints.
+Trans. on Computational Logic, 3(4), 2002.
+6. E. Clarke, D. Kroening, N. Sharygina, and K. Yorav. Predicate abstraction of
+ANSI-C programs using SAT. FMSD, 25(2–3), 2004.
+7. P. Cousot and R. Cousot. Systematic design of program analysis frameworks. In
+POPL, 1979.
+8. P. Cousot and N. Halbwachs. Automatic discovery of linear constraints among
+variables of a program. In POPL, 1978.
+
+18
+Aditya Thakur and Thomas Reps
+9. M. Davis, G. Logemann, and D. Loveland.
+A machine program for theorem-
+proving. Commun. ACM, 5(7), 1962.
+10. M. Davis and H. Putnam. A computing procedure for quantiﬁcation theory. J.
+ACM, 7(3), 1960.
+11. L. de Moura and N. Bjørner. Z3: An eﬃcient SMT solver. In TACAS, 2008.
+12. M. Elder, J. Lim, T. Sharma, T. Andersen, and T. Reps. Abstract domains of
+aﬃne relations. In SAS, 2011.
+13. C. Flanagan, R. Joshi, X. Ou, and J. Saxe. Theorem proving using lazy proof
+explication. In CAV, 2003.
+14. S. Graf and H. Sa¨ıdi. Construction of abstract state graphs with PVS. In CAV,
+1997.
+15. S. Graham and M. Wegman. A fast and usually linear algorithm for data ﬂow
+analysis. J. ACM, 23(1):172–202, 1976.
+16. P. Granger. Improving the results of static analyses programs by local decreasing
+iteration. In FSTTCS, 1992.
+17. S. Gulwani and M. Musuvathi. Cover algorithms and their combination. In ESOP,
+2008.
+18. J. Harrison. St˚almarck’s algorithm as a HOL derived rule. In TPHOLs, 1996.
+19. M. Karr. Aﬃne relationship among variables of a program. Acta Inf., 6, 1976.
+20. N. Kidd, A. Lal, and T. Reps. WALi: The Weighted Automaton Library, 2007.
+www.cs.wisc.edu/wpis/wpds/download.php.
+21. A. King and H. Søndergaard. Automatic abstraction for congruences. In VMCAI,
+2010.
+22. J. Knoop and B. Steﬀen. The interprocedural coincidence theorem. In CC, 1992.
+23. A. Lal and T. Reps. Improving pushdown system model checking. In CAV, 2006.
+24. A. Lal, T. Reps, and G. Balakrishnan. Extended weighted pushdown systems. In
+CAV, 2005.
+25. K. McMillan, A. Kuehlmann, and M. Sagiv. Generalizing DPLL to richer logics.
+In CAV, 2009.
+26. D. Monniaux. Automatic modular abstractions for template numerical constraints.
+LMCS, 6(3), 2010.
+27. M. M¨uller-Olm and H. Seidl. Analysis of modular arithmetic. TOPLAS, 2007.
+28. PPL: The Parma polyhedra library. www.cs.unipr.it/ppl/.
+29. T. Reps, M. Sagiv, and G. Yorsh. Symbolic implementation of the best transformer.
+In VMCAI, 2004.
+30. M. Sagiv, T. Reps, and R. Wilhelm. Parametric shape analysis via 3-valued logic.
+TOPLAS, 24(3):217–298, 2002.
+31. S. Sankaranarayanan, H. Sipma, and Z. Manna. Scalable analysis of linear systems
+using mathematical programming. In VMCAI, 2005.
+32. M. Sharir and A. Pnueli. Two approaches to interprocedural data ﬂow analysis.
+In Program Flow Analysis: Theory and Applications. Prentice-Hall, 1981.
+33. M. Sheeran and G. St˚almarck.
+A tutorial on St˚almarck’s proof procedure for
+propositional logic. FMSD, 16(1), 2000.
+34. O. Strichman. On solving Presburger and linear arithmetic with SAT. In FMCAD,
+2002.
+35. A. Thakur and T. Reps. A generalization of St˚almarck’s method. TR 1699, CS
+Dept., Univ. of Wisconsin, Madison, WI, Oct. 2011.
+36. A. Thakur and T. Reps. A method for symbolic computation of precise abstract
+operations. TR 1708, CS Dept., Univ. of Wisconsin, Madison, WI, Jan. 2012.
+37. G. Yorsh, T. Reps, and M. Sagiv. Symbolically computing most-precise abstract
+operations for shape analysis. In TACAS, 2004.
+
