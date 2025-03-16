@@ -1,0 +1,1423 @@
+KRDB RESEARCH CENTRE
+KNOWLEDGE REPRESENTATION
+MEETS DATABASES
+Faculty of Computer Science, Free University of Bozen-Bolzano, Piazza Domenicani 3, 39100 Bolzano, Italy
+Tel: +39 04710 16000, fax: +39 04710 16009, http://www.inf.unibz.it/krdb/
+KRDB Research Centre Technical Report:
+Introduction to part-whole relations: mereology,
+conceptual modelling and mathematical aspects
+C. Maria Keet
+Afﬁliation
+KRDB Research Centre, Faculty of Computer Science
+Free University of Bozen-Bolzano
+Piazza Domenicani 3, 39100 Bolzano, Italy
+Corresponding author
+Maria Keet
+keet@inf.unibz.it
+Keywords
+Mereology, Aggregation, Part-whole relation, DL, ORM, UML
+Number
+KRDB06-3
+Date
+2 October 2006
+URL
+http://www.inf.unibz.it/krdb/pub/
+
+c⃝KRDB Research Centre
+This work may not be copied or reproduced in whole or part for any commercial purpose. Permission to copy
+in whole or part without payment of fee is granted for non-proﬁt educational and research purposes provided
+that all such whole or partial copies include the following: a notice that such copying is by permission of the
+KRDB Research Centre, Free University of Bozen-Bolzano, Italy; an acknowledgement of the authors and
+individual contributors to the work; all applicable portions of this copyright notice. Copying, reproducing, or
+republishing for any other purpose shall require a licence with payment of fee to the KRDB Research Centre.
+
+Introduction to part-whole relations: mereology,
+conceptual modelling and mathematical aspects⋆
+Maria Keet
+KRDB Research Centre, Faculty of Computer Science, Free University of Bozen-Bolzano, Italy
+keet@inf.unibz.it
+1
+Introduction
+An active area of research in knowledge representation concerns the nature of the part-
+whole relation between entities or instances, its representation in a (formal) language,
+and its translation to support in software systems. The sub-disciplines it traverses in-
+clude philosophy, (applied) ontology and ontologies, linguistics, conceptual modelling,
+formal languages, and software design & implementation. Depending on one’s back-
+ground, points of view on importance of the parthood relation ranges from essential
+and equally important on a par with the taxonomic subsumption relation to that there
+is no real added value. The latter opinion tends to be due either to misunderstanding
+of the nature of the parthood relation and its variations or that part-whole relations
+can be accommodated for with set theory anyway (which, as will become clear below,
+is not always true). In this tutorial, we highlight some of the main aspects and re-
+search trends regarding the parthood relation and point toward several open problems
+awaiting a solution.
+The ﬁrst part consists of philosophical aspects (called mereology) and several
+mathematical properties of theories of parthood (§2), after which we introduce the
+contentious notion of types of parthood relations in §3. This is followed by represen-
+tation of part-whole relations in several conceptual modelling and ontology languages
+like Description Logics, UML, ER and ORM (§4). A brief discussion of arguments
+on representing part-whole relations in knowledge representation languages, or not,
+is included in §5. The last section (§6) summarizes and provides several suggestions
+for further research. Due to space and time constraints, this tutorial is necessarily
+incomplete, therefore you are strongly advised to consult the references, which go into
+detail of particular sub-topics that are covered only brieﬂy here.
+2
+Mereology and mathematical properties of mereological theories
+Mereology, the ontological investigation into the part-whole relation, mainly dates
+back to Le´sniewski [23] in the early 20th century. From the 1980s up till now this
+research has greatly expanded, with important publications by Peter Simons [37] and
+Achille Varzi [44], among others. Varzi [44] provides an overview of the more and
+⋆This technical report contains background information and further references accompanying the
+tutorial that bears the same title as this TR, held at Free University Bozen-Bolzano, Italy, in
+October 2006.
+
+2
+less constrained versions of mereology from the viewpoint of philosophy, which is
+summarized by Guizzardi [12] from the perspective of conceptual modelling. Here,
+we ﬁrst summarize the main basic aspects of mereology as described by [44] in §2.1,
+which is augmented with a comparison with set theory as elaborated on by [30] in
+§2.2. Afterward, some other extensions, variations and gaps pass the revue in §2.3,
+including initial steps from the philosophical aspects toward computation and toward
+applicability to speciﬁc subject domains.
+2.1
+Basic principles up to GEM
+The very lowest common denominator concerning the parthood relation, called Ground
+Mereology and abbreviated as M, is that it is a relation capturing a partial order that
+is always reﬂexive (1), antisymmetric (2), and transitive (3) and all other versions
+share at least these constraints1. This, however, does not mean (1-3) are uncontested;
+in particular transitivity of the part of receives attention, to which we return later.
+part of(x, x)
+(1)
+// everything is part of itself
+(part of(x, y) ∧part of(y, x)) →x = y
+(2)
+// two distinct things cannot be part of each other, or:
+// if x is part of y and y is part of x, then x and y are the same thing
+(part of(x, y) ∧part of(y, z)) →part of(x, z)
+(3)
+// if x is part of y and y is part of z, then x is part of z
+With these three basic formulas that take part of as primitive relation (i.e., it does
+not have a deﬁnition), several other mereological predicates can be built. A common
+one is the deﬁnition of proper part as (4), from which asymmetry, and irreﬂexivity
+follows; thus, x is not part of itself, if x is part of y then y is not part of x, and if x is
+part of y and y part of z then x is part of z. Note that in some mereological theories,
+proper part is taken as primitive relation.
+proper part of(x, y) ≜part of(x, y) ∧¬part of(y, x)
+(4)
+Six more predicates can be introduced, of which overlap (5) and overcross (7) tend
+to be more often mentioned, although underlap (6) is more often used in e.g. bio-
+ontologies.
+overlap(x, y) ≜∃z(part of(z, x) ∧part of(z, y))
+(5)
+// x and y ‘share’ a piece z (see also overcross); is reﬂexive and symmetric
+underlap(x, y) ≜∃z(part of(x, z) ∧part of(y, z))
+(6)
+1 All formulas are universally quantiﬁed, unless otherwise speciﬁed.
+
+3
+// x and y are both part of some z; is reﬂexive and symmetric
+overcross(x, y) ≜overlap(x, y) ∧¬part of(x, y)
+(7)
+// x and y overlap, but x is not a part of y
+undercross(x, y) ≜underlap(x, y) ∧¬part of(y, x)
+(8)
+// x and y underlap, but y is not part of x
+proper overlap(x, y) ≜overcross(x, y) ∧overcross(y, x)
+(9)
+// combines proper parthood with overlap
+proper underlap(x, y) ≜undercross(x, y) ∧undercross(y, x)
+(10)
+// combines proper parthood with underlap
+Now we can start creating extensions. The ﬁrst one has to do with the argument that
+if some y has a proper part x, then there should be some remainder because x is ‘less’
+than y. There are two ways to add this to M: through weak (11) and strong (12)
+supplementation.
+proper part of(x, y) →∃z(part of(z, y) ∧¬overlap(z, x))
+(11)
+// weak supplementation: every proper part must be supplemented by another, disjoint, part
+¬part of(y, x) →∃z(part of(z, y) ∧¬overlap(z, x))
+(12)
+// strong supplementation: if an object fails to include another among its parts,
+// then there must be a remainder
+The addition of the weak supplementation principle to the ground mereology is called
+Minimal Mereology, abbreviated as MM, whereas the addition of strong supplementa-
+tion is called Extensional Mereology, or EM. However, EM has some issues: because
+(13) is a theorem of EM, it follows that non-atomic objects with the same proper
+parts are identical (14) – but sameness of parts may not be suﬃcient for identity.
+For instance, two objects can be distinct solely with respect to how their parts are
+arranged, and one can make the distinction (or not) between an object and the mat-
+ter constituting it, like a vase and the clay2. Consult [44] section 3.2 for examples,
+discussion, and pointers to further literature.
+∃z(proper part of(z, x) →
+(∀z(proper part of(z, x) →proper part of(z, y)) →part of(x, y)))
+(13)
+(∃z(proper part of(z, x)) ∨∃z(proper part of(z, y))) →
+(x = y ↔∀z(proper part of(z, x) ↔proper part of(z, y))
+(14)
+Extending M in another direction, we look at the feature that a mereological domain
+must be closed under various operations. There are two options: ﬁnitary operations,
+2 With the multiplicative approach as taken by DOLCE [24], the vase and the amount of clay are
+not identical because they each have diﬀerent properties. They have, however, the same parts.
+
+4
+which adds a C of closure, or unrestricted fusions, which adds the G for general
+mereology, which we introduce now.
+First, we have two operations: the mereological sum (also called fusion) and the
+product. Given underlap (6), then there is a smallest entity z such that x and y are
+only and fully part of z (15); likewise for overlap (5), there is a largest common entity
+that is part of both x and y (16). For instance, a sugar pot as the mereological sum
+of the cup and the lid, and the junction is the product of two intersecting roads.
+underlap(x, y) →∃z∀w(overlap(w, x) ↔(overlap(w, x) ∨overlap(w, y)))
+(15)
+// mereological sum (fusion)
+overlap(x, y) →∃z∀w(part of(w, z) ↔(part of(w, x) ∧part of(w, y)))
+(16)
+// mereological product
+Adding (15) and (16) to M gives the CM, and adding it to EM gives CEM. CEM
+supports deﬁnitions for x + y and x × y, which can be succinctly rewritten into (17)
+and (18) for unique mereological sum of two underlapping entities and unique product
+of two overlapping entities, respectively.
+underlap(x, y) →∃z(z = x + y)
+(17)
+overlap(x, y) →∃z(z = x × y)
+(18)
+Similarly, we can add more closure postulates, like remainder, complementation, and
+top. Adding bottom, on the other hand, is rarely done – except for good algebraic rea-
+sons (see §2.2) – because it means postulating a null entity that is part of everything,
+i.e. ∃z∀x(part of(z, x)), which is philosophically problematic.
+Second, we take a look at unrestricted fusions, which will get us to GEM. Un-
+restricted fusions, i.e. sums of arbitrary non-empty sets of objects (and consequently
+also products) would need explicit reference to classes, by which we have to leave ﬁrst
+order theory. However, there is an alternative for permitting unrestricted fusions yet
+stay within ﬁrst order, which is by relying on an axiom schema with only predicates or
+open formulas. Let φ be a property or condition, then for every satisﬁed φ there is an
+entity consisting of all entities that satisfy φ (note: since there is a countable amount
+of open formulas, there are countable many classes). Thus, unrestricted fusion (19)
+can be added to M to give GM, which is known as Classical Mereology or General
+Mereology.
+∃xφ →∃z∀y(overlap(y, z) ↔∃x(φ ∧overlap(y, x)))
+(19)
+// unrestricted fusion
+Adding unrestricted fusion (19) to EM or an extensional strengthening of GM with
+strong supplementation (12), then we get the General Extensional Mereology GEM.
+The various possible mereological theories and how they relate are depicted in Fig.1;
+a more comprehensive diagram is included as ﬁgure 2 in [43].
+
+5
+Ground Mereology 
+M
+Minimal Mereology 
+MM
+Extensional Mereology 
+EM
+Closure Mereology 
+CM
+Extensional Closure Mereology 
+CEM = CMM
+General Mereology 
+GM
+General Extensional Mereology 
+GEM = GMM
+Fig. 1: Hasse diagram of mereological theories; from
+weaker to stronger, going uphill (after [44]).
+We can deﬁne the sum σ and product π in GEM, which enables one to succinctly
+rewrite sum (20), product (21), remainder (22), complement (23), and universal indi-
+vidual (24). See [44] sections 4.2 and 4.3 for further detail and discussion.
+x + y = σz(part of(z, x) ∨part of(z, y))
+(20)
+x × y = σz(part of(z, x) ∧part of(z, y))
+(21)
+x −y = σz(part of(z, x) ∧¬overlap(z, y))
+(22)
+∼x = σz(¬overlap(z, x))
+(23)
+U = σz(part of(z, z))
+(24)
+Given these basics, we can proceed to its mathematical analysis and some interesting
+properties, which are described in the next section.
+2.2
+GEM and set theory
+Set theory provides structural relations to abstract mathematical entities called sets
+by using the is element of relation (see [19] for a brief online introduction, among
+many sources and books). However, its grounding in reality is debatable due to the
+many abstract ingredients, which mereology may overcome at least to some extent (see
+e.g. the introduction of [6] for arguments and §5.2 below). Since mereological theories
+are formulated in predicate logic (see above in §2.1), one can assess how they relate
+to set theory from a mathematical perspective, comprehensively assessed by Pontow
+and Schubert [30].
+
+6
+Extensions Given GEM with its algebraic operators as introduced in the previous
+section, fusion is inadequate from a mathematical and practical perspective because
+it disallows summing an arbitrary collection in an inﬁnite domain. Instead of using
+“φ” as in (19), one can use second order logic and add formula (25). That is, let M be
+a non-empty subset of a domain D, then there exists a sum z of the entities of M in
+D such that for any entity w of the domain it holds true that w has an overlap with
+z iﬀthere exists an element of M that overlaps with w.
+∃z∀w(overlap(z, w) ↔∃x(x ∈M ∧overlap(x, w)))
+(25)
+// alternative characterization of fusion
+The combination of (1-3), (12), and (25) is called Closed General Extensional Mereol-
+ogy, denoted with GEM+. Note that (25) implies (19), hence GEM is a subtheory
+of GEM+.
+Recollecting the philosophical aversion of adding bottom, i.e. a null entity, because
+ontologically there does not seem to be an entity that is part of all other entities, this
+is undesirable from a mathematical perspective because it prevents models of such
+theories from getting characterised as Boolean algebras. Thus, we add a unique least
+element (26).
+∃0∀z(part of(0, z))
+(26)
+// addition of the null element (bottom)
+Adding (26) requires some additions to ensure non-trivial overlap overlap′, non-trivial
+part of part of′, non-trivial proper part of proper part of′ and non-trivial atomicity
+Atom′. That is, (5) needs an additional “∧z ̸= 0” and so forth. As a knock-on eﬀect, the
+strong supplementation (12) and two fusions ((19) and (25)) have to be redeﬁned with
+their non-trivial counterparts. The addition of the null element to GEM+ gives us
+Closed General Extensional Mereology with Null, abbreviated as GEM+0. Likewise,
+GEM with null becomes GEM0.
+A third variation concerns atomicity, with atom deﬁned as (27). A mereological
+theory commits to either that there are atoms (28) or entities are inﬁnitely divisible
+into parts (29); see also [44] section 5, and [42] who calls them discrete and continuous,
+respectively3.
+Atom(x) ≜¬∃y proper part of(y, x)
+(27)
+// indivisable entity: an atom has no parts
+∀x∃y(Atom(y) ∧part of(y, x))
+(28)
+// there are atoms
+∀x∃y proper part of(y, x)
+(29)
+3 Sowa also considers lumpy: some things are atoms, some are continuous. ∃xAtom(x) ∧∃y∀z(z ≤
+y) →∃w(w < z)).
+
+7
+// entities are inﬁnitely divisable, i.e. there are no atoms
+The atomic variant adds an A to the abbreviation, and an atomless mereological
+theory has an ¯A added to the abbreviation.
+Comparison Consider ZFC-set theory and recollect that a) for all sets x there exists
+a set y which is not an element of x, and b) there exists an injective but no surjective
+mapping from a set onto its power set. Also note the diﬀerence between the set the-
+oretical level used for speciﬁcation (‘outer perspective’) and the set theoretical level
+within the model (‘inner perspective’) at the object level; sets belonging to the latter
+will be preﬁxed with a “U-” and the U-element relation denoted with ∈U. Then, all
+U-sets are elements of the set U which itself is not a U-set, and the U-element relation
+∈U is a subset of U × U.
+The obvious ‘mapping’ between set theory and mereology is to map the set theo-
+retical inclusion “⊂” to the part of and the aim is now to try to ﬁnd models of the
+introduced mereological theories within a given universe of sets.
+A ﬁrst observation is, that with an interpretation (U, ⊂U) that contains the U-
+empty set ∅, GEM and GEM+ cannot be satisﬁed, because they both lack the null
+entity. On the other hand, with the bottom as in (26) that is included in GEM0
+and GEM+0, this is valid under the considered set theoretical interpretation because
+∅is the set theoretical counterpart to (26). In addition, (1-3) also translate to valid
+theorems of ZFC-set theory and proper parthood (4) translates to the ⊂U. Concerning
+GEM+0, the non-trivial version of strong supplementation can also be derived from
+ZFC-set theory: if a and b are U-sets and if a is not a U-subset of b then there exists a
+U-element c of a which is not a U-element of b, thus, the U-set {c}U is a U-non-empty
+U-subset of a but is U-disjoint from b. However, taking into account the non-trivial
+version of the alternative fusion formula (25), then we can derive that there exists
+a U-set b which is not U-disjoint from any other U-set c, but such a U-set b does
+not exist (see [30] section 3 for details). Therefore, one can conclude that the axiom
+scheme with the non-trivial version of the alternative fusion formula is not true in
+the set theoretical interpretation. Due to the non-trivial fusion (hence also non-trivial
+version of the alternative fusion), the considered set theoretical interpretation is not
+a model of GEM0 and GEM+0 either.
+Next, we consider a set theoretical interpretation that has a restriction such that
+it is closed under the operations of binary U-union and binary U-intersection, whose
+interpretation is denoted with (Ua, ⊂Ua). Following Pontow and Schubert’s theorem 13
+and its proof [30], (Ua, ⊂Ua) is a model of AGEM0 (atomic GEM with null element).
+Most notably, the non-trivial version of unrestricted fusion (19) is satisﬁed by this
+interpretation. It is not the case that the non-trivial alternative fusion (25) is satisﬁed
+by (Ua, ⊂Ua) if U is inﬁnitely countable (from the outer perspective) and if the set
+{x ∈U|x ∈U a} is an inﬁnitely countable (from the outer perspective) subset of U.
+As corollary, we get: if ZFC-set theory is consistent, there exists a model of GEM0
+which is not a model of GEM+0 and there exists a model of GEM which is not a
+model of GEM+.
+
+8
+So, we still need to ﬁnd a class of set theoretical structures such that also the
+non-trivial version of the alternative fusion can be satisﬁed. To get this, we need the
+power set P with an interpretation (P(a), ⊂P(a)). This interpretation is a model of
+AGEM0 and AGEM+0, because the non-trivial version of the alternative fusion is
+true in (P(a), ⊂P(a)).
+Note that the converse question – if there exist models of set theory within mere-
+ological structures – can be answered in the negative, because there does not exist a
+greatest set in a universe of sets (see theorem 10 in [30]).
+We also can assess if, and how, the models of the considered mereological theories
+are related to Boolean algebras. Obviously, no model of GEM or GEM+ can be a
+Boolean algebra because they miss the null entity. But GEM0 and GEM+0 carry the
+structure of Boolean algebras and complete Boolean algebras, respectively. Also the
+converse holds, i.e. that any complete Boolean algebra is a model of GEM+0. Consult
+[30] for the theorems and proofs. Additional theorems and proofs can be found in [30]
+(section 5) regarding the duality between mereological theories and set theoretical,
+algebraical, and topological aspects, which is summarised in their theorem 34:
+Theorem 34 ([30]).
+(1) Any model of GEM+0 is isomorphic to the complete Boolean algebra of open regular
+sets of a Boolean topological space. In particular, the operators of binary sum and
+binary product are mapped to binary union and binary intersection respectively, while
+the general sum and general product operators are mapped to the closure of arbitrary
+union and the interior of arbitrary intersection, respectively.
+(2) Conversely, in any topological space X the system of open regular subsets is a model
+of GEM+0 with the interior of the closure of binary union as binary sum, binary inter-
+section as binary product, and with the interior of the closure of arbitrary union and
+the interior of arbitrary intersection as general sum and general product, respectively.
+(3) Any model of GEM+ is isomorphic to the complete Boolean algebra of open regular
+sets of a Boolean topological space where the empty set is removed from the system,
+and conversely, the complete Boolean algebra of open regular sets without the empty
+set of any topological space is a model of GEM+.
+(4) Any model of GEM0 is isomorphic to a Boolean subalgebra of the complete Boolean
+algebra of open regular sets of a Boolean space. This subalgebra is not necessarily
+complete if ZFC is consistent.
+(5) Any model of GEM is isomorphic to a Boolean subalgebra of the complete Boolean
+algebra of open regular sets of a Boolean space where the empty set is removed. This
+subalgebra is not necessarily complete if ZFC is consistent.
+(6) Any model of AGEM is isomorphic to a Boolean subalgebra of the complete Boolean
+algebra of open regular sets of a Boolean space X without the empty set and with the
+additional property that the union of the atoms is a dense subset of X. This subalgebra
+is not necessarily complete if ZFC is consistent.
+(7) Any model of ¯AGEM+ is isomorphic to the complete Boolean algebra of open regular
+sets of a perfect Boolean space without the empty set, and conversely, the complete
+Boolean algebra of open regular sets of a perfect Boolean space where the empty set is
+removed, is a model of ¯AGEM+.
+(8) Any model of ¯AGEM is isomorphic to a subalgebra of the complete Boolean algebra
+of open regular sets of a perfect Boolean space where the empty set is removed. This
+subalgebra is not necessarily complete if ZFC is consistent.
+In short (and largely copied from [30] p135-136), there are links between mereological
+theories, variations on GEM in particular, with set theory. Theories of GEM and
+
+9
+GEM+ are not equivalent4 (provided that ZFC is consistent). Equivalence seemed to
+have been tacitly assumed in literature where models of GEM and AGEM have been
+classiﬁed as complete Boolean algebras without the null element, which is in general
+only true for models of GEM+ and AGEM+ if ZFC is consistent. In GEM and
+GEM+ the existence of a universal entity is stipulated by the respective fusion ax-
+ioms while in set theory the existence of such an entity is contradictory, and in GEM
+and GEM+ the existence of a least or empty entity is denied while the existence of
+the empty set is an ingredient of set theory. Another important diﬀerence between
+these theories is that in GEM and GEM+ there is no straightforward analogue to
+the set theoretical is-element-of relation. Structures of GEM+ and complete Boolean
+algebras diﬀer only in one point: in contrary to structures of GEM+, in complete
+Boolean algebras a least element is included. Further, models of GEM are Boolean
+algebras which are not necessarily complete if ZFC is consistent. By Stone’s duality
+theory, the models of GEM+ can be characterized as the complete Boolean algebras
+of open regular sets of Boolean spaces without the empty set while models of GEM
+are isomorphic to subalgebras of these Boolean algebras without the empty set. It is
+remarkable that the respective isomorpisms map binary operations from the mere-
+ologies to the respective binary set theoretical operations while inﬁnite operators are
+mapped to topological variants of the respective set theoretical operators.
+Open issues are summarised in §6 below.
+2.3
+Some other extensions, variations, and gaps
+The basics of mereology are considered insuﬃcient for various reasons and have been
+extended to meet a wide range of divergent aims. Philosophically, the major broad-
+ening of basic mereology goes in the direction of mereotopology, i.e. combining part-
+hood with space or location (e.g. [9] [45] and RCC8 (Region Connection Calculus)).
+Mereotopological relations include, among others, adjacency, partial overlap, and (non-
+) tangential proper part. Also, preliminary steps have been taken to somehow relate
+mereology to granularity (e.g. [6] [21] [27]), which range from being the only theory for
+granularity, to one of the relations to relate levels of granularity, to the opposite where
+ﬁner-grained parts are not real parts of a whole but are somehow a collective alike
+the member-bunch or aggregation relation better known in conceptual modelling (see
+below). It is outside the scope to go into the details of these two topics. Conversely,
+instead of extending mereology, it can be incorporated as such in larger theoroes; for
+instance, the foundational ontology DOLCE [24] adheres to (contains) GEM.
+Another direction is to look at how mereology can be mapped onto decidable
+fragments of ﬁrst order logic with the aim to be able to use some mereological theory
+for computation. This will be addressed in §4.1, because at present a sub-theory has
+been formally mapped only to Description Logics [7], whereas mappings to other
+4 Ontologically, they diﬀer on one point: “in GEM only those collections of entities may be summed
+up which can be characterized by an expression of the logical language, while in GEM+ for any
+collection of entities a general sum is deﬁned. From the mathematical viewpoint there is one more
+important diﬀerence between GEM and GEM+, namely that only the axiomatics of GEM can be
+expressed in the language of ﬁrst order predicate logic related to the symbol set SM while GEM+
+needs second order logic expressions of this language” [30] p135.
+
+10
+conceptual and computational languages do not necessarily adhere to mereology (see
+§4). The latter is in no small part due to the ‘interference’ of cognitive aspects and, to
+some extent, the ‘meddling’ of meronymy (part-whole relations motivated by its use
+in natural language) in mereology proper. Active discussions on mereology-meronomy
+tend to end up zooming in on two themes: (in)transitivity and types of parthood-
+relations (see §3). This does not imply mereology proper has no particular practical
+relevance for linguistics and conceptual modelling, but requires further analysis and
+disambiguation, which will be introduced in §3 and §4.
+A third avenue is to investigate how actually the ‘some arbitrary domain’ of mere-
+ology and mereotopology can be used in speciﬁc subject domains. It is this author’s
+impression (or bias), that attempts focus mainly on using theories of mereology for
+the biological and biomedical domains (e.g. [13] [39] [38] [34] [35] [40])5. For instance,
+Smith et al [40] have developed the Relationship Ontology for biomedical ontologies,
+which contains informal and formal deﬁnitions for several mereological and mere-
+topological relations on both the instance level and the class level, has constraints
+on the relata (being endurants, perdurants, or spatial regions), are time-indexed for
+endurants, and the part of relation between classes uses the ‘all-some’ construction.
+The latter has the following deﬁnition for endurants (taken from [40] and amended
+for reasons of clarity):
+Deﬁnition (parthood between classes). X part of Y =def for all x that are instances of
+X, at time t, if Xxt then there is some y (that is an instance of Y and where X and Y are
+distinct) such that Y yt and x part of y at t.
+This means that all Xs, whenever they exist, exist as parts of Y s, according to [40].
+With such a deﬁnition, one can create a plethora of other parthood relations, like
+temporary parthood, an X initial part of Y (every x begins to exist as part of some
+y), or drop the time component and let X and Y be perdurants. It leaves the door
+open for a more liberal deﬁnition where some X is part of some Y and where part X
+may outlive whole Y .
+Arguably, there are ‘gaps’ or blank spots in mereology. How many variations, or
+versions, of the parthood relation are there? What about the inverse relation has part?
+How do the parts of a whole relate to each other? Linguistic analyses, conceptual
+modelling languages, and domain modelling (be it ontology development or the con-
+ceptual analysis stage in software development) struggle to accommodate more part-
+whole aspects than mereology seems to cover for, and there are as many suggestions,
+workarounds and (partial) solutions on oﬀer. This is the topic of the next sections.
+3
+Types of part-whole relations
+Contrary to the straightforward mereological theories with the transitivity of the
+part of relation, extensions and modiﬁcations have been proposed to a) accommo-
+date diﬀerent types of parthood relations and b) admit intransitivity in some cases of
+5 In contrast with the part-whole relation in conceptual modelling languages, which is largely focussed
+on the enterprise domain.
+
+11
+part-whole relations. See e.g. [20] [29] [46] for some discussion on the transitivity of
+the parthood relation. On closer inspection, it appears that in case of diﬀerent types
+of part-whole relations, diﬀerent kinds of universals are related, and, provided one
+makes the required distinctions, transitivity still holds (see also [46]). For instance,
+it is common to relate a process to its part-processes as involved in to distinguish it
+from part of between endurants (object types). Each type of part-whole relation then
+has to be extended with constraints on the participating object types, alike
+involved in(x, y) ≜proper part of(x, y) ∧Process(x) ∧Process(y)
+(30)
+Other variants include relating object types spatially through the part-whole relation,
+denoted as contained in [7] or located in for relating spatial (geographical) objects.
+However, these labels can be deceptive, because in some cases the relata refer to the
+spatial region only, which is an abstract entity, but not the entity that occupies the
+region. For instance, Book contained in Bag may refer to the entities themselves or
+to regions in space with x, y, and z coordinates. Also, what some authors consider
+to be ‘process’ needs qualiﬁcation. In the DOLCE foundational ontology, process is
+a subtype of perdurant6, where perdurant is generally considered to be equivalent to
+occurrent, which in turn is considered informally to be a synonym with process; but
+these diﬀerent assumptions can make the understanding of a involved in relation in-
+consistent. Specifying subtypes of parthood relations that constrain the relata requires
+commitment to a foundational (top-level) ontology to ensure unambiguous deﬁnitions
+of those parthood relations.
+An important distinction exist between the mereological part of relation and
+meronymic part-whole relations in linguistics: the latter is not necessarily transitive
+and may not ﬁt within any mereological theory. For instance, member of, also referred
+to as “member-bunch” [29], is an intransitive meronymic part-whole relation; like play-
+ers are members of a rugby team, probably member of that team’s club, but as player
+certainly not member of the rugby clubs federation. We illustrate (in-)transitivity of
+several mereological and meronymic part-whole relations in the following examples.
+The the names of the relations are extended or modiﬁed in most examples in order to
+indicate their ‘type’ other than just ‘part-of’.
+Example To clarify what is being part of the whole and how, we have extended the la-
+bels of the relation in most examples, such that the (in-)transitivity can be clear from the
+readings.
+⋆- Centimeter part of Decimeter
+- Decimeter part of Meter
+therefore Centimeter part of Meter
+- Meter partOf SI
+but not Centimeter part of SI, because meter is actually a member of the Syst`eme
+International d’Units.
+⋆- Vase constituted of Clay
+- Clay has structural part GrainOfSand
+but not Vase constituted of GrainOfSand
+⋆- CellMembrane structural part of Cell
+- Cell contained in Blood
+but not CellMembrane structural part of Blood
+6 Other perdurants belong to categories like event, state, achievement and accomplishment.
+
+12
+- Receptor structural part of CellMembrane
+therefore Receptor structural part of Cell
+⋆- Employee member of Company
+- Company located in Bolzano
+therefore Employee located in Bolzano? but not Employee memberOf Bolzano
+⋆- ReceptorBindingSite regional part of Receptor
+- Receptor functional part of SecondMessengerSystem
+therefore ReceptorBindingSite functional part of SecondMessengerSystem?
+One can extend these examples by taking into account if the relation is mandatory or not,
+and if their inverse relations hold. ♦
+During conceptual modelling of real subject domains these considerations, and con-
+fusions, are salient aspects in the modelling exercise. For this reason, we ﬁrst look
+into treatise by Odell [29] to clarify several aspects. This contribution is well-known
+in Object-Oriented conceptual modelling, hence the approach is a ‘bottom up’ one
+as opposed to the original departure of mereology. Afterwards (in §3.2), we return to
+taxonomies of types of parthood relation.
+3.1
+Part-whole relations and Odell’s aggregations
+It is important to ﬁrst make the switch to engineering usefulness here; what goes on
+in engineering can at times be useful to make clariﬁcations of theoretical approaches,
+and even may induce avenues for research to improve theories. In addition, sometimes
+things just work in practice – well, sort of and possibly suﬃciently well7 – even though
+purist likely will disagree. On the other hand, it is a good exercise for mereologists
+to analyse relations that are informally grouped under the heading of part-whole
+relations. Odell’s suggestions for part-whole relations are summarised in Table 1, and
+discussed in the remainder of this section.
+Table 1: Odell’s types of part-of relations.
+Type of part-of
+Explanation
+component – integral object Discrete type of part-whole relation with atoms
+material – object
+Constitution of objects
+portion – object
+a) some amount of matter is part of the whole, and
+b) scale-based partonomic relations
+place – area
+Where part-place cannot be separated from the whole-area
+member – bunch
+Whole bunch is generally denoted with a collective noun
+and its members can change over time
+member – partnership
+Like member-bunch,
+but changing a member does destroy the whole
+7 Permitting a mild digression: that it ‘sort of’ works and possibly suﬃciently does not mean mere-
+ology is implemented properly (see also §4), but some argue that it is a so-called 80-20 situation,
+where the relatively easy bit of parthood relations have passed the revue, but to do it well and
+address the remaining 20 costs too much. Conversely, it may be that only 20% is addressed and
+the 80% still has to be uncovered and implemented but that conceptual modelers are not aware of
+it and therefore do not realise what they are missing.
+
+13
+The ﬁrst type of aggregation Odell identiﬁes within the context of proposing
+them for inclusion in the class diagrams of the Uniﬁed Modeling Language (UML),
+is component-integral object, which corresponds to the (structural) part of relation.
+The second one, “material-object” is ontologically not a mereological relation, because
+it deals with constitution of objects, like a vase is constituted of clay [24].
+Third, portion-object is ambiguous, where Odell gives examples like “a slice of
+bread is a portion of a loaf of bread”, or meter part of a kilometer [29] (and so forth
+for other arbitrary scales). Ontologically, we have two separate cases here: the ﬁrst
+deals with a relation that some amount of matter is part of the whole, like a sip of
+wine is (or was) part of the wine in my glass of wine. In how many sips of wine can
+the wine in my glass be ‘partitioned’? These sips are portions, but not parts. These
+type of objects are commonly indicated with mass nouns as opposed to count nouns,
+i.e. amounts of matter in DOLCE [24] as one does not refer to 1 wine, 2 wine etc,
+but one sip of wine, two portions of mashed potatoes, three servings of pudding and
+so forth. One caution to observe, is that an entity referred to with a mass noun does
+not imply that it is ontologically an example of portion-object. Note also that this is
+diﬀerent from the sorites paradox [41], also known as the heap problem, which has to do
+with vagueness, not granularity or mereology. The other issue with portion-object, is
+that of scale-based partonomic relations, which is distinct from the amount of matter
+and whole entity that is categorised as of the same type. With measurements, one
+actually can count; moreover, it is an essential feature one can determine in advance
+what the parts are and how many of them there are (like 10dm go in 1m). There
+is not some fuzzy Day with a ﬁat boundary, but it has 24 hours as its parts8. That
+Odell adds homeomericity with “similarity between a portion and its whole” as a
+characterising property does not solve which ontological meaning should be given to
+the portion-object type of aggregation, but other examples Odell presents suggest the
+ﬁrst interpretation.
+Fourth, there is the “place-area” type of aggregation where the part-place object1
+occupies cannot be separated from the whole-area object2, where object1 is physically
+smaller than, and part of, object2. One can reﬁne this aggregation to be one of con-
+tainment or location. With contained in and located in, we make the minor distinction
+between 3D spatial containment, like mitochondrion in cell or toolbox in the trunk of
+a car versus those that can be ‘mapped’ 2D, like oasis-desert or the region Alto Adige
+in Italy (province-country).
+The ﬁfth type is “member-bunch”, which, as mentioned above, is not a mereological
+relation because it is not transitive. The sixth aggregation type “member-partnership”
+puts another constraint on the ﬁfth type, such that changing a member does destroy
+the whole. Although not mentioned by Odell, this association (relation) requires to
+have not only a cardinality constraint of 2 for e.g. a marriage and Dick und Doof,
+but also constraints on which instances are allowed to participate in the partnership
+(e.g. only Stan Laurel and Oliver Hardy can make the partnership of Dick und Doof).
+However, one can also mode this as participates in, where a marriage is a certain
+8 A digression into assessing the ontological nature of each type of (SI) measurement scale is beyond
+the current scope.
+
+14
+perdurant in which two persons participate. Note that the member-partnership put a
+constraint on speciﬁc individuals participating in the relation, which is an aspect not
+addressed in mereology.
+Summarising, this leaves component-integral object (proper part of), place-area
+(located in), option b of portion-object, and member-bunch as types of part-whole
+relations. The ﬁrst two can be categorised as simpliﬁed descriptions of mereology and
+mereotopology respectively; simpliﬁed, because it it not clear regarding constraints
+that, for instance, the component must be part of the integral object and if it can exist
+as component of that (type of) integral object only (it is ignorant about existential,
+mandatory and contingent parts). Member-bunch is semantically a diﬀerent type of
+part-whoel relation.
+3.2
+A taxonomy of part-whole relations
+Odell’s proposal for part-whole relations consists of a list of relations, but eﬀorts have
+gone into constructing a taxonomy of part-whole relations. The ﬁrst proposal, moti-
+vated by linguistic use of ‘part’, i.e. meronymy, was made by Winston, Chaﬃn and
+Herrmann [48]. Several articles deal with analysing the WCH taxonomy and modelling
+considerations (e.g. [1] [11] [12] [29]). For instance, Gerstl and Pribbenow [11] prefer
+a “common-sense theory of part-whole relations”, motivated by diﬀerences in compo-
+sitional structure of the whole compared to external to the whole and allows for “dif-
+ferent views on the entities” [11](p888). Gerstl and Pribbenow reduce the six types of
+part-whole relations of WCH into three: component-complex, element-collection, and
+quantity-mass. This has been improved upon by Guizzardi [12], who distinguishes
+“three types of conceptual parthood”, being sub quantity of, sub collection of, and
+member of. The sub collection of is a set-subset relation, and not strictly a mereolog-
+ical part-of; on the other hand, this aspect can be satisfactorily addressed with the
+previously discussed mathematical analysis in §2.2. Guizzardi also oﬀers criteria for
+each as opposed to example-based (ch5 and ch7 of [12]). In addition, he extends the
+investigation with Vieu and Aurnague’s linguistically motivated functional parthood
+relations [47], which have ontological issues of their own (the notion of ‘function’ that
+is).9
+To clarify these distinctions, Keet [22] developed a simple taxonomy of part-whole
+relations, which is depicted in Fig.2. It has a major distinction between mereological
+and meronymic part-of; the major reasons why this ontological distinction exist has
+to do with transitivity of the parthood relation, which was illustrated in the example
+above: mereological part-of relations are transitive, meronymic not necessarily. The
+member-bunch, sometimes collection and subsumed by the liberal term aggregation,
+belongs to the meronymic branch and is labelled with member of. sub collection of
+is not included because of its set-theoretical emphasis; if added, then it is subsumed
+by Meronymic relation. What the ﬁgure does not show is that the ‘spatial’ is not
+in the sense of abstract region. Attempts to integrate this taxonomy with DOLCE
+9 Guizzardi also makes explicit the distinctions between essential parts (existential dependence),
+mandatory parts (generic constant dependence), and contingent parts. We return to this in the
+UML section (§4.2) because it does not aﬀect a top-level taxonomy of types of part-whole relations.
+
+15
+foundational ontology (as tested with its OWL version in Prot´eg´e) would fail the
+consistency check & classify taxonomy if the automated reasoner would have the
+capability to reason over a hierarchy of relations (called RBox in Description Logics):
+functional parthood cannot be properly represented as diﬀerentiating from s part of,
+and although contained in does have its relata (domain and range) constrained to
+physical object, located in relates regions, which are in another branch in the DOLCE
+ontology and would be inconsistent unless the spatial part of has PTs as its relata
+(which in turn would make it equivalent to the Mereological part of ). Alternatively,
+one may prefer to create multiple inheritance such that contained in is subsumed by
+both s part of and spatial part of. Or take another foundational ontology (cf. SUMO,
+BFO, OCHRE, GOL) that will suit this taxonomy. In short, although this version is
+more comprehensive and makes several ontologically justiﬁed distinctions, it is still up
+for debate, improvement, and possible extensions.
+ 
+Part-whole relation 
+Meronymic relation 
+Mereological part-of 
+member-of 
+constituted-of 
+sub-quantity-of participates-in 
+involved-in 
+spatial-part-of 
+f-part-of 
+s-part-of 
+located-in 
+contained-in 
+Fig. 2: Taxonomy of basic mereological and meronymic part-of relations. s-part-
+of = structural part-of; f-part-of = functional part-of. See text for details on the
+relata of the relations.
+Reﬂecting on the plethora of types of part-whole relations and the ‘clean’ mereo-
+logical theories, mereology can help assessing what is and what is not a true parthood
+relation and aids structuring the relations, but from the moment one starts looking at
+the relata, i.e. the kind of entities that stand in a part-whole relation to each other,
+other aspects have to be taken into account, like ontological categories of the types of
+entities and the (linguistic) use of parthood.
+4
+Part-whole relations in conceptual modelling languages
+Considering the variations in mereological and meronymic part-whole relations, it is
+useful to look into how the various conceptual data modelling languages treat such
+relations, which varies for each language and user community. It is also known under
+the term aggregation relation, although aggregation diﬀers from part-whole relations.
+Subsets can be ‘aggregated’ into larger sets, but the set-subset semantics is not the
+same as the formal semantics of mereology, as we have seen in §2.2, and the aggregate
+doe snot necessarily correspond to an entity in reality. Further, at times the intention
+is to model a mereological part of instead of just grouping entities, but the language
+does not permit it fully or only with ambiguous semantics. In this section we take
+
+16
+a closer look at four languages and how they fare regarding the part-whole relation:
+Description Logics (in §4.1), UML class diagrams (§4.2) and EER and ORM (§4.3).
+4.1
+Description Logics
+Description Logics is more often used as a knowledge representation language than as
+conceptual modelling language, and if used for conceptual modelling it is normally used
+‘in the background’ and restricted to DLR [10] [5]. As neither UML nor ER nor ORM,
+which are mapped to DLR, implement part-whole relations properly (elaborated on
+below), it may not matter that DLR does not have a comprehensive treatment of
+part-whole relations – at present. It is, however, being investigated.
+Some options to represent parthood relations in some DL language Besides
+inadequately deﬁning a part of or has part role in a DL, we can add a has part role
+as ⪰, model it as the transitive closure of a parthood relation (31) and deﬁne e.g.
+Car as having wheels that in turn have tires [1] (32), such that it follows that Car
+⊑∃⪰.Tire.
+⪰.= (primitive-part)∗
+(31)
+Car .= ∃⪰.(Wheel ⊓∃⪰.Tire)
+(32)
+However, transitive closure in ALC is EXPTIME-complete. Alternatively, one can
+deﬁne direct parthood ≺d, but this should verify the immediate inferior, which makes
+the language undecidable [2]. Schulz et al [34] have developed a workaround for ALC
+to get to reason with transitive parthood relations. They remodel transitive part-of
+relations as is a hierarchies using SEP triplets. The three core items are the structure-
+concept node that subsumes one (anatomical) entity, called entity node, and the parts
+of that entity (the p-node). The is a hierarchy is then built up by relating the P-node
+of a whole concept D to the S-node of the of the part C, where in turn the P-node of
+C is linked to the S-node of C’s part; see Fig.3. More formally, the deﬁnition of the
+whole D is (33), by which one can derive its anatomical proper part C as (34).
+DP .= DS ⊓¬DE ⊓∃a-pp.DE
+(33)
+CE ⊑∃a-pp.DE
+(34)
+Around the same time, Sattler [33] showed that with some extensions to ALC, it
+is possible to include more aspects of the parthood relation. These are: transitive
+roles (that is, permit R+ ⊆R), inverse roles to have both part-of and has-part, role
+hierarchies to include subtypes of the parthood relation, and number restrictions to
+model the amount of parts that go in the whole. This brings us to SHIQ.
+The latest, and most comprehensive attempt to represent parthood relations in
+DL is by Bittner and Donnelly [7], who approach the problem starting from the FOL
+characterisation and subsequently limiting its comprehensiveness and complexity to
+ﬁt it into a DL language, although it is unclear if their L∼Id⊔is decidable. In their
+theory DL-PCC, several constraints and deﬁnitions cannot be represented. These are:
+
+17
+ 
+Fig. 3: Figure 5: SEP Triplet Encoding for Anatomical
+Proper Part (a-pp), Anatomically Disconnected (a-dc),
+and Anatomical Partial Overlap (a-po′). (Source: after
+[34])
+impossibility to state that component of (CP), proper part of (PP) and contained in
+(CT) are irreﬂexive and asymmetric, and it is missing a discreteness axiom for CP or CT
+or a density axiom for PP (see [7] for details and discussion). Noteworthy is that they
+include transitivity of the characterised parthood relations as standard in mereology,
+but thereby do not have the option to state also that e.g. a directly contained in
+relation is intransitive.
+Other considerations Artale et al [1] [2] has placed the requirement for adequately
+representing the part-whole relation in a wider context, where some outstanding issues
+of 10 years ago are still in need of a solution. For instance, (non)distributivity of certain
+roles10 [2]. A main issue revolved around the role composition operator and transitive
+closure of ‘direct’ parthood roles at the TBox level [1], i.e., ∃W.∃W.C ⊑∃W.C), where
+the computation does derive that if part x that is a direct part of y that in turn
+is a direct part of the whole w, then x is a part of w but not that x is a direct
+part of w. This, however, assumes one needs a relation deﬁned a direct part of as
+pursued by Sattler [32], which is neither necessary from an engineering perspective
+nor desirable from an ontological (mereological) point of view. Alternatively, one can
+use the role composition operator to denote transitivity R ◦R ⊑R. Role composition
+has been developed further up to role inclusion and concatenation in SROIQ [17].
+However, note the two existential quantiﬁcations and that this is at the TBox level: the
+former is quite distinct from the all-some deﬁnitions in the Relationship Ontology (cf.
+§2.3) and the latter was already brieﬂy mentioned in [2] section 3 with corresponding
+unresolved issues regarding diﬀerences between TBox and ABox reasoning with the
+parthood relation.
+Another aspect of part-whole relations is the absence of ‘horizontal’ relations be-
+tween the parts, already noted by Artale et al in 1996 [1], which is a problem for DL
+10 Downward distributive: there are properties of the whole that the parts inherit; upward distributive:
+the whole inherits properties form its parts. Alternatively, they are called property inheritance
+through parts and property reﬁnement through parts.
+
+18
+representations, but less problematic for conceptual models for databases. DL adheres
+to the open world assumption, thus if we have in a DL TBox a statement alike
+C ⊑∃has part.D ⊓∃has part.E
+then it may be that C has more parts than only D and E and the composite C may
+not be fully deﬁned. No DL language deals with an additional axiom that states that
+C is composed of, the mereological sum of, D and E only. In contradistinction, con-
+ceptual models do adhere to a closed world assumption, thereby making C uniquely
+composed of at least one (instance of) D and at least one (instance of) E (depending
+on the constructors in the language, see below). For both, however, one needs addi-
+tional relations (roles) to declare how the parts themselves relate to each other. For
+instance, let C be Book, D be BookCover, and E is Page, then an additional horizontal
+role has to be declared alike BookCover ⊓∃encloses.Page. This is not impossible,
+but its consequences with respect to the parthood relation are not known. The status
+of diﬀerentiating between e.g. essential and mandatory part (see §4.2) is unclear, idem
+ditto the distributivity.
+Last, Bittner and Donnelly [7] reach an interesting conclusion with respect to fea-
+sibility of representing parthood in DLs, which merits further investigation: “ DLs
+are best used as reasoning tools for speciﬁc tasks in speciﬁc domains... [but] are not
+appropriate for formulating complex interrelations between relations. Thus we need
+to understand a computational ontology as consisting of two complementary com-
+ponents: (1) a DL based ontology that enables automatic reasoning and constrains
+meaning as much as possible and (2) a ﬁrst order ontology that serves as meta-data
+and makes explicit properties of relations that cannot be expressed in computationally
+eﬃcient description logics. The ﬁrst order theory then can be used by a human being
+to decide whether or not the DL-ontology in question is applicable to her domain.
+Moreover, meta-data can also be used to write special-purpose programs that phrase
+knowledge bases and enforce the usage of relations in accordance to the meta-data.”
+[7]. Given that reasoning over an ontology, knowledge base, or conceptual model is de-
+sirable, transitivity is of greater importance than observing direct parthood, therefore
+a restricted theory of parthood relations like provided by Bittner and Donnelly may
+be more useful than direct parthood and SEP triples, although a thorough comparison
+is yet to be conducted.
+4.2
+Aggregation in UML
+UML speciﬁcation UML [28] oﬀers aggregation in two modes: composite and shared
+aggregation. Composite aggregation, denoted with a ﬁlled diamond on the whole-side
+of the association (see Fig.4), is deﬁned as
+a strong form of aggregation that requires a part instance be included in at
+most one composite at a time. If a composite is deleted, all of its parts are
+normally deleted with it. Note that a part can (where allowed) be removed
+from a composite before the composite is deleted, and thus not be deleted as
+part of the composite. Compositions deﬁne transitive asymmetric relationships
+– their links form a directed, acyclic graph. [28]
+
+19
+The composite object is responsible for the existence and storage of the parts [28],
+where this ‘implementation behaviour’ of creation/destruction is an implicit ontolog-
+ical commitment at the conceptual level: the parts are existentially dependent on the
+whole (which implies mandatoryness), and not that when a whole is destroyed its parts
+can exist independently and become part of another whole. On the other hand, the
+whole is neither existentially dependent on its part nor has the part mandatorily. In
+addition, only binary associations can be aggregations [28], which is peculiar from an
+ontological perspective as this may (or may not) suggest that the aggregate/composite
+can have only one type of part. For instance, we have a composite aggregation be-
+tween Lysosome and the whole Cell, then the UML composite aggregation says not
+only that lysosomes are existentially dependent on the cell they are part of and that
+they can be part of one cell only, but also that the cell’s parts are lysosomes only,
+which is biologically incorrect. More general and precise, let A be the whole with parts
+B, C, and D in a UML class diagram as in Fig.4-A, then each part is associated to
+the whole through a separate binary composite aggregation, as if A is a whole where
+its instance a is made up of a collection of instances of type B, and/or made up of a
+collection of instances of type C and/or D, making A a diﬀerent type of entity for each
+aggregation of its parts, which cannot be the intention of the representation because
+that does not have a correspondence with the portion of the real world it is supposed
+to represent. What needs to be represented, and supported in the language, is that
+instances of B, C, and D together make up the instance of the whole entity A, as in
+Fig.4-B, and prevent a modeller to create something like Fig.4-A. This diﬀerence is
+ 
+A 
+B 
+C 
+D 
+A 
+A 
+B 
+B 
+C 
+D 
+{disjoint, complete} 
+Fig. 4: A: Ontologically ambiguous UML composite aggregation as separate binary associations;
+B: the composite A is composed of parts B, C, and D.
+not mentioned in the UML speciﬁcation, and one is left to assume it probably is a
+“semantic variation point” which of the two readings should be used (like the precise
+lifecycle semantics of aggregation is a semantic variation point too) [28]. Likewise for
+shared aggregation, which is denoted with an open diamond on the whole-side of the
+aggregation association, that has it that “precise semantics ... varies by application
+area and modeler” [28], and presumably can be used for any of the part-whole rela-
+tions described in Fig.2, or by [20] [25] [29] [48] etc. Unlike composite aggregation,
+shared aggregation has no constraint on multiplicity with respect to the whole it is
+part of. Thus, the part may be directly shared by more than one whole at the same
+time. The latter can be interpreted in two distinct ways. Let W1 and W2 be disjoint
+
+20
+classes on the aggregation side, and P the part class that is aggregated, then i) an
+instance pi is part of instance w11 and possibly also part of instance w12 (or vv.) and
+possibly more instances of W1, and/or ii) an instance pi is at least part of instance
+w11 and possibly also part of instance w21 (or vv.). An example of the former is that
+all instances of BSc curricula at the FUB must have as part a course in ethics, and
+of the latter, that a particular seminar may be part of both the LCT Colloquia and
+of the KBDB course. As exercise, try to come up with an example involving physical
+objects, and how to represent the diﬀerent semantics in UML.
+Overall, the ambiguous speciﬁcation and modelling freedom in UML does not
+enable making implicit semantics explicit in the conceptual model, and rather fosters
+creation of unintended models. This has been observed by several researchers, who
+have proposed a range of extensions to UML class diagrams, which is discussed in the
+next section.
+Formalizations of aggregation in UML class diagrams UML does not have a
+formal semantics, which demands from the researchers who propose extensions to also
+give the formal semantics. Whereas Barbier et al [4] maps it into the, less than opti-
+mal, Object Constraint Language, Motschnig-Pitrik and Kaasbøll [25] and Guizzardi
+[12] present a First Order Logic formalization and corresponding ‘dressing up’ of the
+graphical notation with several new icons and labels.
+This is in stark contrast with the minimalist approach taken by Berardi et al [5],
+who do not take into account these extensions and limit the formalisation to shared
+aggregation only (no formalisation is provided to account for additional constraints
+and composite aggregation). This avoidance is partially due to the ambiguous seman-
+tics of aggregation in UML and because adequately representing parthood in DL is
+not an easy task, as was discussed in §4.1. In Berardi et al’s [5] formalisation of shared
+aggregation in UML class diagrams, we have (35), where G is a binary predicate (for
+the aggregation, or ‘part of’) and C a concept.
+∀x, y(G(x, y) →C1(x) ∧C2(y)
+(35)
+Here we present a few formal deﬁnitions regarding parthood relations, which are in
+addition to the axiomatization in mereology and perceived to be necessary for con-
+ceptual modelling of mereological and meronymic relations, and for which there is
+also a correspondence in the UML extensions and corresponding graphical modelling
+language. Guizzardi adds, among others, the notion of essential part EP, deﬁned as
+([12]: p165):
+Deﬁnition 5.11 (essential part): An individual x is an essential part of another individ-
+ual y iff, y is existentially dependent on x and x is, necessarily, a part of y: EP(x, y) =def
+ed(y, x)∧□(x ≤y). This is equivalent to stating that EP(x, y) =def □(ϵ(y) →ϵ(x))∧□(x ≤
+y), which is, in turn, equivalent to EP(x, y) =def □(ϵ(y) →ϵ(x) ∧(x ≤y)). We adopt here
+the mereological continuism defended by (Simons, 1987), which states that the part-whole
+relation should only be considered to hold among existents, i.e., ∀x, y(x ≤y) →ϵ(x) ∧ϵ(y).
+As a consequence, we can have this deﬁnition in its ﬁnal simpliﬁcation
+(47). EP(x, y) =def □(ϵ(y) →(x ≤y))
+
+21
+where ϵ denotes existence, ≤for a partial order, and the □necessity. The ‘weaker’
+version is mandatory parthood MP, deﬁned as ([12]: p167):
+Deﬁnition 5.13 (mandatory part): An individual x is a mandatory part of another in-
+dividual y iff, y is generically dependent of an universal U that x instantiates, and y has,
+necessarily, as a part an instance of U:
+(49). MP(U, y) =def □(ϵ(y) →(∃U, x)(x < y)).
+To compare the mandatory part with the relation into the other direction, i.e. a
+mandatory whole MW, we have ([12]: p170):
+Deﬁnition 5.16 (mandatory whole): An individual y is a mandatory whole for another
+individual x iff, x is generically dependent on a universal U that y instantiates, and x is,
+necessarily, part of an individual instantiating U:
+(52). MW(U, x) =def □(ϵ(x) →(∃U, y)(x < y))).
+Last, we add an example of ‘dressing up’ UML class diagrams, which is depicted in
+Fig.5, demonstrating the proposed representation for the sub quantity of relation with
+an additional symbol, OCL constraint, and stereotypes. We can compare this with
+{essential=true}
+«category»
+Container
+«quantity»
+A
+«quantity»
+B
+«quantity»
+C
+Q
+Q
+containment
+1
+1
+1
+1
+1
+1
+{essential=true}
+ 
+Fig. 5: Part-whole relations among quantities. Essential parts are indicated with essential
+= true, which implies a composite aggregation (ﬁlled diamond), which is of the type “Q” for
+quantities. The stereotypes (“≪≫”) add further constraints to the permitted types of classes.
+(Source: [12])
+other formalisations, approaches and emphases. For instance, Motschnig-Pitrik and
+Kaasbøll focus on, among other things, gradations of exclusiveness between part and
+whole. This corresponds partially to Guizzardi’s mandatoryness and (in)separability
+of the part from the whole, as can be observed from one of the deﬁnitions, like for
+total exclusiveness ([25]: p785):
+Total exclusiveness. A part-of reference is totally exclusive if there exists exactly one
+immediate part-of link from a part-type P to a whole-type W and, for each instance p of P,
+there exists at most one instance w of W such that p part-of w. More formally, let:
+pk instance-of P, k ∈[1..n],
+wi instance-of W, i ∈[1..n′], wi′ instance-of W, i′ ∈[1..n],
+wxj instance-of WX, j ∈[1..n′′]
+then
+P totally-exclusive part-of W ⇔∀WX
+((P part-of W ∧P part-of WX) ⇒(W = WX ∨W part-of WX)) ∧
+((pk part-of wi ∧pk part-of wi′)) ⇒(i = i′))∧
+((pk part-of wi ∧pk part-of wxj) ⇒(wi = wxj ∨wi part-of wxj))
+
+22
+Then one can add further gradations, such as arbitrary sharing, interclass exclusive-
+ness, intraclass exclusiveness, and selective exclusiveness, each with their respective
+label attached to the association, like SelExcl and so forth [25]. Barbier et al [4] for-
+mulate the various add-ons as a “context” in OCL and add a meta-model fragment
+for whole-part relations where the attribute aggregation is removed from the Associ-
+ationEnd meta-class, Whole added as a subclass of Relationship and has two disjoint
+subclasses Aggregation and Composite.
+As the time of writing this document, none of the proposed extensions have made it
+into the UML speciﬁcation. Considering the amount of eﬀort put in investigating and
+proposing extensions to UML over the past 15 years, it will be useful to look into why
+the treatment of part-of remains minimal and ambiguous in the UML speciﬁcation.
+4.3
+Part-whole relations in (E)ER and ORM
+It may be clear from the previous section that part-whole relations in UML class dia-
+grams can have poorly deﬁned semantics, but what about other conceptual modelling
+languages? Entity-Relationship (ER) does not have a separate constructor for the
+part-whole relations, despite the occasional [36] request. Neither does the Object-Role
+Modelling (ORM) language have a separate constructor for parthood relation11. Are
+they better oﬀthan UML? What, if any, can already be represented from part-whole
+relations with ER or ORM? Here, we assess ORM.
+Recollecting the UML speciﬁcation that inserts design and implementation consid-
+erations for composite aggregation (that the parts are existentially dependent on the
+whole, and not that when the whole is destroyed the parts can have their own life),
+more is going on. A shared aggregation, such as the member of relation, between Team
+and Player in Fig.6, does not necessarily have the parts deleted as the players may
+play in more than one team, but only have removed the particular team and the asso-
+ciation between that destroyed team and its players. In contrast, a particular plasmid
+exists in one cell only and is a part of that cell12, hence has to be modelled as a com-
+posite aggregate. However, destroying the cell leaves the plasmid free to go to another
+cell instead of being destroyed as well. Here there is a diﬀerence between UML and
+ORM intended semantics: with composite aggregation in UML, part x cannot exist
+without that whole y, but ORM semantics of the suggested mapping [16] says that ‘if
+there is a relation between part x and whole y, then x must participate exactly once’.
+Put diﬀerently, x may become part of some other whole y′ after y ceases to exist, as
+long as there is some whole of type Y it is part of, but not necessarily the same whole.
+Hence, in contrast with UML, in ORM there is no strict existential dependency of the
+part on the whole. Fig.6-B shows an example, where the Club-Team fact has its ﬁrst
+order logic representation as (36-39) and Team-Person as (40-41). It does not specify
+11 Other languages, such as RDF, XML, and the DL-based OWL, are in the very early stages (too).
+See e.g. [26] [49] (and maybe [18]).
+12 It is outside the scope to provide an analysis if this parthood relation is a structural parthood or
+of a contained-in nature.
+
+23
+ 
+A. Aggregation in UML 
+ 
+ 
+Club 
+Team 
+Person 
+1 
+*
+*
+*
+B. Aggregation in ORM 
+Club
+Team
+Person
+has
+is in
+includes
+is in
+Fig. 6: Graphical representation of “aggregation” in UML and ORM.
+(Source: [15])
+that it is impossible for x to exist independently. Thus, the plasmid-cell example can
+be correctly represented with ORM but not UML.
+∀x, y, z((isIn(x, y) ∧isIn(x, z)) →y = z)
+(36)
+∀x, y(isIn(x, y) →Team(x) ∧Club(y))
+(37)
+∀x(Team(x) →∃y(isIn(x, y)))
+(38)
+∀x1, x2(isIn(x1, x2) ≡has(x2, x1))
+(39)
+∀x, y(isIn(x, y) →Person(x) ∧Team(y))
+(40)
+∀x1, x2(isIn(x1, x2) ≡includes(x2, x1))
+(41)
+Compared to more and less comprehensive formalizations and extensions for aggre-
+gation in UML [4] [12] [25] [5], for ORM, richer representations of the semantics are
+possible already even without dressing up the ORM diagram with icons and labels (see
+[22], who also provides several guidelines to ease selecting the appropriate part-whole
+relation and its mandatory and uniqueness contraints).
+Last, transitivity is also referred to as derived aggregation association [16], al-
+though not speciﬁcally mentioned as such in the UML speciﬁcation. Both UML and
+ORM allow representation of derived (aggregation) associations/roles, which, consid-
+ering the freedom in representing mereological relations, may be a method to add the
+semantics of transitivity of the aggregation – assuming that when no derived aggre-
+gation association occurs then the aggregation is intransitive. However, if we apply
+ontological rigour to a model, i.e. domain knowledge is properly represented, the diﬀer-
+ent types of aggregation are appropriately kept separate and each relation is transitive
+by default and usable for inferencing without the need to add ‘workarounds’ to the
+model with derived aggregations.
+Reﬂecting brieﬂy on the treatment of part-whole relations in knowledge represen-
+tation and conceptual modelling languages, there seems to be little left (or: transferred
+from) mereology and multiple other issues have come to the surface, such as mandatory
+
+24
+parts, essential parts, mandatory wholes, degrees of shareability, and ambiguous spec-
+iﬁcations. There are similar problems across the spectrum of languages, with multiple
+alternative solutions as is customary in computer science and engineering. Identifying
+the similar problems more generally might lead toward new developments in mereol-
+ogy and thereby contribute to a coherent treatment of part-whole relations across the
+spectrum. In the next paragraph we describe several requirements.
+5
+Arguments for representing and implementing part-whole
+relations
+It may be clear from the previous sections that part-whole relations in UML class
+diagrams can have poorly deﬁned semantics, DL struggles with its proper represen-
+tation, ER and ORM do not treat it as a ‘ﬁrst-class citizen’ either, mereology does
+not address all part-whole aspects relevant for conceptual modelling, and the notion
+of types of part-whole relations is not yet resolved fully. In this light, it is not surpris-
+ing why the usefulness of including a separate constructor for the parthood relation
+in conceptual modelling languages is called into question. In this section we look at
+arguments why, and why not, it should be included. One might wonder why we did
+not start with justiﬁcations, but after treating the philosophical, mathematical, and
+conceptual modelling aspects, we can better compare the arguments put forward, i.e.
+forming an informed standpoint as opposed to having an opinion based on intuition
+or single-perspective focus.
+5.1
+Requirements
+Considering the diﬀerences in deﬁnitions, implicit and explicit representations of the
+part-whole relations in knowledge representation languages, an overall structure and
+implementation would have to meet several requirements such that:
+i. a ‘minimal amount’ of mereological part of relations can be unambiguously iden-
+tiﬁed and are useful for conceptual modelling, including taking into account the
+relata of the relation for types of part-whole relations;
+ii. enable the modeler to distinguish between those types of parthood relations as
+well as identify the non-mereological meronymic relations;
+iii. provide a subset of combinations of uniqueness and mandatoryness constraints
+applicable to the relation, such that they are ontologically correct/possible;
+iv. clarify and accommodate for other, so-called secondary, properties of part-whole
+relations, such as existential dependence, inseparability, functional dependence,
+and completeness;
+v. ensure the inverse, has-part, relation is properly modelled as well;
+vi. transitivity of parthood relations is enabled where applicable and prohibited for
+non-transitive parthood-like relations;
+vii. address the possibilities and consequences of horizontal interrelations between the
+parts of a whole;
+viii. ensure the representation is such that one can distinguish between parthood
+relations of a class (or its instances) and other generic properties (/relations/roles/
+associations), i.e. to make part-whole and whole-part relations ﬁrst-class citizens;
+
+25
+ix. the constructors do not only serve as ‘paper exercise’ but also have computational
+support;
+x. that there is an underlying unifying paradigm that relates the conceptual modelling
+language speciﬁc constructors (if possible).
+At the time of writing, we are far away from meeting these requirements, and even
+if this is realised, it is unclear if modellers and software analysts will use it. Point i
+can be met with the simple taxonomic structure as presented in Fig.2, and point ii
+with a decision procedure alike shown in ﬁgure 3 of [22]. Secondary properties, inverse
+relations, transitivity, horizontal relations, and distinguishing between part-of rela-
+tions and other properties is only to a very limited extent possible in some languages
+(extensions of UML) and then either mostly implicit or with a myriad of additional
+labels. Full computational support likely is not possible due to undecidability, which
+hampers eﬀorts achieving points ix and x; hence, requires a narrowing down to the
+decidable fragment.
+5.2
+Discussion
+DL, ER and ORM deal with part-whole relations simply by naming the relation or
+fact type as part of and has part, or some similar label, and add appropriate unique-
+ness and mandatory constraints. On the surface, this may seem an advantage as it
+gives more freedom during the conceptual modelling exercise, e.g. to name a relation
+contained in. However, if we omit the mereological part-whole construct, what we
+are actually modelling is how sets of objects relate to each other, but not how parts
+make up the whole (aggregation in UML, albeit poorly deﬁned, does claim that the
+parts make up the whole). Recollecting the relation between mereology and set theory
+(§2.2), where mapping is possible under certain constraints, this does not do away
+with the ontological, philosophical, issues. This is more fundamentally described by
+Sowa [42] (among others), and particularly relevant if one indeed intends to model a
+portion of reality. First,
+• A mereological aggregate of multiple physical entities is a physical entity.
+An aggregate of abstract entities is also abstract. But in the usual versions
+of mereology, an aggregate of a physical entity like the cat Yoyo with an
+abstract entity like the number 7 would be meaningless or undeﬁned.
+• In set theory, however, the axioms impose no constraints on the types of the
+members. A cat and a number could be both members of the set {Y ojo, 7}
+because it is a new entity, whose type does not depend on Yojo or 7. A
+reasonable interpretation is that sets are abstractions, independent of the
+nature of their members, which may be physical, abstract, or mixed.
+[42] (italics added)
+One can argue that no conceptual modeller will deﬁne nonsensical sets such as {Y ojo, 7}
+anyway and that the language should be as minimal as possible instead of expressive
+(or restrictive) for the sake of making it foolproof. But there is an important diﬀer-
+ence between, say, being a set of molecules that make up a whole body versus that
+molecules are parts of your body. First, elements of a set have no additional structure
+
+26
+among the elements (even though your molecules are in a particular conﬁguration),
+but parts of a whole do have this and that can be represented. Second, if the elements
+of a set change, then so does the extension of the whole, even though the identity of
+a whole may remain. For instance, you get sunburned, which changes healthy DNA
+into DamagedDNA; the new set with instances of DamagedDNA molecules creates a
+new type of ‘set-based whole’ by virtue of its representation, but it is not the case
+that a change in representation results in a diﬀerent person. In addition, identifying
+an additional part of a person does not imply a change of the whole. Third, set-based
+mereology requires an Urelement [6] [21], but mereology does not. In several domains,
+most notably the biological domain, this can lead to some undesirable ontological
+consequences (see [21] for examples). Fourth, elaborating on Sowa, if the extension
+of a set with parts is properly grounded, it represents physical objects, and therefore
+so should the mereological whole; this is implied with mereology, but not guaranteed
+with aggregating sets. Thus, granting parthood relations a status of ﬁrst-class citizen
+allows one to represent reality more accurately.
+A counter-argument concerns ease of representation versus accuracy of represen-
+tation with respect to reality. Some awkward constructs like the SEP triples do not
+represent reality accurately and has its own system to transform parthood relations
+into taxonomic subsumption, but it is a useful workaround to get the software sys-
+tem to deal with parthood relations. Also, the Semantic Web language for ontologies
+OWL is in fact stored as an XML serialization, but people do not have cried foul
+that XML does not even deal properly with relations in general, let alone parthood
+relations. Likewise, ontologies containing partonomies like the Foundational Model of
+Anatomy [31] are stored in set-theory-based relational databases. Ontological correct-
+ness, usable computational support for, and usability of the parthood relation are not
+by deﬁnition always conﬂicting goals on all points, but there is a trade-oﬀ. For in-
+stance, the additional expressivity upon enabling proper representation of part-whole
+relations comes at a cost of greater diﬃculty during the modelling stage, although this
+can be ameliorated by providing guidance through Q&A sessions, decision diagrams,
+and drop-down boxes to facilitate selecting the appropriate relation and constraints.
+Likewise, mereological theories can be mapped only with limitations onto set theory.
+More importantly, proper inclusion of the part-whole (and whole-part) relation
+can allow correct reasoning over a conceptual model – for what remains within the
+decidable fragment. This may be of no interest during development of a small con-
+ceptual model, but deriving implied relations, derived relations (transitivity), and
+satisﬁability can aid correcting large conceptual models and thereby diminishing de-
+bugging time and resources during the software testing stage. Generally, advantages to
+include diﬀerent parthood relations are a.o. automated model veriﬁcation, transitivity
+(derived relations), semi-automated abstraction operations, and enforcing good mod-
+elling practices. On the other hand, specifying everything into the ﬁnest detail may
+be too restrictive, results in cluttered diagrams, is confusing to model, and costs ad-
+ditional resources to include in CASE tools. Incrementally adding further constraints
+like essential part, the whole-part relation, and inter-part relations, enable the concep-
+tual modeller to gradually develop models that are closer to the real-world semantics
+and thereby improve quality of the software. When used more widely, it can be use-
+
+27
+ful to add extensions to the knowledge representation languages, e.g. as a separately
+loadable modules in CASE tools for those modellers who need it, analogous to the
+Description Logics approach with a family of more and less expressive knowledge rep-
+resentation languages. A relative ‘shortcut’ toward implementation is to consider the
+pervasive DLs that not only provide the basis for the Web Ontology Language OWL,
+but a variant (DLR [8]) serves as underlying unifying language for conceptual mod-
+elling languages UML, ER, and ORM and already enjoys some software support (in
+iCOM [10]), hence might serve as a unifying paradigm – provided suﬃcient support
+of the part-whole relation will be sorted out.
+In short, addressing and representing part-whole relations have several advantages,
+including achieving a better understanding of reality, representing it more accurately,
+and therefore develop better ontologies and conceptual models that in turn improve
+software quality (and then you have happier users & customers). If the eﬀort that
+still has to be put in to meet the set of requirements is worthwhile the investment of
+resources, that will only be known when it is tried and tested.
+6
+Concluding remarks
+We looked at part-whole relations from several perspectives: philosophical consider-
+ations, mathematical properties, variations on types of part-whole relations, and its
+(non-) treatment in several knowledge representation and conceptual data modelling
+languages. Each sub-topic covered only scratched the surface of the characteristics of
+the part-whole relations within their respective ﬁelds of research. Coherently linking
+up these approaches remains a distant goal, although some links are being established.
+To give an indication of open problems, we outline several topics, although this
+list is not exhaustive.
+⋆Philosophy: What are the precise diﬀerences between parthood relations between
+classes and parthood relations between instances? How can the issues around
+the relata of the parthood relation be resolved? What about the inverse relation
+has part and inter-part relations? How do mereology and granularity relate? Con-
+cerning extensions as discussed and proposed for UML, what are the consequences
+of so-called secondary properties for mereology?
+⋆Mathematical open issues: a full characterization of models of GEM, uncovering
+which properties distinguish models of GEM that are not models of GEM+ from
+models of GEM+, and the model-theoretic analysis of the various topological and
+other extensions of GEM [30].
+⋆DL: Which subtheory of mereology ﬁts best with any of the extant DLs? Or can one
+of the DL languages be extended, and if so, how and what about its complexity?
+How does it compare with SEP triples in domain modelling? What about prop-
+erty inheritance across the parthood relation, and about essential, mandatory, and
+shared parts? What are the diﬀerence between the intensional and extensional rea-
+soning (behaviour of the parthood relation at the TBox and ABox, respectively)?
+
+28
+⋆ER and ORM: what and how to add it? What about developing more expressive
+versions of ER and ORM that include the parthood relation, alike the diﬀerent
+DL languages? How to make it usable for the modeler?
+⋆UML: Which extensions have been proposed, where do they diﬀer and where does
+the same aspect have alternative but equivalent representations? What are the
+exact diﬀerences with mereology proper and the engineering requirements, and
+why? How can it be transferred to the application stage and to make is usable for
+the modeler?
+⋆RDF and XML: Little has been investigated. It is my guesstimate that proper
+treatment of the parthood relation in XML does not seem likely as it is not ex-
+pressive regarding relations in general, let alone deal with a range of properties of
+a relation. I would like to see my guesstimate to be proven incorrect.
+⋆Applied parthood relations: what lessons can be learned from using part-whole
+relations in speciﬁc subject domains such as bio-ontologies and geographical infor-
+mation systems? If any, can this be fed back into mereology to extend mereological
+theories? Does usage of the part-whole relation across subject domains reveal do-
+main speciﬁc intricacies that cannot be generalised to domain-independent char-
+acteristics?
+⋆How can the ‘chain’ from philosophy to mathematics to conceptual modelling be
+linked up in a consistent and coherent manner?
+⋆Can an ontologically correct taxonomy of types of part-whole relations be con-
+structed such that it complies with at least one of the foundational ontologies?
+References
+1. Artale, A., Franconi, E., Guarino, N., Pazzi, L. (1996). Part-Whole Relations in
+Object-Centered Systems: an Overview. Data and Knowledge Engineering, 1996,
+20(3):347-383.
+2. Artale, A., Franconi, E., Guarino, N. Open Problems for Part-Whole Relations. In: Proceedings
+of 1996 International Workshop on Description Logics (DL-96). AAAI Press, Cambridge, MA,
+1996. pp70-73.
+3. Baader, F. and Sattler, U. Description Logics with Aggregates and Concrete Domains. Informa-
+tion Systems, 2003, 28(8):979-1004.
+4. Barbier, F., Henderson-Sellers, B., Le Parc-Lacayrelle, A., Bruel, J.-M. Formalization of the whole-
+part relationship in the Uniﬁed Modelling Language. IEEE Transactions on Software Engineering,
+2003, 29(5):459-470.
+5. Berardi, D., Calvanese, D., De Giacomo, G. Reasoning on UML class diagrams. Artiﬁcial Intel-
+ligence, 2005, 168(1-2):70-118.
+6. Bittner, T., Smith, B. A Theory of Granular Partitions. In: Foundations of Geographic Informa-
+tion Science, Duckham, M., Goodchild, M.F., Worboys, M.F. (Eds.), London: Taylor & Francis
+Books, 2003, pp117-151.
+7. Bittner, T., Donnelly, M. Computational ontologies of parthood, componenthood,
+and containment, In: Proceedings of the Nineteenth International Joint Conference
+on Artiﬁcial Intelligence 2005 (IJCAI05). Kaelbling, L. (ed.). pp382-387.
+8. Calvanese, D., De Giacomo, G.Expressive description logics. In: The Description Logic Handbook:
+Theory, Implementation and Applications, Baader, F., Calvanese, D., McGuinness, D., Nardi, D.,
+Patel-Schneider, P. (Eds). Cambridge University Press, 2003. pages 178-218.
+9. Casati, R., Varzi, A.C. Parts and Places. The Structures of Spatial Representation. Cambridge
+(MA) and London, Bradford Books MIT Press, 1999.
+
+29
+10. Franconi, E., Ng, G. The iCom tool for intelligent conceptual modelling. 7th Intl. Workshop on
+Knowledge Representation meets Databases (KRDB’00), Berlin, Germany. 2000.
+11. Gerstl, P., Pribbenow, S. Midwinters, end games, and body parts: a classiﬁcation of part-whole
+relations. International Journal of Human-Computer Studies, 1995, 43:865-889.
+12. Guizzardi, G. Ontological foundations for structural conceptual models. PhD Thesis,
+Telematica Institute, Twente University, Enschede, the Netherlands. 2005.
+13. Hahn, U., Schulz, S. Parthood as Spatial Inclusion - Evidence from Biomedical Conceptualiza-
+tions. Ninth International Conference on the Principles of Knowledge Representation and Rea-
+soning (KR2004). Whistler, Canada, 2-5 June 2004.
+14. Halpin, T.A. A logical analysis of information systems: static aspects of the data-oriented per-
+spective. PhD Thesis, University of Queensland, Australia. 1989.
+15. Halpin, T. UML Data Models from an ORM Perspective (Part 8). Journal of Conceptual Modeling,
+Issue 8, April 1999. http://www.inceoncept.com/jcm.
+16. Halpin, T. Information Modeling and Relational Databases. San Francisco: Morgan Kaufmann
+Publishers, 2001.
+17. Horrocks I, Kutz O, Sattler U. The Even More Irresistible SROIQ. In: Proc. of the 10th Inter-
+national Conference of Knowledge Representation and Reasoning (KR-2006), Lake District, UK,
+2006.
+18. Hu, Z. An Ontology Model for the XML-based Knowledge-enriched Integration Server. Informa-
+tion Systems and Databases (ISDB 2002), Proceedings of the IASTED International Conference.
+Acta Press, 2002. pp43-48.
+19. Jech, T. Set Theory. The Stanford Encyclopedia of Philosophy. (Fall 2004 Edition), Zalta, E.N.
+(ed.).
+http://plato.stanford.edu/entries/set-theory
+and
+http://plato.stanford.edu/entries/set-
+theory/primer.html.
+20. Johansson, I. On the transitivity of the parthood relation. In: Relations and predicates, Hochberg,
+H. and Mulligan, K. (eds.). Ontos Verlag: Frankfurt, 2004. pp161-181.
+21. Keet, C.M. A taxonomy of types of granularity. IEEE Conference in Granular Computing
+(GrC2006), 10-12 May 2006, Atlanta, USA.
+22. Keet, C.M. Part-whole relations in Object-Role Models. 2nd International Workshop on Object-
+Role Modelling (ORM 2006), Montpellier, France, Nov 2-3, 2006. In: OTM Workshops 2006.
+Meersman, R., Tari, Z., Herrero, P. et al. (Eds.), Lecture Notes in Computer Science 4278. Berlin:
+Springer-Verlag, 2006. pp1116-1127.
+23. Le´sniewski, S. Podstawy og´olnej teoryi mnogosci. I. Moscow: Prace Polskiego Kola Naukowega w
+Moskwie, Sekeya matematyczno-przyrodnieza (english trasnlation by: D.I. Barnett: Foundations
+of the general thoery of sets. I. In: S. Le´sniewski, Collected Works, Surma, S.J., Srzednicki, J.,
+Barnett, D.I., Ricky, F.V. (Eds.) Dordrecht: Kluwer, 1992, 1, pp129-173.)
+24. Masolo, C., Borgo, S., Gangemi, A., Guarino, N. and Oltramari, A. Ontology Library. WonderWeb
+Deliverable D18 (ver. 1.0, 31-12-2003). http://wonderweb.semanticweb.org. 2003.
+25. Motschnig-Pitrik, R., Kaasbøll, J. Part-Whole Relationship Categories and Their Application
+in Object-Oriented Analysis. IEEE Transactions on Knowledge and Data Engineering, 1999,
+11(5):779-797.
+26. Rector, A., Welty, C. (Eds.). Simple part-whole relations in OWL Ontologies. W3C Editor’s
+Draft 11 Aug 2005. http://www.w3.org/2001/sw/BestPractices/OEP/SimplePartWhole/. Date
+accessed: 29-9-2006.
+27. Rector, A., Rogers, J., Bittner, T. Granularity, scale and collectivity: When size does and does
+not matter. Journal of Biomedical Informatics, 2006, 39(3):333-349.
+28. Object Management Group. Uniﬁed Modeling Language: Superstructure. v2.0. formal/05-07-04.
+http://www.omg.org/cgi-bin/doc?formal/05-07-04.
+29. Odell, J.J. Advanced Object-Oriented Analysis & Design using UML. Cambridge:
+Cambridge University Press. 1998.
+30. Pontow, C., Schubert, R. A mathematical analysis of theories of parthood. Data &
+Knowledge Engineering, 2006, 59:107-138.
+31. Rosse, C., Mejino, J.L.V. A reference ontology for biomedical informatics: the foundational model
+of anatomy. Journal of Biomedical Informatics, 2003, 36: 478-500.
+32. Sattler, U. A concept language for an engineering application with part-whole relations. In: Pro-
+ceedings of the international workshop on description logics, Borgida, A., Lenzerini, M., Nardi,
+D., Nebel, B. (Eds.), 1995. pp119-123.
+
+30
+33. Sattler, U. Description Logics for the Representation of Aggregated Objects. In: Proceedings of
+the 14th European Conference on Artiﬁcial Intelligence (ECAI2000), Horn, W. (Ed.), IOS Press,
+Amsterdam, 2000.
+34. Schulz, S., Hahn, U., Romacker, M. Modeling Anatomical Spatial Relations with Description
+Logics. Proceedings of the AMIA Symposium 2000. Overhage, J.M. (ed.). 2000. pp779-83.
+35. Schulz, S., Kumar, A., and Bittner, T. Biomedical ontologies: What part-of is and isn’t. Journal
+of Biomedical Informatics, 2006, 39(3):350-361.
+36. Shanks, G., Tansley, E., Weber, R. Representing composites in conceptual modeling. Communi-
+cations of the ACM, 2004, 47(7): 77-80.
+37. Simons, P. Parts: a study in Ontology. Clarendon Press, Oxford. 1987.
+38. Smith, B., Varzi, A.C. Surrounding space – On the ontology of organism-environment relations.
+Theory in Biosciences, 2002, 120(2):139-162.
+39. Smith, B., Varzi, A.C. The Niche. Noˆus, 1999, 33(2):214-238.
+40. Smith, B., Ceusters, W., Klagges, B., K¨ohler, J., Kumar, A., Lomax, J., Mungall, C., Neuhaus,
+F., Rector, A.L., Rosse, C. Relations in biomedical ontologies. Genome Biology, 2005, 6:R46.
+41. Sorensen, R. Vagueness. The Stanford Encyclopedia of Philosophy. Fall 2003 Edition, Zalta,
+E.N.(ed.). http://plato.stanford.edu/archives/fall2003/entries/vagueness/.
+42. Sowa, J.F. Knowledge representation: logical, philosophical, and computational foundations. China
+Machine Press. 2000. 594p.
+43. Varzi, A.C. Parts, Wholes, and Part-Whole Relations: The Prospects of Mereotopology. Data &
+Knowledge Engineering, 1996, 20:259286.
+44. Varzi, A.C. Mereology. The Stanford Encyclopedia of Philosophy. (Fall 2004 Edition),
+Zalta, E.N. (ed.). http://plato.stanford.edu/archives/fall2004/entries/mereology/.
+45. Varzi, A.C. Spatial reasoning and ontology: parts, wholes, and locations. In: The Logic
+of Space, Aiello, M., Pratt-Hartmann I., van Benthem J. (eds.). Dordrecht: Kluwer
+Academic Publishers. (to appear) http://www.columbia.edu/∼av72/papers/Space 2006.pdf,
+date accessed: 18-9-2006.
+46. Varzi, A.C. A Note on the Transitivity of Parthood. Applied Ontology (to appear).
+47. Vieu, L., Aurnague, M. Part-of Relations, Functionality and Dependence. In: M. Aurnague, M.
+Hickmann, L. Vieu (eds.), Categorization of Spatial Entities in Language and Cognition. Amster-
+dam: John Benjamins. 2005.
+48. Winston, M.E., Chaﬃn, R., Herrmann, D. A taxonomy of partwhole relations. Cog-
+nitive Science, 1987, 11(4):417-444.
+49. http://esw.w3.org/topic/PartWhole. Date accessed: 29-9-2006.
+Note: main references (regarding relative importance, novelty, comprehensiveness and/or
+clarity) are indicated in bold face. The list is incomplete; check the bibliographies of
+the main references for many more publications.
+

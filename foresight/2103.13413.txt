@@ -1,0 +1,1516 @@
+Vision Transformers for Dense Prediction
+Ren´e Ranftl
+Alexey Bochkovskiy
+Intel Labs
+rene.ranftl@intel.com
+Vladlen Koltun
+Abstract
+We introduce dense vision transformers, an architecture
+that leverages vision transformers in place of convolutional
+networks as a backbone for dense prediction tasks. We as-
+semble tokens from various stages of the vision transformer
+into image-like representations at various resolutions and
+progressively combine them into full-resolution predictions
+using a convolutional decoder. The transformer backbone
+processes representations at a constant and relatively high
+resolution and has a global receptive ﬁeld at every stage.
+These properties allow the dense vision transformer to pro-
+vide ﬁner-grained and more globally coherent predictions
+when compared to fully-convolutional networks. Our ex-
+periments show that this architecture yields substantial im-
+provements on dense prediction tasks, especially when a
+large amount of training data is available. For monocular
+depth estimation, we observe an improvement of up to 28%
+in relative performance when compared to a state-of-the-
+art fully-convolutional network. When applied to semantic
+segmentation, dense vision transformers set a new state of
+the art on ADE20K with 49.02% mIoU. We further show
+that the architecture can be ﬁne-tuned on smaller datasets
+such as NYUv2, KITTI, and Pascal Context where it also
+sets the new state of the art. Our models are available at
+https://github.com/intel-isl/DPT.
+1. Introduction
+Virtually all existing architectures for dense prediction
+are based on convolutional networks [6, 31, 34, 42, 49,
+50, 53]. The design of dense prediction architectures com-
+monly follows a pattern that logically separates the network
+into an encoder and a decoder. The encoder is frequently
+based on an image classiﬁcation network, also called the
+backbone, that is pretrained on a large corpus such as Im-
+ageNet [9]. The decoder aggregates features from the en-
+coder and converts them to the ﬁnal dense predictions. Ar-
+chitectural research on dense prediction frequently focuses
+on the decoder and its aggregation strategy [6, 7, 50, 53].
+However, it is widely recognized that the choice of back-
+bone architecture has a large inﬂuence on the capabilities
+of the overall model, as any information that is lost in the
+encoder is impossible to recover in the decoder.
+Convolutional backbones progressively downsample the
+input image to extract features at multiple scales. Down-
+sampling enables a progressive increase of the receptive
+ﬁeld, the grouping of low-level features into abstract high-
+level features, and simultaneously ensures that memory
+and computational requirements of the network remain
+tractable. However, downsampling has distinct drawbacks
+that are particularly salient in dense prediction tasks: fea-
+ture resolution and granularity are lost in the deeper stages
+of the model and can thus be hard to recover in the decoder.
+While feature resolution and granularity may not matter for
+some tasks, such as image classiﬁcation, they are critical
+for dense prediction, where the architecture should ideally
+be able to resolve features at or close to the resolution of the
+input image.
+Various techniques to mitigate the loss of feature gran-
+ularity have been proposed.
+These include training at
+higher input resolution (if the computational budget per-
+mits), dilated convolutions [49] to rapidly increase the re-
+ceptive ﬁeld without downsampling, appropriately-placed
+skip connections from multiple stages of the encoder to
+the decoder [31], or, more recently, by connecting multi-
+resolution representations in parallel throughout the net-
+work [42]. While these techniques can signiﬁcantly im-
+prove prediction quality, the networks are still bottlenecked
+by their fundamental building block: the convolution. Con-
+volutions together with non-linearities form the fundamen-
+tal computational unit of image analysis networks. Convo-
+lutions, by deﬁnition, are linear operators that have a lim-
+ited receptive ﬁeld. The limited receptive ﬁeld and the lim-
+ited expressivity of an individual convolution necessitate se-
+quential stacking into very deep architectures to acquire suf-
+ﬁciently broad context and sufﬁciently high representational
+power. This, however, requires the production of many in-
+termediate representations that require a large amount of
+arXiv:2103.13413v1  [cs.CV]  24 Mar 2021
+
+memory. Downsampling the intermediate representations
+is necessary to keep memory consumption at levels that are
+feasible with existing computer architectures.
+In this work, we introduce the dense prediction trans-
+former (DPT). DPT is a dense prediction architecture that is
+based on an encoder-decoder design that leverages a trans-
+former as the basic computational building block of the en-
+coder.
+Speciﬁcally, we use the recently proposed vision
+transformer (ViT) [11] as a backbone architecture. We re-
+assemble the bag-of-words representation that is provided
+by ViT into image-like feature representations at various
+resolutions and progressively combine the feature repre-
+sentations into the ﬁnal dense prediction using a convolu-
+tional decoder. Unlike fully-convolutional networks, the vi-
+sion transformer backbone foregoes explicit downsampling
+operations after an initial image embedding has been com-
+puted and maintains a representation with constant dimen-
+sionality throughout all processing stages. It furthermore
+has a global receptive ﬁeld at every stage. We show that
+these properties are especially advantageous for dense pre-
+diction tasks as they naturally lead to ﬁne-grained and glob-
+ally coherent predictions.
+We conduct experiments on monocular depth estimation
+and semantic segmentation. For the task of general-purpose
+monocular depth estimation [30], where large-scale train-
+ing data is available, DPT provides a performance increase
+of more than 28% when compared to the top-performing
+fully-convolutional network for this task. The architecture
+can also be ﬁne-tuned to small monocular depth prediction
+datasets, such as NYUv2 [35] and KITTI [15], where it
+also sets the new state of the art. We provide further evi-
+dence of the strong performance of DPT using experiments
+on semantics segmentation. For this task, DPT sets a new
+state of the art on the challenging ADE20K [54] and Pas-
+cal Context [26] datasets. Our qualitative results indicate
+that the improvements can be attributed to ﬁner-grained and
+more globally coherent predictions in comparison to convo-
+lutional networks.
+2. Related Work
+Fully-convolutional networks [33, 34] are the prototyp-
+ical architecture for dense prediction.
+Many variants of
+this basic pattern have been proposed over the years, how-
+ever, all existing architectures adopt convolution and sub-
+sampling as their fundamental elements in order to learn
+multi-scale representations that can leverage an appropri-
+ately large context. Several works propose to progressively
+upsample representations that have been pooled at differ-
+ent stages [1, 23, 27, 31], while others use dilated convo-
+lutions [6, 7, 49] or parallel multi-scale feature aggregation
+at multiple scales [53] to recover ﬁne-grained predictions
+while at the same time ensuring a sufﬁciently large context.
+More recent architectures maintain a high-resolution repre-
+sentation together with multiple lower-resolution represen-
+tations throughout the network [37, 42].
+Attention-based models [2] and in particular transform-
+ers [39] have been the architecture of choice for learning
+strong models for natural language processing (NLP) [4,
+10, 24] in recent years. Transformers are set-to-set mod-
+els that are based on the self-attention mechanism. Trans-
+former models have been particularly successful when in-
+stantiated as high-capacity architectures and trained on very
+large datasets. There have been several works that adapt at-
+tention mechanisms to image analysis [3, 28, 29, 41, 52]. In
+particular, it has recently been demonstrated that a direct ap-
+plication of token-based transformer architectures that have
+been successful in NLP can yield competitive performance
+on image classiﬁcation [11]. A key insight of this work was
+that, like transformer models in NLP, vision transformers
+need to be paired with a sufﬁcient amount of training data
+to realize their potential.
+3. Architecture
+This section introduces the dense vision transformer. We
+maintain the overall encoder-decoder structure that has been
+successful for dense prediction in the past. We leverage vi-
+sion transformers [11] as the backbone, show how the rep-
+resentation that is produced by this encoder can be effec-
+tively transformed into dense predictions, and provide in-
+tuition for the success of this strategy. An overview of the
+complete architecture is shown in Figure 1 (left).
+Transformer encoder. On a high level, the vision trans-
+former (ViT) [11] operates on a bag-of-words representa-
+tion of the image [36]. Image patches that are individually
+embedded into a feature space, or alternatively deep fea-
+tures extracted from the image, take the role of “words”.
+We will refer to embedded “words” as tokens throughout
+the rest of this work. Transformers transform the set of to-
+kens using sequential blocks of multi-headed self-attention
+(MHSA) [39], which relate tokens to each other to trans-
+form the representation.
+Importantly for our application, a transformer maintains
+the number of tokens throughout all computations. Since to-
+kens have a one-to-one correspondence with image patches,
+this means that the ViT encoder maintains the spatial reso-
+lution of the initial embedding throughout all transformer
+stages. Additionally, MHSA is an inherently global oper-
+ation, as every token can attend to and thus inﬂuence ev-
+ery other token. Consequently, the transformer has a global
+receptive ﬁeld at every stage after the initial embedding.
+This is in stark contrast to convolutional networks, which
+progressively increase their receptive ﬁeld as features pass
+through consecutive convolution and downsampling layers.
+More speciﬁcally, ViT extracts a patch embedding from
+the image by processing all non-overlapping square patches
+
+Transformer
+Transformer 
+Transformer
+Fusion
+Fusion
+Fusion
+Fusion
+Head
+Embed
+Transformer
+Reassemble32
+Reassemble16
+Reassemble8
+Reassemble4
+Reassembles
+Concatenate
+Read
+Resamples
+Project
+Residual Conv Unit
+Residual Conv Unit
+Resample0.5
++
+Project
+Fusion
+Figure 1. Left: Architecture overview. The input image is transformed into tokens (orange) either by extracting non-overlapping patches
+followed by a linear projection of their ﬂattened representation (DPT-Base and DPT-Large) or by applying a ResNet-50 feature extractor
+(DPT-Hybrid). The image embedding is augmented with a positional embedding and a patch-independent readout token (red) is added.
+The tokens are passed through multiple transformer stages. We reassemble tokens from different stages into an image-like representation
+at multiple resolutions (green). Fusion modules (purple) progressively fuse and upsample the representations to generate a ﬁne-grained
+prediction. Center: Overview of the Reassembles operation. Tokens are assembled into feature maps with 1
+s the spatial resolution of the
+input image. Right: Fusion blocks combine features using residual convolutional units [23] and upsample the feature maps.
+of size p2 pixels from the image. The patches are ﬂattened
+into vectors and individually embedded using a linear pro-
+jection. An alternative, more sample-efﬁcient, variant of
+ViT extracts the embedding by applying a ResNet50 [16] to
+the image and uses the pixel features of the resulting feature
+maps as tokens. Since transformers are set-to-set functions,
+they do not intrinsically retain the information of the spatial
+positions of individual tokens. The image embeddings are
+thus concatenated with a learnable position embedding to
+add this information to the representation. Following work
+in NLP, the ViT additionally adds a special token that is not
+grounded in the input image and serves as the ﬁnal, global
+image representation which is used for classiﬁcation. We
+refer to this special token as the readout token. The result
+of applying the embedding procedure to an image of size
+H × W pixels is a a set of t0 = {t0
+0, . . . , t0
+Np}, t0
+n ∈RD
+tokens, where Np =
+HW
+p2 , t0 refers to the readout token,
+and D is the feature dimension of each token.
+The input tokens are transformed using L transformer
+layers into new representations tl, where l refers to the out-
+put of the l-th transformer layer. Dosovitskiy et al. [11]
+deﬁne several variants of this basic blueprint. We use three
+variants in our work: ViT-Base, which uses the patch-based
+embedding procedure and features 12 transformer layers;
+ViT-Large, which uses the same embedding procedure and
+has 24 transformer layers and a wider feature size D; and
+ViT-Hybrid, which employs a ResNet50 to compute the im-
+age embedding followed by 12 transformer layers. We use
+patch size p = 16 for all experiments. We refer the inter-
+ested reader to the original work [11] for additional details
+on these architectures.
+The embedding procedure for ViT-Base and ViT-Large
+projects the ﬂattened patches to dimension D = 768 and
+D = 1024, respectively. Since both feature dimensions are
+larger than the number of pixels in an input patch, this
+means that the embedding procedure can learn to retain in-
+formation if it is beneﬁcial for the task. Features from the
+input patches can in principle be resolved with pixel-level
+accuracy. Similarly, the ViT-Hybrid architecture extracts
+features at
+1
+16 the input resolution, which is twice as high
+as the lowest-resolution features that are commonly used
+with convolutional backbones.
+Convolutional decoder.
+Our decoder assembles the set
+of tokens into image-like feature representations at various
+resolutions. The feature representations are progressively
+fused into the ﬁnal dense prediction. We propose a sim-
+ple three-stage Reassemble operation to recover image-like
+representations from the output tokens of arbitrary layers of
+the transformer encoder:
+Reassemble
+ˆ
+D
+s (t) = (Resamples ◦Concatenate ◦Read)(t),
+where s denotes the output size ratio of the recovered rep-
+resentation with respect to the input image, and ˆD denotes
+the output feature dimension.
+We ﬁrst map the Np + 1 tokens to a set of Np tokens
+that is amenable to spatial concatenation into an image-like
+representation:
+Read : RNp+1×D →RNp×D.
+(1)
+This operation is essentially responsible for appropriately
+handling the readout token. Since the readout token doesn’t
+serve a clear purpose for the task of dense prediction, but
+could potentially still be useful to capture and distribute
+
+global information, we evaluate three different variants of
+this mapping:
+Readignore(t) = {t1, . . . , tNp}
+(2)
+simply ignores the readout token,
+Readadd(t) = {t1 + t0, . . . , tNp + t0}
+(3)
+passes the information from the readout token to all other
+tokens by adding the representations, and
+Readproj(t) = {mlp(cat(t1, t0)), . . . ,
+mlp(cat(tNp, t0))}
+(4)
+passes information to the other tokens by concatenating the
+readout to all other tokens before projecting the representa-
+tion to the original feature dimension D using a linear layer
+followed by a GELU non-linearity [17].
+After a Read block, the resulting Np tokens can be re-
+shaped into an image-like representation by placing each
+token according to the position of the initial patch in the
+image. Formally, we apply a spatial concatenation opera-
+tion that results in a feature map of size H
+p × W
+p with D
+channels:
+Concatenate : RNp×D →R
+H
+p × W
+p ×D.
+(5)
+We ﬁnally pass this representation to a spatial resampling
+layer that scales the representation to size H
+s × W
+s with ˆD
+features per pixel:
+Resamples : R
+H
+p × W
+p ×D →R
+H
+s × W
+s × ˆ
+D.
+(6)
+We implement this operation by ﬁrst using 1 × 1 convolu-
+tions to project the input representation to ˆD, followed by a
+(strided) 3 × 3 convolution when s ≥p, or a strided 3 × 3
+transpose convolution when s < p, to implement spatial
+downsampling and upsampling operations, respectively.
+Irrespective of the exact transformer backbone, we re-
+assemble features at four different stages and four differ-
+ent resolutions.
+We assemble features from deeper lay-
+ers of the transformer at lower resolution, whereas fea-
+tures from early layers are assembled at higher resolution.
+When using ViT-Large, we reassemble tokens from layers
+l = {5, 12, 18, 24}, whereas with ViT-Base we use layers
+l = {3, 6, 9, 12}. We use features from the ﬁrst and sec-
+ond ResNet block from the embedding network and stages
+l = {9, 12} when using ViT-Hybrid. Our default architec-
+ture uses projection as the readout operation and produces
+feature maps with ˆD = 256 dimensions. We will refer
+to these architectures as DPT-Base, DPT-Large, and DPT-
+Hybrid, respectively.
+We ﬁnally combine the extracted feature maps from
+consecutive stages using a ReﬁneNet-based feature fusion
+block [23, 45] (see Figure1 (right)) and progressively up-
+sample the representation by a factor of two in each fusion
+stage. The ﬁnal representation size has half the resolution
+of the input image. We attach a task-speciﬁc output head to
+produce the ﬁnal prediction. A schematic overview of the
+complete architecture is shown in Figure 1.
+Handling varying image sizes. Akin to fully-convolutional
+networks, DPT can handle varying image sizes. As long as
+the image size is divisible by p, the embedding procedure
+can be applied and will produce a varying number of im-
+age tokens Np. As a set-to-set architecture, the transformer
+encoder can trivially handle a varying number of tokens.
+However, the position embedding has a dependency on the
+image size as it encodes the locations of the patches in the
+input image. We follow the approach proposed in [11] and
+linearly interpolate the position embeddings to the appro-
+priate size. Note that this can be done on the ﬂy for every
+image. After the embedding procedure and the transformer
+stages, both the reassemble and fusion modules can triv-
+ially handle a varying number of tokens, provided that the
+input image is aligned to the stride of the convolutional de-
+coder (32 pixels).
+4. Experiments
+We apply DPT to two dense prediction tasks: monoc-
+ular depth estimation and semantic segmentation. For both
+tasks, we show that DPT can signiﬁcantly improve accuracy
+when compared to convolutional networks with a similar
+capacity, especially if a large training dataset is available.
+We ﬁrst present our main results using the default conﬁgu-
+ration and show comprehensive ablations of different DPT
+conﬁgurations at the end of this section.
+4.1. Monocular Depth Estimation
+Monocular depth estimation is typically cast as a dense
+regression problem. It has been shown that massive meta-
+datasets can be constructed from existing sources of data,
+provided that some care is taken in how different represen-
+tations of depth are uniﬁed into a common representation
+and that common ambiguities (such as scale ambiguity) are
+appropriately handled in the training loss [30]. Since trans-
+formers are known to realize their full potential only when
+an abundance of training data is available, monocular depth
+estimation is an ideal task to test the capabilities of DPT.
+Experimental protocol. We closely follow the protocol of
+Ranftl et al. [30]. We learn a monocular depth prediction
+network using a scale- and shift-invariant trimmed loss that
+operates on an inverse depth representation, together with
+the gradient-matching loss proposed in [22]. We construct
+a meta-dataset that includes the original datasets that were
+used in [30] (referred to as MIX 5 in that work) and extend
+it with with ﬁve additional datasets ([18, 43, 44, 46, 47]).
+
+Training set
+DIW
+ETH3D
+Sintel
+KITTI
+NYU
+TUM
+WHDR
+AbsRel
+AbsRel
+δ>1.25
+δ>1.25
+δ>1.25
+DPT - Large
+MIX 6
+10.82 (-13.2%)
+0.089 (-31.2%)
+0.270 (-17.5%)
+8.46 (-64.6%)
+8.32 (-12.9%)
+9.97 (-30.3%)
+DPT - Hybrid
+MIX 6
+11.06
+(-11.2%)
+0.093
+(-27.6%)
+0.274
+(-16.2%)
+11.56 (-51.6%)
+8.69
+(-9.0%)
+10.89 (-23.2%)
+MiDaS
+MIX 6
+12.95
+(+3.9%)
+0.116
+(-10.5%)
+0.329
+(+0.5%)
+16.08 (-32.7%)
+8.71
+(-8.8%)
+12.51 (-12.5%)
+MiDaS [30]
+MIX 5
+12.46
+0.129
+0.327
+23.90
+9.55
+14.29
+Li [22]
+MD [22]
+23.15
+0.181
+0.385
+36.29
+27.52
+29.54
+Li [21]
+MC [21]
+26.52
+0.183
+0.405
+47.94
+18.57
+17.71
+Wang [40]
+WS [40]
+19.09
+0.205
+0.390
+31.92
+29.57
+20.18
+Xian [45]
+RW [45]
+14.59
+0.186
+0.422
+34.08
+27.00
+25.02
+Casser [5]
+CS [8]
+32.80
+0.235
+0.422
+21.15
+39.58
+37.18
+Table 1. Comparison to the state of the art on monocular depth estimation. We evaluate zero-shot cross-dataset transfer according to the
+protocol deﬁned in [30]. Relative performance is computed with respect to the original MiDaS model [30]. Lower is better for all metrics.
+We refer to this meta-dataset as MIX 6. It contains about
+1.4 million images and is, to the best of our knowledge, the
+largest training set for monocular depth estimation that has
+ever been compiled.
+We use multi-objective optimization [32] together with
+Adam [19] and set a learning rate of 1e−5 for the back-
+bone and 1e−4 for the decoder weights. The encoder is
+initialized with ImageNet-pretrained weights, whereas the
+decoder is initialized randomly. We use an output head that
+consists of 3 convolutional layers. The output head progres-
+sively halves the feature dimension and upsamples the pre-
+dictions to the input resolution after the ﬁrst convolutional
+layer (details in supplementary material). We disable batch
+normalization in the decoder, as we found it to negatively
+inﬂuence results for regression tasks. We resize the image
+such that the longer side is 384 pixels and train on random
+square crops of size 384. We train for 60 epochs, where one
+epoch consists of 72,000 steps with a batch size of 16. As
+the batch size is not divisible by the number of datasets, we
+construct a mini-batch by ﬁrst drawing datasets uniformly
+at random before sampling from the respective datasets.
+We perform random horizontal ﬂips for data augmentation.
+Similar to [30], we ﬁrst pretrain on a well-curated subset of
+the data [45, 46, 47] for 60 epochs before training on the
+full dataset.
+δ>1.25
+δ>1.252
+δ>1.253
+AbsRel
+RMSE
+log10
+DORN [13]
+0.828
+0.965
+0.992
+0.115
+0.509
+0.051
+VNL [48]
+0.875
+0.976
+0.994
+0.111
+0.416
+0.048
+BTS [20]
+0.885
+0.978
+0.994
+0.110
+0.392
+0.047
+DPT-Hybrid
+0.904
+0.988
+0.998
+0.110
+0.357
+0.045
+Table 2. Evaluation on NYUv2 depth.
+δ>1.25
+δ>1.252
+δ>1.253
+AbsRel
+RMSE
+RMSE log
+DORN [13]
+0.932
+0.984
+0.994
+0.072
+2.626
+0.120
+VNL [48]
+0.938
+0.990
+0.998
+0.072
+3.258
+0.117
+BTS [20]
+0.956
+0.993
+0.998
+0.059
+2.756
+0.096
+DPT-Hybrid
+0.959
+0.995
+0.999
+0.062
+2.573
+0.092
+Table 3. Evaluation on KITTI (Eigen split).
+Zero-shot cross-dataset transfer. Table 1 shows the re-
+sults of zero-shot transfer to different datasets that were not
+seen during training. We refer the interested reader to Ran-
+ftl et al. [30] for details of the evaluation procedure and
+error metrics. For all metrics, lower is better. Both DPT
+variants signiﬁcantly outperform the state of the art. The
+average relative improvement over the best published archi-
+tecture, MiDaS, is more than 23% for DPT-Hybrid and 28%
+for DPT-Large. DPT-Hybrid achieves this with a compara-
+ble network capacity (Table 9), while DPT-Large is about 3
+times larger than MiDaS. Note that both architectures have
+similar latency to MiDaS (Table 9).
+To ensure that the observed improvements are not only
+due to the enlarged training set, we retrain the fully-
+convolutional network used by MiDaS on our larger meta-
+dataset MIX 6. While the fully-convolutional network in-
+deed beneﬁts from the larger training set, we observe that
+both DPT variants still strongly outperform this network.
+This shows that DPT can better beneﬁt from increased train-
+ing set size, an observation that matches previous ﬁndings
+on transformer-based architectures in other ﬁelds.
+The quantitative results are supported by visual com-
+parisons in Figure 2. DPT can better reconstruct ﬁne de-
+tails while also improving global coherence in areas that are
+challenging for the convolutional architecture (for example,
+large homogeneous regions or relative depth arrangement
+across the image).
+Fine-tuning on small datasets. We ﬁne-tune DPT-Hybrid
+on the KITTI [15] and NYUv2 [35] datasets to further com-
+pare the representational power of DPT to existing work.
+Since the network was trained with an afﬁne-invariant loss,
+its predictions are arbitrarily scaled and shifted and can have
+large magnitudes. Direct ﬁne-tuning would thus be chal-
+lenging, as the global mismatch in the magnitude of the
+predictions to the ground truth would dominate the loss.
+We thus ﬁrst align predictions of the initial network to each
+training sample using the robust alignment procedure de-
+scribed in [30]. We then average the resulting scales and
+shifts across the training set and apply the average scale and
+
+Input
+MiDaS (MIX 6)
+DPT-Hybrid
+DPT-Large
+Figure 2. Sample results for monocular depth estimation. Compared to the fully-convolutional network used by MiDaS, DPT shows better
+global coherence (e.g., sky, second row) and ﬁner-grained details (e.g., tree branches, last row).
+shift to the predictions before passing the result to the loss.
+We ﬁne-tune with the loss proposed by Eigen et al. [12].
+We disable the gradient-matching loss for KITTI since this
+dataset only provides sparse ground truth.
+Tables 2 and 3 summarize the results. Our architecture
+matches or improves state-of-the-art performance on both
+datasets in all metrics. This indicates that DPT can also be
+usefully applied to smaller datasets.
+4.2. Semantic Segmentation
+We choose semantic segmentation as our second task
+since it is representative of discrete labeling tasks and is
+a very competitive proving ground for dense prediction ar-
+chitectures. We employ the same backbone and decoder
+structure as in previous experiments. We use an output head
+that predicts at half resolution and upsamples the logits to
+full resolution using bilinear interpolation (details in sup-
+plementary material). The encoder is again initialized from
+ImageNet-pretrained weights, and the decoder is initialized
+randomly.
+Experimental protocol. We closely follow the protocol es-
+tablished by Zhang et al. [51]. We employ a cross-entropy
+loss and add an auxiliary output head together with an aux-
+iliary loss to the output of the penultimate fusion layer. We
+set the weight of the auxiliary loss to 0.2. Dropout with
+a rate of 0.1 is used before the ﬁnal classiﬁcation layer in
+both heads. We use SGD with momentum 0.9 and a poly-
+nomial learning rate scheduler with decay factor 0.9. We
+use batch normalization in the fusion layers and train with
+batch size 48. Images are resized to 520 pixels side length.
+We use random horizontal ﬂipping and random rescaling in
+the range ∈(0.5, 2.0) for data augmentation. We train on
+square random crops of size 480. We set the learning rate to
+0.002. We use multi-scale inference at test time and report
+both pixel accuracy (pixAcc) as well as mean Intersection-
+over-Union (mIoU).
+ADE20K. We train the DPT on the ADE20K semantic seg-
+mentation dataset [54] for 240 epochs. Table 4 summa-
+rizes our results on the validation set. DPT-Hybrid outper-
+forms all existing fully-convolutional architectures. DPT-
+Large performs slightly worse, likely because of the sig-
+niﬁcantly smaller dataset compared to our previous experi-
+ments. Figure 3 provides visual comparisons. We observe
+that the DPT tends to produce cleaner and ﬁner-grained de-
+lineations of object boundaries and that the predictions are
+also in some cases less cluttered.
+Fine-tuning on smaller datasets.
+We ﬁne-tune DPT-
+Hybrid on the Pascal Context dataset [26] for 50 epochs. All
+other hyper-parameters remain the same. Table 5 shows re-
+sults on the validation set for this experiment. We again see
+that DPT can provide strong performance even on smaller
+datasets.
+
+ResNeSt-200 [51]
+DPT-Hybrid
+Figure 3. Sample results for semantic segmentation on ADE20K (ﬁrst and second column) and Pascal Context (third and fourth column).
+Predictions are frequently better aligned to object edges and less cluttered.
+4.3. Ablations
+We examine a number of aspects and technical choices in
+DPT via ablation studies. We choose monocular depth esti-
+mation as the task for our ablations and follow the same pro-
+tocol and hyper-parameter settings as previously described.
+We use a reduced meta-dataset that is composed of three
+datasets [45, 46, 47] and consists of about 41,000 images.
+We choose these datasets since they provide high-quality
+ground truth. We split each dataset into a training set and
+a small validation set of about 1,000 images total. We re-
+port results on the validation sets in terms of relative ab-
+solute deviation after afﬁne alignment of the predictions to
+the ground truth [30]. Unless speciﬁed otherwise, we use
+ViT-Base as the backbone architecture.
+Skip connections. Convolutional architectures offer natu-
+ral points of interest for passing features from the encoder
+to the decoder, namely before or after downsampling of the
+Backbone
+pixAcc [%]
+mIoU [%]
+OCNet
+ResNet101
+[50]
+–
+45.45
+ACNet
+ResNet101
+[14]
+81.96
+45.90
+DeeplabV3
+ResNeSt-101
+[7, 51]
+82.07
+46.91
+DeeplabV3
+ResNeSt-200
+[7, 51]
+82.45
+48.36
+DPT-Hybrid
+ViT-Hybrid
+83.11
+49.02
+DPT-Large
+ViT-Large
+82.70
+47.63
+Table 4. Semantic segmentation results on the ADE20K validation
+set.
+Backbone
+pixAcc [%]
+mIoU [%]
+OCNet
+HRNet-W48
+[42, 50]
+–
+56.2
+DeeplabV3
+ResNeSt-200
+[7, 51]
+82.50
+58.37
+DeeplabV3
+ResNeSt-269
+[7, 51]
+83.06
+58.92
+DPT-Hybrid
+ViT-Hybrid
+84.83
+60.46
+Table 5. Finetuning results on the Pascal Context validation set.
+representation. Since the transformer backbone maintains a
+constant feature resolution, it is not clear at which points in
+the backbone features should be tapped. We evaluate sev-
+eral possible choices in Table 6 (top). We observe that it is
+beneﬁcial to tap features from layers that contain low-level
+features as well as deeper layers that contain higher-level
+features. We adopt the best setting for all further experi-
+ments.
+We perform a similar experiment with the hybrid archi-
+tecture in Table 6 (bottom), where R0 and R1 refer to us-
+ing features from the ﬁrst and second downsampling stages
+of the ResNet50 embedding network. We observe that us-
+ing low-level features from the embedding network leads
+to better performance than using features solely from the
+transformer stages. We use this setting for all further exper-
+iments that involve the hybrid architecture.
+Readout token. Table 7 examines various choices for im-
+plementing the ﬁrst stage of the Reassemble block to han-
+dle the readout token.
+While ignoring the token yields
+good performance, projection provides slightly better per-
+formance on average. Adding the token, on the other hand,
+yields worse performance than simply ignoring it. We use
+projection for all further experiments.
+Backbones.
+The performance of different backbones is
+Layer l
+HRWSI BlendedMVS ReDWeb
+Mean
+Base
+{3, 6, 9, 12}
+0.0793
+0.0780
+0.0892
+0.0822
+{6, 8, 10, 12}
+0.0801
+0.0789
+0.0904
+0.0831
+{9, 10, 11, 12}
+0.0805
+0.0766
+0.0912
+0.0828
+Hybrid
+{3, 6, 9, 12}
+0.0747
+0.0748
+0.0865
+0.0787
+{R0, R1, 9, 12}
+0.0742
+0.0751
+0.0857
+0.0733
+Table 6. Performance of attaching skip connections to different
+encoder layers. Best results are achieved with a combination of
+skip connections from shallow and deep layers.
+
+HRWSI BlendedMVS ReDWeb
+Mean
+Ignore
+0.0793
+0.0780
+0.0892
+0.0822
+Add
+0.0799
+0.0789
+0.0904
+0.0831
+Project
+0.0797
+0.0764
+0.0895
+0.0819
+Table 7. Performance of approaches to handle the readout token.
+Fusing the readout token to the individual input tokens using a
+projection layer yields the best performance.
+shown in Table 8. ViT-Large outperforms all other back-
+bones but is also almost three times larger than ViT-Base
+and ViT-Hybrid. ViT-Hybrid outperforms ViT-Base with a
+similar number of parameters and has comparable perfor-
+mance to the large backbone. As such it provides a good
+trade-off between accuracy and capacity.
+ViT-Base has comparable performance to ResNext101-
+WSL, while ViT-Hybrid and ViT-Large improve perfor-
+mance even though they have been pretrained on signiﬁ-
+cantly less data. Note that ResNext101-WSL was pretrained
+on a billion-scale corpus of weakly supervised data [25] in
+addition to ImageNet pretraining. It has been observed that
+this pretraining boosts the performance of monocular depth
+prediction [30]. This architecture corresponds to the origi-
+nal MiDaS architecture.
+We ﬁnally compare to a recent variant of ViT called
+DeIT [38]. DeIT trains the ViT architecture with a more
+data-efﬁcient pretraining procedure. Note that the DeIT-
+Base architecture is identical to ViT-Base, while DeIT-
+Base-Dist introduces an additional distillation token, which
+we ignore in the Reassemble operation. We observe that
+DeIT-Base-Dist indeed improves performance when com-
+pared to ViT-Base. This indicates that similarly to convo-
+lutional architectures, improvements in pretraining proce-
+dures for image classiﬁcation can beneﬁt dense prediction
+tasks.
+Inference resolution. While fully-convolutional architec-
+tures can have large effective receptive ﬁelds in their deepest
+layers, the layers close to the input are local and have small
+receptive ﬁelds.
+Performance thus suffers heavily when
+performing inference at an input resolution that is signiﬁ-
+cantly different from the training resolution. Transformer
+encoders, on the other hand, have a global receptive ﬁeld
+HRWSI BlendedMVS ReDWeb
+Mean
+ResNet50
+0.0890
+0.0887
+0.1029
+0.0935
+ResNext101-WSL
+0.0780
+0.0751
+0.0886
+0.0806
+DeIT-Base
+0.0798
+0.0804
+0.0925
+0.0842
+DeIT-Base-Dist
+0.0758
+0.0758
+0.0871
+0.0796
+ViT-Base
+0.0797
+0.0764
+0.0895
+0.0819
+ViT-Large
+0.0740
+0.0747
+0.0846
+0.0778
+ViT-Hybrid
+0.0738
+0.0746
+0.0864
+0.0783
+Table 8. Ablation of backbones. The hybrid and large backbones
+consistently outperform the convolutional baselines. The base ar-
+chitecture can outperform the convolutional baseline with better
+pretraining (DeIT-Base-Dist).
+Resolution
+Perfomrance decrease [%]
+0.00
+5.00
+10.00
+15.00
+20.00
+25.00
+416
+448
+480
+512
+544
+576
+608
+640
+ViT-Hybrid
+DeIT-Distilled
+ResNext-101
+ResNet-50
+Figure 4. Relative loss in performance for different inference res-
+olutions (lower is better).
+in every layer. We conjecture that this makes DPT less de-
+pendent on inference resolution. To test this hypothesis, we
+plot the loss in performance of different architectures when
+performing inference at resolutions higher than the training
+resolution of 384×384 pixels. We plot the relative decrease
+in performance in percent with respect to the performance
+of performing inference at the training resolution in Fig-
+ure 4. We observe that the performance of DPT variants
+indeed degrades more gracefully as inference resolution in-
+creases.
+Inference speed. Table 9 shows inference time for differ-
+ent network architectures. Timings were conducted on an
+Intel Xeon Platinum 8280 CPU @ 2.70GHz with 8 physical
+cores and an Nvidia RTX 2080 GPU. We use square images
+with a width of 384 pixels and report the average over 400
+runs. DPT-Hybrid and DPT-Large show comparable latency
+to the fully-convolutional architecture used by MiDaS. In-
+terestingly, while DPT-Large is substantially larger than the
+other architectures in terms of parameter count, it has com-
+petitive latency since it exposes a high degree of parallelism
+through its wide and comparatively shallow structure.
+MiDaS
+DPT-Base
+DPT-Hybrid
+DPT-Large
+Parameters [million]
+105
+112
+123
+343
+Time [ms]
+32
+17
+38
+35
+Table 9. Model statistics. DPT has comparable inference speed to
+the state of the art.
+5. Conclusion
+We have introduced the dense prediction transformer,
+DPT, a neural network architecture that effectively lever-
+ages vision transformers for dense prediction tasks. Our
+experiments on monocular depth estimation and semantic
+segmentation show that the presented architecture produces
+more ﬁne-grained and globally coherent predictions when
+compared to fully-convolutional architectures. Similar to
+prior work on transformers, DPT unfolds its full potential
+when trained on large-scale datasets.
+
+References
+[1] Vijay Badrinarayanan, Alex Kendall, and Roberto Cipolla.
+SegNet: A deep convolutional encoder-decoder architec-
+ture for image segmentation. IEEE TIP, 39(12):2481–2495,
+2017.
+[2] Dzmitry Bahdanau, Kyunghyun Cho, and Yoshua Bengio.
+Neural machine translation by jointly learning to align and
+translate. In ICLR, 2015.
+[3] Irwan Bello, Barret Zoph, Ashish Vaswani, Jonathon Shlens,
+and Quoc V Le.
+Attention augmented convolutional net-
+works. In ICCV, 2019.
+[4] Tom B. Brown, Benjamin Mann, Nick Ryder, Melanie Sub-
+biah, Jared Kaplan, Prafulla Dhariwal, Arvind Neelakantan,
+Pranav Shyam, Girish Sastry, Amanda Askell, et al. Lan-
+guage models are few-shot learners. In NeurIPS, 2020.
+[5] Vincent Casser, Soeren Pirk, Reza Mahjourian, and Anelia
+Angelova. Unsupervised learning of depth and ego-motion:
+A structured approach. In AAAI, 2019.
+[6] Liang-Chieh Chen, George Papandreou, Iasonas Kokkinos,
+Kevin Murphy, and Alan L. Yuille. DeepLab: Semantic im-
+age segmentation with deep convolutional nets, atrous con-
+volution, and fully connected crfs. TPAMI, 40(4):834–848,
+2018.
+[7] Liang-Chieh Chen, George Papandreou, Florian Schroff, and
+Hartwig Adam. Rethinking atrous convolution for seman-
+tic image segmentation. arXiv preprint arXiv:1706.05587,
+2017.
+[8] Marius Cordts, Mohamed Omran, Sebastian Ramos, Timo
+Rehfeld,
+Markus Enzweiler,
+Rodrigo Benenson,
+Uwe
+Franke, Stefan Roth, and Bernt Schiele.
+The Cityscapes
+dataset for semantic urban scene understanding. In CVPR,
+2016.
+[9] Jia Deng, Wei Dong, Richard Socher, Li-Jia Li, Kai Li,
+and Fei-Fei Li. ImageNet: A large-scale hierarchical image
+database. In CVPR, 2009.
+[10] Jacob Devlin, Ming-Wei Chang, Kenton Lee, and Kristina
+Toutanova. BERT: Pre-training of deep bidirectional trans-
+formers for language understanding. In ACL, 2019.
+[11] Alexey Dosovitskiy, Lucas Beyer, Alexander Kolesnikov,
+Dirk Weissenborn, Xiaohua Zhai, Thomas Unterthiner,
+Mostafa Dehghani, Matthias Minderer, Georg Heigold, Syl-
+vain Gelly, Jakob Uszkoreit, and Neil Houlsby. An image is
+worth 16x16 words: Transformers for image recognition at
+scale. arXiv preprint arXiv:2010.11929, 2020.
+[12] David Eigen, Christian Puhrsch, and Rob Fergus. Depth map
+prediction from a single image using a multi-scale deep net-
+work. In NeurIPS, 2014.
+[13] Huan Fu, Mingming Gong, Chaohui Wang, Kayhan Bat-
+manghelich, and Dacheng Tao. Deep ordinal regression net-
+work for monocular depth estimation. In CVPR, 2018.
+[14] Jun Fu, Jing Liu, Yuhang Wang, Yong Li, Yongjun Bao, Jin-
+hui Tang, and Hanqing Lu. Adaptive context network for
+scene parsing. In ICCV, 2019.
+[15] Andreas Geiger, Philip Lenz, and Raquel Urtasun. Are we
+ready for autonomous driving? The KITTI vision benchmark
+suite. In CVPR, 2012.
+[16] Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun.
+Deep residual learning for image recognition.
+In CVPR,
+2016.
+[17] Dan Hendrycks and Kevin Gimpel.
+Gaussian error linear
+units (GELUs). arXiv preprint arXiv:1606.08415, 2016.
+[18] Xinyu Huang, Peng Wang, Xinjing Cheng, Dingfu Zhou,
+Qichuan Geng, and Ruigang Yang. The ApolloScape open
+dataset for autonomous driving and its application. TPAMI,
+42(10):2702–2719, 2020.
+[19] Diederik P. Kingma and Jimmy Lei Ba. Adam: A method
+for stochastic optimization. In ICLR, 2015.
+[20] Jin Han Lee, Myung-Kyu Han, Dong Wook Ko, and
+Il Hong Suh. From big to small: Multi-scale local planar
+guidance for monocular depth estimation.
+arXiv preprint
+arXiv:1907.10326, 2019.
+[21] Zhengqi Li, Tali Dekel, Forrester Cole, Richard Tucker,
+Noah Snavely, Ce Liu, and William T. Freeman. Learning
+the depths of moving people by watching frozen people. In
+CVPR, 2019.
+[22] Zhengqi Li and Noah Snavely. MegaDepth: Learning single-
+view depth prediction from Internet photos. In CVPR, 2018.
+[23] Guosheng Lin, Anton Milan, Chunhua Shen, and Ian D.
+Reid. ReﬁneNet: Multi-path reﬁnement networks for high-
+resolution semantic segmentation. In CVPR, 2017.
+[24] Yinhan Liu, Myle Ott, Naman Goyal, Jingfei Du, Man-
+dar Joshi, Danqi Chen, Omer Levy, Mike Lewis, Luke
+Zettlemoyer, and Veselin Stoyanov.
+RoBERTa:
+A ro-
+bustly optimized BERT pretraining approach. arXiv preprint
+arXiv:1907.11692, 2019.
+[25] Dhruv Mahajan, Ross Girshick, Vignesh Ramanathan,
+Kaiming He, Manohar Paluri, Yixuan Li, Ashwin Bharambe,
+and Laurens van der Maaten. Exploring the limits of weakly
+supervised pretraining. In ECCV, 2018.
+[26] Roozbeh Mottaghi, Xianjie Chen, Xiaobai Liu, Nam-Gyu
+Cho, Seong-Whan Lee, Sanja Fidler, Raquel Urtasun, and
+Alan L. Yuille. The role of context for object detection and
+semantic segmentation in the wild. In CVPR, 2014.
+[27] Hyeonwoo Noh, Seunghoon Hong, and Bohyung Han.
+Learning deconvolution network for semantic segmentation.
+In ICCV, 2015.
+[28] Niki Parmar, Ashish Vaswani, Jakob Uszkoreit, Lukasz
+Kaiser, Noam Shazeer, Alexander Ku, and Dustin Tran. Im-
+age transformer. In ICML, 2018.
+[29] Prajit Ramachandran, Niki Parmar, Ashish Vaswani, Irwan
+Bello, Anselm Levskaya, and Jonathon Shlens. Stand-alone
+self-attention in vision models. In NeurIPS, 2019.
+[30] Ren´e Ranftl,
+Katrin Lasinger,
+David Hafner,
+Konrad
+Schindler, and Vladlen Koltun. Towards robust monocular
+depth estimation: Mixing datasets for zero-shot cross-dataset
+transfer. TPAMI, 2020.
+[31] Olaf Ronneberger, Philipp Fischer, and Thomas Brox. U-
+Net: Convolutional networks for biomedical image segmen-
+tation. In MICCAI, 2015.
+[32] Ozan Sener and Vladlen Koltun.
+Multi-task learning as
+multi-objective optimization. In NeurIPS, 2018.
+[33] Pierre Sermanet, David Eigen, Xiang Zhang, Micha¨el Math-
+ieu, Rob Fergus, and Yann LeCun.
+OverFeat: Integrated
+recognition, localization and detection using convolutional
+networks. In ICLR, 2014.
+[34] Evan Shelhamer, Jonathan Long, and Trevor Darrell. Fully
+convolutional networks for semantic segmentation. CVPR,
+2015.
+[35] Nathan Silberman, Derek Hoiem, Pushmeet Kohli, and Rob
+
+Fergus.
+Indoor segmentation and support inference from
+RGBD images. In ECCV, 2012.
+[36] Josef Sivic and Andrew Zisserman. Efﬁcient visual search of
+videos cast as text retrieval. TPAMI, 31(4):591–606, 2009.
+[37] Ke Sun, Bin Xiao, Dong Liu, and Jingdong Wang. Deep
+high-resolution representation learning for human pose esti-
+mation. In CVPR, 2019.
+[38] Hugo Touvron, Matthieu Cord, Matthijs Douze, Francisco
+Massa, Alexandre Sablayrolles, and Herv´e J´egou. Training
+data-efﬁcient image transformers & distillation through at-
+tention. arXiv preprint arXiv:2012.12877, 2020.
+[39] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszko-
+reit, Llion Jones, Aidan N. Gomez, Lukasz Kaiser, and Illia
+Polosukhin. Attention is all you need. In NeurIPS, 2017.
+[40] Chaoyang Wang, Oliver Wang, Federico Perazzi, and Simon
+Lucey. Web stereo video supervision for depth prediction
+from dynamic scenes. In 3DV, 2019.
+[41] Huiyu Wang, Yukun Zhu, Bradley Green, Hartwig Adam,
+Alan L. Yuille, and Liang-Chieh Chen.
+Axial-DeepLab:
+Stand-alone axial-attention for panoptic segmentation.
+In
+ECCV, 2020.
+[42] Jingdong Wang, Ke Sun, Tianheng Cheng, Borui Jiang,
+Chaorui Deng, Yang Zhao, Dong Liu, Yadong Mu, Mingkui
+Tan, Xinggang Wang, Wenyu Liu, and Bin Xiao.
+Deep
+high-resolution representation learning for visual recogni-
+tion. TPAMI, 2020.
+[43] Qiang Wang, Shizhen Zheng, Qingsong Yan, Fei Deng,
+Kaiyong Zhao, and Xiaowen Chu. IRS: A large synthetic
+indoor robotics stereo dataset for disparity and surface nor-
+mal estimation. arXiv preprint arXiv:1912.09678, 2019.
+[44] Wenshan Wang, Delong Zhu, Xiangwei Wang, Yaoyu Hu,
+Yuheng Qiu, Chen Wang, Yafei Hu, Ashish Kapoor, and Se-
+bastian Scherer. TartanAir: A dataset to push the limits of
+visual slam. In IROS, 2020.
+[45] Ke Xian, Chunhua Shen, Zhiguo Cao, Hao Lu, Yang Xiao,
+Ruibo Li, and Zhenbo Luo. Monocular relative depth per-
+ception with web stereo data supervision. In CVPR, 2018.
+[46] Ke Xian, Jianming Zhang, Oliver Wang, Long Mai, Zhe Lin,
+and Zhiguo Cao. Structure-guided ranking loss for single
+image depth prediction. In CVPR, 2020.
+[47] Yao Yao, Zixin Luo, Shiwei Li, Jingyang Zhang, Yufan
+Ren, Lei Zhou, Tian Fang, and Long Quan. BlendedMVS:
+A large-scale dataset for generalized multi-view stereo net-
+works. CVPR, 2020.
+[48] Wei Yin, Yifan Liu, Chunhua Shen, and Youliang Yan. En-
+forcing geometric constraints of virtual normal for depth pre-
+diction. In ICCV, 2019.
+[49] Fisher Yu and Vladlen Koltun. Multi-scale context aggrega-
+tion by dilated convolutions. In ICLR, 2016.
+[50] Yuhui Yuan, Xilin Chen, and Jingdong Wang.
+Object-
+contextual representations for semantic segmentation.
+In
+ECCV, 2020.
+[51] Hang Zhang, Chongruo Wu, Zhongyue Zhang, Yi Zhu, Zhi
+Zhang, Haibin Lin, Yue Sun, Tong He, Jonas Muller, R.
+Manmatha, Mu Li, and Alexander Smola. ResNeSt: Split-
+attention networks. arXiv preprint arXiv:2004.08955, 2020.
+[52] Hengshuang Zhao, Jiaya Jia, and Vladlen Koltun. Exploring
+self-attention for image recognition. In CVPR, 2020.
+[53] Hengshuang Zhao, Jianping Shi, Xiaojuan Qi, Xiaogang
+Wang, and Jiaya Jia. Pyramid scene parsing network. In
+CVPR, 2017.
+[54] Bolei Zhou, Hang Zhao, Xavier Puig, Sanja Fidler, Adela
+Barriuso, and Antonio Torralba.
+Scene parsing through
+ADE20K dataset. In CVPR, 2017.
+
+Supplementary Material
+A. Architecture details
+We provide additional technical details in this section.
+Hybrid encoder. The hybrid encoder is based on a pre-
+activation ResNet50 with group norm and weight standard-
+ization [57]. It deﬁnes four stages after the initial stem, each
+of which downsamples the representation before applying
+multiple ResNet blocks. We refer by RN to the output of
+the N-th stage. DPT-Hybrid thus taps skip connections af-
+ter the ﬁrst (R0) and second stage (R1).
+Residual convolutional units.
+Figure A1 (a) shows a
+schematic overview of the residual convolutional units [23]
+that are used in the decoder. Batch normalization is used for
+semantic segmentation but is disabled for monocular depth
+estimation. When using batch normalization, we disable bi-
+ases in the preceding convolutional layer.
+Monocular depth estimation head. The output head for
+monocular depth estimation is shown in Figure A1 (b). The
+initial convolution halves the feature dimensions, while the
+second convolution has an output dimension of 32. The ﬁ-
+nal linear layer projects this representation to a non-negative
+scalar that represent the inverse depth prediction for every
+pixel. Bilinear interpolation is used to upsample the repre-
+sentation.
+Semantic segmentation head. The output head for seman-
+tic segmentation is shown in Figure A1 (c). the ﬁrst con-
+volutional block preserves the feature dimension, while the
+ﬁnal linear layer projects the representation to the number
+of output classes. Dropout is used with a rate of 0.1. We
+use bilinear interpolation for the ﬁnal upsampling opera-
+tion. The prediction thus represents the per-pixel logits of
+the classes.
+B. Additional results
+We provide additional qualitative and quantitative results
+in this section.
+Monocular depth estimation. We notice that the biggest
+gains in performance for zero-shot transfer were achieved
+for datasets that feature dense, high-resolution evalua-
+tions [15, 55, 59]. This could be explained by more ﬁne-
+grained predictions.
+Visual inspection of sample results
+(c.f. Figure A3) from these datasets conﬁrms this intuition.
+We observe more details and also better global depth ar-
+rangement in DPT predictions when compared to the fully-
+convolutional baseline. Note that results for DPT and Mi-
+DaS are computed at the same input resolution (384 pixels).
+Semantic segmentation. We show per-class IoU scores for
+the ADE20K validation set in Figure A2. While we ob-
+serve a general trend of an improvement in per-class IoU in
+comparison to the baseline [51], we do not observe a strong
+pattern across classes.
+Attention maps. We show attention maps from different
+encoder layers in Figures A4 and A5. In both cases, we
+show results from the monocular depth estimation models.
+We visualize the attention of two reference tokens (upper
+left corner and lower right corner, respectively) to all other
+tokens in the image across various layers in the encoder. We
+show the average attention over all 12 attention heads.
+We observe the tendency that attention is spatially more
+localized close to the reference token in shallow layers (left-
+most columns), whereas deeper layers (rightmost columns)
+frequently attend across the whole image.
+References
+[55] D. J. Butler, J. Wulff, G. B. Stanley, and M. J. Black. A
+naturalistic open source movie for optical ﬂow evaluation.
+In ECCV, 2012.
+[56] Andreas Geiger, Philip Lenz, and Raquel Urtasun. Are we
+ready for autonomous driving? The KITTI vision benchmark
+suite. In CVPR, 2012.
+[57] Alexander Kolesnikov, Lucas Beyer, Xiaohua Zhai, Joan
+Puigcerver, Jessica Yung, Sylvain Gelly, and Neil Houlsby.
+Big transfer (bit): General visual representation learning. In
+ECCV, 2020.
+[58] Guosheng Lin, Anton Milan, Chunhua Shen, and Ian D.
+Reid. ReﬁneNet: Multi-path reﬁnement networks for high-
+resolution semantic segmentation. In CVPR, 2017.
+[59] Thomas Sch¨ops, Johannes L. Sch¨onberger, Silvano Galliani,
+Torsten Sattler, Konrad Schindler, Marc Pollefeys, and An-
+dreas Geiger.
+A multi-view stereo benchmark with high-
+resolution images and multi-camera videos. In CVPR, 2017.
+
+ReLU
+Conv3x3
+BatchNorm
+ReLU
+Conv3x3
+BatchNorm
++
+Conv3x3
+Resample0.5
+Conv3x3-ReLU
+Conv1x1-ReLU
+Conv3x3-BN-ReLU
+Dropout
+Conv1x1
+Resample0.5
+(a) Residual Convolutional Unit [23]
+(b) Monocular depth estimation head
+(c) Semantic segmentation head
+Figure A1. Schematics of different architecture blocks.
+sky
+bed 
+pool table
+toilet
+car
+building
+road
+person
+ceiling
+floor
+screen door
+wall
+curtain
+tree
+tv
+bathtub
+towel
+sea
+hood
+sink
+mirror
+projection screen
+refrigerator
+computer
+fireplace
+stove
+seat
+water
+picture
+sidewalk
+fan
+window
+sofa
+bridge
+washing machine
+bus
+motorbike
+microwave
+grass
+dishwasher
+rug
+lamp
+mountain
+tent
+cabinet
+arcade machine
+plate
+skyscraper
+radiator
+house
+cushion
+barrel
+chair
+animal
+countertop
+table
+pillow
+chandelier
+swimming pool
+lake
+sand
+fountain
+sculpture
+tank
+ship
+coffee table
+plant
+grandstand
+light
+book
+waterfall
+stool
+palm
+airplane
+sconce
+case
+conveyer belt
+cradle
+van
+chest
+armchair
+runway
+vase
+boat
+door
+pot
+screen
+basket
+hut
+trash can
+flower
+rock
+fence
+desk
+kitchen island
+shelf
+flag
+ground
+counter
+bookcase
+sign
+swivel chair
+bicycle
+dirt track
+bench
+oven
+column
+food
+stairs
+bottle
+pier
+staircase
+traffic light
+streetlight
+clock
+base
+railing
+wardrobe
+ottoman
+apparel
+path
+canopy
+buffet
+escalator
+box
+brand
+pole
+awning
+monitor
+bulletin board
+toy
+bar
+bannister
+bag
+field
+step
+poster
+stage
+ball
+blanket
+hill
+truck
+tower
+glass
+river
+crt screen
+booth
+tray
+shower
+land
+Class
+0.0
+0.2
+0.4
+0.6
+0.8
+IoU
+DPT-Hybrid
+ResNeSt-200
+Figure A2. Per class IoU on ADE20K.
+
+Input
+MiDaS (MIX 5)
+DPT-Large
+Figure A3. Additional comparisons for monocular depth estimation.
+
+Input
+Prediction
+Upper left corner
+Layer 6
+Layer 12
+Layer 18
+Layer 24
+Lower right corner
+Input
+Prediction
+Upper left corner
+Layer 6
+Layer 12
+Layer 18
+Layer 24
+Lower right corner
+Figure A4. Sample attention maps of the DPT-Large monocular depth prediction network.
+
+Input
+Prediction
+Upper left corner
+Layer 3
+Layer 6
+Layer 9
+Layer 12
+Lower right corner
+Input
+Prediction
+Upper left corner
+Layer 3
+Layer 6
+Layer 9
+Layer 12
+Lower right corner
+Figure A5. Sample attention maps of the DPT-Hybrid monocular depth prediction network.
+

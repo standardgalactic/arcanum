@@ -1,0 +1,6508 @@
+Inductive Approach to Cartan’s Moving Frame Method with
+Applications to Classical Invariant Theory.
+A Dissertation
+Presented to the Faculty of the Graduate School
+of
+University of Minnesota
+in Candidacy for the Degree of
+Doctor of Philosophy
+by
+Irina A. Kogan
+Dissertation Advisor: Professor Peter J. Olver
+June 2000
+
+c⃝2000 by Irina A. Kogan.
+All rights reserved.
+
+i
+Acknowledgments
+Let me express my deepest gratitude to my thesis advisor, Peter Olver, who guided
+my research with encouragement and support.
+I am also thankful to Mark Fels for many interesting discussions on Cartan’s
+equivalence method which has led me to better understanding of the subject; to Eric
+Schost and Gregoire Lecerf from Ecole Polytechnique in France for their valuable
+suggestion on Gr¨obner basis computations; and to my undergraduate advisor, Nikolai
+I. Osetinski, who ﬁrst introduced me to the subject of invariant theory.
+I would like to thank the wonderful friends whom I met in graduate school. Their
+presence, as well as the friendly and stimulating environment of the School of Math-
+ematics, made my graduate studies such a pleasant experience.
+I cannot overvalue the love and support I have received from my parents, Svetlana
+and Aleksander Kogan; in particular, I would like to thank them for visiting me here
+in Minneapolis. I am thankful to my sister, Julia, and her family, Maksim, Ilya and
+Lev for being so close, in spite of the huge geographical distance between us. I am
+fortunate to have a wonderful son, Yasha, my constant source of energy and positive
+emotions.
+I devote this thesis to my grandfather, Ilya Guhn, with love and admiration.
+
+ii
+ABSTRACT
+This thesis is devoted to algorithmic aspects of the implementation of Cartan’s moving
+frame method to the problem of the equivalence of submanifolds under a Lie group action.
+We adopt a general deﬁnition of a moving frame as an equivariant map from the space of
+submanifolds to the group itself and introduce two algorithms, which simplify the construc-
+tion of such maps. The ﬁrst algorithm is applicable when the group factors as a product
+of two subgroups G = BA, allowing us to use moving frames and diﬀerential invariants
+for the groups A and B in order to construct a moving frame and diﬀerential invariants
+for G. This approach not only simpliﬁes the computations, but also produces the relations
+among the invariants of G and its subgroups. We use the groups of the projective, the
+aﬃne and the Euclidean transformations on the plane to illustrate the algorithm. We also
+introduce a recursive algorithm, allowing, provided the group action satisﬁes certain condi-
+tions, to construct diﬀerential invariants order by order, at each step normalizing more and
+more of the group parameters, at the end obtaining a moving frame for the entire group.
+The development of this algorithm has been motivated by the applications of the moving
+frame method to the problems of the equivalence and symmetry of polynomials under linear
+changes of variables. In the complex or real case these problems can be reduced and, in
+theory, completely solved as the problem of the equivalence of submanifolds. Its solution
+however involves algorithms based on the Gr¨obner basis computations, which due to their
+complexity, are not always feasible. Nevertheless, some interesting new results were ob-
+tained, such as a classiﬁcation of ternary cubics and their groups of symmetries, and the
+necessary and suﬃcient conditions for a homogeneous polynomial in three variables to be
+equivalent to xn + yn + zn.
+
+Contents
+Introduction
+1
+1
+The Equivalence Problem for Submanifolds.
+4
+1.1
+Lie Group Actions on Manifolds.
+. . . . . . . . . . . . . . . . . . . .
+5
+1.2
+Jet Spaces and Diﬀerential Invariants. . . . . . . . . . . . . . . . . . .
+8
+1.3
+Equivalence and Symmetry of Submanifolds. Signature Manifolds. . .
+15
+1.4
+The Method of Moving Frames. . . . . . . . . . . . . . . . . . . . . .
+19
+2
+Inductive Construction of Moving Frames.
+27
+2.1
+Recursive Construction of Moving Frames. . . . . . . . . . . . . . . .
+28
+2.2
+A Moving Frame Construction for a Group that Factors as a Product.
+37
+2.3
+Examples: Euclidean, Aﬃne and Projective Actions on the Plane. . .
+42
+3
+Application to Classical Invariant Theory.
+48
+3.1
+Symmetries and Equivalence of Polynomials. . . . . . . . . . . . . . .
+50
+3.2
+Binary forms. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+56
+3.3
+Diﬀerential Invariants for Ternary Forms. . . . . . . . . . . . . . . . .
+66
+3.4
+Classiﬁcation of Ternary Cubics . . . . . . . . . . . . . . . . . . . . .
+76
+3.5
+The Signature Manifold for xn + yn + zn. . . . . . . . . . . . . . . . .
+82
+Appendices
+85
+iii
+
+CONTENTS
+iv
+A Computations on Binary Forms.
+86
+A.1 The Maple Code for computing Symmetries of Binary Forms . . . .
+86
+A.2
+Cubic Forms. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+90
+A.3
+The Octahedral Symmetry Group. . . . . . . . . . . . . . . . . . . .
+93
+B Invariants for Ternary Forms.
+98
+C Computations on Ternary Cubics.
+101
+
+Introduction.
+Elie Cartan’s method of equivalence is a natural development of the Felix Klein
+Erlangen program (1872), which describes geometry as the study of invariants of group
+actions on geometric objects. Cartan formulated the problem of the equivalence of
+submanifolds under a group of transformations and introduced the method of moving
+frames, which allows one to construct diﬀerential invariants under a group action
+[6]. The functional relations among the invariants provide a key to the classiﬁcation
+of submanifolds under a prescribed group of transformations. Classically, a moving
+frame is an equivariant map from the space of submanifolds (or more rigorously, from
+the corresponding jet bundle) to the bundle of frames. Exterior diﬀerentiation of this
+map produces an invariant coframe, which is used to construct a number of diﬀerential
+invariants suﬃcient to solve the equivalence problem.
+Considering moving frame
+constructions on homogeneous spaces, Griﬃths [20] and Green [19] observed that a
+moving frame can be viewed as an equivariant map from the space of submanifolds to
+the group itself. As pointed out in [20], one of the classical moving frames, the Fr´enet
+frame, is in fact a map from the space of curves to the Euclidean group. Adopting
+this observation as a general deﬁnition of a moving frame, Fels and Olver [12], [13]
+generalized the method for arbitrary, not necessarily transitive, ﬁnite-dimensional Lie
+group actions on a manifold introducing, for the ﬁrst time, a completely algorithmic
+way for their construction.
+In the ﬁrst chapter we give an overview of the Cartan’s solution to the problem of
+the equivalence of submanifolds. We also describe a general algorithm for construction
+of the moving frames and diﬀerential invariants developed by Fels and Olver [13].
+Following this method, however, one might have to prolong the action to the jet
+spaces of high order before obtaining any invariants, while the earlier methods [20],
+[19] allow one to construct invariants order by order. We combine the advantages of
+1
+
+INTRODUCTION
+2
+both approaches in the recursive algorithm presented in Chapter 2. Not surprisingly,
+the construction of moving frames and diﬀerential invariants is simpler when the
+acting group has fewer parameters. Thus, it is desirable to use the results obtained
+for a subgroup H ⊂G to construct a moving frame and diﬀerential invariants for
+the entire group G. The inductive algorithm from Chapter 2 allows us to perform
+this for the groups that factor as a product. Using this algorithm, one obtains at the
+same time the relations among the invariants of group G and its subgroup H. An
+illustrative example is induction from the Euclidean action on plane curves to the
+special aﬃne action, and then to the action of the entire projective group. As a by-
+product, one obtains the expression of the aﬃne invariants in terms of the Euclidean
+ones and the projective invariants in terms of the aﬃne ones. The actions of all three
+groups play an important role in computer image processing [10], [31].
+Equipped with all of these tools we approach the problem of the equivalence and
+symmetry of polynomials under linear changes of variables in Chapter 3. In fact,
+applications to classical invariant theory have served as the initial motivation for
+the development of the algorithms from Chapter 2. Two polynomials are said to be
+equivalent if there is a linear change of variables that transforms one into the other.
+The group of symmetries of a polynomial consists of all linear changes of variables that
+leave the polynomial unchanged. It is desirable to describe the classes of equivalent
+polynomials and classify the corresponding symmetry groups.
+We concentrate on
+polynomials over complex numbers although indicate how to adopt the results to
+real polynomials. This problem has been traditionally approached by algebraic or
+algebraic-geometry tools [18], [21], [25], [35].
+Inspired by the ideas of Olver’s book [28] we approach the problem using a diﬀer-
+ential geometric method of moving frames. We consider the graph of a polynomial
+F(x) in m variables as a submanifold in (m + 1)-dimensional complex (or real) space
+therefore reducing the question to equivalence problems for submanifolds.
+In the
+polynomial case, diﬀerential invariants can be chosen to be rational functions, and
+the polynomial relations among them can be found via elimination algorithms based
+on Gr¨obner basis computations. Hence, the problem of the equivalence and symme-
+try of polynomials can be completely solved, at least in theory. In practice, however,
+we are confronted with the complexity of Gr¨obner basis computations, which signif-
+
+INTRODUCTION
+3
+icantly limits our ability to solve speciﬁc problems. We start with the simplest case
+of polynomials in two variables, reproducing results from the paper by Peter Olver
+and myself [2]. We provide a Maple code which determines the dimension of the
+symmetry group of a given polynomial and in the case when the symmetry group
+is ﬁnite, computes it explicitly. Computations become challenging, even in the next
+case of polynomials in three variables. In order to construct a complete set of dif-
+ferential invariants we apply the recursive algorithm from Chapter 2. In some cases,
+the relations among the invariants are successfully computed via algorithms based
+on Gr¨obner basis computations, while in the other cases, this computation does not
+seem to be feasible. Nevertheless, some interesting new results were obtained, such as
+a classiﬁcation of ternary cubics and their groups of symmetries, and necessary and
+suﬃcient conditions for a homogeneous polynomial in three variables to be equivalent
+to xn + yn + zn.
+Cartan’s method for solving the problem of equivalence for submanifolds was
+formulated in the category of smooth manifolds. Hence, its direct applicability is
+restricted to polynomials over complex or real numbers. It would be a worthwhile
+and interesting project to reformulate the method of moving frames in the algebraic-
+geometry language, so that it can be applied to the problem of the equivalence and
+symmetry of algebraic varieties over ﬁelds of arbitrary characteristics.
+
+Chapter 1
+The Equivalence Problem for
+Submanifolds.
+Two manifolds are said to be equivalent under a transformation group if one can be
+mapped to the other by an element of the group. Symmetry can be considered as
+self-equivalence. The group of the symmetries, or the isotropy group, of a subman-
+ifold consists of the transformations which map the submanifold to itself. Given a
+transformation group one would like to ﬁnd classes of equivalent manifolds and to
+describe the group of symmetries of a given submanifold.
+A local solution to this problem for a group acting on a homogeneous space was
+presented by E. Cartan in [6] and is known as the method of moving frames. Clas-
+sically, a moving frame is an equivariant map from the space of submanifolds (or
+more rigorously from the corresponding jet bundle) to the bundle of frames. Exterior
+diﬀerentiation of this map produces an invariant coframe, which is used to construct
+a number of diﬀerential invariants suﬃcient to solve the equivalence problem.
+The method of moving frames was generalized by Fels and Olver [13] for arbitrary
+(not necessarily transitive) ﬁnite-dimensional Lie group actions on a manifold. It
+relies on the deﬁnition of moving frame as an equivariant map from the space of
+submanifolds to the group itself, which could be also found in Griﬃths [20] and
+Green [19]. As pointed out by Griﬃths in [20], one of the classical moving frames,
+the Fr´enet frame, is in fact a map from the space of curves to the Euclidean group.
+We remark that the problem of the equivalence for submanifolds is one of many
+problems which can be reformulated in terms of an exterior diﬀerential system and
+reduced to a question of its integrability [4].
+Other important examples include
+4
+
+CHAPTER 1. THE EQUIVALENCE PROBLEM FOR SUBMANIFOLDS.
+5
+the equivalence and symmetry problems for diﬀerential equations and for variational
+functionals. Cartan’s method consists of rewriting the problem in terms of diﬀeren-
+tial forms in a way that it becomes intrinsic with respect to group action. Then the
+exterior diﬀerentiation of this system produces the suﬃcient number of diﬀerential
+invariants. The equivalence problem can be solved by examining the functional rela-
+tions among these invariants. Although not completely algorithmic this approach has
+led to solving numerous equivalence problems e.g., [5], [7], [15], [23] and [26] including
+problems which involve inﬁnite dimensional pseudo-groups of transformation.
+In what follows we consider the local problem of equivalence and symmetry under
+ﬁnite dimensional Lie group of transformation on a smooth manifold. In the ﬁrst
+section we review some basic deﬁnitions and results about Lie group actions which
+we will use later.
+1.1
+Lie Group Actions on Manifolds.
+Deﬁnition 1.1.1. A smooth map w : G × M →M deﬁnes an action of a group G
+on a manifold M if it satisﬁes the following properties:
+w(e, z) = z,
+w(a, w(b, z)) = w(ab, z),
+(1.1)
+for any z ∈M, a, b ∈G. When it does not lead to confusion an action will be denoted
+as multiplication: w(a, z) = a · z
+We adopt the deﬁnition of local group actions from [26].
+Deﬁnition 1.1.2. A local group of transformations on M is given by a (local) Lie
+group G and an open subset U ⊂G×M , such that {e}×M ⊂U ⊂G×M, which is
+the domain of deﬁnition of the group action, and a smooth map w: U →M such that
+if (g, z) ∈U the so is (g−1, w(g, z)) and two properties (1.1) are satisﬁed whenever w
+is deﬁned.
+The following deﬁnition extends the notion connectness to local transformations:
+Deﬁnition 1.1.3. A group of transformations G acting on M is called connected if
+the following requirements hold:
+(i) G is a connected Lie group and M is a connected manifold;
+
+CHAPTER 1. THE EQUIVALENCE PROBLEM FOR SUBMANIFOLDS.
+6
+(ii) the domain U ⊂G × M of the group action is connected;
+(iii) for each z ∈M the local group Gz = {g ∈G|(g, z) ∈U} is connected.
+Deﬁnition 1.1.4. The orbit Oz through a point z ∈M is the image of the map
+wz : G →M given by wz(g) = w(g, z). Each point of M belongs to a unique orbit. If
+there is only one orbit on M, then Oz = M for all z and the action is called transitive.
+The diﬀerential dwz : TG|e →TM|z maps the Lie algebra of G to the tangent
+space at the point z. Let X ∈g = TG|e then ˆX(z) = dwz(X) is a smooth vector
+ﬁeld on M called an inﬁnitesimal generator of the G-action:
+exp(tX) · z = exp(t ˆX, z),
+where exp(t ˆX, z) is the ﬂow of the vector ﬁeld ˆX.
+Deﬁnition 1.1.5. The isotropy group of a subset S ⊂M is
+GS = {g ∈G|gS = S}.
+The global isotropy subgroup is the subgroup
+G∗
+S =
+\
+x∈S
+Gx = {g ∈G|gS = S}
+consisting of those group elements which ﬁx all points in S.
+Deﬁnition 1.1.6. A group G acts eﬀectively if diﬀerent elements have diﬀerent ac-
+tions, or equivalently G∗
+M = {e}. The action of G is locally eﬀective if G∗
+M is a discrete
+subgroup of G. A group G acts eﬀectively on subsets if the global isotropy subgroup
+of each open subset U ⊂M is trivial.
+If a group does not act eﬀectively then we can replace its action with the action
+of the quotient group G/GM. This action is well deﬁned, eﬀective and essentially the
+same as the action of G. Clearly if G acts eﬀectively on subsets then G acts eﬀectively.
+The converse statement is true in analytic category, however as example 2.3 in [13]
+shows, it is not valid in general in smooth category.
+Deﬁnition 1.1.7. A transformation group acts freely if the isotropy subgroup of each
+point is trivial and locally freely if the isotropy group of each point is discrete.
+
+CHAPTER 1. THE EQUIVALENCE PROBLEM FOR SUBMANIFOLDS.
+7
+If the group acts (locally) freely then the dimension of each orbit Oz is equal to
+the dimension of the group. In this case the map wz deﬁnes a (local) diﬀeomorphism
+between G and the orbit Oz.
+An action of a Lie group G on a manifold M induces the standard linear repre-
+sentation on the space of smooth functions F : M →R:
+(gF)(gz) = F(z),
+(1.2)
+where g ∈G, z ∈M.
+Deﬁnition 1.1.8. A function F(z) is invariant if it is a ﬁxed point of the standard
+representation above, that is
+F(gz) = F(z).
+(1.3)
+We say that F is a local invariant if it is deﬁned on an open subset of M, and/or the
+equality (1.3) holds only for g in a neighborhood of identity in G.
+Deﬁnition 1.1.9. The symmetry group GF of a function F(z) is the isotropy group
+of F under representation (1.2):
+GF = {g ∈G|F(gz) = F(z)}
+Deﬁnition 1.1.10. The action of a group G on M is called semi-regular if all its
+orbits have the same dimension. The action is called regular if, in addition, each
+point z ∈M has arbitrarily small neighborhood whose intersection with each orbit is
+a connected subset thereof.
+Let G act semi-regularly on an m-dimensional manifold M and let s be the dimen-
+sion of the orbits, then the inﬁnitesimal generators of the G-action form an integrable
+distribution of the dimension s. The orbits of G are the integral manifolds for this
+distribution. By Frobenius’ theorem, coordinates (x1, . . . , xs, y1, . . . , ym−s) on a chart
+U ⊂M can be chosen so that each orbit is a level set of the last m −s coordinates:
+yi = ci, i = 1, . . . , m−s. The functions yi form a complete set of functionally indepen-
+dent local invariants. Thus the number of functionally independent local invariants
+for a semi-regular action of a Lie group equals to the diﬀerence between the dimension
+of the manifold and the dimension of the orbits. Let S be a level set of the ﬁrst s
+coordinates xi = ci, i = 1, . . . , s, then the submanifold S has codimension s and is
+
+CHAPTER 1. THE EQUIVALENCE PROBLEM FOR SUBMANIFOLDS.
+8
+transversal to each orbit in U. Thus S intersects each orbit in a discrete set of points.
+If the action is regular and U is suﬃciently small, then S intersects each orbit only
+once.
+Deﬁnition 1.1.11. Suppose G acts semi-regularly on an m-dimensional manifold M
+with s-dimensional orbits. A (local) cross-section is an (m −s)-dimensional manifold
+S ⊂M such that S intersects each orbit transversally. The cross-section is regular if
+S intersects each orbit at most once.
+We conclude this preliminary section with Lie’s inﬁnitesimal criterion of invari-
+ance:
+Theorem 1.1.12. Let G be a connected group of transformations acting on a mani-
+fold M. A function I : M →R is invariant under G if and only if for every inﬁnites-
+imal of generator X of the G-action:
+X[I] ≡0.
+Remark 1.1.13. Throughout the thesis we will, without saying it explicitly, consider
+the group actions, cross-sections and invariants to be local. Nevertheless in order to
+shorten the statements and formulas we will keep global notation. For instance we
+will write w : G × M →M instead of w: U →M for a local action, or we will call S
+a regular cross-section on M meaning that it is a regular cross-section in some open
+subset U ⊂M.
+1.2
+Jet Spaces and Diﬀerential Invariants.
+In the case when the group G acts transitively on M, there are clearly no non-
+constant invariants. Nevertheless if we consider the transitive action of the group
+of Euclidean motions on the plane we can ﬁnd important geometric invariant: the
+curvature κ =
+uxx
+√
+1+u2x
+3 of an embedded curve u = u(x). We notice that κ depends
+not only on a point on the curve but also on the derivatives of u with respect to x.
+This is an example of a diﬀerential invariant, which is an ordinary invariant function
+on the prolonged space (or jet space). Diﬀerential invariants were used by Lie in his
+work on the symmetry reduction of diﬀerential equations. The formal deﬁnition of
+
+CHAPTER 1. THE EQUIVALENCE PROBLEM FOR SUBMANIFOLDS.
+9
+jet spaces was ﬁrst given by Ehresmann. We are going to give a brief description of
+the geometric structure of jet spaces, for more details see [1], [26], [27].
+Deﬁnition 1.2.1. Given a smooth manifold M of dimension m and an integer p < m,
+the k-th order jet bundle Jk = Jk(M, p) is a ﬁber bundle over M, such that a ﬁber over
+a point z ∈M consists of the set of equivalence classes of p-dimensional submanifolds
+of M with k-th order contact at z. In particular J0 = M.
+Remark 1.2.2. In the case when M has itself a ﬁber bundle structure M →B
+with a p-dimensional base, then its k-th jet bundle JkM can be deﬁned by sections
+s: B →M under the equivalence relations of k-th order contact at z ∈M. Then the
+jet bundle Jk = Jk(M, p) from Deﬁnition 1.2.1 can be called the extended jet bundle,
+since it also includes jets of p-dimensional submanifolds of M that are not transversal
+to the ﬁbers over B. The ﬁber bundle JkM →M is an open dense subset of the
+extended bundle Jk(M, p).
+There is a natural projection πk
+l : Jk →Jl. The inverse sequence of topological
+spaces (Jk, πl
+k) determine an inverse limit space J∞= J∞(M, p) together with pro-
+jection maps π∞
+k : J∞→Jk. The space J∞is called inﬁnite jet bundle over M. In
+the same manner the tangent bundle TJ∞can be deﬁned as the inverse limit of topo-
+logical spaces TJk under the projections (πk
+l )∗= dπk
+l . For l < k we identify functions
+and diﬀerential forms on Jl with functions and forms on Jk under the pull-back (πk
+l )∗.
+The smooth functions and forms on J∞are deﬁned as the direct limit of the space of
+smooth functions and forms on on Jk.
+Let U be a chart of M with coordinates (x1, . . . xp, u1, . . . , uq) so that p + q =
+dim M. We say that a submanifold S ⊂M is transverse with respect to this co-
+ordinates if the restriction of the forms dx1, . . . , dxp to S is a coframe on S. Any
+transverse submanifold can be locally described as a graph uα = f α(x), α = 1, . . . , q.
+Let U 0 ⊂U be a union of transverse submanifolds of U and U k ⊂Jk be a subset such
+that πk
+0(U k) = U 0. It is not diﬃcult to see that U k is an open subset of Jk, which can
+be parameterized by the set of independent variables {x1, ..., xp}, the set {u1, ..., uq}
+of dependent variables and coordinates uα
+J which correspond to the derivatives of
+the dependent variables with respect to the independent ones, where the subscript
+J = (j1, . . . , jp) is a multi-index, such that |J| = j1 + · · · + jp ≤k, ji ≥0.
+
+CHAPTER 1. THE EQUIVALENCE PROBLEM FOR SUBMANIFOLDS.
+10
+Deﬁnition 1.2.3. Let S be a p-dimensional submanifold of M, then its k-th prolon-
+gation jk(S) is a p-dimensional submanifold of Jk(M, p), deﬁned by the k-th jets of
+S. In local coordinates on an open set U k it is the graph of equations
+uα = f α(x),
+uα
+J =
+∂kf α
+∂j1x1 . . . ∂jpxp,
+where α = 1, . . . , q and J = (j1, . . . , jp) are all possible multi-indices, such that
+|J| ≤k.
+Although the k-th prolongation jk(S) of S is a p-dimensional submanifold of
+Jk(M, p), not every p-dimensional submanifold of Jk(p, M) is the prolongation of a
+submanifold in M. The exterior diﬀerential forms which are identically zero when
+restricted to the prolongation jk(S) of any submanifold S ⊂M for all k form a
+diﬀerential ideal on J∞, called the contact ideal. In local coordinates a basis for the
+contact ideal can be written as:
+θα
+J = duα
+J −
+p
+X
+i=1
+uα
+J,idxi,
+α = 1, ..., q,
+|J| ≥0.
+Thus the cotangent bundle on J∞(U, p) splits into two sub-bundles: the horizontal
+sub-bundle which is spanned by the forms dx1, ..., dxp, and the vertical sub-bundle
+spanned by the contact forms. We emphasize that the contact (vertical) sub-bundle
+has intrinsic deﬁnition, independent of the choice of coordinates, whence the choice
+of basic horizontal one-forms depends on the choice of independent coordinates.
+The diﬀerential d on J∞also splits into horizontal and vertical components,
+d = dH + dV .
+The horizontal diﬀerential is deﬁned by
+dHF =
+p
+X
+i=1
+(DiF) dxi,
+where
+Di = ∂
+∂xi +
+q
+X
+α=1
+X
+J
+uJ,i
+∂
+∂uα
+J
+.
+The operators Di span a subspace of total vector ﬁelds in the tangent bundle TJ∞,
+which can be deﬁned intrinsically as the set of vector ﬁelds annihilated by any contact
+form.
+
+CHAPTER 1. THE EQUIVALENCE PROBLEM FOR SUBMANIFOLDS.
+11
+The vertical diﬀerential is deﬁned by
+dV F =
+X
+α,J
+∂F
+∂uα
+J
+dθα
+J.
+The vector ﬁelds
+∂
+∂uα
+J , which are annihilated by any horizontal form, span the subspace
+of vertical vector ﬁelds in TJ∞.
+Each one-form on J∞splits into horizontal and
+vertical component, inducing a bi-grading of the exterior diﬀerential forms on J∞.
+The horizontal diﬀerential dH increases the horizontal degree of a form and the vertical
+diﬀerential dV increases the vertical degree. This splitting gives rise to a bicomplex of
+diﬀerential forms called the variational bicomplex [34], [33], [36], and [1], an important
+tool in the study of geometry of diﬀerential equations and variational problems.
+Deﬁnition 1.2.4. Let X be a vector ﬁeld on M, then there is a unique vector ﬁeld
+prX on J∞, called prolongation of X such that
+(i) X and prX agree on functions on M,
+(ii) prX preserves the contact ideal: the Lie derivative of a contact form with respect
+to prX is also a contact form.
+The vector ﬁeld prkX = (π∞
+k )∗prX is called k-th prolongation of X.
+In terms of local coordinates let
+X =
+p
+X
+i=1
+ξi(x, u) ∂
+∂xi +
+q
+X
+α=1
+ϕα(x, u) ∂
+∂uα
+be a vector ﬁeld on M, then its k-th order prolongation is:
+prk(X) =
+p
+X
+i=1
+ξi(x, u) ∂
+∂xi +
+q
+X
+α=1
+X
+|J|≤k
+ϕα
+J(x, u|J|) ∂
+∂uα
+J
+,
+(1.4)
+where
+ϕα
+J(x, u) = DJQα +
+p
+X
+i=1
+ξi(x, u)uα
+J,i.
+and Qα denotes the characteristics of the vector ﬁeld X :
+Qα(x, u(1)) = ϕα(x, u) −
+p
+X
+i=1
+ξi(x, u)uα
+i .
+
+CHAPTER 1. THE EQUIVALENCE PROBLEM FOR SUBMANIFOLDS.
+12
+Any prolonged vector ﬁeld can be decomposed into total and vertical components:
+pr(X) =
+p
+X
+i=1
+ξi(x, u) ∂
+∂xi +
+X
+α,J
+ 
+DJQα +
+p
+X
+i=1
+ξi(x, u)uα
+J,i
+!
+∂
+∂uα
+J
+=
+p
+X
+i=1
+ξi(x, u)Di +
+X
+α,J
+DJQα ∂
+∂uα
+J
+.
+After we have deﬁned the jet space we would like extend the action of G on
+it so that the extended action maps a prolongation of a submanifold of M to the
+prolongation of its image.
+Deﬁnition 1.2.5. The k-th order prolongation of a smooth transformation g ∈G on
+M is deﬁned by the property
+g(k) · jk(S) = jk(g · S)
+for any submanifold S ∈M.
+It follows from the deﬁnition that the following diagram commutes
+Jl
+Jl
+-
+g(l)
+Jk
+Jk
+-
+g(k)
+?
+πk
+l
+?
+πk
+l
+When it is clear from the context that the prolonged transformation is considered
+we will omit the superscript (k) over g.
+Deﬁnition 1.2.6. A k-th order diﬀerential invariant on M under the action of G is
+a function on Jk(M, p) which is invariant under the k-th prolongation of the group
+action.
+Remark 1.2.7. We consider an l-th order diﬀerential invariant for l < k as a k-th
+order diﬀerential invariant under the pull-back (πk
+l )∗. Thus a k-th order diﬀerential
+invariant might only depend on derivatives of order strictly less than k.
+If X is an inﬁnitesimal generator of G-action on M, then its k-th prolongation
+(1.4) generates the corresponding prolonged transformation on Jk(M, p). From Lie’s
+
+CHAPTER 1. THE EQUIVALENCE PROBLEM FOR SUBMANIFOLDS.
+13
+criterion 1.1.12 it follows that function I : Jk →R is a diﬀerential invariant if and
+only if for every inﬁnitesimal of generator X of the G-action
+prk(X)[I] ≡0.
+Theoretically this criterion can be used to ﬁnd all diﬀerential invariants. In practice
+however it is diﬃcult to use since it requires integration of a system of ﬁrst order
+partial diﬀerential equation. The advantage of the method of moving frames is that
+it requires only diﬀerentiation not integration.
+Let Ok and Ol be the orbits of prolonged action on Jk and Jl respectively for
+k > l, then (πk
+l )(Ok) = Ol and hence the dimension of the orbits can only become
+larger when we prolong the action to the higher jet spaces. On the other hand the
+dimension of the orbits is bounded by the dimension of the group G. Hence there is
+an order of prolongation n at which the maximum possible dimension is attained on
+an open subset of Vn ⊂Jn. If z(k), k > n is a point in Jk such that πk
+n(z(k)) ∈Vn
+then the orbit of the prolonged action through z(k) also has the maximal dimension.
+We call such points regular jets and denote their union in J∞as V.
+Deﬁnition 1.2.8. The minimal order at which the orbits reach maximal dimension is
+called the order of stabilization. The subsets Vk ⊂Jk,
+k = n, . . . , ∞which consists
+of the points z(k) such that the orbit through πk
+nz(k) has maximal dimension are called
+regular.
+The following result (Ovsiannikov [30], Olver [29]) is crucial for moving frame
+construction.
+Theorem 1.2.9. If the action of G on M is locally eﬀective on subsets then the
+prolonged action is locally free on Vk, for k ≥n, where n is the order of stabilization.
+Since the dimension of the space grows with prolongation and the dimension of
+orbits stabilizes at order n, then nontrivial local diﬀerential invariants are guaranteed
+to appear at least at the order n + 1 by Frobenius’ theorem. Although there exists
+only a ﬁnite number of functionally independent diﬀerential invariants at each order
+of prolongation, their total number is inﬁnite since one can prolong up to the inﬁnite
+
+CHAPTER 1. THE EQUIVALENCE PROBLEM FOR SUBMANIFOLDS.
+14
+order. Fortunately one can obtain all invariants from a ﬁnite generating set of invari-
+ants by applying invariant diﬀerential operators. The latter can be constructed as
+dual vector ﬁelds to horizontal contact invariant forms, which are deﬁned as follows:
+Deﬁnition 1.2.10. A diﬀerential one-form ω on Jn is called contact invariant if for
+every g ∈G we have
+ g(n)∗ω = ω + θg for some contact form θg. A set of p lin-
+early independent horizontal contact invariant forms {ω1, ..., ωp} is called a horizontal
+contact invariant coframe.
+The freeness of the group action on Vn ⊂Jn guarantees the existence of a contact
+invariant coframe ω1, . . . , ωp on Vn [11], [30]. The horizontal diﬀerential of a function
+F can be written in terms of this coframe as:
+dHF =
+p
+X
+i=1
+(DiF) ωi,
+where the total vector ﬁelds Di have an important property: they commute with the
+prolonged action of G and thus map diﬀerential invariants to higher order diﬀerential
+invariants.
+Operators which possess this property are called invariant diﬀerential
+operators. The following theorem [30], [13] asserts that one can produce all diﬀerential
+invariants by applying a ﬁnite set of invariant diﬀerential operators to a ﬁnite set of
+generating invariants.
+Theorem 1.2.11. Suppose that G is a transformation group and let n be its order of
+stabilization. Then, in a neighborhood of any regular jet z(n) ∈Vn, there exists a con-
+tact invariant horizontal coframe {ω1, ..., ωp}, and corresponding invariant diﬀerential
+operators D1, ..., Dp. Moreover, there exists a generating system of diﬀerential invari-
+ants I1, ..., Il, of order at most n + 1, such that, locally, every diﬀerential invariant
+can written as a function of I1, ..., Il and their invariant derivatives:
+I = H(. . . , DJIj, . . . ),
+(1.5)
+where DJ is a certain composition of invariant diﬀerential operators.
+Example 1.2.12. Let us consider the special Euclidean group SE(2, R) = SO(2, R)⋉
+R2 acting on curves in R2. The group acts freely and transitively on the ﬁrst jet space
+J1 and thus the lowest order invariant, the Euclidean curvature
+κ =
+uxx
+p
+1 + u2
+x
+3
+
+CHAPTER 1. THE EQUIVALENCE PROBLEM FOR SUBMANIFOLDS.
+15
+appears on the second jet space. The contact invariant coframe consists of a single
+form, inﬁnitesimal arc-length:
+ds =
+p
+1 + u2
+x dx.
+Higher order diﬀerential invariants can be obtained by taking the derivatives of κ
+with respect to the arc-length, or in other words by applying invariant diﬀerential
+operator
+1
+√
+1+u2x Dx. From dimensional consideration it is clear that only one new
+functionally independent invariant appears at each order of prolongation, and thus
+any diﬀerential invariant is a function of κ, κs = dκ
+ds, κss = dκs
+ds , etc.
+The generalized method of moving frame [13] described in Section 1.4 provides
+a consisting algorithm of constructing diﬀerential invariants, a contact invariant
+coframe, invariant diﬀerential operators and recursion formulas (1.5). In the next
+section we explain the role played by diﬀerential invariants in the solution of the
+equivalence and symmetry problems for submanifolds.
+1.3
+Equivalence and Symmetry of Submanifolds.
+Signature Manifolds.
+Deﬁnition 1.3.1. Let G be a group acting on a manifold M. Two submanifolds S
+and ¯S of dimension p in M are said to be locally equivalent if there exist a point
+z ∈M and an element g ∈G such that ¯S = g · S in a neighborhood of the point
+g · z ∈¯S. An element g ∈G is a local symmetry of S if S = g · S at least in a
+neighborhood of the point g · x ∈S.
+Both the equivalence and the symmetry problems can be solved by the following
+construction. Let n be the order of stabilization as in deﬁnition 1.2.8, then the group
+acts locally freely on Vn ∈Jn(M, p) and the diﬀerential invariants must appear at
+least on Jn+1. Let {I1, ...INk} be a complete set of k-th order diﬀerential invariants
+for k > n, where by complete set we mean that any other invariant of order k is
+a function of {I1, ...INk}.
+Let {˜I1, ...˜INk} be the restriction of I’s to jk(S).
+The
+functions {˜I1, ...˜INk} deﬁne a map φk : S →RNk. Let tk = rank(φk), then tk ≤p
+since dim S = p. It is not diﬃcult to see that the rank tk does not depend on a choice
+of a complete system of invariants.
+
+CHAPTER 1. THE EQUIVALENCE PROBLEM FOR SUBMANIFOLDS.
+16
+Deﬁnition 1.3.2. A submanifold S ⊂M is called regular if jn(S) ⊂Vn and the rank
+tk, k ≥l does not vary on S.
+Deﬁnition 1.3.3. Let S be a regular submanifold of M then its k-th order signature
+manifold Ck(S) is an immersed submanifold Im(φk) ⊂RNk, where φk is deﬁned as
+above.
+Taking into account Remark 1.2.7 we observe that tn+1 ≤tn+2 ≤· · · ≤tn+i... ≤p
+and hence this sequence stabilizes. In fact once ts = ts+1 for some s, all the subsequent
+ranks are equal.
+Proposition 1.3.4. If ts = ts+1 in the sequence of ranks above then: ts = ts+1 =
+ts+2 = . . .
+Proof. Given that ts = ts+1, we need to prove that ts+1 = ts+2. Let I be any
+invariant of order s+2, then from theorem 1.2.11 it follows that there exist invariants
+I1, ..., IN of order s + 1 such that I = H(Di1I1, . . . DiNIN), where H is some function.
+From the deﬁnition of total vector ﬁelds it follows that:
+˜I = H
+
+Di1 ˜I1, . . . , DiN ˜IN
+
+,
+(1.6)
+where ˜I, ˜I1, ..., ˜IN are restrictions of I’s to the jet js+2(S). On the other hand since
+ts+1 = ts there exist s order invariants F1, . . . Ft such that each ˜Ii can be written as
+a function of the restrictions ˜F1, . . . ˜Ft of F’s to js(S):
+˜Ii = Hi( ˜F1, . . . ˜Ft).
+(1.7)
+By substitution of (1.7) in (1.6) we obtain that
+˜I = H
+
+Di1(H1( ˜F1, . . . , ˜Ft)), . . . , DiN(HN( ˜F1, . . . , ˜Ft))
+
+.
+(1.8)
+We note that Dij(Hj( ˜F1, . . . , ˜Ft)), j = 1, . . . , N are diﬀerential invariants of order
+s + 1 and thus any s + 2 order invariant restricted to js+2(S) can be written as a
+function of the invariants of order s + 1 restricted to js+1(S).
+Deﬁnition 1.3.5. The minimal order s such that ts = ts+1 is called diﬀerential
+invariant order of S and the corresponding rank t = ts is called diﬀerential invariant
+rank of S.
+
+CHAPTER 1. THE EQUIVALENCE PROBLEM FOR SUBMANIFOLDS.
+17
+Remark 1.3.6. From Proposition 1.3.4 it follows that tn < tn+1 < . . . < ts = ts+1 ≤p
+and thus s ≤n + p, where n is the order of stabilization.
+From Proposition 1.3.4 and recurrence formulas (1.5) it follows that the signa-
+ture manifold Cs+1(S) encodes all functional relations among invariants restricted to
+j∞(S). Remark 1.4.6 in the next section gives a geometric description of the signa-
+ture manifold. As the following two theorems [27], [13] show, the signature manifold
+of order s + 1 plays a crucial role in the solution of the equivalence and symmetry
+problems for submanifolds .
+Theorem 1.3.7. Let S, ¯S ∈M be two regular p-dimensional submanifolds. Then S
+and ¯S are (locally) equivalent, ¯S = gS if and only if they have the same diﬀerential
+order s and their signature manifolds (locally) coincide: Cs+1(S) = Cs+1( ¯S)
+Theorem 1.3.8. Let S ⊂M be a regular p-dimensional submanifold of diﬀerential
+invariant rank t with respect to the transformation group G. Then its isotropy group
+GS is a (p −t)-dimensional subgroup of G acting locally freely on S.
+Corollary 1.3.9. A submanifold S ⊂M has a discrete symmetry group if and only
+if its signature manifold has maximal dimension p.
+Remark 1.3.10. The condition rank(φ) < p is closed and hence a generic submani-
+fold has a discrete group of symmetries.
+If the symmetry group is ﬁnite then its cardinality can be found from the following
+theorem [28].
+Theorem 1.3.11. Let dim Cs+1(S) = p and c ∈Cs+1(S) be a generic point. Then
+the cardinality of the symmetry group is equal to the cardinality of the preimage of c
+under φ: |GS| = |φ−1(c)| .
+Example 1.3.12. Let us return to the problem of equivalence and symmetry of curves
+in R2 under the action of the special Euclidean group SE(2, R) = SO(2, R) ⋉R2. In
+this case the order of stabilization n = 1, V = J1 and so the diﬀerential order s of any
+curve is not greater than two (see Remark 1.3.6). Thus the symmetry and equivalence
+problem for any submanifold can be solved by considering the signature manifold pa-
+rameterized by the curvature κ =
+uxx
+√
+1+u2x
+3 and its derivative κs = (1+u2
+x)uxxx−3uxu2
+xx
+(1+u2x)3
+
+CHAPTER 1. THE EQUIVALENCE PROBLEM FOR SUBMANIFOLDS.
+18
+with respect to the arc-length. If κ, restricted to the jet of a curve, is constant then
+the signature manifold degenerates to a point (κ, 0). The curvature is constant when
+the curve is either a circle or a line. The symmetry group of a line consists of trans-
+lations parallel to this line and the symmetry group of a circle consists of rotations
+around the center of the circle. Both groups are one-dimensional in agreement with
+Theorem 1.3.8. The curvature of a generic curve is non-constant, and thus the sig-
+nature manifold is one-dimensional. Let us construct the signature manifolds for two
+graphs u = sin(x) and u = cos(x), which are clearly equivalent under translation by
+π
+2 in x-direction.
+u = cos(x)
+|
+u = sin(x)
+|
+κ = −
+cos(x)
+(1 + sin2(x))(3/2)
+|
+κ =
+sin(x)
+(1 + cos2(x))(3/2)
+|
+κs = sin(x)(1 + cos2(x))
+(1 + sin2(x))3
+|
+κs = −cos(x)(1 + sin2(x))
+(1 + cos2(x))3
+As x varies the signature curve will be traced over and over again with the period
+2π. This reﬂects the fact that the graphs of sine and cosine possess inﬁnite discrete
+
+CHAPTER 1. THE EQUIVALENCE PROBLEM FOR SUBMANIFOLDS.
+19
+group of symmetries: translation by 2πk , k ∈Z.
+1.4
+The Method of Moving Frames.
+In this section we describe the generalization of the Cartan’s method of moving frame
+by Fels and Olver [13] which provides an algorithm to construct a complete set of dif-
+ferential invariants of any order as well as a contact invariant coframe ωi, i = 1, . . . , p,
+corresponding invariant diﬀerential operators Di and recursion formulas (1.5).
+Deﬁnition 1.4.1. Let a group G act on a smooth manifold N. A (right) moving
+frame is deﬁned as an equivariant map ρ : N →G, where G acts on itself by right
+multiplication. In other words the following diagram commutes:
+N
+N
+-
+g
+G
+G
+-
+Rg−1
+6
+ρ
+6
+ρ
+Theorem 1.4.2. A local moving frame exists if and only if G acts regularly and
+(locally) freely on N.
+Proof. We sketch the proof of the suﬃciency of these conditions and refer the
+reader to Theorem 4.4 in [13] for the proof of their necessity.
+Construction of a
+moving frame is equivalent to choosing a regular cross-section (see Deﬁnition 1.1.11).
+If an r-dimensional Lie group G acts regularly and locally freely on M then in a
+neighborhood U of every point z ∈N there exists a cross-section S that intersects
+each orbit at a unique point. We deﬁne a map ρ : U →G by the condition
+ρ(z) · z ∈S.
+If G acts freely on U then the map ρ(z) ∈G is well deﬁned, if G acts locally freely
+then the map on a neighborhood of the identity Ve ⊂G is well deﬁned. To show that
+ρ is equivariant we observe that ρ(gz) · gz = ρ(z) · z for all g ∈G and so since the
+action of Ve ⊂G is free then ρ(gz) = ρ(z)g−1. In the future we will adopt global
+notation for local objects and maps (see Remark 1.1.13).
+
+CHAPTER 1. THE EQUIVALENCE PROBLEM FOR SUBMANIFOLDS.
+20
+Deﬁnition 1.4.3. A moving frame on a submanifold S ⊂N is the restriction of ρ
+to S.
+We notice that non-constant coordinates of ρ(z) · z provide a complete set of
+functionally independent local invariants on N. In fact if f(z) is any function on N
+then its invariantization is deﬁned as `ιf(z) = f(ρ(z) · z). In other words the function
+`ιf(z) is obtained by spreading the values of f on S along the orbits of G and thus it
+is invariant.
+This process can be described as normalization of invariants on B = G×N, which
+are called lifted invariants. Let the map w : B →N be deﬁned by the group action,
+that is w(g, z) = g · z, the map σ : N →B be deﬁned by σ(z) = (ρ(z), z) and the
+map ι : N →N be deﬁned by ι(z) = ρ(z) · z, then the following diagram commutes:
+N
+N
+-
+ι
+B = G × N
+σ
+      
+w
+@
+@
+@
+@
+@@
+R
+We notice that the maps w and ι are G-invariant and the map σ is G-equivariant.
+Let zi be the i-th coordinate function on U ⊂N, then (gz)i = w∗zi, are invariant
+functions on B, under the action g(h, z) = (hg−1, g·z). Such functions are called lifted
+invariants. Their normalization Ii = σ∗w∗zi include a complete set of functionally
+independent invariants on N. The invariantization of an arbitrary function on N is
+deﬁned by its pull-back under the map ι = ω◦σ : N →N. Indeed if f is any function
+on N then `ιf = ι∗(f) = σ∗w∗f is an invariant function.
+It is clear that if η is any form on N then ¯η = w∗η is an invariant form on B and
+ι∗η = σ∗(¯η) is an invariant form on N. The pull back of any coframe on N under
+ι produces a set of invariant one-forms of codimension r. We can complete this set
+to an invariant coframe on N by pulling back a left invariant coframe on G under
+ρ. However, we deﬁne invariantization of diﬀerential forms in a diﬀerent manner, for
+the reasons which become apparent later. We notice that cotangent bundle on B
+splits into two subspaces: the cotangent bundle to G spanned by the Maurer-Cartan
+forms and the cotangent bundle to the manifold N. The diﬀerential d on B splits
+accordingly d = dG + dN, leading to a well deﬁned bicomplex of diﬀerential forms
+
+CHAPTER 1. THE EQUIVALENCE PROBLEM FOR SUBMANIFOLDS.
+21
+on B. Since the action of G on B is a product of the actions on G itself and the
+action on N then the action of G on B preserves this splitting. In particular, if ¯η
+is a G-invariant form on B then so are πN(¯η) and πG(¯η), where πN and πG are the
+projection of the forms on B on purely manifold component and on purely group
+component respectively. If η is any form on N then w∗(η) is an invariant form on B,
+and so is πN w∗(η). Since σ is a G-equivariant map from N to B, then σ∗πN w∗(η) is
+an invariant form on N.
+Deﬁnition 1.4.4. Let η be a diﬀerential form on N, then its invariantization is
+deﬁned by the formula:
+`ι(η) = σ∗πN w∗(η).
+(1.9)
+In particular, if the forms dzi form a coframe on N then the forms `ι(dzi) =
+σ∗πN w∗dzi = σ∗dN(w∗zi) form a G-invariant coframe on N. Applied to zero-forms
+(functions) this deﬁnition coincide with the one which was given above. It is easy to
+check that `ι is a projection operator, that is it maps any invariant form to itself.
+One can apply the process of invariantization to construct diﬀerential invariants,
+contact invariant forms and invariant diﬀerential operators on J∞(M, p).
+Due to
+theorem 1.2.9 there exists high enough order of prolongation n such that G acts
+locally freely on Vn ⊂Jn(M, p). Thus there exists a local cross-section Sn and a
+corresponding local moving frame ρ : Vn →G. We can extend these cross-section and
+moving frame to any higher order regular set Vk by deﬁning Sk = {z(k)|πk
+nz(k) ∈Sn}
+and ρ(z(k)) = ρ
+ πk
+n(z(k))
+
+for k = n, . . . , ∞. Let the map wk : Bk →Jk be deﬁned
+by the prolonged group action, that is w(g, z(k)) = g · z(k), the map σk : Jk →Bk
+be deﬁned by σ(z(k)) = (ρ(z(k)), z(k)) and the map ιk : Jk →Jk be deﬁned by
+ι(z(k)) = ρ(z(k)) · z(k), then the following diagram commutes for all k = n, . . . , ∞:
+Jk
+Jk
+-
+ιk
+Bk = G × Jk
+σk
+      
+wk
+@
+@
+@
+@
+@@
+R
+Later we will omit the superscript k for the maps between jet spaces.
+
+CHAPTER 1. THE EQUIVALENCE PROBLEM FOR SUBMANIFOLDS.
+22
+The process of invariantization can be deﬁned as in Deﬁnition 1.4.4, where the
+role of dN is played by the jet diﬀerential dJ. In particular if
+xi, i = 1, . . . , p,
+uα
+J, α = 1, . . . , q
+are coordinates on J∞, then the functions
+yi = w∗(xi), i = 1, . . . , p,
+vα
+J = w∗(uα
+J), α = 1, . . . , q
+are lifted invariants on B∞and the functions
+X i = `ι(xi), i = 1, . . . , p,
+Iα
+J = `ι(uα
+J), α = 1, . . . , q
+form a complete set of diﬀerential invariants on J∞.
+Remark 1.4.5. The set of invariants {X i, . . . , X p, Iα
+J , α = 1, . . . , q } is complete in
+a sense that every other diﬀerential invariant can be expressed as a function of these
+invariants. However exactly r of these invariants are functionally dependent on the
+others.
+If the cross-section Sn is chosen as a level set of r coordinates, then the
+invariantization of these r coordinates produce constant functions, called phantom
+invariants.
+Remark 1.4.6. The k-th order signature manifold of a submanifold S (see Deﬁni-
+tion 1.3.3) can be described as the image of its k-th prolongation jk(S) under the
+projection ιk. Indeed, for k = n, . . . , ∞the map ιk projects Jk onto the subset Sk of
+codimension r = dim G, parameterized by a complete set of functionally independent
+invariants. Thus if S ⊂M is any submanifold then its k-th order signature manifold is
+the projection of the k-th jet of S under ιk: Ck(S) = ιk(jk(S)) onto the cross-section
+chosen to deﬁne the corresponding moving frame. The symmetry and equivalence
+theorems 1.3.7, 1.3.8, 1.3.10 have a nice geometrical interpretation in terms of this
+projection. For instance the dimension of the signature manifold decreases when the
+jet of submanifold js+1(S) is not transversal to the prolonged orbits, and hence there
+are inﬁnitesimal generators of the group action which are tangent to js+1(S). These
+inﬁnitesimal generators give rise to the symmetry group of S.
+Let us return now to the process of invariantization. The invariantization of the
+basis form dx1, ..., dxp, θα
+J:
+ϖi
+=
+`ι(dx) = σ∗dJ w∗(xi), i = 1, . . . , p,
+ϑα
+J
+=
+`ι(θα
+J) = σ∗πJ w∗(θα
+J), α = 1, . . . , q
+
+CHAPTER 1. THE EQUIVALENCE PROBLEM FOR SUBMANIFOLDS.
+23
+produces an invariant coframe on J∞. We recall that jet diﬀerential dJ splits into
+vertical and horizontal components, thus the diﬀerential on B∞splits into three com-
+ponents d = dG + dH + dV . Deﬁnition 1.4.4 was motivated by the fact that such
+invariantization preserves the contact ideal: invariantization of a contact form is a
+contact form. The contact ideal is deﬁned intrinsically, while the choice of horizontal
+forms depends on the choice of coordinates and is not preserved by invariantization,
+that is an invariantized horizontal form might gain a vertical component. By project-
+ing the invariantization of a horizontal form to its purely horizontal part we obtain a
+contact invariant form. Let η be any form on J∞, then ¯η = w∗η is an invariant form
+on B∞. Let πH denote the projection of a form on its purely horizontal component.
+Since the action of G preserves the contact ideal then πH(w∗η) is a horizontal contact
+invariant forms on B∞, and σ∗πHw∗(η) is a horizontal contact invariant form on J∞.
+In particular forms
+dyi = πH w∗(dxi) = dH w∗(xi), i = 1, . . . , p
+form a horizontal contact invariant coframe on B∞. The dual vector ﬁelds ¯Di produce
+a complete set of lifted invariant diﬀerential operators, such that vα
+J,i = ¯Divα
+J. The
+forms
+ωi = σ∗dH w∗(xi) = σ∗(dH yi), i = 1, . . . , p
+(1.10)
+form a horizontal contact invariant coframe on J∞. In general we can call σ∗πHw∗η
+the contact invariantization of a form η on J∞. The vector ﬁelds Di dual to the
+forms ωi provide a complete set of invariant diﬀerential operators. We notice that
+in contrast with invariant diﬀerential operators Di on J∞, the lifted operators ¯Di
+commute. The formulas which relate normalized invariants with invariants obtained
+by invariant diﬀerentiation are given in ([13], section 13).
+Example 1.4.7. Let us return to the special Euclidean action on the plane as de-
+scribed in 1.3.12:
+x
+7→
+y = cos(α)x −sin(α)u + a,
+u
+7→
+v = sin(α)x + cos(α)u + b.
+The lifted contact invariant form dHy = τdx, where τ = cos(α)−sin(α)ux. The lifted
+invariant diﬀerential operator ¯Dx = 1
+τ Dx and thus the lifted diﬀerential invariants are
+
+CHAPTER 1. THE EQUIVALENCE PROBLEM FOR SUBMANIFOLDS.
+24
+given by formulas:
+v1
+=
+sin(α) + cos(α)ux
+τ
+,
+v2
+=
+uxx
+τ 3 ,
+v3
+=
+τuxxx + 3 sin(α)u2
+xx
+τ 5
+,
+v4
+=
+τ 2uxxxx + 10 sin(α)τuxxuxxx + 15 sin2(α)u3
+xx
+τ 7
+.
+We note that the lifted invariants deﬁne the prolongation of the group action: ux 7→
+v1, uxx 7→v2, etc. The moving frame can be deﬁned on J1(R2, 1) by choosing a cross-
+section {x = 0, u = 0, ux = 0}, and so an equivariant map J1(R2, 1) →SE(2) can
+be found by solving the equations:
+y
+=
+cos(α)x −sin(α)u + a = 0,
+v
+=
+sin(α)x + cos(α)u + b = 0,
+v1
+=
+sin(α) + cos(α)ux
+cos(α) −sin(α)ux
+= 0.
+Thus we obtain the moving frame:
+α = −arctan(ux),
+a = −uxu + x
+p
+1 + u2
+x
+,
+b = uxx −u
+p
+1 + u2
+x
+.
+(1.11)
+The corresponding element of the special Euclidean group can be written in a
+matrix form:
+ρr =
+
+
+
+1
+√
+1+u2x
+ux
+√
+1+u2x
+−uux+x
+√
+1+u2x
+−
+ux
+√
+1+u2x
+1
+√
+1+u2x
+xux−u
+√
+1+u2x
+0
+0
+1
+
+
+
+The diﬀerential invariants are obtained by normalization, that is substitution of the
+moving frame into the lifted invariants vk:
+I2
+=
+uxx
+(1 + u2
+x)3/2
+I3
+=
+(1 + u2
+x)uxxx −3uxu2
+xx
+(1 + u2
+x)3
+I4
+=
+(1 + u2
+x)2uxxxx −10uxuxxuxxx(1 + u2
+x) + 15u2
+xu3
+xx
+(1 + u2
+x)9/2
+
+CHAPTER 1. THE EQUIVALENCE PROBLEM FOR SUBMANIFOLDS.
+25
+The contact invariant diﬀerential form is
+ω = σ∗(dHy) =
+p
+1 + u2
+x dx = ds
+We notice that I2 = κ, the Euclidean curvature, I3 = κs = dκ
+ds but I4 = κss + 3κ3,
+according to recurrence formulas in [13]. As we have seen in Example 1.3.12 the ﬁrst
+two invariants κ and κs are suﬃcient to solve the equivalence problem for curves in
+Euclidean space.
+Remark 1.4.8. The action of the special Euclidean group on J1 is locally free, how-
+ever the isotropy group of each point (x, u, ux) contains one nontrivial transformation:
+
+
+−1
+0
+2x
+0
+−1
+2u
+0
+0
+1
+
+.
+(1.12)
+This is reﬂected in the ambiguity of normalization for α, which is deﬁned up to the
+addition of πn. Thus the invariants I2, I3, . . . are local. In particular I2 = κ changes
+its sign under the transformation (1.12).
+We conclude this example with the discussion on how the procedure described
+above corresponds to the classical deﬁnition of the Euclidean curvature. The Fr´enet
+frame consists of the unit tangent T and the unit normal N attached to each point
+on a curve (x, u(x)), with consistent orientation of the frame. This produces a map
+ρl : J1(R2, 1) →SE(2). Indeed, the pair (T, N) deﬁnes a rotation matrix at each
+point, and a point (x, u(x)) deﬁnes a translation vector at each point. This map is
+equivariant with respect to the action of the group on itself by left multiplication,
+and so it is called a left moving frame. The element of the Euclidean group assigned
+to each point can be written in matrix form:
+ρl =
+
+
+
+1
+√
+1+u2x
+−
+ux
+√
+1+u2x
+x
+ux
+√
+1+u2x
+1
+√
+1+u2x
+u
+0
+0
+1
+
+
+
+In this example as well as in general the left moving frame is the group inverse of the
+corresponding right moving frame: ρl = (ρr)−1. In matrix form the Fr´enet equations
+can be written as:
+(dT
+ds , dN
+ds , dX
+ds ) = (T, N, X)
+
+
+0
+−κ
+1
+κ
+0
+0
+0
+0
+0
+
+,
+
+CHAPTER 1. THE EQUIVALENCE PROBLEM FOR SUBMANIFOLDS.
+26
+where X = (x, u, 1)t. We recall that ρl = (T, N, X) and thus
+ρ−1
+l
+d
+ds(ρl) ds =
+
+
+0
+−κds
+ds
+κds
+0
+0
+0
+0
+0
+
+
+is a pull-back of the Maurer-Cartan forms on SE(2) to the jet of a curve under the
+G-equivariant map ρl. The elements of this matrix are contact invariant forms and
+their ratio produce the second order diﬀerential invariant κ.
+
+Chapter 2
+Inductive Construction of Moving
+Frames.
+In this chapter we present two modiﬁcations of the moving frame method which
+were motivated by its practical implementation.
+We call the ﬁrst modiﬁcation a
+recursive construction because in contrast to the algorithm from chapter one it allows
+to construct diﬀerential invariants order by order. At each step we normalize more
+and more of the group parameters at the end obtaining a moving frame for the group
+G.
+In the next chapter we use this algorithm to construct a complete set of the
+diﬀerential invariants for ternary cubics transformed by linear changes of variables.
+The second modiﬁcation can be used when the group G factors as a product of
+two subgroups: G = AB, such that A ∩B is discrete. In this case invariants and
+moving frames for A and B can be used to construct invariants and a moving frame
+for G. Such approach not only simpliﬁes the computations but also produces as a
+by-product the relations among the invariants of G and its subgroups. We notice
+that the group of the Euclidean motions on the plane is a factor of the group of the
+special aﬃne motions. In its turn the special aﬃne motions is a factor of the group
+of projective transformations on the plane. We use these groups to illustrate our
+algorithm. As a consequence we obtain the aﬃne curvature in terms of the Euclidean
+and the projective curvature in terms of the special aﬃne and also the relations among
+corresponding diﬀerential operators.
+27
+
+CHAPTER 2. INDUCTIVE CONSTRUCTION OF MOVING FRAMES.
+28
+2.1
+Recursive Construction of Moving Frames.
+We ﬁrst sketch the main idea of the algorithm. Assume that G acts on M regularly
+but not freely. We notice that if S ⊂M is a cross-section to the orbits of G and a
+smooth map ρ: M →G is deﬁned by the condition ρ(z) · z ∈S for z ∈M, then the
+non-constant coordinates of ρ(z) · z provide a complete set of zero order invariants.
+However in order to build a moving frame recursively we require that S satisﬁes a
+certain condition, namely each point of S has the same isotropy group. We postpone
+the discussion of the existence of such a cross-section until later and assume that
+H1 is the isotropy group of each point in S. In this case the map ρ0 deﬁned by the
+condition ρ0(z) · z ∈S is a G-equivariant map from M to the right cosets H1\G. We
+prolong the action of G to the ﬁrst order and deﬁne the set S1 = {z(1)|π1
+0(z(1)) ∈S}.
+The set S1 is invariant under the action of H1 and we assume that there is a cross-
+section S1
+1 ⊂S1 with a constant isotropy group H2. We use this cross-section to
+deﬁne a map ρ1 : S1 →H2\H1, by the condition ρ1(z(1)) · z(1) ∈S1
+1.
+The map
+ρ1
+ ρ0(z(1)) · z(1)
+ρ0(z(1)) is a G-equivariant map from J1 to H2\G. The non-constant
+coordinates of ρ1
+ ρ0(z(1)) · z(1)
+ρ0(z(1)) · z(1) provide a complete set of the ﬁrst order
+invariants. We continue this process by prolonging the action of H2 to the next order,
+or we may prolong by several orders at once if we wish. The algorithm terminates
+at the order where the isotropy group becomes trivial. For regular jets this happens
+at the order of stabilization of the group. This procedure resembles in many ways
+the algorithm presented by M. Green [19] for constructing moving frames for curves
+in homogeneous spaces, however taking advantage of the generalized approach by
+Fels and Olver [13], we can apply our algorithm to construct a moving frame for
+submanifolds of any dimension under more general (not necessarily transitive) group
+actions.
+Following [16] we call a cross-section with a constant isotropy group a slice.
+The
+obvious necessary condition for the existence of a slice in a neighborhood U of z0 ∈M
+is that the isotropy groups of any two points in U are conjugate by an element of G.
+There is a simple counterexample of this phenomenon ([35], Example 1,§ 7).
+Example 2.1.1. Let R2 act on R2 by
+x →x + au + b,
+u →u
+
+CHAPTER 2. INDUCTIVE CONSTRUCTION OF MOVING FRAMES.
+29
+The isotropy group of a point (x0, u0) is deﬁned by the condition au0 + b = 0. The
+orbits are lines parallel to the x-axis.
+All the points that lie on the same orbit
+have equal isotropy groups. On the other hand the isotropy groups of two points
+from diﬀerent orbits are not equal and they are not conjugate because the group is
+commutative.
+However, one can ﬁnd slices for many common group actions. In particular slices
+exist if the group action is proper [16].
+Deﬁnition 2.1.2. The action of G is called proper if the map θ : G × M →M × M
+deﬁned by θ(g, z) = (g · z, z) is proper. In other words if K ⊂M × M is compact
+then so is θ−1(K) ⊂G × M.
+Since θ−1(z, z) = (H, z) where H is an isotropy group of z, if the action is proper,
+then the isotropy group of each point is compact.
+Proposition 2.1.3. Let G act regularly on a manifold M and let S be a slice. Then
+the condition ρ(z) · z ∈S for z ∈M deﬁnes a map [ρ] : M →H\G which is
+G-equivariant.
+Proof. Let group elements g1 and g2 be such that g1 · z ∈S and g2 · z ∈S. Since
+each orbit intersects the slice S at one point, then: g1 ·z = g2 ·z and so g−1
+2 g1 belongs
+to the isotropy group Gz of z. On the other hand since H is the isotropy group of
+g2·z, then Gz = g−1
+2 Hg2. Thus g−1
+2 g1 ∈g−1
+2 Hg2 and hence g1 ∈Hg2. We have proved
+that the map [ρ] is well deﬁned.
+To show the equivariance of [ρ] we need to prove that [ρ](g · z) = [ρ](z)g−1. Let
+us choose q ∈[ρ](z) and ˜q ∈[ρ](g · z) By the construction of [ρ] one has
+˜qg · z = q · z ∈S.
+It follows that q−1˜qg ∈Gz = q−1Hq, or equivalently
+˜q ∈Hqg−1.
+Since [ρ](z) = Hq and [ρ](gz) = H˜q we have proved that [ρ](g · z) = [ρ](z)g−1.
+We can extend [ρ] to a G-equivariant map on Jk by [ρ](z(k)) = [ρ]
+ πk
+0(z(k))
+
+.
+Locally we can choose a section s: H\G →G, such that s[H] = e and deﬁne the map
+ρs = s ◦[ρ] : Jk(M, p) →G.
+(2.1)
+
+CHAPTER 2. INDUCTIVE CONSTRUCTION OF MOVING FRAMES.
+30
+The map ρs is not G-equivariant, but it is G-equivariant up to the left action of H,
+and so the functions f
+ ρs(z(k)) · z(k))
+
+, where f is any function on Jk are invariant
+up to the left action of H.
+Proposition 2.1.4. There exists element h ∈H such that
+ρs(g · z(k)) = hρs(z(k))g−1.
+Proof. Since [ρ] is a G-equivariant map from Jk to H\G then
+ρs(g · z(k)) = s[ρ(g · z(k))] = s[ρ(z(k))g−1] = s[Hρs(z(k))g−1] ∈Hρs(z(k))g−1.
+Thus there exists h ∈H such that ρs(g · z(k)) = hρs(z(k))g−1.
+Let Sk = {z(k)|πk
+0(z(k)) ∈S} be the subset of Jk which projects to S. In other
+words the set Sk is a pull-back of the ﬁber bundle Jk →M under the inclusion
+S →M. By construction Sk is invariant under the prolongation of the H-action.
+Let the map w : Bk →Jk be deﬁned by the prolonged group action, that is
+w(g, z(k)) = g · z(k), the map σ0 : Jk →Bk be deﬁned by σ0(z(k)) = (ρs(z(k)), z(k)) and
+the map ι0 : Jk →Jk be deﬁned by ι0(z(k)) = ρs(z(k)) · z(k) for k = n, . . . , ∞, then we
+obtain a commutative diagram similar to the one in Section 1.4 of Chapter 1:
+Jk
+Jk
+-
+ι0
+Bk = G × Jk
+σ0
+      
+w
+@
+@
+@
+@
+@@
+R
+If f is any function on Jk then due to the proposition above the function ι∗
+0(f)
+is invariant under G up to an element of H. We note that ι0 projects Jk to Sk and
+thus non-constant coordinates of ι0(z(k)), restricted to Sk are transformed exactly in
+the same way as coordinate functions on Sk. More generally if f is any function on
+Jk then ι∗
+0(f) restricted to Sk equals to f restricted to Sk and so as functions on Sk
+they are transformed exactly in the same way. This trivial observation is used in both
+algorithms and so we state it as a proposition.
+
+CHAPTER 2. INDUCTIVE CONSTRUCTION OF MOVING FRAMES.
+31
+Proposition 2.1.5. Assume that S ⊂N be a submanifold of N invariant under the
+action of the group H and there is a smooth projection ι : N →S, that is ι(z) ∈S for
+any point z ∈N and ι(˜z) = ˜z for any point ˜z ∈S. Let f(z) be function on N and let
+˜f be its restriction to S. We deﬁne a function F(z) by the formula F(z) = f (ι(z))
+and denote its restriction to S as ˜F. Then ˜F = ˜f and hence h · ˜F = h · ˜f for all
+h ∈H.
+Remark 2.1.6. Note that the proposition above does not assert that h · F = h · f on
+N, or equivalently, in general f (ι(h · z)) ̸= f(h · z).
+The following proposition asserts that Sn ∩Vn ̸= ∅and hence one can construct
+a moving frame:
+ρH : Sn →H.
+(2.2)
+Proposition 2.1.7. Assume that S is a cross-section for an action of a group G
+on a manifold M.
+Let n be the order of stabilization, Vn be the regular set and
+Sn = {z(n)|πn
+0 (z(n)) ∈S} ⊂Jn(M, p), then Sn ∩Vn ̸= ∅.
+Proof. The statement Sn ∩Vn = ∅implies that πn
+0 (Vn) ∩S = ∅, that is there are
+no p-dimensional submanifolds of M passing through any point z ∈S such that its
+n-th prolongation jn(S) at z belongs to Vn. But this means that for any g ∈G, there
+are no submanifolds through the point g · z that give rise to a regular n-th jet. Thus
+{G · S} ∩πn
+0 (Vn) = ∅. The set G · S is an open subset of M and hence we arrive to
+a contradiction with the assertion that the set Vn is dense in Jn if the action of G
+[30].
+Remark 2.1.8. Although the map ρH : Sn →H is H-equivariant, its extension on
+Jn deﬁned by ρH
+ ι0(z(n))
+
+is not an H-equivariant map from Jn to H.
+Proposition 2.1.9. The map ρG : Jn(M, p) →G deﬁned by
+ρG(z(n)) = ρH
+ ι0(z(n))
+
+ρs(z(n)).
+(2.3)
+is G-equivariant.
+Proof. We recall that ι0(z(n)) = ρs(z(n)) · z(n). From Proposition 2.1.4 we know
+that for an element g ∈G there is an element h ∈H such that
+ρs(g · z(n)) = hρs(z(n))g−1.
+
+CHAPTER 2. INDUCTIVE CONSTRUCTION OF MOVING FRAMES.
+32
+and so
+ι0(g · z(n)) = hρs(z(n)) · z(n) = h · ι0(z(n)).
+Thus
+ρG(g · z(n))
+=
+ρH
+ ι0(g · z(n))
+
+ρs(g · z(n))
+=
+ρH
+ h · ι0(z(n))
+
+hρs(z(n))g−1 = ρH
+ ι0(z(n))
+
+ρs(z(n))g−1.
+In the last equality we have used H-equivariance of the map ρH.
+Since ρG is a moving frame, then non-constant coordinates of ιG = ρG(z(n)) · z(n)
+provide a complete set of n-th order diﬀerential invariants.
+Let [g] denote the equivalence class of g in H\G, let UH\G be a neighborhood of
+H in H\G where the local section s: H\G →G is deﬁned, and let e ∈UG ⊂G be
+the preimage of UH\G under the canonical projection G →H\G. Then the following
+two maps are local diﬀeomorphisms:
+φ: UG × J∞→H × UH\G × J∞
+:
+φ(g, z(∞)) =
+ g(s[g])−1, [g], z(∞)
+,
+ψ: H × UH\G × J∞→
+:
+ψ(h, [g], z(∞)) =
+ h s[g], z(∞)
+.
+We can summarize the recursive construction in the following commutative diagram:
+J∞
+J∞
+-
+ιG
+H × J∞
+H × J∞
+-
+ι0
+6
+σH
+?
+wH
+H × UH\G × J∞
+σ0
+     
+w0
+@
+@
+@
+@@
+R
+UG × J∞
+-
+φ
+G × J∞
+-
+ψ
+σG
+A
+A
+A
+A
+A
+A
+A
+A
+A
+A
+A
+A
+AK
+wG
+
+
+
+
+
+
+
+
+
+
+
+
+
+where the maps w are deﬁned by the group actions:
+w0(h, [g], z(∞))
+=
+(h, s[g] · z(∞)),
+wH(h, z(∞))
+=
+h · z(∞),
+wG(g, z(∞))
+=
+g · z(∞).
+
+CHAPTER 2. INDUCTIVE CONSTRUCTION OF MOVING FRAMES.
+33
+The maps σ are deﬁned from the maps ρ (see formulas (2.1, 2.2, 2.3):
+σH(z(∞))
+=
+ ρH(ρs(z(∞)) · z(∞)), z(∞)
+,
+σ0(h, z(∞))
+=
+ h, [ρs(z(∞))], z(∞)
+,
+σG(g, z(∞))
+=
+ ρG(z(∞)), z(∞)
+,
+and the maps ι are projections:
+ι0(h, z(∞))
+=
+(h, ρs(z(∞)) · z(∞)),
+ιG(z)
+=
+ρH(ρs(z(∞)) · z(∞)) · z(∞).
+Example 2.1.10. Let the special rotation group G = SO(3, R) act on M = R3\{0}×
+R by rotations on the independent variables x, y, z and the trivial action on the
+dependent variable u.
+The action of SO(3, R) on R3 is not free. The isotropy group of every point on the
+positive half of the z-axis consists of the rotations around the z-axis. On the other
+hand each orbit of SO(3, R) intersects the positive half of the z-axis at the unique
+point, and hence it can serve as a slice S with the isotropy group H ⋍SO(2, R)
+Our ﬁrst step is to construct the map ρs : M →G such that ρs(p) · p ∈S for each
+p ∈M and ρs(p0) = I for any p0 ∈S.
+Each coset G\H can be represented by the product of two rotations: Rx(θ) with
+respect to the x-axis and Ry(τ) with respect to the y-axis. In matrix form this can
+be written as
+
+
+cos τ
+0
+−sin τ
+0
+1
+0
+sin τ
+0
+cos τ
+
+
+
+
+1
+0
+0
+0
+cos θ
+−sin θ
+0
+sin θ
+cos θ
+
+
+=
+
+
+cos τ
+−sin τ sin θ
+−sin τ cos θ
+0
+cos θ
+−sin θ
+sin τ
+cos τ sin θ
+cos τ cos θ
+
+
+We choose the ﬁrst rotation Rx(θ) so that it brings an arbitrary point p = (x, y, z)
+to the upper xz-plane.
+It can be achieved by choosing θ = arctan(y
+z), then ˜p =
+Rx(θ) · p = (x, 0,
+p
+z2 + y2). We choose the rotation Ry(τ) so that it brings ˜p to the
+z-axis. We take τ = arctan(
+x
+√
+z2+y2) and then Ry(τ) · ˜p = (0, 0,
+p
+z2 + y2 + x2) lies
+
+CHAPTER 2. INDUCTIVE CONSTRUCTION OF MOVING FRAMES.
+34
+on the positive z-axis. In the matrix form
+ρs(p) = Ry Rx =
+
+
+
+
+√
+z2+y2
+r
+−
+yx
+r√
+z2+y2
+−
+zx
+r√
+z2+y2
+0
+z
+√
+z2+y2
+−
+y
+√
+z2+y2
+x
+r
+y
+r
+z
+r
+
+
+
+,
+where r =
+p
+z2 + y2 + x2. The only non-constant coordinate of ρs(p) · p = (0, 0, r)
+provides a zero order invariant, the radius. We note that ρs(0, 0, z) = I for z > 0 and
+hence the conditions of Proposition 2.1.5 are satisﬁed.
+On the next step we prolong the transformation to the ﬁrst jet bundle J1. We
+consider the set S1 = {(u, x, y, z, ux, uy, uz)|x = 0, y = 0, z > 0} ⊂J1, which
+projects to S and is invariant under the ﬁrst prolongation of the H action.
+The
+ﬁrst prolongation of the ρs(p) transforms a point (u, x, y, z, ux, uy, uz) ∈J1 to a point
+(U, X, Y, Z, Ux, Uy, Uz) in S1 where
+u →U
+=
+u
+x →X
+=
+0
+y →Y
+=
+0
+z →Z
+=
+p
+z2 + y2 + x2 = r
+ux →Ux
+=
+p
+z2 + y2
+r
+ux −
+yx
+r
+p
+z2 + y2uy −
+zx
+r
+p
+z2 + y2uz;
+uy →Uy
+=
+z
+p
+z2 + y2uy −
+y
+p
+z2 + y2uz;
+uz →Uz
+=
+x
+r ux + y
+ruy + z
+ruz.
+From Proposition 2.1.5 we know that functions {U, Z, Ux, Uy, Uz} are transformed on
+S1 by H by the same formulas as {u, z, ux, uy, uz}. Let us represent an element of H
+by the matrix:
+
+
+cos α
+−sin α
+sin α
+cos α
+1
+
+,
+
+CHAPTER 2. INDUCTIVE CONSTRUCTION OF MOVING FRAMES.
+35
+then
+¯U
+=
+U
+¯Z
+=
+Z;
+¯Ux
+=
+cos α Ux −sin α Uy;
+¯Uy
+=
+sin α Ux + cos α Uy;
+¯Uz
+=
+Uz.
+We observe that H acts freely on S1. We ﬁnd a moving frame ρH by setting ¯Ux = 0,
+and hence tan α =
+Ux
+Uy . Substitution of this normalization into ¯Z, ¯Uy, ¯Uz, produce
+invariants of G = SO(3):
+U,
+Z,
+Iy =
+q
+U 2
+x + U 2
+y ,
+Iz = Uz;
+In terms of coordinates on J1 they can be written as:
+U
+=
+u
+Z
+=
+p
+z2 + y2 + x2 = r;
+Iy
+=
+q
+(yuz −zuy)2 + (zux −xuz)2 + (xuy −yux)2;
+Iz
+=
+x
+r ux + y
+ruy + z
+ruz;
+The corresponding moving frame for the group G is a product:
+ρHρs =
+
+
+
+
+Uy
+√
+U2x+U2y
+−
+Ux
+√
+U2x+U2y
+Ux
+√
+U2x+U2y
+Uy
+√
+U2x+U2y
+1
+
+
+
+
+
+
+
+
+√
+z2+y2
+r
+−
+yx
+r√
+z2+y2
+−
+zx
+r√
+z2+y2
+0
+z
+√
+z2+y2
+−
+y
+√
+z2+y2
+x
+r
+y
+r
+z
+r
+
+
+
+.
+The action of H became free on the ﬁrst jet in the example above. If it is not, we
+would have to either prolong the action up to the order where it is free or to repeat
+our algorithm for H acting on S1. This can be done if there is a slice S1
+1 ⊂S1 with a
+constant isotropy group H1 ⊂H. The following procedure describes order by order
+construction of invariants under the assumption that slices exist at each order. In our
+notation the superscripts refer to the order of prolongation and the subscripts refer
+to the induction step.
+
+CHAPTER 2. INDUCTIVE CONSTRUCTION OF MOVING FRAMES.
+36
+Algorithm 2.1.11. On the zeroth step we consider the action of the group G = H0
+such that there is a slice S0 ⊂M with a constant isotropy group H1. We deﬁne the
+map [ρ0] : M →H1\G such that ρ0(z) · z ∈S0 and ρ0(S0) = e, where ρ0(z) is deﬁned
+by a local section from H1\G to G. The non-constant coordinates of
+ι0 = ρ0(z) · z,
+provide a complete set of functionally independent zero order invariants. Let S0
+k =
+{z(k) ∈Jk|πk
+0(z(k)) ∈S0} and ρ0(z(k)) = ρ0(πk
+0(z(k))), then the map ι0 : Jk →Sk
+0
+deﬁned by
+ι0(z(k)) = ρ0(z(k)) · z(k)
+is invariant under the action of G up to an element of H1 as described in Proposi-
+tion 2.1.4.
+Let S1
+1 ⊂S1
+0 be a slice for the action of H1 on S1
+0 such that the isotropy group of
+each point equals H2 and let the map [ρ1] : S1
+0 →H2\H1 be deﬁned by the conditions
+ρ1(ι0(z(1))) · ι0(z(1)) ∈S1
+1 and ρ1(S1
+1) = e, where ρ1(z) is deﬁned by a local section
+from H2\H1 to H1. Then the non-constant coordinates of
+ι1 = ρ1
+ ι0(z(1))
+
+· ι0(z(1))
+provide a complete set of functionally independent ﬁrst order invariants (this set
+includes zero order invariants). Let S1
+k = {z(k) ∈Jk|πk
+1(z(k)) ∈S1
+1} and ρ1(z(k)) =
+ρ1(πk
+1(z(k))) then the map ι1 : Jk →Sk
+1 is deﬁned by
+ι1(z(k)) = ρ1(ι0(z(k))) · ι0(z(k)).
+The group product
+ρ1
+ ι0(z(1))
+
+ρ0(z(1))
+(2.4)
+deﬁnes a G-equivariant map from J1 to the right cosets H2\G. If the isotropy group
+H2 = e on S1
+0, the coordinates of ι1(z(k)) are invariant and the product (2.4) is a mov-
+ing frame for G. Otherwise, we have to prolong the action of H2 on S1
+1 to the second
+order and repeat the algorithm. In the case when Sn
+0 = {z(n) ∈Jn(M)|πn
+0 (z(n)) ∈S0}
+belongs to the regular set Vn, this process will terminate at the order of stabiliza-
+tion n. Indeed on the n-th step we consider the action of the isotropy group Hn on
+the set Sn
+n−1. Any element of Lie algebra of G generates a nontrivial transformation
+
+CHAPTER 2. INDUCTIVE CONSTRUCTION OF MOVING FRAMES.
+37
+on Vn and hence the action of Hn on Sn
+n−1 ⊂Sn
+0 is free. We choose a cross-section
+Sn
+n ⊂Sn
+n−1 transversal to the action of Hn and construct a corresponding Hn-invariant
+map ρn : Sn
+n−1 →Hn. The map ρG = Jn →G deﬁned by
+ρG = ρn(ιn−1(z(n)))ρn−1(ιn−2z(n)) . . . ρ1(ι0(z(n)))ρ0(z(n))
+is a moving frame for G. The complete set of n-th order diﬀerential invariants is given
+by the non-constant coordinates of
+ιn = ρn(ιn−1(z(n))) · ιn−1(z(n)).
+In the next chapter we will return to this algorithm to construct a complete set
+of diﬀerential invariants for ternary cubics.
+2.2
+A Moving Frame Construction for a Group
+that Factors as a Product.
+The moving frame construction is simpler for a group with a smaller number of
+parameters.
+Thus it is desirable to use a moving frame for a subgroup of G to
+construct a moving frame for G. We say that a group G factors as a product of its
+subgroups A and B if G = AB, that is for any g ∈G there are a ∈A and b ∈B such
+that g = ab. We reproduce two useful statements from [16].
+Theorem 2.2.1. Let G be a group, A and B are two subgroups. Then the following
+conditions are equivalent:
+a) the reduction of the natural action of G on G/B to A is transitive,
+b) G = AB,
+c) G = BA,
+d) the reduction of the natural action of G on G/A to B is transitive.
+Corollary 2.2.2. The reduction of the natural action of G on G/B to A is free and
+transitive if and only if G = AB (or G = BA) and A ∩B = e.
+Remark 2.2.3. If G = AB and A ∩B = e then for each g ∈G there are unique
+elements a ∈A and b ∈B such that g = ab. In this case the manifold A × B is
+
+CHAPTER 2. INDUCTIVE CONSTRUCTION OF MOVING FRAMES.
+38
+diﬀeomorphic to G and we will write A × B ∽G to denote that two Lie groups are
+diﬀeomorphic as manifolds but are not necessarily isomorphic as groups. In the case
+when A ∩B is discrete then A × B is locally diﬀeomorphic to G.
+The following theorem plays a central role in the construction of a moving frame
+for a product of two groups.
+Theorem 2.2.4. Let A and B act regularly on a manifold M and assume that in
+a neighborhood of a point z0 the inﬁnitesimal generators of the A-action are linearly
+independent from the generators of the B-action. Then locally there exists a subman-
+ifold SA through the point z0, which is transverse to the orbits of the subgroup A and
+is invariant under the action of the subgroup B.
+Proof. Let a be the dimension of the A-orbits, b be the dimension of the B-orbits on
+U and m = dim M. By Frobenius’ theorem we can locally rectify the orbits of B, that
+is we can introduce coordinates {y1, . . . , yb, x1, . . . , xm−b} such that the orbits of B are
+deﬁned by the equations xi = ki, i = 1, . . . , m −b, where ki are some constants. The
+orbits of B are integral manifolds for the distribution { ∂
+∂y1 . . .
+∂
+∂yb}. The functions xi
+are invariant under the B-action. Let vector ﬁelds X1, . . . , Xa and Y1, . . . , Yb be a basis
+for inﬁnitesimal generators of the action of A and B respectively in a neighborhood U
+containing z0 . The vector ﬁelds Yi, i = 1, . . . , b and
+∂
+∂xj , j = 1 . . . m −b are linearly
+independent by the choice of coordinates and their union forms a basis in TU. We
+can choose c = m −b −a vector ﬁelds
+∂
+∂xj1 . . .
+∂
+∂xjc which are linearly independent
+from X1, . . . , Xa in TU. Let SA be an integral manifold through the point z0 for the
+involutive distribution ∆= {
+∂
+∂xj1 . . .
+∂
+∂xjc ,
+∂
+∂y1 . . .
+∂
+∂yb}. By construction SA is invariant
+under the action of B (it is a union of the orbits of B). On the other the distribution
+∆is transversal to the inﬁnitesimal generators X1, . . . , Xa of the A-action, and so is
+transversal to the orbits of A.
+With this result we construct a moving frame for a product of groups A and be
+B as follows.
+Algorithm 2.2.5. Let G = BA and let B ∩A be discrete. Since we are constructing
+a local moving frame, that is a map to a neighborhood of the identity of the group
+we may assume that B ∩A = e. Thus an element g ∈G can be written as a product
+g = ba, a ∈A, b ∈B and G ∽B ×A in the category of smooth manifolds (but not as
+
+CHAPTER 2. INDUCTIVE CONSTRUCTION OF MOVING FRAMES.
+39
+groups). Let n be the order of stabilization of the G-action. Since both A and B act
+freely on Vn ∈Jn and their intersection is trivial then the inﬁnitesimal generators of
+the A-action and the B-action are linearly independent at each point of Vn and hence
+they satisfy the conditions of Theorem 2.2.4. Thus there is a cross-section SA ⊂Vn
+for the action of A which is invariant under the action of B. We use this cross-section
+to construct a moving frame ρA for A. The map ιA = ρA(z(n)) · z(n) projects Vn on
+the cross-section SA, which is invariant under the action of B. Moreover the action of
+B on SA is locally free and hence we can choose a cross-section S ⊂SA that deﬁnes
+a moving frame ρB : SA →B. We can extend ρB to a map ˜ρB : Vn →B, by the
+formula
+˜ρB = ρB
+ ρA(z(n)) · z(n)
+.
+(2.5)
+The map ˜ρB is A-invariant but, in contrast to ρB, it is not B-equivariant.
+The cross-section S is transversal to the orbits of G and the map ρG deﬁned by
+ρG(z(n)) = ˜ρB
+ z(n)
+ρA(z(n))
+(2.6)
+satisfy the condition ρG(z(n))z(n) ∈S, and hence is a moving frame for the G-action.
+The maps
+ιk
+G(z(k)) = ˜ρB
+ z(n)
+ρA(z(k)) · z(k)
+deﬁne projections of Jk onto Sk, for k = n, . . . , ∞and so the non-constant coordinate
+functions of
+ρB
+ ρA(z(k)) · z(k)
+ρA(z(k)) · z(k)
+provide a complete set of k-th order diﬀerential invariants for G.
+Remark 2.2.6. We notice that the coordinates of ρA(z(k)) · z(k) are invariant under
+the A-action and thus the formula above expresses the invariants of the G-action in
+terms of the invariants of its subgroup A.
+
+CHAPTER 2. INDUCTIVE CONSTRUCTION OF MOVING FRAMES.
+40
+We can summarize our construction in the following commutative diagram:
+J∞
+J∞
+-
+ιG
+B × J∞
+B × J∞
+-
+˜ιA
+6
+σB
+?
+wB
+B × A × J∞
+σA
+     
+wA
+@
+@
+@
+@@
+R
+G × J∞
+∽
+∽
+G × J∞
+σG
+A
+A
+A
+A
+A
+A
+A
+A
+A
+A
+A
+A
+AK
+wG
+
+
+
+
+
+
+
+
+
+
+
+
+
+where the maps w are deﬁned by the prolonged group action for k = 1, . . . , ∞:
+wA(b, a, z(k))
+=
+(b, a · z(k)),
+wB(b, z(k))
+=
+b · z(k),
+wG(g, z(k))
+=
+g · z(k) = wB ◦wA(b, a, z(k)) where g = ba.
+The maps σ are deﬁned from moving frames for A, B and G for k = n, . . . , ∞(see
+formulas (2.5, 2.6)):
+σA(b, z(k))
+=
+(b, ρA(z(k)), z(k))
+σB(z(k))
+=
+(˜ρB(z(k)), z(k)),
+σG(z(k))
+=
+(ρG(z(k)), z(k)) = σA ◦σB(z(k)).
+The maps ι are projections:
+˜ιA(b, z(k))
+=
+(b, ρA(z(k)) · z(k)) : B × Jk →B × SA
+ιG(z(k))
+=
+ρG(z(k)) · z(k) : Jk →S
+We remind the reader that although all maps are written as global they might be
+only deﬁned on an open subset of Jk and in neighborhoods of the identities of the
+groups A, B and G. The manifolds B × A × Jk and G × Jk are diﬀeomorphic, and
+this diﬀeomorphism is A-equivariant. The maps wA, wG, ˜ιA, and ιG are A-invariant,
+whence the maps σA and σB are A-equivariant, with respect to the action deﬁned by:
+˜a · (b, a, z(k))
+=
+(b, a˜a−1, ˜a · z(k)),
+˜a · (g, z(k))
+=
+(g˜a−1, ˜a · z(k)),
+˜a · (b, z(k))
+=
+(b, ˜a · z(k)).
+
+CHAPTER 2. INDUCTIVE CONSTRUCTION OF MOVING FRAMES.
+41
+We note that neither σA nor σB is B-equivariant, but their composition is. As was
+shown in Section 1.4 (see formula (1.10)) the forms
+ωi
+G = σ∗
+G dH w∗
+G(xi), i = 1, . . . , p
+(2.7)
+form a horizontal contact invariant coframe on J∞.
+Since A is a subgroup of G
+then the forms ωi
+G retain their invariant properties under the action of A. On the
+other hand the moving frame ρA provide us with another horizontal coframe which
+is contact invariant under the action of A:
+ωi
+A = σ∗
+A dH w∗
+A(xi), i = 1, . . . , p.
+The two coframes are related by a linear transformation wi
+G = P j = 1pLi
+jwj
+A, where
+Li
+j are functions on J∞invariant under the A-action. In fact, Li
+j can be explicitly
+expressed in terms of the basis invariants of A, indeed:
+ωi
+G
+=
+σ∗
+B σ∗
+A dH w∗
+A w∗
+B(xi)
+(2.8)
+=
+σ∗
+Bσ∗
+AπHw∗
+AdHχi(b1, . . . , bl, x1, . . . , xp, uα
+J) = σ∗
+B`ιA(dHχi),
+where χi = w∗
+Bxi is a function on B ×J∞, written in local coordinates and `ιA denotes
+(contact) invariantization with respect to the A-action. The forms ˜ωi
+A = `ιA(dHχ) =
+σ∗
+A πH w∗
+A dHχi provide a horizontal coframe on B×J∞which is contact invariant with
+respect to the action of A. A form ˜ωi
+A is obtained from dHχi by replacing forms dxj
+with ωj
+A and coordinate functions x1, , . . . , xp, uα
+J with the corresponding fundamental
+invariants X (A)1, , . . . , X (A)p, I(A)α
+J
+. The ﬁnal pull-back σ∗
+B is equivalent to the replace-
+ment of parameters b1, ..., bl with the corresponding coordinates of ρB(ρA(z(∞))·z(∞)).
+The latter are expressed in terms of invariants of the A-action.
+In many situations the following reformulation of Theorem 2.2.1 enables us to
+enlarge a moving frame for a transformation group A to a moving frame for a larger
+group containing A.
+Theorem 2.2.7. Let O ⊂M be an orbit of G and let A be a subgroup which acts
+transitively on O. Then G = HA, where H is the isotropy group of a point in O. If
+in addition A acts locally freely on O then A ∩H is discrete.
+Let A act regularly on M and let nA be the order of stabilization for A, then the
+action of A is (locally) free on a subset VA ⊂JnA(M, p). Assume that the action of
+
+CHAPTER 2. INDUCTIVE CONSTRUCTION OF MOVING FRAMES.
+42
+A can be extended to the action of a group G, containing A so that there is a point
+z0 ∈VA such that the orbits of A and G through z0 coincide. If this is the case then
+let H be the isotropy group of the point z0. Due to the theorem above G = HA and
+A ∩H is discrete and so Algorithm 2.2.5 can be applied.
+The situation is especially favorable if the action of A on the regular set VA ⊂
+JnA(M, p) is transitive. In this case we can extend a moving frame for A to a moving
+frame for any group G containing A. Let H be an isotropy group for a point z0 in
+VA, then as above G = HA and the intersection A ∩H is ﬁnite. Moreover the point
+z0 is a cross-section to the action of G which is invariant under the action of H. We
+use z0 to deﬁne a moving frame ρA : JnA →A. Let n be the order of stabilization
+for the H-action and let Sn
+A = {z(n)|πn
+0 (z(n)) = z0}. The non-constant coordinates
+of ρA(z(n)) · z(n) are invariant under the action of A and, restricted to Sn
+A they are
+transformed by H in the same way as the coordinate functions. Since H acts locally
+freely on Sn
+A there is a local moving frame ρH : Sn
+A →H. The map ρG : Jn →G
+deﬁned by
+ρG(z(n)) = ρH
+ ρA(z(n)) · z(n)
+ρA(z(n))
+is a local moving frame for the G-action and the non-constant coordinate functions
+of
+ρH
+ ρA(z(k)) · z(k)
+ρA(z(k)) · z(k)
+provide a complete set of k-th order diﬀerential invariants of G.
+2.3
+Examples:
+Euclidean, Aﬃne and Projective
+Actions on the Plane.
+The group of the Euclidean motions on the plane is a factor of the group of the spe-
+cial aﬃne motions. In its turn the group of special aﬃne motions is a factor of the
+group of projective transformations on the plane. All three of these transformation
+groups play an important role in the computer image processing [10], [31]. Applying
+the Inductive Algorithm 2.2.5 we express projective invariants in terms of aﬃne, and
+aﬃne invariants in terms of Euclidean. We also obtain the relations among the Eu-
+clidean, aﬃne and projective arc-lengths and the corresponding invariant diﬀerential
+operators.
+
+CHAPTER 2. INDUCTIVE CONSTRUCTION OF MOVING FRAMES.
+43
+Example 2.3.1. Let us use the moving frame for the special Euclidean group SE(2, R)
+acting on curves in R2 obtained in Example 1.4.7 to build a moving frame for the
+special aﬃne group. We recall that the moving frame for SE(2, R) has been obtained
+on the ﬁrst jet space by choosing a cross-section {x = 0, u = 0, ux = 0}. The special
+Euclidean group acts transitively on J1 and the ﬁrst invariant, Euclidean curvature
+κ appears on the second order of prolongation. The normalization of uxxx and uxxxx
+yields a third and fourth order invariants Ie
+3 = κs and Ie
+4 = κss + 3κ3.
+The special aﬃne transformation SA(2, R) on the plane is a semi-direct product
+of the special linear group SL(2, R) and translations in R2. We prolong it to the ﬁrst
+jet space of curves on the plane and notice that the isotropy group B of the point
+z(1)
+0
+= {x = 0, u = 0, ux = 0} is given by linear transformations
+ τ
+λ
+1
+τ
+
+.
+Thus SA(2, R) = B · SE(2, R) and B ∩SE(2, R) is ﬁnite. In fact B ∩SE(2, R) =
+{I, −I}.
+We prolong the action of B up to the fourth order:
+x
+→
+τx + λu;
+u
+→
+1
+τ u;
+ux
+→
+ux
+τ(τ + λux);
+uxx
+→
+uxx
+(τ + λux)3;
+uxxx
+→
+(τ + λux)uxxx −3λu2
+xx
+(τ + λux)5
+;
+uxxxx
+→
+(τ + λux)2uxxxx −10(τ + λux)λuxxuxxx + 15λ2u3
+xx
+(τ + λux)7
+.
+We restrict this transformation to the set S4
+E = {z(4)|π4
+1(z(4)) = z(1)
+0
+= (0, 0, 0)} pa-
+rameterized by Euclidean invariants Ie
+2, Ie
+3 and Ie
+4, which, restricted to S4
+E are trans-
+formed under B exactly by the same formulas as coordinate function uxx, uxxx and
+
+CHAPTER 2. INDUCTIVE CONSTRUCTION OF MOVING FRAMES.
+44
+uxxxx. Thus
+Ie
+2
+→
+Ie
+2
+τ 3;
+Ie
+3
+→
+τIe
+3 −3λ(Ie
+2)2
+τ 5
+;
+Ie
+4
+→
+τ 2Ie
+4 −10τλIe
+2Ie
+3 + 15λ2(Ie
+2)3
+τ 7
+.
+We emphasize that the transformation formulas above are valid only on S4
+E but not
+on J4. We normalize the ﬁrst transformation to one and the second transformation
+to zero. This corresponds to choosing a cross-section
+z(4)
+0
+= {x = 0, u = 0, ux = 0, uxx = 1, uxxx = 0}
+to the orbits of SA(2, R) on J4. Then
+τ = (Ie
+2)1/3 and λ =
+Ie
+3
+3(Ie
+2)5/3.
+We substitute this normalization in the transformation for Ie
+4 to obtain the fourth
+order special aﬃne invariant:
+Ia
+4 = Ie
+2Ie
+4 −5
+3(Ie
+3)2
+(Ie
+2)8/3
+,
+which we call the aﬃne curvature and denote as µ. We recall that Ie
+2 = κ, Ie
+3 = κs and
+Ie
+2 = κss + 3κ3 and so the aﬃne curvature can be written in terms of the Euclidean
+curvature and its derivatives as follows:
+µ = κ(κss + 3κ3) −5
+3κ2
+s
+κ8/3
+.
+The moving frame for the special aﬃne group is the product of the matrices:
+
+
+κ1/3
+1
+3
+κs
+κ5/3
+0
+0
+1
+κ1/3
+0
+0
+0
+1
+
+
+
+
+
+1
+√
+1+u2x
+ux
+√
+1+u2x
+−uux+x
+√
+1+u2x
+−
+ux
+√
+1+u2x
+1
+√
+1+u2x
+xux−u
+√
+1+u2x
+0
+0
+1
+
+
+
+Using formula (2.8) one can obtain an aﬃne contact invariant horizontal form dα in
+terms of the Euclidean arc-length ds:
+dα = σ∗
+B σ∗
+E πH w∗
+E dH w∗
+B (x),
+
+CHAPTER 2. INDUCTIVE CONSTRUCTION OF MOVING FRAMES.
+45
+where the Euclidean invariantization of dH w∗
+B (x) = (τ + λux) dx equals to τ ds and
+hence
+dα = σ∗
+B(τ ds) = (Ie
+2)1/3ds = κ1/3ds.
+(2.9)
+The form dα is called the aﬃne arc-length.
+Written in the standard coordinates
+dα = u1/3
+xx dx. The relation (2.9) between the aﬃne and the Euclidean arc-lengths
+provide a natural explanation for the aﬃne curve evolution equation in [31]. The
+relation between invariant diﬀerential operators follows immediately:
+d
+dα =
+1
+κ1/3
+d
+ds,
+which enables us to obtain all higher order aﬃne invariants in terms of the Euclidean
+ones.
+Example 2.3.2. Let us now use the moving frame for the special aﬃne group to
+build a moving frame for the projective group PSL(3, R) locally acting on the plane
+by the transformations:
+x
+7→
+αx + βu + γ
+δx + ϵu + ζ ;
+u
+7→
+λx + νu + τ
+δx + ϵu + ζ .
+where the determinant of the corresponding matrix equals to one. The aﬃne moving
+frame has been found by choosing the cross-section
+z(3)
+0
+= {x = 0, u = 0, u1 = 0, u2 = 1, u3 = 0} ∈J3.
+The isotropy group B of z(3)
+0
+for the prolonged action of PSL(3, R) consists of the
+transformations:
+
+
+1
+ab
+0
+0
+a
+0
+b
+c
+1
+a
+
+.
+Thus PSL(3, R) = B · SA(2, R) and B ∩SA(2, R) is ﬁnite. Let
+S7
+A = {z(7)|π7
+3(z(7)) = (0, 0, 0, 1, 0) = z(3)
+0 }.
+The aﬃne invariants Ia
+4 = µ, Ia
+5, Ia
+6, Ia
+7 can serve as coordinate functions on S7
+A which
+are transformed under the action of B by exactly the same rules as coordinate func-
+tions u4, u5, u6, u7. We have computed the prolongation of the action of B to the
+seventh order using Maple and found that:
+
+CHAPTER 2. INDUCTIVE CONSTRUCTION OF MOVING FRAMES.
+46
+Ia
+4
+→
+Ia
+4 −3a2b2 + 6ac
+a2
+;
+Ia
+5
+→
+Ia
+5
+a3 ;
+Ia
+6
+→
+Ia
+6 + 3abIa
+5 + 30Ia
+4(2ac −a2b2) + 180a2c(c −ab2) + 45a2b2
+a4
+;
+Ia
+7
+→
+Ia
+7 + 7abIa
+6 + Ia
+5(105ac −42b2a2) −35(Ia
+4)2ab
+a5
+.
+We normalize the transformation for Ia
+5 to one and the transformations of Ia
+4 and
+Ia
+6 to zero. This corresponds to the cross-section
+z(7)
+0
+= {x = 0, u = 0, u1 = 0, u2 = 1, u3 = 0, u4 = 0, u5 = 1, u6 = 0}
+to the orbits of PSL(3, R) on J7. Then
+a
+=
+(Ia
+5)1/3,
+b
+=
+5(Ia
+4)2 −Ia
+6
+3(Ia
+5)4/3
+,
+c
+=
+(Ia
+6)2 −10Ia
+6(Ia
+4)2 −3Ia
+4(Ia
+5)2 + 25(Ia
+4)4
+18(Ia
+5)7/3
+.
+We substitute this normalization in the transformation for Ia
+7 to obtain the seventh
+order projective invariant:
+Ip
+7 = 6Ia
+7Ia
+5 −7(Ia
+6)2 + 70(Ia
+4)2Ia
+6 −105Ia
+4(Ia
+5)2 −175(Ia
+4)4
+6(Ia
+5)8/3
+which we call the projective curvature and denote as η. Using the recursion algorithm
+from [13] we can express the higher order aﬃne invariants in terms of µ and its
+derivatives with respect to aﬃne arc-length dα = u1/3
+xx dx:
+Ia
+4 = µ,
+Ia
+5 = µα,
+Ia
+6 = µαα + 5µ2,
+Ia
+7 = µααα + 17µµα.
+This leads to the formula:
+η = −7µ2
+αα + 6µαµααα −3µµ2
+α
+6µ8/3
+α
+.
+
+CHAPTER 2. INDUCTIVE CONSTRUCTION OF MOVING FRAMES.
+47
+The moving frame for the projective group is the product of the matrices:
+
+
+
+1
+−1
+3
+µαα
+µα
+0
+0
+µ1/3
+α
+0
+−1
+3
+µαα
+µ4/3
+α
+1
+18
+µ2
+αα−3µµ2
+α
+µ7/3
+α
+1
+µ1/3
+α
+
+
+
+
+
+κ1/3
+1
+3
+κs
+κ5/3
+0
+0
+1
+κ1/3
+0
+0
+0
+1
+
+
+×
+
+
+
+1
+√
+1+u2x
+ux
+√
+1+u2x
+−uux+x
+√
+1+u2x
+−
+ux
+√
+1+u2x
+1
+√
+1+u2x
+xux−u
+√
+1+u2x
+0
+0
+1
+
+
+.
+We can express the projective arc-length (that is a horizontal form which is contact
+invariant with respect to the projective action) in terms of the aﬃne arc-length dα.
+We ﬁrst lift the coordinate function x to B × J∞by w∗
+B (x) =
+x+abu
+bx+cu+ 1
+a . The aﬃne
+invariantization of dH w∗
+B (x) produce a horizontal form adα on B × J∞which is
+contact invariant with respect to the aﬃne action. The projective arc-length equals
+to
+dϱ = σ∗
+B adα = (Ia
+5)1/3dα = µ1/3
+α dα.
+The relation between invariant derivatives
+d
+dϱ =
+1
+µ1/3
+α
+d
+dα allows us to obtain all higher
+order projective invariants in terms of the aﬃne ones.
+
+Chapter 3
+Application to Classical Invariant
+Theory.
+One of the central problems of classical invariant theory is the equivalence and sym-
+metry of multivariable polynomials under linear changes of variables. We concentrate
+on the polynomials over complex numbers, but we will indicate how to adapt the
+results to real polynomials. The standard action of the general linear group on Cm
+induces a representation on the ring of polynomials C[x]:
+¯F(A · x) = F(x),
+(3.1)
+where A ∈GL(m, C), x ∈Cm and F ∈C[x] is a polynomial in m variables. The set of
+homogeneous polynomials of degree n is mapped to itself under transformation (3.1).
+Thus we will always restrict our attention to homogeneous polynomials of a certain
+degree, which are called forms in the classical invariant theory literature. Polynomials
+of degree n in m variables form a linear space of dimension
+ m+n−1
+n
+
+isomorphic to
+the n-th symmetric tensor product of Cm. The coeﬃcients of polynomials can serve
+as coordinates on this space and formula (3.1) induces a linear action of GL(m, C) on
+the coeﬃcients. One can try to classify polynomials by computing invariants that are
+certain functions H(. . . , ai1,...,im, . . . ) of the coeﬃcients, invariant under the induced
+action. It turns out however that this action is not regular: not only the dimensions
+of the orbits vary but also some of the orbits are not closed and hence the orbits can
+not be distinguished by continuous invariants. An algebro-geometric approach to the
+classiﬁcation of such orbits can be found in [25], [35]. We also note that even for the
+ﬁxed number of variables the number of invariants increases when one increases the
+48
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+49
+degree of polynomials.
+We can bypass these diﬃculties by considering the graph of an m-variable poly-
+nomial u = F(x) as a submanifold of Cm+1 (or Rm+1).
+The ﬁrst m coordinates
+represent independent variables and they are transformed by the the general linear
+group GL(m, C) in the standard way, the last coordinate is considered to be de-
+pendent variable and the action on it is trivial. The described action is regular on
+the open subset where not all of the ﬁrst m coordinates are zero. We classify the
+orbits by constructing the corresponding signature manifolds, parameterized by a
+certain number of diﬀerential invariants. One of the advantages of this approach is
+that the set of diﬀerential invariants parameterizing the signature manifold depends
+only on the number of variables, but not on the degree of polynomials.
+We also
+note that diﬀerential invariants restricted to the graphs of polynomials are functions
+H(x, . . . , ai1,...,im, . . . ) depending on both the coeﬃcients and the variables that are
+invariant under simultaneous action of the general linear group on the variables and
+the coeﬃcients of polynomials. Polynomial or rational functions with such properties
+were widely used in the classical invariant theory [18], [21] and were called (absolute)
+covariants, whence covariants that depend on the coeﬃcients ai1,...,im only were called
+(absolute) invariants The simplest example of a covariant is the polynomial F(x)
+itself (see formula (3.1)). Rational absolute covariants can be obtained as the ratio of
+relative covariants that are not strictly invariant but might be multiplied by a certain
+power of the determinant of matrix A ∈GL(C, n):
+H(A · x, . . . , A · ai1,...,im, . . . ) = (det A)k H(x, . . . , ai1,...,im, . . . ).
+The exponent k is called the weight of the covariant. In the terminology of classical
+invariant theory the completeness of the fundamental set of polynomial invariants
+(covariants) means that any other invariant (covariant) can be expressed as a poly-
+nomial function of the fundamental ones. The ﬁniteness of the fundamental set for
+the actions of linear reductive groups was proved by Hilbert in 1890. This crucial
+result became a turning point from classical computational approach in the invariant
+theory to the modern algebraic geometry approach.
+There are several classical methods to obtain a complete set of fundamental covari-
+ants. Two powerful methods, known as omega process (or transvection) and symbolic
+method were formulated in the second part of the last century by the German school
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+50
+of invariant theory led by Aronhold, Clebesh and Gordan. Both of the methods are
+based on application of certain diﬀerential operators (see [28] for outline of these
+methods and more historical remarks). Classical processes can be also used to obtain
+joint covariants of several forms under a simultaneous linear transformation.
+Despite of the enormous amount of results obtained by classical approaches many
+equivalence and symmetry problems remain unsolved even for the case of polynomi-
+als over the real or complex numbers. The formulation of the problem as a problem
+of equivalence of submanifolds, a novel approach introduced by Olver [28], produces
+new results even in the most studied case of binary forms, or homogeneous polyno-
+mials in two variables. In Section 3.2 the results for binary forms from my paper
+with Peter Olver [2] are reproduced and then in the next sections the same approach
+is extended to ternary forms, that is homogeneous polynomials in three variables.
+We note that diﬀerential invariants in the case of polynomials can be chosen to be
+rational functions in the variables and the coeﬃcients and so the signature manifold
+construction reduces to the problem of eliminating parameters from rational expres-
+sions. This problem can be solved using Gr¨obner basis algorithms [8], [32] and [14].
+Thus theoretically we can construct the signature manifold for a polynomial of any
+degree in any number of variables. In practice however we are confronted with the
+complexity of Gr¨obner basis computation which in many cases exhaust available com-
+puter resources. This limitation signiﬁcantly aﬀects the practical implementation of
+the moving frame method described below.
+3.1
+Symmetries and Equivalence of Polynomials.
+We consider the action of the general linear group on the space of polynomials in m
+variables. The standard action of the general linear group on Cm induces a represen-
+tation on the ring of polynomials C[x]:
+¯F(A · x) = F(x),
+(3.2)
+where A ∈GL(m, C), x ∈Cm and F ∈C[x]. Equivalently:
+¯F(x) = F(A−1x)
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+51
+Since this action preserves the grading on the ring of polynomials we can restrict it
+to the homogeneous polynomials of a certain degree, which are called forms in the
+classical literature.
+Deﬁnition 3.1.1. A polynomial F is said to be equivalent to a polynomial ¯F if there
+exists A ∈GL(m, C) such that ¯F(x) = F(Ax).
+Example 3.1.2. The binary form 5x2 −2xy + 2y2 is equivalent to x2 + y2 under the
+change of variables
+x 7→x + y;
+y 7→y −2x.
+To each form we associate a unique inhomogeneous polynomial by the formula:
+f(p1, . . . , pm−1) = F(p1, . . . , pm−1, 1).
+We call p = {p1, . . . , pm−1} projective variables and we also refer to f(p) as a form.
+We can restore the homogeneous polynomial from its inhomogeneous version by the
+formula
+F(x1, . . . , xm) = xn
+mf
+ x1
+xm
+, . . . , xm−1
+xm
+
+.
+(3.3)
+Remark 3.1.3. The formula above shows that it is important to remember the
+degree n of the homogeneous form if we want to restore it from its inhomogeneous
+version. For example the quartic form x2y2 + y4 and the qudratic x2 + y2 have the
+same inhomogeneous version: p2 + 1.
+Let A =
+ B
+t
+s
+c
+
+∈GL(m, C), be a linear transformation, where B is an
+(m −1) × (m −1) matrix, sT, t ∈Cm−1, and c is a scalar. Let ¯F(x) be the im-
+age of F(x) under transformation (3.1) and let f(p) be the inhomogeneous version
+of F(x), then the induced transformation of f(p) follows from formula (3.3):
+(s · p + c)n ¯f
+ Bp + t
+s · p + c
+
+= f(p).
+(3.4)
+We call the corresponding transformation of f(p) projective. The form F(x) is equiv-
+alent to ¯F(x) under the transformation (3.1) if and only if f(p) is equivalent to ¯f(p)
+under the corresponding projective transformation (3.4).
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+52
+In the homogeneous version one can consider the graph u = F(x) of the polynomial
+as a submanifold in Cm under the transformation
+x 7→A · x,
+u 7→u.
+(3.5)
+For the inhomogeneous version of the problem we consider the graph u = f(p) in Cm
+under the transformation:
+p 7→Bp + t
+s · p + c,
+u 7→(s · p + c)−n u.
+(3.6)
+The transformation of projective variables p in (3.6) is linear fractional:
+A · p = Bp + t
+s · p + c
+(3.7)
+Two matrices which are scalar multiples of each other, ˜A = λA, induce the same
+linear fractional transformation, and so (3.7) deﬁnes an action of the projective group
+PSL(m, C) = GL(m, C)/{λ I} on Cm−1. Let π: GL(m, C) 7→PSL(m, C) denote the
+standard projection.
+Deﬁnition 3.1.4. The symmetry group of F is the subgroup GF ⊂GL(m, C) con-
+sisting of all linear transformations that map F to itself. It coincides with the group
+Gf ⊂GL(m, C) which maps inhomogeneous version f of F to itself under trans-
+formation (3.4). The projective symmetry group of f is the subgroup Γf = π(G) ⊂
+PSL(m, C) consisting of all linear fractional transformations of p that give rise to
+symmetries of f. In the real case GF ⊂GL(m, R) and Γf ⊂PSL(m, R).
+Example 3.1.5. The form F(x, y) = x2+y2 is symmetric under any orthogonal map:
+(x, y) 7→
+ (cos(α)x + sin(α)y, −sin(α)x + cos(α)y)
+(−x, −y)
+The inhomogeneous version of F is f(p) = p2 + 1 and the corresponding projective
+group of symmetries Γf consists of linear fractional transformations
+p 7→
+cos(α)p + sin(α)
+−sin(α)p + cos(α)
+We notice that each projective symmetry in the preceding example corresponds
+to two genuine symmetries of F(x, y). In general if the form F(x) has degree n then
+F(λx) = λnF(x) and so if ω is any root of unity, ωn = 1, then the diagonal matrix
+ωI ∈GF, on the other hand π(ωI) = e ∈Γf and so each projective symmetry gives
+rise to n genuine symmetries of the form f(p).
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+53
+Proposition 3.1.6. A transformation A ∈GL(m, C) maps a form F to some scalar
+multiple of itself, say µF is and only if π(A) ∈Γf.
+Proof. By substitution ¯F = µF into (3.2) one obtains:
+F(x) = µF(A · x) = F( n√µ A · x).
+and thus ˆA = λA, where λ =
+n√µ A belongs to GF, and so by deﬁnition π(A) =
+π( ˆA) ∈Γf.
+Remark 3.1.7. If F is mapped to µF by A then its inhomogeneous version f is
+mapped to µf, that is:
+f(p) = (s · p + c)n µ f
+ Bp + t
+s · p + c
+
+.
+(3.8)
+Remark 3.1.8. The original transformation rules (3.1), (3.4) apply to forms of weight
+zero. One can, more generally, consider forms of nonzero weight k, with transforma-
+tion rules
+F(x) = (det A)k ¯F(A · x),
+f(p) = (det A)k (s · p + c)n ¯f
+ Bp + t
+s · p + c
+
+.
+(3.9)
+If n + mk ̸= 0, then the projective symmetry group of a weight k form is the same as
+that of its weight 0 counterpart. However, the full symmetry group does not have the
+same cardinality, and so are not isomorphic. Indeed, let A ∈GL(m, C) be any matrix
+whose associated linear fractional transformation belongs to the projective symmetry
+group of F of weight 0, and let det A = ∆. Then A maps F to a scalar multiple of
+itself, say µ F and so F(x) = µ F(A · x). Consequently, the scalar multiple
+ˆA = λA,
+where
+λn+mk∆k = µ,
+(3.10)
+is a symmetry of the weight k form F. Therefore, when n + mk ̸= 0, each projective
+symmetry gives rise to n + mk matrix symmetries.
+In the exceptional case when n + mk = 0, if A ∈GL(m, C) is any symmetry,
+so is any scalar multiple λA. Thus each projective symmetry gives rise to a one-
+parameter family of symmetries in GL(m, C).
+On the other hand, the projective
+group of symmetries in this case is smaller in general than for the other weights.
+Indeed, given a projective symmetry for a weight zero form, one can always ﬁnd a
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+54
+matrix representative A ∈SL(m, C). Due to (3.10), this representative is a symmetry
+for the exceptional weight k = −n
+m if and only if the corresponding µ = 1. On the
+other hand, if A ∈GL(m, C) is a symmetry for weight k = −n
+m then a unimodular
+matrix ∆−1
+mA is a symmetry for the corresponding zero weight form.
+Example 3.1.9. Let f(p) = p4 + 3p2 + 1 with n = 4, m = 2 correspond to a binary
+form f(x, y) = x4 + 3x2y2 + y4. Then the projective symmetry group in the case of
+weight zero (as well as for any other general weight) consists of the transformations
+mapping p to p, −p, 1
+p, −1
+p. Any GL(2, C) representative of these projective maps is
+a symmetry for the exceptional weight k = −2.
+On the other hand, for the form f(p) = p4 +1 of with n = 4, m = 2 the projective
+symmetries for a general weight are p, −p, 1
+p, −1
+p, ip, −ip, i
+p, −i
+p. In the exceptional
+case, however, only the ﬁrst four, namely p, −p, 1
+p, −1
+p, are symmetries.
+Deﬁnition 3.1.10. A homogeneous form is called nonsingular if its symmetry group
+Gf is ﬁnite.
+The index of a nonsingular form f(p) is the cardinality #Gf of its
+symmetry group. The projective index of f(p) is the cardinality #Γf of its projective
+symmetry group Γf = π(Gf).
+Thus, for nonsingular forms, the indices are simply related by
+#G = l · #Γ, where
+l =
+
+
+
+n
+for complex forms of degree n,
+2
+for real forms of even degree,
+1
+for real forms of odd degree.
+(3.11)
+In what follows we address the problem of classiﬁcation of polynomials under
+linear transformation in its inhomogeneous version (3.4). We reduce the problem to
+the problem of equivalence of the graphs of polynomials under the transformation
+(3.7) so we can make a full use of the results described in the previous two chapters.
+Remark 3.1.11. As it has been mentioned in the introduction to this chapter the
+signature manifold of the form f(p) can be parameterized by a set of rational diﬀer-
+ential invariants restricted to f. Elimination of the variables p produces polynomial
+relations among invariants which deﬁne the smallest variety containing the signature
+manifold of f. We call this variety the signature variety and notice that it is irre-
+ducible in both the real and the complex case (Proposition 6, ch. 4, § 6 in [8]). The
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+55
+relations among invariants, which we obtain for a polynomial with real coeﬃcients,
+are the same whether the real or complex equivalence problem is considered. The
+real classiﬁcation however includes more equivalence classes! It can be explained by
+the fact that the signature manifold, deﬁned by parametric equations, does not nec-
+essarily ﬁll up entire signature variety (see [8]) neither in complex nor in real case.
+In the real case two diﬀerent parts of the signature variety may correspond to two
+diﬀerent signature manifolds of the same dimension (see Example 8.69 in [28]). In
+the complex case, however, diﬀerent signature manifolds are included in diﬀerent sig-
+nature varieties. Indeed assume C(f) and C( ˜f) are two signature manifolds and V is
+the smallest signature variety containing them. Assume that C(f) ∩C( ˜f) ̸= ∅then f
+and ˜f are locally equivalent by Theorem 1.3.7 and so they are globally equivalent (for
+any analytic function local equivalence implies global). Otherwise, if C(f) ∩C( ˜f) = ∅
+then in the complex case, it follows from Theorem 3, ch. 3, § 2 [8] that there is a
+subvariety W ⊊V such that V −W ⊂C(f), and so C( ˜f) ⊂W. This contradicts to
+the assertion that V is the minimal variety containing C( ˜f). Assume that W contains
+the signature variety of C( ˜f), then dim C( ˜f) < dim C(f) since V is irreducible and
+W ⊊V .
+We conclude that the polynomial relations among invariants provide a solution
+for the problem of equivalence over the complex numbers. In the real case, these
+relations produce necessary but not suﬃcient conditions of equivalence, and so more
+detailed analysis is required to complete the classiﬁcation over reals.
+The symmetry groups of equivalent polynomials are related by matrix conjugation:
+¯F(x) =F(Ax) =⇒G ¯F = AGFA−1.
+Thus the problem of the classiﬁcation of polynomials is closely related to the prob-
+lem of the classiﬁcation of their symmetry groups up to matrix conjugation. The-
+orems 1.3.8, 1.3.11 of Chapter 1 provide the foundation to an algorithm which de-
+termines the dimension of the symmetry group of a given polynomials and, in the
+case when the cardinality of the symmetry group is ﬁnite, explicitly computes all
+transformations that belong to it. We start with the simplest case of binary forms.
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+56
+3.2
+Binary forms.
+The general linear group
+GL(2, C) =
+
+A =
+ α
+β
+γ
+δ
+ αδ −βγ ̸= 0
+
+acts on two-dimensional space by invertible linear transformations
+¯x = αx + βy,
+¯y = γx + δy,
+(3.12)
+and thereby induces an irreducible linear representation on the space of binary forms
+F(x, y) =
+n
+X
+i=0
+ai xiyn−i
+of the ﬁxed degree n. This corresponds to a linear fractional transformation
+¯p = αp + β
+γp + δ .
+(3.13)
+on the projective coordinate p = x
+y. The induced transformation rule for inhomoge-
+neous polynomials of degree n is:
+f(p) = (γp + δ)n ¯f(¯p) = (γp + δ)n ¯f
+αp + β
+γp + δ
+
+(3.14)
+We reformulate the symmetry and equivalence problem for polynomials as the
+symmetry and equivalence problem for the graph of a polynomial u = f(p) considered
+as a submanifold in C2. The transformation rules
+p
+7→
+P = αp + β
+γp + δ ,
+u
+7→
+v = (γp + δ)−nu
+for coordinates p and u in C2 can be prolonged to the k-th order jet space:
+up = u1
+7→
+v1 =
+1
+∆σn−1(−nγu + σup),
+upp = u2
+7→
+v2 =
+1
+∆2σn−2(n(n −1)γ2u −2(n −1)γσu1 + σ2u2)
+uk
+7→
+vk =
+1
+∆kσn−k
+k
+X
+j=0
+(−1)k−j
+k
+j
+(n −j)!
+(n −k)!γk−jσjuj,
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+57
+where ∆= αδ −βγ and σ = γp + δ
+A moving frame can be deﬁned on the second order by choosing a cross-section
+p = 0, u = 1, u1 = 0, u2 =
+1
+n(n−1). By solving the equations:
+P = 0, v = 1, v1 = 0, v2 =
+1
+n(n −1)
+one obtains a moving frame:
+ 
+u
+1−n
+n √
+H
+−pu
+1−n
+n √
+H
+u
+1
+n up
+nu
+u
+1
+n  1 −upp
+nu
+
+!
+,
+where H(p) = n(n −1)(uupp −n−1
+n u2
+p) is the inhomogeneous version of the Hessian
+H(x, y) = FxxFyy −F 2
+xy of a form F(x, y). By substitution of the moving frame into
+the formulas for higher order lifted invariants vk we obtain the general formula for
+invariants:
+Ik =
+1
+√
+H
+k
+k
+X
+j=0
+(−1)k−j
+ k
+j
+ (n −j)!
+(n −k)!
+up
+n
+k−j
+uj−1uj.
+Due to theorems 1.3.7, 1.3.8 from Chapter 1 the symmetry and equivalence prop-
+erties of a binary form are entirely determined by just these two diﬀerential invariants:
+I3
+=
+1
+√
+H
+3(u2uppp −3n −2
+n
+uupupp + 2(n −1)(n −2)
+n2
+u3
+p),
+I4
+=
+1
+H2(u3upppp −4n −3
+n
+u2upuppp + 6(n −2)(n −3)
+n2
+uu2
+pupp
+−
+3(n −1)(n −2)(n −3)
+n3
+u4
+p).
+This diﬀerential invariants can be re-expressed in terms of the classical covariants,
+which can be obtained by omega process:
+H(F) = FxxFyy −F 2
+xy,
+T(F) = FxHy −FyHx
+and
+U(F) = FxTy −FyTx. (3.15)
+Covariants H, T and U has weight 2, 3 and 4 respectively and thus the rational
+functions:
+J = T 2
+H3,
+K = U
+H2
+(3.16)
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+58
+are absolute rational covariants. By writing down the inhomogenization of H, T and
+U:
+H(f)
+=
+n(n −1)
+
+ff ′′ −n −1
+n
+(f ′)2
+
+,
+T(f)
+=
+−n2(n −1)
+
+f 2f ′′′ −3 (n −2)
+n
+ff ′f ′′ + 2 (n −1)(n −2)
+n2
+(f ′)3
+
+,
+U(f)
+=
+n3(n −1)
+
+f 3f ′′′′ −4 (n −3)
+n
+f 2f ′f ′′′ + 6 (n −2)(n −3)
+n2
+ff ′ 2f ′′
+−
+3 (n −1)(n −2)(n −3)
+n3
+(f ′)4
+
+−3 (n −2)
+(n −1) H2.
+Comparing this formulas with (3.15) we conclude that:
+J = −n4(n −1)2I2
+3,
+K = n3(n −1)I4 −3 (n −2)
+(n −1).
+(3.17)
+Thus the signature manifold for f(p) parameterized by J and K can be used equally
+well to solve the equivalence problem as the one parameterized by I3 and I4 and we
+will formulate our results in terms of the former, more traditional covariants. We
+note that none of the invariants are deﬁned when H ≡0. However this happens
+if and only if F(x, y) = (cx + dy)n is the n-th power of a linear form and thus is
+equivalent to polynomial of one variable only. As it pointed out in chapter 10 of [28]
+the generalization of this statement is true when the number of variables m ≤4. The
+Hessian of a form of four and less variables is equal to zero if and only if the form
+is equivalent under a linear change of variables to a form of less number of variables.
+When the number of variables is greater than four the ‘if’ part of the statement is
+still true, but the ‘only if’ part fails [17] for instance when
+F(x1, . . . , x5) = x2
+1x3 + x1x2x4 + x2
+2x5.
+We can now state the classiﬁcation theorem for binary forms:
+Theorem 3.2.1. Let f(p) ̸≡0 correspond to a nonzero binary form of degree n. The
+symmetry group of f(p) is:
+a) A two-parameter group if and only if H ≡0 if and only if f(p) is equivalent to a
+constant.
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+59
+b) A one-parameter group if and only if H ̸≡0 and T 2 is a constant multiple of H3
+if and only if f(p) is complex-equivalent to a monomial pk, with k ̸= 0, n. In
+this case:
+J = −
+4(n −2k)2
+k(n −k)(n −1),
+K = −
+6(n −2k)2
+k(n −k)(n −1)
+c) A ﬁnite group in all other cases.
+Remark 3.2.2. A real binary form is complex-equivalent to a monomial if and only
+if it is real-equivalent to either a real monomial ±pk or to the form ±(p2 + 1)m, the
+latter only occurring in the case of even degree n = 2m.
+Therefore, a binary form is nonsingular if and only if its rational covariant J is
+not constant if and only if the form is not complex-equivalent to a monomial. The
+next result is fundamental for our algorithm for determining the (ﬁnite) symmetry
+group of a nonsingular binary form.
+Theorem 3.2.3. Let f(p) correspond to a nonsingular complex binary form. Then
+P = ϕ(p) is a complex analytic solution to the rational symmetry equations
+J(P) = J(p),
+K(P) = K(p)
+(3.18)
+if and only if P = (αp + β)/(γp + δ) is a linear fractional transformation belonging
+to the projective symmetry group of f(p).
+Thus all the solutions to the symmetry equations (3.18) are necessarily linear
+fractional transformations!
+As remarked above, given a projective symmetry, the
+corresponding symmetry matrix A ∈GL(2, C) is uniquely determined up to multi-
+plication by an n-th root of unity. Since the linear fractional transformation only
+determines A up to a scalar multiple, one must substitute into the transformation
+rule 3.14 for the form to unambiguously specify the symmetry matrix.
+In the real case, if the degree of F is odd, n = 2m + 1, then the basic symmetry
+3.2.3 holds as stated. Moreover, each real linear fractional solution to the symmetry
+equations (3.18) corresponds to a unique matrix symmetry. On the other hand, if the
+degree of F is even, n = 2m, then the sign of F is invariant, and a real solution to
+the symmetry equations (3.18) will induce a real projective symmetry, and thereby
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+60
+two real matrix symmetries of the form if and only if it preserves the sign of F. The
+explicit computations for of the symmetry group of a nonsingular complex binary
+form relies on Theorem 3.2.3, and hence requires solving the fundamental symmetry
+equations (3.18) which can be rewritten as polynomial equations in p:
+A(p)B(P) = A(P)B(p),
+C(P)D(p) = C(p)D(P),
+(3.19)
+where:
+J = T 2
+H3 = A
+B ,
+K = U
+H2 = C
+D.
+Polynomials A and B have no common factors, nor do C and D. Bounds on the
+index or number of symmetries of a binary form can be determined without explicitly
+solving the bivariate symmetry equations (3.19). The fact that f(p) is not equivalent
+to a monomial implies that T 2 is a not a constant multiple of H3, and hence the
+ﬁrst equation in (3.19) is nontrivial. Therefore, the projective index of f(p) is always
+bounded by the degree of the ﬁrst equation in p, which in turn is bounded by 6n−12
+with equality if and only if T and H have no common factors. The second bivariate
+polynomial is trivial if and only if the covariant U is a constant multiple of H2.
+Forms for which U = cH2 will be distinguished as belonging to the maximal discrete
+symmetry class. Indeed, if T and H have no common factors and all the roots of the
+ﬁrst equation are simple, then the projective index of such a form takes its maximum
+possible value, namely 6n −12. On the other hand, if U is not a constant multiple
+of H2, then the projective index is bounded by the degree of the second polynomial
+which is at most 4n −8.
+Theorem 3.2.4. Let k denote the projective index of a binary form Q of degree n
+which is not complex-equivalent to a monomial. Then
+k ≤
+ 6n −12
+if U = cH2 for some constant c, or
+4n −8
+in all other cases.
+The real case clearly admits the same bounds on the projective index, since one must
+determine the number of common real solutions to (3.19), and, in the case of even
+degree, whether the sign of Q is the same at each solution. Consequently, the index
+of a binary form of degree n is bounded by either (6n −12)l or (4n −8)l, where l = n
+in the complex case, l = 2 in the case of real forms of even degree and l = 1 for real
+forms of odd degree.
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+61
+Since the symmetry groups of equivalent polynomials are related by matrix conju-
+gation in GL(2, C), a complete list of possible projective symmetry groups is provided
+by the following theorem, as presented in Blichfeldt, ([3] p. 69).
+Theorem 3.2.5. Up to matrix conjugation there are ﬁve diﬀerent types of ﬁnite
+subgroups of the projective group PSL(2, C):
+a) The n element abelian group An is generated by the transformation p 7→ωp, where
+ω is a primitive n-th root of unity.
+b) The 2n element dihedral group Dn is the group obtained from An by adjoining the
+transformation p 7→1/p.
+c) The 12 element tetrahedral group T is the primitive group generated by the trans-
+formations
+σ : p 7−→−p,
+τ : p 7−→i(p + 1)
+p −1 ,
+(3.20)
+of respective orders 2 and 3.
+d ) The 24 element octahedral group O is the primitive group generated by the trans-
+formation τ in 3.20 along with
+ι : p 7−→ip
+(3.21)
+of order 4. Note that ι2 = σ, and so T ⊂O.
+e) The 60 element icosahedral group I is the primitive group generated by the trans-
+formations σ, τ given above, along with the transformation
+ρ : p 7−→
+2p −(1 −
+√
+5)i −(1 +
+√
+5)
+
+(1 −
+√
+5)i −(1 +
+√
+5)
+
+p −2
+(3.22)
+of order 2. The tetrahedral group is also a subgroup of the icosahedral group:
+T ⊂I.
+Since the maximal number of elements in the projective symmetry group of a
+form of degree n is bounded by 6n −12, then the tetrahedral group can appear as
+a symmetry group only when n ≥4, the octahedral group is a possible symmetry
+group only if n ≥6 and the icosahedral group is possible only if n ≥12.
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+62
+We can describe the invariants of the three primitive groups using the following
+polynomials:
+K4 = x4 −2
+√
+3 i x2y2 + y4,
+¯K4 = x4 + 2
+√
+3 i x2y2 + y4,
+K6 = x5y −xy5
+K8 = x8 + 14x4y4 + y8 = K4 ¯K4,
+K12 = x12 −33 (x8y4 + y8x4) + y12,
+L12 = 22
+√
+5K2
+6 + 5K12,
+eL12 = −22
+√
+5K2
+6 + 5K12,
+L20 = 3K8K12 −38
+√
+5K2
+6K8,
+eL20 = 3K8K12 + 38
+√
+5K2
+6K8,
+L30 = 6696K5
+6 + 225K6K3
+8 −580
+√
+5K3
+6K12,
+eL30 = 6696K5
+6 + 225K6K3
+8
++580
+√
+5K3
+6K12.
+(3.23)
+Huﬀman, ([22] Theorem 4.1), provides the complete characterization of polynomials
+whose symmetry groups contain one of these primitive groups.
+Proposition 3.2.6. The symmetry group of a binary form F contains:
+a) An icosahedral group if and only if it is equivalent to a polynomial of the one of
+the two forms Φ(L12, L20) + L30Ψ(L12, L20) or Φ(eL12, eL20) + eL30Ψ(eL12, eL20).
+c) An octahedral group if and only if it is equivalent to a polynomial of the one of the
+two forms Φ(K6, K8) or K12Φ(K6, K8).
+d) A tetrahedral group if and only if it is equivalent to a polynomial from the following
+list:
+Φ(K6, K8) + K12Φ(K6, K8),
+Φ(K4, K6),
+Φ( ¯K4, K6),
+K4Φ(K6, K8) + K2
+4 Φ(K6, K8),
+K4Φ( ¯K4, K6),
+¯K4Φ(K4, K6),
+¯K4Φ(K6, K8) + ¯K2
+4 Φ(K6, K8),
+K2
+4 Φ( ¯K4, K6),
+¯K2
+4 Φ(K4, K6).
+Note in particular that only forms of even degree can admit a primitive symmetry
+group.
+Maple code was written to explicitly compute the symmetries of binary forms.
+Details of the programs and some of the diﬃculties we experienced in the implemen-
+tation are discussed in the appendix A. The program symm computes the fundamental
+invariants J and K, determines the dimension of the symmetry group, and, in the
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+63
+case of a ﬁnite symmetry group, solves the two equations 3.19 to ﬁnd explicit form
+of the projective symmetries. The actual matrix symmetries are then computed by
+the program matrices by substituting the linear fractional transformations in the
+projective symmetry group into the form in order to determine the appropriate scalar
+multiple. We now present some typical examples resulting from our computations.
+Example 3.2.7. Cubic forms. All binary cubics with discrete symmetries are equiv-
+alent to x3+y3, or, in inhomogeneous form, to p3+1. Therefore, the symmetry group
+of a nonsingular cubic is isomorphic to the symmetry group of p3 + 1. Applying our
+algorithm, we ﬁnd a complete solution to the symmetry equations 3.18 is the pro-
+jective symmetry group Γ given by the six linear fractional transformations taking p
+to
+p,
+1
+p,
+ωp,
+ω2p,
+ω
+p ,
+ω2
+p ,
+where ω = −1
+2 + i
+√
+3
+2 is the primitive cube root of unity. Since the covariants of any
+cubic form satisfy the syzygy U = −3
+2H2, all non-degenerate cubics have maximal
+discrete symmetry groups of projective index 6, which equals the number of diﬀerent
+permutations of the three roots. The full matrix symmetry group G of this cubic has
+18 elements, since we can also multiply by a cube root of unity, and is generated by
+the three matrices
+ ω
+0
+0
+ω
+
+,
+ 0
+1
+1
+0
+
+,
+ ω
+0
+0
+ω2
+
+.
+In this case, G ≃Γ × Z3 is a Cartesian product group. In the real case, one requires
+real solutions to (3.18, and hence f has (projective) index 6 if its discriminant ∆< 0,
+but (projective) index 2 if ∆> 0.
+The Maple code can be used to compute the explicit symmetries of other cubics.
+For example, the cubic f(p) = p3 +p leads to the following six element group of linear
+fractional transformations
+p,
+−p,
+ip + 1
+3p + i,
+ip −1
+−3p + i ,
+−ip + 1
+−3p + i ,
+−ip + 1
+3p + i .
+The matrix generators of the symmetry group are
+ ω
+0
+0
+ω
+
+,
+ 1
+0
+0
+−1
+
+,
+1
+2
+
+1
+−i
+−3i
+1
+
+.
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+64
+The second and third matrices correspond, respectively, to the second and third
+linear fractional transformations. Note that one must, in accordance with the general
+procedure, rescale the matrices as required by the condition that f must be mapped
+to itself.
+Diﬃculties arise when Maple gives the solutions of equations 3.18 not
+as rational functions, but involving roots of polynomials. An example is the cubic
+f(p) = p3 + p + 1, which is discussed in Appendix A.
+Example 3.2.8. Quartic forms. A polynomial of degree 4 has a ﬁnite symmetry
+group if it is equivalent to either
+p4 + µ p2 + 1,
+or
+p2 + 1,
+where µ ̸= ±2. The former has all simple roots; the latter has a double root at ∞.
+In the ﬁrst situation, the symmetry group will depend on the value of µ. For
+general µ, the projective symmetry group is a dihedral group D2, generated by −p
+and 1/p. When µ = 0 it becomes a dihedral group D4, generated by ip and 1/p. The
+associated matrices are the obvious ones, namely
+ −1
+0
+0
+1
+
+,
+ 0
+1
+1
+0
+
+in the ﬁrst
+case, and
+ i
+0
+0
+1
+
+,
+ 0
+1
+1
+0
+
+in the second.
+The cases µ = ±2i
+√
+3 corresponds to the polynomials K4 and ¯K4 listed in 3.23
+above, and so the projective symmetry group is the 12 element octahedral group O.
+This case has the maximal size discrete symmetry group. The linear fractional trans-
+formations are generated by −p and i (p −1)/(p + 1). These correspond to diﬀerent
+matrices in each case:
+K4 :
+ −1
+0
+0
+1
+
+,
+1
+(2−2i
+√
+3)
+1/4
+ i
+−i
+1
+1
+
+,
+when
+µ = 2i
+√
+3,
+¯K4 :
+ −1
+0
+0
+1
+
+,
+1
+(2+2i
+√
+3)
+1/4
+ i
+−i
+1
+1
+
+,
+when
+µ = −2i
+√
+3.
+The transformations and their matrices are given in the form they were computed by
+Maple.
+Finally, the projective symmetry group of the quartic form p2 + 1 consists of just
+two elements: identity and p →−p.
+Example 3.2.9. Quintic forms. For polynomials of degree 5, the projective symme-
+try group is either cyclic, of type An, or dihedral, of type Dn. Some representative
+examples are listed in the following table.
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+65
+Projective Symmetry Groups of Representative Quintics
+i.
+p5 + 1
+D5
+ii.
+p5 + p
+A4
+iii.
+p5 + p2
+A3
+iv.
+p5 + p3
+A2
+v.
+p5 + p2 + 1
+{e}
+vi.
+p5 −4p −2
+{e}
+Example 3.2.10. Higher degree forms. At the sixth degree, we ﬁrst encounter a
+polynomial with an octahedral projective symmetry group: the sextic Q(p) = p5 + p
+which corresponds to the form Q(x, y) = x5y + xy5, compare with (3.23). The inho-
+mogeneous form looks like the the second quintic polynomial listed in the preceding
+table, but we are now considering it as a sextic with an additional root at ∞, and so
+the symmetry group is quite diﬀerent. Initially Maple produces symmetries which
+involve square roots and so do not initially look like linear fractional transformations.
+However, after some simpliﬁcations under the radical we obtain the group of linear
+fractional transformations generated by
+i p,
+√
+2(1 + i)p −2
+√
+2(1 −i) + 2p ,
+with corresponding matrices
+ i5/6
+0
+0
+i−1/6
+
+,
+ 1
+2(1 + i)
+−1
+2
+√
+2
+1
+2
+√
+2
+1
+2(1 −i)
+
+.
+The next time we meet this group is the octavic (degree 8) form Q(p) = p8 +
+14p4 + 1. The octahedral generators are now
+p 7−→i p,
+p 7−→i
+p + 1
+p −1
+
+,
+which correspond to the matrix symmetries
+ i
+0
+0
+1
+
+,
+√
+2
+2
+ i
+i
+1
+−1
+
+.
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+66
+3.3
+Diﬀerential Invariants for Ternary Forms.
+In this section we derive a fundamental set of diﬀerential invariants for the projective
+action (3.4) on the inhomogeneous version f(p, q) of a ternary form F(x, y, z). Let
+us consider the corresponding (local) action of GL(3, C) on the graph of polynomial
+u = f(p, q):
+p
+7→
+P = αp + βq + γ
+δp + ϵq + ζ ;
+q
+7→
+Q = λp + νq + τ
+δp + ϵq + ζ ;
+(3.24)
+u
+7→
+v = (δp + ϵq + ζ)−nu
+The direct construction of the moving frame is computationally diﬃcult so we apply
+the recursive algorithm 2.1.11 from Chapter 2.
+Remark 3.3.1. If Gr¨obner basis computation were more feasible in practice the
+following lengthy derivation of moving frames and diﬀerential invariants would not
+be necessary.
+In theory, the signature manifold could be derived from the lifted
+invariants vk,l, obtained by the prolongation of the action (3.24). Indeed, restricted
+to the graph of a polynomial, lifted invariants vk,l are some rational functions of the
+group parameters and variables p and q. The action (3.24) if locally free and transitive
+on J3 and we can choose a cross-section
+S = {p = q = 0, u = 1, u1,0 = u0,1 = u2,0 = u0,2 = 0, u3,0 = u0,3 = 1}.
+Using an algorithm based on Gr¨obner basis computations (see [8], Theorem 2, § 3,
+ch. 3) we can eliminate group parameters and variables p and q from the equations:
+P = Q = 0, v = 1, v1,0 = v0,1 = v2,0 = v0,2 = 0, v3,0 = v0,3 = 1,
+I1,1 = v1,1, I2,1 = v2,1, I1,2 = v1,2, Ik,l = vk,l,
+where 3 < k+l < s+1 and s is the diﬀerential invariant order of the polynomial deﬁned
+in Chapter 1, Deﬁnition 1.3.5. As the result we obtain polynomial relations among Ik,l
+that generate a prime ideal. The corresponding irreducible signature variety contains
+the signature manifold for the graph of the polynomials (see Remark 3.1.11). This
+procedure can be easily generalized for an arbitrarily algebraic action on polynomials.
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+67
+In practice however we were not able to carry out this straightforward algorithm
+and so we start the recursion by choosing a cross-section S0 = {p = 0, q = 0, u = 1}
+to the local action (3.24) of GL(3, C) on C3 The isotropy group H1 of S0 consists of
+matrices:
+
+
+α
+β
+0
+λ
+ν
+0
+δ
+ϵ
+1
+
+,
+The action of the subgroup
+T =
+
+
+
+
+
+1
+0
+t1
+0
+1
+t2
+0
+0
+c
+
+
+
+
+
+is locally free and transitive and thus G = H1T. The prolongation of the T-action:
+p 7→p + t1
+c
+,
+q 7→q + t2
+c
+,
+u 7→c−nu
+to Jk is given by the formulas
+uk,l 7→ck+l−nuk,l,
+(3.25)
+where the variable uk,l correspond to the derivative
+∂k+lu
+∂kp∂lq. The condition {p = 0, q =
+0, u = 1} normalizes the group parameters of T:
+t1 = −p,
+t2 = −q,
+c = u1/n.
+The set S∞
+0
+such that π∞
+0 (S∞
+0 ) = S0 is parameterized by functions Uk,l = u
+k+l−n
+n
+uk,l
+obtained from (3.25) by substitution of the normalization for c. The group H1 acts
+on the functions Uk,l restricted to S∞
+0
+in the same manner as on the corresponding
+coordinate functions. We note that the action of the subgroup H1 on S1
+0 is transitive
+and we choose the cross-section S1
+1 ⊂S1
+0 deﬁned by the condition U1,0 = 0, U0,1 = 0.
+The isotropy group H2 ⊂H1 for this cross-section is isomorphic to GL(2, C):
+H2 =
+
+
+
+
+
+α
+β
+0
+γ
+δ
+0
+0
+0
+1
+
+
+
+
+.
+We can write H1 is a product of H2 and R, where the group R consists of inversions:
+R =
+
+
+
+
+
+1
+0
+0
+0
+1
+0
+a
+b
+1
+
+
+
+
+.
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+68
+To normalize the parameters of R we need to prolong its action:
+p
+7→
+¯p =
+p
+ap + bq + 1,
+q
+7→
+¯q =
+q
+ap + bq + 1,
+u
+7→
+¯u = (ap + bq + 1)−n u
+to J∞and then restrict it to S∞
+0 . The lifted invariant diﬀerential operators are dual
+to the lifted contact invariant forms:
+d¯p
+=
+dp + b(qdp −pdq)
+σ2
+,
+d¯q
+=
+dq + a(pdq −qdp)
+σ2
+,
+where σ = ap + bq + 1 and hence they are equal to:
+¯Dp
+=
+σ2Dp + σq (aDq −bDp) ,
+¯Dq
+=
+σ2Dq + σp (bDp −aDq) .
+Thus the ﬁrst prolongation of the action of R is:
+u1,0
+7→
+¯u1,0 = σ1−n (−nau + σup) + σ1−nq (auq −bup) ,
+(3.26)
+u0,1
+7→
+¯u0,1 = σ1−n (−nbu + σuq) + σ1−np (bup −aup) .
+(3.27)
+By restricting the above transformations to S1
+0, where p = q = 0 and u = 1 one
+obtains the transformations of U1,0 and U0,1:
+U1,0 7→¯U1,0 = −na + U1,0,
+U1,0 7→¯U0,1 = −nb + U0,1.
+(3.28)
+Normalization ¯U1,0 = 0 and ¯U0,1 = 0 deﬁnes the group parameters of R:
+a = U1,0
+n
+= u
+1−n
+n u1,0
+n
+,
+b = U0,1
+n
+= u
+1−n
+n u0,1
+n
+.
+(3.29)
+To proceed further we need to determine the invariantization of higher order functions
+Uk,l under the action of R on S∞
+0 . In order to do so we need to compute the lifted
+invariants ¯uk,l = ¯Dk
+p ¯Dl
+q ¯u, restrict them to S∞
+0
+and then substitute the normalization
+(3.29). It is not hard to observe (see also (3.26)) that
+¯u1,0 = ¯Dp¯u = σ2Dp¯u + q × (. . . ),
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+69
+where the second term in the sum equals to q multiplied by an expression and hence
+it is equal to zero when q = 0. In general
+¯uk,0( ¯Dp)kv =
+ σ2Dp)
+k ¯u + q × (. . . ).
+The diﬀerential operator in the ﬁrst part of the formula is similar to the one that
+produces the prolongation formulas in the case of binary forms and so we obtain the
+familiar expressions:
+¯uk,0 = σk−n
+k
+X
+j=0
+(−1)k−j
+k
+j
+(n −j)!
+(n −k)!ak−jσjuj,0 + q × (. . . ).
+We restrict these functions to S∞
+0 , where p = 0, q = 0, u = 1 and uk,l = Uk,l and
+substitute the normalization (3.29) to obtain functions:
+Qk,0
+=
+k
+X
+j=0
+(−1)k−j
+k
+j
+(n −j)!
+(n −k)!
+U1,0
+n
+k−j
+Uj,0
+=
+u
+k(1−n)
+n
+k
+X
+j=0
+(−1)k−j
+k
+j
+(n −j)!
+(n −k)!uj−1 u1,0
+n
+k−j
+uj,0,
+(3.30)
+In the notation of the Algorithm 2.1.11 the last expression corresponds to the pull
+back of the coordinate function uk,0 under the map ι1 : Jk →Sk
+1. In the same manner
+we derive that
+Q0,k
+=
+k
+X
+j=0
+(−1)k−j
+k
+j
+(n −j)!
+(n −k)!
+U0,1
+n
+k−j
+U0,j
+=
+u
+k(1−n)
+n
+k
+X
+j=0
+(−1)k−j
+k
+j
+(n −j)!
+(n −k)!uj−1 u0,1
+n
+k−j
+u0,j.
+(3.31)
+The similar straightforward (but more complicated) derivations produces the formulas
+for Qk,l k ̸= 0, l ̸= 0 corresponding to the mixed derivatives. We list the ones which
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+70
+we will use later:
+Q1,1
+=
+u
+2(1−n)
+n
+
+u1,1 u −n −1
+n
+u1,0u0,1
+
+,
+Q1,2
+=
+u
+3(1−n)
+n
+
+u1,2 u2 −n −2
+n
+(u0,2u1,0 + 2 u1,1u0,1)u + 2(n −1)(n −2)
+n2
+u2
+0,1u1,0
+
+,
+Q2,1
+=
+u
+3(1−n)
+n
+
+u2,1 u2 −n −2
+n
+(u2,0u0,1 + 2 u1,1u1,0) u + 2(n −1)(n −2)
+n2
+u2
+1,0u0,1
+
+,
+Q1,3
+=
+u
+4(1−n)
+n
+
+u1,3 u3 −n −3
+n
+(u1,0u0,3 + 3 u1,2u0,1) u2 + 3(n −3)(n −2)
+n2
+×
+(u2
+0,1u1,1 + u1,0u0,1u0,2) u −3(n −1)(n −2)(n −3)
+n3
+u3
+0,1u1,0
+
+,
+(3.32)
+Q2,2
+=
+u
+4(1−n)
+n
+
+u2,2 u3 −2n −3
+n
+(u2,1u0,1 + u1,2u1,0) u2 + (n −3)(n −2)
+n2
+×
+(u2
+1,0u0,2 + 4u1,0u0,1u1,1 + u2
+0,1u2,0)u −3(n −1)(n −2)(n −3)
+n3
+u2
+1,0u2
+0,1
+
+,
+Q1,3
+=
+u
+4(1−n)
+n
+
+u3,1 u3 −n −3
+n
+(u0,1u3,0 + 3 u2,1u1,0) u2 + 3(n −3)(n −2)
+n2
+×
+(u2
+1,0u1,1 + u0,1u1,0u2,0) u −3(n −1)(n −2)(n −3)
+n3
+u3
+1,0u0,1
+
+.
+The function Qk,l are invariant under the transformation (3.24) up to action of H2 ⋍
+GL(2, C) (see Proposition 2.1.4 from Chapter 2). Moreover restricted to Sk
+1 they are
+transformed by H2 by the same formulas as the coordinate functions uk,l. We prolong
+the linear transformation:
+p 7→αp + βq,
+q 7→γp + δq,
+u 7→u.
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+71
+to J∞and then substituting uk,l with Qk,l to obtain:
+¯Q2,0
+=
+1
+∆2
+ δ2Q2,0 −2γδQ1,1 + γ2Q0,2
+
+;
+(3.33)
+¯Q1,1
+=
+1
+∆2 (−δβQ2,0 + (γβ + αδ)Q1,1 −αγQ0,2) ;
+(3.34)
+¯Q0,2
+=
+1
+∆2
+ β2Q2,0 −2αβQ1,1 + α2Q0,2
+
+;
+(3.35)
+¯Q3,0
+=
+1
+∆3
+ δ3Q3,0 −3γδ2Q2,1 + 3γ2δQ1,2 −γ3Q0,3
+
+;
+(3.36)
+¯Q2,1
+=
+1
+∆3
+ −δ2βQ3,0 + δ(2γβ + αδ)Q2,1 −γ(γβ + 2αδ)Q1,2 + αγ2Q0,3
+
+(3.37)
+¯Q1,2
+=
+1
+∆3
+ δβ2Q3,0 −β(γβ + 2αδ)Q2,1 + α(2γβ + αδ)Q1,2 −α2γQ0,3
+
+;(3.38)
+¯Q0,3
+=
+1
+∆3
+ −β3Q3,0 + 3αβ2Q2,1 −3α2βQ1,2 + α3Q0,3
+
+;
+(3.39)
+etc.
+We can normalize the remaining group parameters by setting
+¯Q2,0 = ¯Q0,2 = 0
+and
+¯Q3,0 = ¯Q0,3 = 1.
+From the ﬁrst pair of normalizations it follows that δ
+γ and β
+α are two roots of the same
+quadratic equation (see (3.33) and (3.35)) so we can write that
+δ
+γ = r1 =
+Q1,1 +
+q
+Q2
+1,1 −Q2,0Q0,2
+Q2,0
+,
+β
+α = r2 =
+Q1,1 −
+q
+Q2
+1,1 −Q2,0Q0,2
+Q2,0
+. (3.40)
+By subtracting these expressions one obtains that
+r1 −r2 = αδ −βγ
+αγ
+= 2
+√
+d
+Q2,0
+=⇒∆= αγ 2
+√
+d
+Q2,0
+,
+where d = Q2
+1,1 −Q2,0Q0,2. From the second pair of normalizations we obtain that:
+α
+=
+Q2,0
+2
+√
+d
+ r3
+1Q3,0 −3r2
+1Q2,1 + 3r1Q1,2 −Q0,3
+1/3 ,
+(3.41)
+γ
+=
+Q2,0
+2
+√
+d
+ −r3
+2Q3,0 + 3r2
+2Q2,1 −3r2Q1,2 + Q0,3
+1/3 .
+The substitution of this normalization into ¯Q1,1, ¯Q2,1, ¯Q1,2 and higher order ‘deriva-
+tives’ ¯Qk,l, k + l > 3 produces all the fundamental invariants of the action (3.24).
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+72
+These invariants however are not rational expressions in p and q and so we can not
+use Gr¨obner basis elimination algorithm to describe the corresponding signature man-
+ifold. Fortunately, by turning back to the classical invariant theory processes we are
+able to derive a complete set of fundamental rational invariants.
+We ﬁrst note that ¯Qk,l are lifted invariants under the action of H2 ⋍GL(2, C) on
+H2 × J∞deﬁned by the prolongation of the map:
+ p
+q
+
+7→
+ a11
+a12
+a21
+a22
+  p
+q
+
+,
+ α
+β
+γ
+δ
+
+7→
+ α
+β
+γ
+δ
+  a11
+a12
+a21
+a22
+−1
+.
+(3.42)
+We can also look at ¯Qk,l as on polynomials in {α, β, γ, δ} with coeﬃcients Qi,j. We
+note that the coeﬃcients Qi,j are transformed in the same manner as the coeﬃcients
+of the binary forms P
+i,j ai,jpiqj, where i + j = n, and p and q are transformed as in
+(3.42). From the second formula in (3.42) we can see that vectors
+ α
+β
+
+and
+ γ
+δ
+
+are transformed by the matrix
+ a11
+a12
+a21
+a22
+−t
+=
+1
+det(A)
+
+a22
+−a21
+−a12
+a11
+
+.
+Such vectors are called covariant in contrast with contravariant vectors which are
+transformed by the left multiplication by A (for instance, p and q form a contravariant
+vector). The forms
+P2 = ∆2 ¯Q2,0,
+P3 = ∆3 ¯Q3,0,
+P4 = ∆4 ¯Q4,0,
+. . .
+are relatively invariant under the simultaneous transformations of
+ γ
+δ
+
+and Qk,l
+with weights 2, 3 and 4 respectively. Because of their dependence on a covariant
+vector forms Pi are called contravariants (see [21] § 13 for more details on classical
+terminology). In the case of binary form there is a duality between covariant vectors
+and contravariant vectors. Indeed let µ = −δ and η = γ. Then µ and η form a
+contravariant vector of weight −1:
+ µ
+η
+
+7→
+1
+det(A)
+ a11
+a12
+a21
+a22
+  µ
+η
+
+.
+Thus the polynomials Pi rewritten in terms of the new variables µ and η are covariants
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+73
+of weight zero:
+P2
+=
+Q2,0 µ2 + 2Q1,1 µη + Q0,2 µ2;
+(3.43)
+P3
+=
+Q3,0 µ3 + 3Q2,1 µ2η2 + 3 Q1,2 µη2 + Q0,3 η3;
+(3.44)
+P4
+=
+Q4,0µ4 + 4Q3,1µ3η + 6 Q2,2µ2η2 + 4 Q1,3µη3 + Q0,4η4;
+(3.45)
+etc.
+Let Hκ(. . . , Qk,l, . . . ) be a rational invariant of these forms.
+We recall that Qk,l
+are diﬀerential functions (see formulas (3.30), (3.31) and (3.32)) and so functions
+Hκ(. . . , Qk,l, . . . ) provide diﬀerential invariants of the initial action (3.24). We would
+like to ﬁnd suﬃciently many of such invariants in order to parameterize the signature
+manifold. We start with the following classical relative invariants [18].
+The discriminant of quadratic P2:
+d2 = Q2,0Q0,2 −Q2
+1,1
+which is a relative invariant of weight 2.
+The discriminant of the cubic P3:
+d3 = Q2
+3,0 Q2
+0,3 −3 Q2
+2,1Q2
+1,2 −6 Q3,0Q2,1Q1,2Q0,3 + 4 Q3,0Q3
+1,2 + 4 Q0,3Q3
+2,1
+which is a relative invariant of weight 6.
+Two invariants of the quartic P4:
+i := Q4,0Q0,4 −4 Q3,1Q1,3 + 3 Q2
+2,2
+of weight 4, and
+j = det
+
+
+Q0,4
+Q1,3
+Q2,2
+Q1,3
+Q2,2
+Q3,1
+Q2,2
+Q3,1
+Q4,0
+
+
+of weight 6.
+To obtain joint relative invariants of forms Pi we can apply the omega process, or
+transvection (as described in chapter 3, § 48 of [18] and chapter 5 of [28]) to these
+forms. Let Φ and Ψ be covariants of weight k1 and k2 respectively then their r-th
+transvectant (Φ, Ψ)(r) is a covariant of weight k1 + k2 + r.
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+74
+Let
+H3 = (P4, P4)(2),
+H4 = (P4, P4)(2),
+T3 = (H3, P3)(1),
+T4 = (H4, P4)(1),
+S = (H4, P 2
+3 )(3).
+We note that H’s have weight 2 and they are the Hessians of the corresponding forms,
+T’s have weight 3 and their explicit formulas (3.15) are given in the preceding section
+on binary forms. We also note that the invariants of single forms can be expressed as
+transvectants:
+d2 = 1
+8(P2, P2)(2)
+d3 =
+1
+10368(H3, H3)(2)
+i =
+1
+1152(P4, P4)(4)
+j =
+1
+497664(H4, P4)(4)
+We complete this list with the following joint covariants:
+Joint invariants of cubic P3 and quadratic P2:
+M1 =
+1
+288(H2
+3, P2)(2),
+M2 =
+1
+103680(P 2
+3 , P 3
+2 )(6)
+of weights 4 and 6 respectively.
+Joint invariants of quadratic P2 and quartic P4:
+M3 =
+1
+576 (P4, P 2
+2 )(4),
+M4 =
+1
+1194393600 (T4, P 3
+2 )(6)
+of weights 4, and 9 respectively.
+Joint invariant of cubic P3 and quartic P4:
+M5 =
+1
+238878720(S, P4)(4)
+of weight 9.
+Taking into account the weights of the relative invariants above we deﬁne three ab-
+solute rational invariants of the third order:
+I1 = M1
+d2
+2 ,
+I2 = M2
+d2
+3 ,
+I3 = d3
+d2
+3
+(3.46)
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+75
+and ﬁve invariants of the fourth order:
+I4 = j
+d2
+3,
+I5 =
+i
+d2
+2,
+I6 = M4
+2
+d2
+9 ,
+I7 = M3
+d2
+2 ,
+I8 = M5
+2
+d2
+9 .
+(3.47)
+Thus we have found eight diﬀerential invariants of order four or less. Since most of
+the explicit formulas are long we place them in the Appendix B. Using the Thomas
+replacement theorem [13] we can rewrite these invariants in terms of eight independent
+invariants obtained by invariantizations Ik,l = `ι(uk,l) (see Section 1.4 of Chapter 1)
+of the ‘derivative’ coordinates uk,l:
+I1
+=
+I2, 1 I1, 2 −1
+I1, 1
+3
+,
+I2
+=
+−4 1 + 9 I2, 1 I1, 2
+I1, 1
+3
+,
+I3
+=
+1 −3 I2, 1
+2 I1, 2
+2 −6 I2, 1 I1, 2 + 4 I1, 2
+3 + 4 I2, 1
+3
+I1, 1
+6
+,
+I4
+=
+I4, 0 I0, 4 −4 I3, 1 I1, 3 + 3 I2, 2
+2
+I1, 1
+4
+,
+I5
+=
++I0, 4 I2, 2 I4, 0 −I0, 4 I3, 1
+2 −I1, 3
+2 I4, 0 + 2 I1, 3 I2, 2 I3, 1 −I2, 2
+3
+I1, 1
+6
+,
+I6
+=
+16 (I1, 3
+2 I4, 0 −I0, 4 I3, 1
+2)2
+I1, 1
+12
+,
+I7
+=
+4 I2, 2
+I1, 1
+2,
+I8
+=
+1
+I1, 1
+18 (−9 I3, 1 I2, 2 I2, 1
+2 I0, 4 −6 I1, 3
+2 I2, 1 I2, 2, +6 I3, 1
+2 I1, 2 I2, 2 −2 I3, 1
+3 + 2 I1, 3
+3
++2 I4, 0 I1, 3 I1, 2 I0, 4 −6 I3, 1 I2, 2 I1, 2 I0, 4
++9 I2, 2
+2 I2, 1 I0, 4 + I4, 0
+2 I0, 4 I1, 2 −I4, 0 I0, 4
+2 I2, 1 + 3 I4, 0 I1, 3 I2, 1
+2 I0, 4
++2 I1, 3 I3, 1 I1, 2 I4, 0 −6 I3, 1
+2 I1, 2
+2 I1, 3 −4 I3, 1
+2 I2, 1 I1, 3 −9 I4, 0 I2, 2
+2 I1, 2
++3 I4, 0 I2, 2 I3, 1 + 4 I1, 3
+2 I3, 1 I1, 2 −9 I4, 0 I1, 3
+2 I1, 2 I2, 1 + 9 I3, 1
+2 I2, 1 I1, 2 I0, 4
++9 I4, 0 I2, 2 I1, 2
+2 I1, 3 −3 I2, 2 I1, 3 I0, 4 −3 I4, 0 I0, 4 I1, 2
+2 I3, 1 + 6 I4, 0 I2, 2 I2, 1 I1, 3
+−2 I4, 0 I0, 4 I2, 1 I3, 1 −2 I1, 3 I3, 1 I2, 1 I0, 4 + I0, 4 I3, 1
+2 −I1, 3
+2 I4, 0 + I3, 1 I0, 4
+2
++6 I1, 3
+2 I3, 1 I2, 1
+2 −I4, 0
+2 I1, 3)2
+By computing (with the help of a computer) the corresponding Jacobian we con-
+clude that invariants {I1, . . . , I8} are functionally independent. On the other hand,
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+76
+since GL(3, C) acts freely on J4 and dim(J4) = 17, there could be no more than
+eight functionally independent invariants and thus {I1, . . . , I8} form a complete set
+of diﬀerential invariants of order four or less.
+Remark 3.3.2. None of the invariants is deﬁned when I1,1 ≡0 (or equivalently
+d2 ≡0). By substitution of the group parameters (3.40) and (3.41) into (3.34) we
+conclude that it happens if and only if the inhomogenization of the Hessian:
+n f(f 2
+pq −fpp fqq) + (n −1) (fpp f 2
+q + 2 fp fq fpq + fqq f 2
+p)
+is identically zero, and hence if and only if the ternary form can be transformed into
+a binary form.
+In the next section we will use the ﬁrst three invariants to obtain a classiﬁcation
+of ternary cubics and their group of symmetries. In the last section we use all eight
+invariants to construct the signature manifold for the forms xn + yn + zn, therefore
+obtaining necessary and suﬃcient condition for the equivalence of an arbitrary ternary
+form of degree n to the sum of n-th powers.
+3.4
+Classiﬁcation of Ternary Cubics
+In this section we reproduce known results on classiﬁcation of ternary cubics up to a
+linear transformation ([21], [25]) and then obtain a classiﬁcation of their symmetry
+groups, which we believe is new. We achieve this by restricting invariants I1, I2 and I3,
+obtained in the previous section to each if the canonical forms. Note that the fourth
+order invariants, restricted to a cubic, are zero. By Gr¨obner basis computation we ﬁnd
+the ideal, whose zero set deﬁnes the corresponding signature manifold and determine
+its dimension. In non-trivial situations we ﬁnd the dimension using Maple function
+hilbertdim, based on computing the degree of Hilbert polynomial [8], [14]. Using
+Theorem 1.3.8, from Chapter 1 we make a conclusion about the dimension of the
+symmetry group, which helps us to determine the group explicitly. In the case of a
+ﬁnite symmetry group we ﬁnd its cardinality. We start with
+Reducible Cubics.
+A reducible cubic is either a product of three linear factors or a product of linear
+and quadratic factors. We state the following classiﬁcation theorem:
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+77
+Theorem 3.4.1. A reducible cubic F(x, y, z) is equivalent under a linear change of
+variables to one of the following forms:
+1. If it is a product of there linear factors and
+a) all three factors are the same, then it is equivalent to x3 and its symmetry
+group, is conjugate to a four-dimensional group isomorphic to GL(2, C),
+of linear transformations on the variables y and z;
+b) two factors are the same, then the cubic is equivalent to x2y and its symmetry
+group is conjugate to four-dimensional group of matrices
+
+
+α
+1
+α2
+β
+γ
+δ
+
+;
+c) three factors are linearly dependent, but any pair of them is linearly indepen-
+dent, then the cubic is equivalent to xy(x + y) and its symmetry group is
+conjugate to the three-dimensional direct product of arbitrary linear trans-
+formations z 7→αx + βy + γz and a ﬁnite subgroup of order 6 × 3 of
+linear transformations on the (x, y)-plane, which preserves xy(x + y) (see
+Section 3.2) .
+d) there factors are linearly independent factors, then the cubic is equivalent
+to xyz and its symmetry group is conjugate to two-dimensional group of
+matrices
+
+
+α
+β
+1
+αβ
+
+;
+(3.48)
+2. If it is a product of quadratic and linear factors then there are two canonical forms:
+a) F(x, y, z) ∼z (x2 + yz). In this case the symmetry group is conjugate to a
+two-dimensional group generated by
+
+
+1
+0
+α
+−2α
+1
+−α2
+0
+0
+1
+
+
+and
+
+
+β
+β4
+1
+β−2
+
+;
+(3.49)
+b) F(x, y, z) ∼z (x2 +y2 +z2). In this case the symmetry group is conjugate to
+a one-dimensional group of rotations around the z-axis which is isomorphic
+to O(2, C).
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+78
+Proof.
+1. The classiﬁcations of the cubics reducible into linear factors is obvious. We
+note only that a cubic has repeated factors (cases 1. a) and 1. b)) if and only if its
+Hessian is identically zero and so the invariants I1, I2 and I3 are not deﬁned (see
+Remark 3.3.2). The graph S of such cubic is a totally singular submanifold in C4,
+in a sense that there is no order of prolongation n at which the prolonged action
+of the group becomes locally free on jn(S). Thus, none of the constructions from
+Chapter 1 can be applied to this case. The graphs of all other cubics deﬁne regular
+submanifolds and so, due to Theorem 1.3.8, the dimensions of their symmetry groups
+equal to 2 −dim C(Sf) where f(p, q) is the inhomogeneous version of F(x, y, z). The
+signature manifold C(Sf), is parameterized by I1(f), I2(f) and I3(f). When the cubic
+is equivalent to xyz (case 1. c)) the signature manifold consists of a single point:
+I1 = 4
+3,
+I2 = 16
+3 ,
+I3 = 16
+9 .
+and so the symmetry group is two-dimensional. It is easy to check that the group
+(3.48) leaves xyz unchanged.
+2. The general form of a cubic reducible into linear and quadratic factors is:
+F(x, y, z) = (k1x + k2y + k3z)(k4z2 + k5zx + k6zy + K(x, y)),
+where ki are some complex coeﬃcients and K(x, y) is a non-zero quadratic form in
+two variables. By taking the ﬁrst factor as a new variable z′, one obtains an equivalent
+cubic
+z (k4z2 + k5zx + k6zy + K(x, y))
+where ki are some new coeﬃcients and K(x, y) is a new non-zero quadratic form. It is
+known that by a linear change of variables the quadratic K(x, y) can be transformed
+to either x2 + y2 or x2. Thus F(x, y, z) is equivalent to either:
+z (k2z2 + k3zx + k4zy + x2 + y2)
+(3.50)
+or
+z (k2z2 + k3zx + k4zy + x2),
+(3.51)
+where ki are again new coeﬃcients.
+In the ﬁrst case (3.50) we make the transformation
+x′ = (x + k3
+2 z);
+y′ = (y + k4
+2 z);
+z′ = z
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+79
+to obtain an equivalent form
+z (kz2 + x2 + y2).
+Finally the scaling:
+k1/6x′ = x,
+k1/6y′ = y
+k−1/3z′ = z
+leads to the canonical form:
+z (z2 + x2 + y2).
+In the second case (3.51) we make the transformation
+x′ = (x +
+p
+k2z);
+y′ = k4y + (k3 −2
+p
+k2)x;
+z′ = z/k4.
+to obtain an equivalent cubic:
+kz (zy + x2).
+Finally, we make the transformation: z′ = kz, y′ = 1
+ky, which leads to the canonical
+form:
+z (zy + x2)
+We compute the corresponding signature manifolds.
+The signature manifold of a
+cubic equivalent to z (x2 + yz), consists of a single point:
+I1 = −1
+6,
+I2 = 41
+6 ,
+I3 = −2
+9,
+and hence the symmetry group is two-dimensional. Using Lie’s criterion 1.1.12 we
+found inﬁnitesimal symmetries:
+
+
+0
+0
+1
+−2
+0
+0
+0
+0
+0
+
+
+and
+
+
+1
+4
+−2
+
+;
+that give rise to the group (3.49).
+The signature manifold of a cubic equivalent to z (x2 +y2 +z2), is deﬁned by three
+equations found by Gr¨obner basis computations:
+−1482 I3 I2 + 8865 I3
+2 + 40 I2
+2 −1296 I1 −36 I2 + 17280 I3 −18522 I3 I1,
+40 I1 I2 + 582 I3 I1 + 42 I3 I2 −315 I2
+3 −144 I1 −4 I2 −480 I3,
+360 I2
+1 −378 I3I1 −18 I3 I2 + 135 I3
+2 −144 I1 −4 I2 + 120 I3
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+80
+The the corresponding variety is one-dimensional and thus the symmetry group is
+also one-dimensional. We notice that the rotations with respect to the z-axis leave
+the canonical form unchanged.
+We proceed with the classiﬁcation of the
+Irreducible Ternary Cubics:
+It is well known that any homogeneous irreducible cubic F(x, y, z) over C can
+be transformed by a linear map into Weierstrass normal form [24]. Let V be the
+set of zeros of the inhomogenization f(p, q) in CP 2. The normal form is obtained
+by transforming one of the inﬂection points of V to the inﬁnite point (0, 1, 0), and
+the tangent line at this point to the line (k, 1, 0) at inﬁnity. We state the following
+classiﬁcation theorem:
+Theorem 3.4.2. An irreducible cubic F(x, y, z) can be transformed under a linear
+change of variables to one of the following forms:
+1 If f(p,q) deﬁnes a singular variety V then it is equivalent to either
+a) p3 −q2 and the it has one-dimensional symmetry group given by:
+
+
+1
+α
+1
+α2
+
+;
+(3.52)
+or
+b) p2(p+1)−q2, which has a discrete symmetry group, consisting of 6 projective
+symmetries (see Deﬁnition 3.1.4 of Section 3.1) which correspond to 18
+genuine symmetries.
+2 If f(p, q) deﬁnes a nonsingular variety V then it either equivalent to:
+a) a cubic in one-parametric family:
+p3 + ap + 1 −q2
+and then it has 18 projective symmetries.
+or
+b) it is equivalent to p3 + p −q2. In this case it has 36 projective symmetries,
+or
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+81
+c) it is equivalent to p3 + 1 −q2. In this case it has 54 projective symmetries.
+We note that the cubic p3 + q3 + 1 belongs to this class.
+For the proofs of the classiﬁcation theorems we refer the reader to [24], [25],
+and restrict ourselves to the discussion of the signature manifolds and the symmetry
+groups. In the case 1. a) the signature manifold is deﬁned by two equations:
+I1 = −1
+6,
+6 I2 + 45 I3 −31 = 0
+and so the symmetries form a one-dimensional group conjugate to (3.52). We note
+that the number of unimodular symmetries is ﬁnite.
+In all other cases the symmetry group is ﬁnite. In theory, the projective symme-
+tries can be found explicitly by solving the equations
+I1(p, q) = I1(P, Q),
+I2(p, q) = I2(P, Q),
+I3(p, q) = I3(P, Q),
+(3.53)
+for P and Q in terms of p and q. All solutions must be linear fractional expressions
+in p and q. In practice however, we were not able to carry out these computations.
+Nevertheless we can ﬁnd the cardinality of the symmetry group using a well known
+algebraic geometry result ([8], Proposition 8, ch. 5, § 3).
+Proposition 3.4.3. Let I ⊂C[x1, . . . , xn] be an ideal such that its zero set V is ﬁnite
+then
+(i) The dimension of (C[x1, . . . , xn]/I) (as a vector space over C) is ﬁnite and greater
+or equal to the number of points in V .
+(i) If I is a radical ideal then equality holds, i.e., the number of points in V is exactly
+(C[x1, . . . , xn]/I).
+For generic values of P and Q we ﬁnd the number of the solutions for (3.53) by
+computing the dimension of the quotient space of C[p, q] by the corresponding ideal.
+We use two algorithms presented in the exercises for ch. 2, § 2 of [9], ﬁrst to check
+that the ideal deﬁned by (3.53) is radical, and then to compute the dimension of the
+quotient.
+The nonsingular irreducible ternary cubics are known as elliptic curves and play
+an important role in number theory. The number of symmetries for these curves
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+82
+has a natural explanation. First let us consider only the symmetries ﬁxing the point
+(0, 1, 0) and mapping the line at inﬁnity to itself.
+Following Knapp, [24] we call
+these symmetries admissible. It is not diﬃcult to prove [24] that there are only 2
+such symmetries in case 2.a), 4 in case 2.b) and 6 in case 2.c). Each of nonsingular
+irreducible cubics has 9 inﬂection points. Each of the inﬂection point can be mapped
+to (0, 1, 0) with the corresponding tangent line mapped to the line at inﬁnity. We
+observe that the number of the projective symmetries of a nonsingular irreducible
+cubic equals to the number of its inﬂection point times the number of its admissible
+symmetries.
+Ternary cubics form a ten-dimensional linear space. So by dimensional considera-
+tion we expect to have one absolute invariant depending on the coeﬃcients of cubic.
+Indeed such invariant is known [21], [24] and has been used to obtain classiﬁcation
+results. This invariant must be expressible in terms of the invariants I1, I2 and I3 but
+we have not tried to obtain the explicit formula. Not all of the orbits of GL(3, C)
+acting on the space of cubics are closed. In fact only the orbits of elliptic curves, the
+orbit of xyz and the orbit of x3 are. See Kraft [25] for the proofs and the description
+of how some orbit is included in the closure of the others.
+We conclude this section with a simple corollary from Theorems 3.4.1 and 3.4.2:
+Corollary 3.4.4. A cubic in three variables splits into a linear factor and an irre-
+ducible quadratic factor if and only if its SL(3, C) symmetries form a one-dimensional
+Lie group.
+Maple computations for ternary cubics can be found in Appendix C.
+3.5
+The Signature Manifold for xn + yn + zn.
+In this section we construct the signature manifold for f(p, q) = pn + qn + 1 therefore
+determining the necessarily and suﬃcient condition for a ternary form to be complex
+equivalent to the sum of n-th powers. We ﬁrst recall that the action (3.24) becomes
+free on the third order jet space J3. We restrict the ﬁrst three invariants to f(p, q) =
+pn + qn + 1:
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+83
+I1(f)
+=
+−(n −2)2
+n(n −1)
+I2(f)
+=
+−(n −2)2
+n(n −1)
+×
+5 qn (pn)2 + 5 (pn)2 −26 pn qn + 5 (qn)2 pn + 5 pn + 5 qn + 5 (qn)2
+pn qn
+I3(f)
+=
+−(n −2)4
+n2(n −1)2
+(pn + 1 −qn)(pn −1 + qn)(pn −1 −qn)
+pn qn
+We observe that the ﬁrst invariant is constant and we check that the last two are func-
+tionally independent. Thus the third order signature manifold has maximal possible
+dimension and the symmetry group of f(p, q) is ﬁnite. Moreover, we can conclude
+that the diﬀerential invariant order of the graph u = pn + qn + 1 equals to three and
+so both equivalence and symmetry problems can be solved by construction the fourth
+order signature manifold.
+For n > 3 we need to restrict the remaining ﬁve (forth order) invariants to the
+graph u = pn + qn + 1:
+I4(f)
+=
+−(n −2)2(n −3)2
+n2(n −1)2
+((pn)3 + 1 + (qn)3)
+pn qn
+I5(f)
+=
+−(n −2)3(n −3)3
+n3(n −1)3
+I6(f)
+=
+−(n −2)6(n −3)6
+n6(n −1)6
+(qn −1)2 (pn −1)2 (pn −qn)2 (pn + qn + 1)3
+(pn)3 (qn)3
+I7(f)
+=
+(n −2)(n −3)
+n(n −1)
+(pn)2 + qn(pn)2 + pn −2 pn qn + (qn)2 pn + qn + (qn)2
+pn qn
+I8(f)
+=
+−(n −2)10(n −3)6
+n8(n −1)8
+(qn −1)2 (pn −1)2 (pn −qn)2 (pn + qn + 1)3
+(pn)3 (qn)3
+.
+We note that I5(f) is constant and I8(f) is a constant multiple of I6(f). We need
+however three other relations to deﬁne the signature manifold. We observe that all
+
+CHAPTER 3. APPLICATION TO CLASSICAL INVARIANT THEORY.
+84
+invariants are functions of pn and qn and denote P = pn and Q = qn, then:
+i2
+=
+−5 Q2 + 5 P Q2 + 5 P 2 Q −26 P Q + 5 Q + 5 P + 5 P 2
+PQ
+= n(n −1)
+(n −2)2 I2,
+i3
+=
+−(Q + 1 −P)(Q −1 + P)(Q −1 −P)
+PQ
+= n2(n −1)2
+(n −2)4 I3,
+i4
+=
+Q3 + P 3 + 1
+PQ
+=
+n2(n −1)2
+(n −2)2(n −3)2 I4,
+i6
+=
+−(P −1)2(Q −1)2(Q −P)2(P + Q + 1)3
+P 3Q3
+=
+n6(n −1)6
+(n −2)6(n −3)6 I6,
+i7
+=
+PQ2 + Q2 −2 PQ + P 2Q + Q + P 2 + P
+PQ
+=
+n(n −1)
+(n −2)(n −3) I7,
+i8
+=
+−(P −1)2(Q −1)2(Q −P)2(P + Q + 1)3
+P 3Q3
+=
+n8(n −1)8
+(n −2)10(n −3)6 I8
+The following four relations were computed by Macaulay 2
+(remarkably Maple 5 was not be able to handle these computations):
+i6 −i8 = 0,
+i3 + i4 −i7 = 0,
+i2 + 5 i7 −16 = 0,
+i4 i2
+7 −i3
+7 −4 i2
+4 + 4 i4 i7 −8 i4 + 12 i7 + i8 −20 = 0.
+The corresponding relations among invariants I2(f), I3(f), I4(f), I6(f), I7(f) and
+I8(f) follow immediately. Combining them with the conditions:
+I1(f) = −(n −2)2
+n(n −1)
+and
+I5(f) = −(n −2)3(n −3)3
+n3(n −1)3
+and demanding that dim C(f) = 2 (equivalently we demand that the symmetry group
+of f is discrete), we thus obtain necessary and suﬃcient conditions for a ternary n-
+form to be equivalent to the sum of n-th powers.
+
+Appendices.
+85
+
+Appendix A
+Computations on Binary Forms.
+A.1
+The Maple Code for computing Symmetries
+of Binary Forms
+The Maple code consists of two main programs — symm and matrices — and two
+auxiliary functions — simple and l f. The program symm is the main function. The
+input consists of a complex-valued polynomial f(p) considered as the projective ver-
+sion of homogeneous binary form F(x, y), and the degree n = deg(F). The program
+computes the invariants J and K in reduced form, determines the dimension of the
+symmetry group, and, in the case of a ﬁnite symmetry group, applies the Maple
+command solve to solve the two polynomial symmetry equations (3.19) to ﬁnd ex-
+plicit form of symmetries. The output of symm consists of the projective index of the
+form and the explicit formulae for its discrete projective symmetries. The program
+also notiﬁes the user if the symmetry group is not discrete, or is in the maximal
+discrete symmetry class. The program works well when applied to very simple forms,
+but experienced diﬃculties simplifying complicated rational algebraic formulae into
+the basic linear fractional form.
+> with(linalg):
+> symm:=proc(form,n)
+global tr,error;
+local Q,Qp,Qpp,Qppp,Qpppp,H,T,V,U,J,K,j,k, Eq1,Eq2,i,eqtr,
+ans;
+86
+
+APPENDIX A. COMPUTATIONS ON BINARY FORMS.
+87
+tr:=’tr’:
+Q:=form(p);
+Qp:=diff(Q,p);
+Qpp:=diff(Qp,p);
+Qppp:=diff(Qpp,p);
+Qpppp:=diff(Qppp,p);
+H:=n*(n-1)*(Q*Qpp-(n-1)/n*Qp^2);
+if H=0 then
+ans:=‘Hessian is zero:
+two-dimensional symmetry group‘
+else
+T:=-n^2*(n-1)*(Q^2*Qppp-3*(n-2)/n*Q*Qp*Qpp
++2*(n-1)*(n-2)/n^2*Qp^3);
+V:=Q^3*Qpppp-4*(n-3)/n*Q^2*Qp*Qppp+6*(n-2)*(n-3)/n^2
+*Q*Qp^2*Qpp-3*(n-1)*(n-2)*(n-3)/n^3*Qp^4;
+U:=n^3*(n-1)*V-3*(n-2)/(n-1)*H^2;
+J:=simple(T^2/H^3); K:=simple(U/H^2);
+j:=subs(p=P,J);k:=subs(p=P,K);
+Eq1:=simplify(numer(J)*denom(j)-numer(j)*denom(J));
+Eq2:=simplify(numer(K)*denom(k)-numer(k)*denom(K));
+if Eq1=0 then
+ans:=‘Form has a one-dimensional symmetry group‘;
+else
+if Eq2=0 then
+print (‘ Form has the maximal possible discrete
+symmetry group‘);
+eqtr:= [solve(Eq1,P)];
+tr:=map(radsimp,map(allvalues,eqtr));
+else
+eqtr:=[solve({Eq1,Eq2},P)];
+tr:= [];
+for i from 1 to nops(eqtr) do
+tr:=map(radsimp,[op(tr),allvalues(rhs(eqtr[i][1]))]);
+od
+
+APPENDIX A. COMPUTATIONS ON BINARY FORMS.
+88
+fi;
+print(‘The number of elements in the symmetry group‘
+=nops(tr));
+ans:=map(l f,tr);
+if error=1 then
+print(‘ERROR: Some of the transformations are not
+linear-fractional‘)
+else
+if error=2 then
+print(‘WARNING: Some of the transformations are not
+written in the form polynomial over polynomial‘)
+fi;
+fi;
+fi;
+fi;
+ans
+end:
+The program matrices determines the matrix symmetry corresponding to a given (list
+of) projective symmetries. As discussed in the text, this only requires determining an
+overall scalar multiple, which can be found by substituting the projective symmetry
+into the form. The output consists of each projective symmetry, the scalar factor µ,
+and the resulting matrix symmetry.
+> matrices:=proc(form,n,L::list)
+local Q,ks,ksi,i,Sf,M;
+ksi:=’ksi’;
+for i from 1 to nops(L) do
+
+APPENDIX A. COMPUTATIONS ON BINARY FORMS.
+89
+Sf:=simplify(denom(L[i])^n*form(L[i]));
+ks:=quo(Sf,form(p),p);
+ksi:=simplify(ks^(1/n),radical,symbolic);
+M[i]:=matrix(2,2,[coeff(numer(L[i]),p)/ksi,
+coeff(numer(L[i]),p,0)/ksi,coeff(denom(L[i]),p)/ksi,
+coeff(denom(L[i]),p,0)/ksi]);
+print(L[i], mu=ksi, map(simplify,M[i]))
+od;
+end:
+The auxiliary function simple helps to simplify rational expressions by manipulating
+the numerator and denominator separately.
+The simpliﬁed rational expression is
+returned.
+> simple:=proc(x)
+local nu,de,num,den;
+nu:=numer(x);
+de:=denom(x);
+num:=(simplify((nu,radical,symbolic)));
+den:=(simplify((de,radical,symbolic)));
+simplify(num/den);
+end:
+The auxiliary function l f uses polynomial division to reduce rational expressions to
+linear fractional form (when possible).
+> l f:=proc(x)
+local A,B,C,S,de,nu,r,R;
+global error;error:=’error’;
+
+APPENDIX A. COMPUTATIONS ON BINARY FORMS.
+90
+nu:=numer(x);
+de:=denom(x);
+if type(nu,polynom(anything,p))
+and type(de,polynom(anything,p)) then
+if degree(nu,p)+1=degree(de,p) then
+A:=quo(de,nu,p,’B’);
+S:=1/A; R:=0
+else
+A:=quo(nu,de,p,’B’);
+if B=0 then
+S:=A; R:=0;
+else
+C:=quo(de,B,p,’r’); R:=simple(r);
+S:=simplify(A+1/C)
+fi;
+fi;
+if R=0 then
+collect(S,p)
+else
+error:=1; x
+fi;
+else
+error:=2; x
+fi;
+end:
+A.2
+Cubic Forms.
+We now present the results of applying the function symm and matrices to cubic
+forms. We begin with simple cases, ending with a cubic whose formulae required
+extensive manipulation.
+Cubics with one triple root:
+>
+f:=p->p^3;
+f := p →p3
+
+APPENDIX A. COMPUTATIONS ON BINARY FORMS.
+91
+>
+symm(f,3);
+Hessian is zero : two −dimensional symmetry group
+Cubics with one double root and one single root:
+>
+f:=p->p;
+f := p →p
+>
+symm(f,3);
+Form has a one −dimensional symmetry group
+Cubics with three simple roots:
+>
+f:=p->p^3+1;
+f := p →p3 + 1
+>
+S:=symm(f,3);
+Form has the maximal possible discrete symmetry group
+The number of elements in the symmetry group = 6
+S :=
+
+p, 1
+p,
+−1
+2 + 1
+2 I
+√
+3
+p
+,
+−1
+2 −1
+2 I
+√
+3
+p
+, (−1
+2 + 1
+2 I
+√
+3) p, (−1
+2 −1
+2 I
+√
+3) p
+
+
+>
+matrices(f,3,[S[2],S[4]]);
+1
+p,
+µ = 1,
+
+0
+1
+1
+0
+
+
+−1
+2 −1
+2 I
+√
+3
+p
+,
+µ = 2,
+
+
+0
+−1
+2 −1
+2 I
+√
+3
+1
+0
+
+
+A more complicated cubic example.
+All cubics with a discrete symmetry group are complex equivalent to x3 + y3 and
+have projective index 6. However, when we apply the same code to a cubic not in
+canonical form. The initial Maple result is not in the correct linear fractional form.
+We must simplify the rational algebraic expressions “by hand” to put them in the
+form of a projective linear fractional transformation.
+>
+f:=p->p^3+p+1;
+f := p →p3 + p + 1
+
+APPENDIX A. COMPUTATIONS ON BINARY FORMS.
+92
+>
+S:=symm(f,3);
+Form has the maximal possible discrete symmetry group
+The number of elements in the symmetry group = 6
+WARNING : Some of the transformations are not written in the form
+polynomial over polynomial
+S := [p, (−9 + I
+√
+31) p + 2
+9 + I
+√
+31 + 6 p
+, −(9 + I
+√
+31) p −2
+9 −I
+√
+31 + 6 p ,
+1
+18((54 p4 + 9 2(2/3) 3(1/3) %1(1/3) p3 + 324 p3 + 3 2(1/3) 3(2/3) %1(2/3) p2 + 450 p2
+−108 p + 9 2(1/3) 3(2/3) %1(2/3) p + 9 2(2/3) 3(1/3) %1(1/3) p −2(1/3) 3(2/3) %1(2/3)
++6 + 9 2(2/3) 3(1/3) %1(1/3))3(2/3)2(1/3))
+.
+(%1(1/3) (27 p3 −9 p2 −1)), −1
+36((54 I
+√
+3 p4 + 54 p4 + 324 p3
++ 324 I
+√
+3 p3 −18 2(2/3) 3(1/3) %1(1/3) p3 + 450 p2 + 450 I
+√
+3 p2
+−9 I 3(1/6) 2(1/3) %1(2/3) p2 + 3 2(1/3) 3(2/3) %1(2/3) p2 −27 I 3(1/6) 2(1/3) %1(2/3) p
+−108 p −18 2(2/3) 3(1/3) %1(1/3) p + 9 2(1/3) 3(2/3) %1(2/3) p −108 I
+√
+3 p
++ 3 I 3(1/6) 2(1/3) %1(2/3) + 6 I
+√
+3 −18 2(2/3) 3(1/3) %1(1/3) −2(1/3) 3(2/3) %1(2/3) + 6
+)3(2/3) 2(1/3))
+.
+(%1(1/3) (27 p3 −9 p2 −1)), 1
+36((54 I
+√
+3 p4 −54 p4 −324 p3
++ 324 I
+√
+3 p3 + 18 2(2/3) 3(1/3) %1(1/3) p3 −450 p2 + 450 I
+√
+3 p2
+−9 I 3(1/6) 2(1/3) %1(2/3) p2 −3 2(1/3) 3(2/3) %1(2/3) p2 −27 I 3(1/6) 2(1/3) %1(2/3) p
++ 108 p + 18 2(2/3) 3(1/3) %1(1/3) p −9 2(1/3) 3(2/3) %1(2/3) p −108 I
+√
+3 p
++ 3 I 3(1/6) 2(1/3) %1(2/3) + 6 I
+√
+3 + 18 2(2/3) 3(1/3) %1(1/3) + 2(1/3) 3(2/3) %1(2/3)
+−6)3(2/3) 2(1/3))
+.
+(%1(1/3) (27 p3 −9 p2 −1))]
+%1 := 9 + 18 p −81 p2 + 261 p3 + 27
+√
+31
+√
+3 p3 −9
+√
+31
+√
+3 p2 −
+√
+31
+√
+3
+The ﬁrst three components of S are in the proper linear fractional form. The
+problem with the other expressions is that Maple does not automatically factor
+polynomials under a radical. One approach to simpliﬁcation is to ﬁrst do the required
+factorization:
+>
+n1:=factor(9+18*p-81*p^2+261*p^3+27*sqrt(31)*sqrt(3)*p^3
+-9*sqrt(31)*sqrt(3)*p^2-sqrt(31)*sqrt(3));
+
+APPENDIX A. COMPUTATIONS ON BINARY FORMS.
+93
+n1 := −1
+24 (29 + 3
+√
+31
+√
+3) (−6 p −9 +
+√
+31
+√
+3)3
+Substituting n1 into the fourth rational algebraic expression in S above, we can
+now force Maple to take the cube root and obtain the actual linear fractional formula
+for this symmetry:
+>
+simp1:=radsimp(1/18*((54*p^4+9*2^(2/3)*3^(1/3)*(n1)^(1/3)*p^3
++324*p^3+3*2^(1/3)*3^(2/3)*(n1)^(2/3)*p^2+450*p^2
++9*2^(1/3)*3^(2/3)*(n1)^(2/3)*p+9*2^(2/3)*3^(1/3)*(n1)^(1/3)*p
+-108*p-2^(1/3)*3^(2/3)*(n1)^(2/3)+6
++9*2^(2/3)*3^(1/3)*(n1)^(1/3))*3^(2/3)*2^(1/3))/((n1)^(1/3)
+*(27*p^3-9*p^2-1)));
+>
+simp2:=l_f(simp1);
+>
+simp3:=collect(expand(numer(simp2))/expand(denom(simp2)),p);
+simp3 := ((−226 2(1/3) −20 %2 −20 2(2/3) %1(2/3) −22 %3 −208 %1(1/3)) p −8 %3
+−58 2(2/3) %1(2/3) −566 %1(1/3) −58 %2 −116 2(1/3))
+.
+(
+(−6 2(2/3) %1(2/3) −174 %1(1/3) −1686 2(1/3) −174 %3 −6 %2) p
++ 20 2(2/3) %1(2/3) + 208 %1(1/3) + 226 2(1/3) + 22 %3 + 20 %2)
+%1 := 29 + 3
+√
+31
+√
+3
+%2 := %1(1/3) √
+31
+√
+3
+%3 := 2(1/3) √
+31
+√
+3
+The linear fractional formulae for the other symmetries are derived in a similar
+fashion.
+A.3
+The Octahedral Symmetry Group.
+As we remarked in the text, the sextic polynomial Q(p) = p5 + p has an octahedral
+symmetry group. Here we illustrate how the symmetries are computed using our
+Maple program.
+>
+f:=p->p^5+p;
+f := p →p5 + p
+>
+symm(f,6);
+Form has the maximal possible discrete symmetry group
+
+APPENDIX A. COMPUTATIONS ON BINARY FORMS.
+94
+The number of elements in the symmetry group = 24
+WARNING : Some of the transformations are not written in the form
+polynomial over polynomial
+ 1
+p, p, −p, −1
+p, I
+p, −I
+p, I p, −I p, −2 p3 + 2 I p + %3
+p4 + 1
+, −2 p3 + 2 I p −%3
+p4 + 1
+,
+−2 p3 −2 I p + %4
+p4 + 1
+, −2 p3 −2 I p −%4
+p4 + 1
+, 2 p3 + 2 I p + %4
+p4 + 1
+, 2 p3 + 2 I p −%4
+p4 + 1
+,
+2 p3 −2 I p + %3
+p4 + 1
+, 2 p3 −2 I p −%3
+p4 + 1
+, −2 p + 2 I p3 + %1
+p4 + 1
+, −2 p + 2 I p3 −%1
+p4 + 1
+,
+−2 p −2 I p3 + %2
+p4 + 1
+, −2 p −2 I p3 −%2
+p4 + 1
+, 2 p + 2 I p3 + %2
+p4 + 1
+, 2 p + 2 I p3 −%2
+p4 + 1
+,
+2 p −2 I p3 + %1
+p4 + 1
+, 2 p −2 I p3 −%1
+p4 + 1
+
+%1 :=
+p
+−4 p6 + 4 p2 + I p8 −6 I p4 + I
+%2 :=
+p
+−4 p6 + 4 p2 −I p8 + 6 I p4 −I
+%3 :=
+p
+4 p6 −4 p2 + I p8 −6 I p4 + I
+%4 :=
+p
+4 p6 −4 p2 −I p8 + 6 I p4 −I
+Again, Maple has failed to simplify the expressions %1, %2, %3, %4, and we need
+to make it take the square root. In the case of symmetries numbers 9, 11, 13, 15, 17, 19,
+21, 23 this is done as follows. The others are handled in a similar fashion, and, for
+brevity, we omit the formulae here.
+>
+for j in [9,11,13,15,17,19,21,23] do
+sq:=sqrt(factor(op(op(numer(tr[j]))[3])[1],I),symbolic):
+s[j]:=
+l_f((op(numer(tr[j]))[1]+op(numer(tr[j]))[2]+sq)/denom(tr[j]));
+print(s.j=s[j]);
+od:
+s9 = −(
+√
+2 + I
+√
+2) p −2
+−
+√
+2 + I
+√
+2 −2 p
+s11 = −(−
+√
+2 + I
+√
+2) p + 2
+I
+√
+2 +
+√
+2 + 2 p
+s13 = (−
+√
+2 + I
+√
+2) p −2
+I
+√
+2 +
+√
+2 −2 p
+
+APPENDIX A. COMPUTATIONS ON BINARY FORMS.
+95
+s15 = (
+√
+2 + I
+√
+2) p + 2
+−
+√
+2 + I
+√
+2 + 2 p
+s17 = −(−
+√
+2 + I
+√
+2) p −2
+−
+√
+2 + I
+√
+2 −2 I p
+s19 = −I ((
+√
+2 + I
+√
+2) p + 2)
+−
+√
+2 + I
+√
+2 + 2 p
+s21 = (
+√
+2 + I
+√
+2) p −2
+√
+2 + I
+√
+2 + 2 I p
+s23 = (−
+√
+2 + I
+√
+2) p + 2
+−
+√
+2 + I
+√
+2 + 2 I p
+As we remarked in the text, the octahedral symmetry group has two generators.
+The matrix form of these generators is computed as follows:
+>
+matrices(f,6,[tr[7],s[9]]);
+I p,
+µ = (−1)(1/12),
+
+(−1)(5/12)
+0
+0
+−(−1)(11/12)
+
+
+−(
+√
+2 + I
+√
+2) p −2
+−
+√
+2 + I
+√
+2 −2 p,
+µ = 2
+√
+2,
+
+
+−1
+2 −1
+2 I
+1
+2
+√
+2
+−1
+2
+√
+2
+−1
+2 + 1
+2 I
+
+
+We end with two further examples. We already know that the following octavic
+polynomial also has an octahedral symmetry group. In this case, symm produces the
+projective symmetries directly:
+>
+f:=p->p^8+14*p^4+1;
+f := p →p8 + 14 p4 + 1
+>
+S:=symm(f,8);
+The number of elements in the symmetry group = 24
+
+APPENDIX A. COMPUTATIONS ON BINARY FORMS.
+96
+S := [−1
+p, −p −1
+p + 1, −p + 1
+p −1, p, −p, p + 1
+p −1, p −1
+p + 1, 1
+p, I (p −1)
+p + 1
+,
+−I (p −1)
+p + 1
+, I (p + 1)
+p −1
+,
+−I (p + 1)
+p −1
+, I
+p, −I
+p, I p, −I p, −1 + I p
+−I + p , −1 + I p
+I + p ,
+1 + I p
+I + p , −−1 + I p
+−I + p , −1 + I p
+1 + I p ,
+1 + I p
+−1 + I p, −1 + I p
+−1 + I p, −−1 + I p
+1 + I p ]
+>
+matrices(f,8,[S[11],S[15]]);
+I (p + 1)
+p −1
+,
+µ =
+√
+2,
+
+
+1
+2 I
+√
+2
+1
+2 I
+√
+2
+1
+2
+√
+2
+−1
+2
+√
+2
+
+
+I p,
+µ = 1,
+
+I
+0
+0
+1
+
+
+Finally, for illustrative purposes, we present a higher order example given by a
+binary form of degree 12.
+>
+f:=p->p^12-33*p^8-33*p^4+1;
+f := p →p12 −33 p8 −33 p4 + 1
+>
+S:=symm(f,12);
+The number of elements in the symmetry group = 24
+S := [p, −p, −1
+p, 1
+p, −p −1
+p + 1, −p + 1
+p −1, p + 1
+p −1, p −1
+p + 1, I
+p, −I
+p, I p, −I p, −1 + I p
+−I + p
+,
+−1 + I p
+I + p , 1 + I p
+I + p , −−1 + I p
+−I + p , I (p −1)
+p + 1
+, −I (p −1)
+p + 1
+, I (p + 1)
+p −1
+, −I (p + 1)
+p −1
+,
+−1 + I p
+1 + I p ,
+1 + I p
+−1 + I p, −1 + I p
+−1 + I p, −−1 + I p
+1 + I p ]
+>
+matrices(f,12,[S[11],S[19]]);
+I p,
+µ = 1,
+
+I
+0
+0
+1
+
+
+
+APPENDIX A. COMPUTATIONS ON BINARY FORMS.
+97
+I (p + 1)
+p −1
+,
+µ = (−1)(1/12)√
+2,
+
+
+1
+2 (−1)(5/12) √
+2
+1
+2 (−1)(5/12) √
+2
+−1
+2 (−1)(11/12) √
+2
+1
+2 (−1)(11/12) √
+2
+
+
+
+Appendix B
+Invariants for Ternary Forms.
+In this appendix we list joint relative invariants of the forms (3.43–3.44) of Section 3.3,
+obtained by omega process, that we subsequently used to obtain a fundamental set
+of diﬀerential invariants for ternary forms:
+M1 =
+1
+288(H2
+3, P2)(2) = Q3, 0 Q1, 2 Q0, 2 −Q2, 12 Q0, 2 −Q3, 0 Q0, 3 Q1, 1 + Q2, 1 Q1, 2 Q1, 1
++Q2, 1 Q0, 3 Q2, 0 −Q1, 22 Q2, 0
+of weight 4.
+M2 =
+1
+103680(P 2
+3 , P 3
+2 )(6) =
+5 Q3, 02 Q0, 23 −30 Q3, 0 Q0, 22 Q2, 1 Q1, 1 + 24 Q3, 0 Q1, 12 Q0, 2 Q1, 2 + 36 Q2, 12 Q1, 12 Q0, 2
++ 9 Q2, 12 Q0, 22 Q2, 0 −4 Q3, 0 Q1, 13 Q0, 3 −36 Q2, 1 Q1, 13 Q1, 2
++ 36 Q1, 22 Q2, 0 Q1, 12 + 9 Q1, 22 Q2, 02 Q0, 2 + 6 Q3, 0 Q0, 22 Q1, 2 Q2, 0
+−6 Q3, 0 Q2, 0 Q0, 2 Q0, 3 Q1, 1 −54 Q2, 1 Q2, 0 Q0, 2 Q1, 2 Q1, 1
++ 24 Q2, 1 Q2, 0 Q1, 12 Q0, 3 + 6 Q2, 1 Q2, 02 Q0, 2 Q0, 3 −30 Q1, 2 Q2, 02 Q0, 3 Q1, 1
++ 5 Q0, 32 Q2, 03
+of weight 6.
+M3 =
+1
+576 (P4, P 2
+2 )(4) = Q4, 0 Q0, 22 + 4 Q2, 2 Q1, 12 −4 Q3, 1 Q0, 2 Q1, 1
++2 Q2, 2 Q0, 2 Q2, 0 −4 Q1, 3 Q2, 0 Q1, 1 + Q0, 4 Q2, 02
+98
+
+APPENDIX B. INVARIANTS FOR TERNARY FORMS.
+99
+of weight 4.
+M4 =
+1
+1194393600 (T4, P 3
+2 )(6)
+= 4 Q3, 12 Q0, 4 Q1, 13 −4 Q1, 32 Q4, 0 Q1, 13 −Q4, 02 Q1, 3 Q0, 23 + Q3, 1 Q0, 42 Q2, 03
++2 Q1, 33 Q2, 03 −2 Q3, 13 Q0, 23 + 9 Q2, 22 Q0, 4 Q2, 02 Q1, 1 + 3 Q4, 0 Q2, 2 Q3, 1 Q0, 23
++Q4, 02 Q0, 4 Q0, 22 Q1, 1 + 2 Q3, 1 Q1, 32 Q2, 02 Q0, 2 −9 Q4, 0 Q2, 22 Q0, 22 Q1, 1
++6 Q3, 12 Q2, 2 Q0, 22 Q1, 1 −2 Q3, 12 Q1, 3 Q0, 22 Q2, 0 −8 Q3, 12 Q1, 3 Q1, 12 Q0, 2
+−6 Q2, 2 Q1, 32 Q2, 02 Q1, 1 −Q4, 0 Q0, 42 Q2, 02 Q1, 1 −3 Q2, 2 Q1, 3 Q0, 4 Q2, 03
++8 Q3, 1 Q1, 32 Q2, 0 Q1, 12 −12 Q3, 1 Q0, 4 Q2, 2 Q2, 0 Q1, 12 −2 Q3, 1 Q1, 3 Q0, 4 Q2, 02 Q1, 1
++3 Q4, 0 Q2, 2 Q1, 3 Q0, 22 Q2, 0 + 12 Q4, 0 Q2, 2 Q1, 3 Q1, 12 Q0, 2 −3 Q3, 1 Q0, 4 Q2, 2 Q2, 02 Q0, 2
++4 Q4, 0 Q0, 4 Q1, 3 Q2, 0 Q1, 12 + 2 Q4, 0 Q1, 3 Q3, 1 Q0, 22 Q1, 1 + Q4, 0 Q0, 4 Q1, 3 Q2, 02 Q0, 2
+−4 Q4, 0 Q0, 4 Q3, 1 Q1, 12 Q0, 2 −Q4, 0 Q0, 4 Q3, 1 Q0, 22 Q2, 0 −6 Q1, 32 Q4, 0 Q2, 0 Q0, 2 Q1, 1
++6 Q3, 12 Q0, 4 Q2, 0 Q0, 2 Q1, 1,
+of weight 9.
+M5 =
+1
+238878720(S, P4)(4) =
+−6 Q1, 32 Q3, 1 Q2, 12 + 6 Q3, 12 Q1, 22 Q1, 3 + Q1, 3 Q4, 02 Q0, 32 −6 Q4, 0 Q2, 2 Q2, 1 Q0, 3 Q1, 3
++ 2 Q0, 4 Q4, 0 Q0, 3 Q2, 1 Q3, 1 −2 Q1, 3 Q3, 1 Q0, 3 Q1, 2 Q4, 0 + 2 Q3, 13 Q0, 32
+−Q0, 4 Q4, 02 Q0, 3 Q1, 2 −Q3, 12 Q3, 0 Q0, 3 Q0, 4 + 4 Q3, 12 Q2, 1 Q0, 3 Q1, 3
++ Q1, 32 Q4, 0 Q0, 3 Q3, 0 −3 Q4, 0 Q2, 2 Q0, 32 Q3, 1 + 9 Q4, 0 Q2, 22 Q1, 2 Q0, 3
+−6 Q3, 12 Q1, 2 Q0, 3 Q2, 2 + 6 Q1, 32 Q2, 1 Q3, 0 Q2, 2 −2 Q1, 33 Q3, 02
++ 3 Q0, 4 Q4, 0 Q1, 22 Q3, 1 + 9 Q1, 32 Q4, 0 Q2, 1 Q1, 2 −9 Q3, 12 Q2, 1 Q1, 2 Q0, 4
++ 9 Q2, 2 Q3, 1 Q2, 12 Q0, 4 + 3 Q1, 3 Q2, 2 Q3, 02 Q0, 4 −4 Q1, 32 Q3, 1 Q3, 0 Q1, 2
+−9 Q4, 0 Q2, 2 Q1, 22 Q1, 3 −3 Q1, 3 Q4, 0 Q2, 12 Q0, 4 −9 Q2, 22 Q3, 0 Q2, 1 Q0, 4
++ Q0, 42 Q4, 0 Q3, 0 Q2, 1 −Q0, 42 Q3, 1 Q3, 02 + 2 Q1, 3 Q3, 1 Q3, 0 Q2, 1 Q0, 4
++ 6 Q2, 2 Q3, 1 Q3, 0 Q1, 2 Q0, 4 −2 Q1, 3 Q4, 0 Q3, 0 Q1, 2 Q0, 4
+of weight 9.
+We remind the reader that
+H3 = (P4, P4)(2),
+H4 = (P4, P4)(2),
+T3 = (H3, P3)(1),
+T4 = (H4, P4)(1),
+S = (H4, P 2
+3 )(3).
+The following Maple code was used to compute eight fundamental invariants:
+I1 = M1
+d2
+2 ,
+I2 = M2
+d2
+3 ,
+I3 = d3
+d2
+3,
+
+APPENDIX B. INVARIANTS FOR TERNARY FORMS.
+100
+I4 = j
+d2
+3,
+I5 =
+i
+d2
+2,
+I6 = M4
+2
+d2
+9 ,
+I7 = M3
+d2
+2 ,
+I8 = M5
+2
+d2
+9 .
+restricted to a given polynomial.
+
+Appendix C
+Computations on Ternary Cubics.
+REDUCIBLE CUBICS IN THREE VARIABLES
+The following standard packages are used:
+>
+with(linalg):with(Groebner):
+Our code includes the following programs:
+Pinv computes fundamental invariants.
+>
+read ternary3;
+Psignature computes syzygies between fundamental invariants.
+>
+read Psignature;
+Two-dimensional unimodular group of symmetries
+>
+F:=(x,y,z)->x*y*z;
+F := (x, y, z) →x y z
+>
+f:=(p,q)->p*q;
+f := (p, q) →p q
+>
+Pinv(f,3);
+[4
+3, 16
+3 , 16
+9 ]
+an equivalent polynomial:
+>
+f:=(p,q)->1/2*p*(q^2-1);
+f := (p, q) →1
+2 p (q2 −1)
+>
+Pinv(f,3);
+[4
+3, 16
+3 , 16
+9 ]
+101
+
+APPENDIX C. COMPUTATIONS ON TERNARY CUBICS.
+102
+Two-dimensional symmetry group with a one-dimensional unimodular subgroup.
+>
+F:=(x,y,z)->(x^2+y*z)*z:
+>
+f:=(p,q)->p^2+q;
+f := (p, q) →p2 + q
+>
+Pinv(f,3);
+[−1
+6 , 41
+6 , −2
+9 ]
+an equivalent polynomial:
+>
+F:=(x,y,z)->(x^2-y*z-z^2)*z:
+f:=(p,q)->p^2-q-1;
+f := (p, q) →p2 −q −1
+>
+Pinv(f,3);
+[−1
+6 , 41
+6 , −2
+9 ]
+One-dimensional unimodular group of symmetries
+>
+F:=(x,y,z)->(x^2+y^2+z^2)*z;
+F := (x, y, z) →(x2 + y2 + z2) z
+>
+f:=(p,q)->(p^2+q^2+1);
+f := (p, q) →p2 + q2 + 1
+>
+Pinv(f,3);
+[4
+3
+(p2 + 3 + q2) (p2 + q2)
+(p2 −3 + q2)2
+, 16
+3
+(p2 + q2) (p4 + 2 p2 q2 + 81 + q4)
+(p2 −3 + q2)3
+,
+16
+9
+(9 + p2 + q2) (p2 + q2)2
+(p2 −3 + q2)3
+]
+>
+Psignature(inv);
+elimination of u from the equations :
+4 (p2 + 3 + q2) (p2 + q2) −3 (p2 −3 + q2)2 I1,
+16 (p2 + q2) (p4 + 2 p2 q2 + 81 + q4) −3 (p2 −3 + q2)3 I2,
+16 (9 + p2 + q2) (p2 + q2)2 −9 (p2 −3 + q2)3 I3,
+1 −243 (p2 −3 + q2)3 w
+dimension of the signature manifold = 1
+the signature manifold is deﬁned by :
+
+APPENDIX C. COMPUTATIONS ON TERNARY CUBICS.
+103
+[−1482 I3 I2 + 8865 I3
+2 + 40 I2
+2 −1296 I1 −36 I2 + 17280 I3 −18522 I3 I1,
+40 I1 I2 + 582 I3 I1 + 42 I3 I2 −315 I3
+2 −144 I1 −4 I2 −480 I3,
+360 I1
+2 −378 I3 I1 −18 I3 I2 + 135 I3
+2 −144 I1 −4 I2 + 120 I3]
+an equivalent polynomial:
+>
+F:=(x,y,z)->x*y*z+x^2*y+z*y^2;
+>
+f:=(p,q)->p*q+p^2*q+q^2;
+F := (x, y, z) →x y z + x2 y + z y2
+f := (p, q) →p q + p2 q + q2
+>
+Pinv(f,3);
+[4
+3
+(p + 1 −q) (p + q) (p2 + p + 2 q2 + q)
+(−4 q2 + q + p + p2)2
+,
+16
+3
+(p + 1 −q) (p + q) (p4 + 2 p3 + 2 p2 q −2 p2 q2 + p2 + 2 p q −2 p q2 −2 q3 + 82 q4 + q2)
+(−4 q2 + q + p + p2)3
+,
+16
+9
+(p + p2 + q + 8 q2) (p + q)2 (p + 1 −q)2
+(−4 q2 + q + p + p2)3
+]
+>
+Psignature(inv);
+elimination of u from the equations :
+4 (p + 1 −q) (p + q) (p2 + p + 2 q2 + q) −3 %12 I1,
+16 (p + 1 −q) (p + q) (p4 + 2 p3 + 2 p2 q −2 p2 q2 + p2 + 2 p q −2 p q2 −2 q3
++82 q4 + q2) −3 %13 I2,
+16 (p + p2 + q + 8 q2) (p + q)2 (p + 1 −q)2 −9 %13 I3, 1 −243 %13 w
+%1 := −4 q2 + q + p + p2
+dimension of the signature manifold = 1
+the signature manifold is deﬁned by :
+[−1482 I3 I2 + 8865 I3
+2 + 40 I2
+2 −1296 I1 −36 I2 + 17280 I3 −18522 I3 I1,
+40 I1 I2 + 582 I3 I1 + 42 I3 I2 −315 I3
+2 −144 I1 −4 I2 −480 I3,
+360 I1
+2 −378 I3 I1 −18 I3 I2 + 135 I3
+2 −144 I1 −4 I2 + 120 I3]
+
+APPENDIX C. COMPUTATIONS ON TERNARY CUBICS.
+104
+IRREDUCIBLE CUBICS IN THREE VARIABLES
+The program SymN computes the cardinality of the symmetry group in the
+case it is ﬁnite.
+>
+read symN;
+it uses kbasis5 adopted from [9] to compute the number of the solutions for a
+system of polynomial equations:
+>
+read kbasis5;
+Singular Curves:
+qˆ2=pˆ3: one-dimensional symmetry group, ﬁnite number of unimodular sym-
+metries:
+>
+f:=(p,q)->p^3-q^2;
+f := (p, q) →p3 −q2
+>
+Pinv(f,3);
+[−1
+6 , 1
+6
+36 p3 + 5 q2
+p3
+, −1
+9
+p3 + q2
+p3
+]
+>
+Psignature(inv);
+elimination of u from the equations :
+−1 −6 I1, 36 p3 + 5 q2 −6 I2 p3, −p3 −q2 −9 I3 p3, 1 −18 w p3
+dimension of the signature manifold = 1
+the signature manifold is deﬁned by :
+[6 I2 + 45 I3 −31, 1 + 6 I1]
+qˆ2=pˆ2*(p+1):
+The projective symmetry group has 6 elements.
+>
+f:=(p,q)->p^2*(p+1)-q^2;
+f := (p, q) →p2 (p + 1) −q2
+
+APPENDIX C. COMPUTATIONS ON TERNARY CUBICS.
+105
+>
+Pinv(f,3);
+[−1
+6
+(3 p + 4) (q + p) (q −p) (3 p q2 −2 q2 + 2 p2 + 3 p3)
+(3 p q2 + q2 −p2)2
+,
+1
+6((q + p) (q −p)(135 q6 + 32 q4 + 972 p3 q4 + 1107 p2 q4 + 72 p q4 + 1269 p4 q2
+−144 p3 q2 −64 p2 q2 + 972 q2 p5 + 72 p5 + 81 p6 + 32 p4))/(3 p q2 + q2 −p2)3,
+−1
+9(
+(−16 q2 + 27 q4 + 72 p q2 + 16 p2 + 81 p2 q2 + 72 p3 + 27 p3 q2 + 108 p4 + 54 p5)
+(q −p)2 (q + p)2)
+.
+(3 p q2 + q2 −p2)3]
+>
+symN(inv,1,2);
+the number of symmetries = 6
+In symN we have chosen the point P = 1 and Q = 2 to substitute into equations
+(3.53). We ﬁnd the number of the solutions using procedure kbasis5, but in this
+particular case it is not diﬃcult to solve the equations explicitly:
+>
+E;
+[76 p2 −49 q2 + 72 p + 48, 7543 p q2 −6633 q2 −4008 p + 368,
+20961997 q4 −83898780 q2 −13605280 p + 13808448]
+>
+map(allvalues,[solve({op(E)},{p,q})]);
+[{p = 1, q = 2}, {q = −2, p = 1},
+{p = −212
+397 + 112
+397 I
+√
+3, q = −208
+397 + 20
+397 I
+√
+3},
+{p = −212
+397 −112
+397 I
+√
+3, q = −208
+397 −20
+397 I
+√
+3},
+{p = −212
+397 −112
+397 I
+√
+3, q = 208
+397 + 20
+397 I
+√
+3},
+{p = −212
+397 + 112
+397 I
+√
+3, q = 208
+397 −20
+397 I
+√
+3}]
+The list above contains the images of the point (1,2) under all possible symmetries.
+We note, however, that if we put a non-generic point into symN we might obtain an
+incorrect answer or no answer at all:
+>
+symN(inv,1,1);
+Error, (in kbasis) Ideal is not zero-dimensional, no finite basis
+
+APPENDIX C. COMPUTATIONS ON TERNARY CUBICS.
+106
+Other generic points produce the correct result for the cardinality of the sym-
+metry group.
+>
+symN(inv,0,1);
+the number of symmetries = 6
+>
+symN(inv,1,0);
+the number of symmetries = 6
+An equivalent polynomial:
+>
+f:=(p,q)->p^2*(p+4)-q^2;
+f := (p, q) →p2 (p + 4) −q2
+>
+Pinv(f,3):
+>
+symN(inv,1,0);
+the number of symmetries = 6
+Non singular (elliptic) curves:
+qˆ2=pˆ3+1. The number of the projective symmetries is 54.
+>
+f:=(p,q)->p^3-q^2+1;
+f := (p, q) →p3 −q2 + 1
+>
+Pinv(f,3);
+[−1
+6 , 1
+6(−135 + 432 p3 + 540 p6 q2 + 90 q4 −540 p6 + 40 q6 + 5 q8 + 2052 p3 q2
+−216 p3 q4 + 36 p3 q6)/(p3 (q2 + 3)3),
+−1
+9
+(q2 −1 + p3) (q6 −18 q4 + 81 q2 + 27 p6)
+p3 (q2 + 3)3
+]
+>
+symN(inv,1,0);
+the number of symmetries = 54
+>
+symN(inv,1,2);
+the number of symmetries = 54
+>
+symN(inv,2,2);
+the number of symmetries = 54
+An equivalent polynomial:
+>
+f:=(p,q)->p^3+q^3+1;
+f := (p, q) →p3 + q3 + 1
+
+APPENDIX C. COMPUTATIONS ON TERNARY CUBICS.
+107
+>
+Pinv(f,3);
+[−1
+6 , −1
+6
+5 q6 + 5 p3 q6 + 5 q3 −26 p3 q3 + 5 p6 q3 + 5 p3 + 5 p6
+p3 q3
+,
+−1
+36
+(q3 + 1 −p3) (q3 −1 −p3) (q3 −1 + p3)
+p3 q3
+]
+>
+symN(inv,1,2);
+the number of symmetries = 54
+>
+symN(inv,1,0);
+Error, (in symN) division by zero
+>
+symN(inv,1,1);
+the number of symmetries = 54
+The signature manifold for this class of polynomials is deﬁned by:
+>
+Psignature(inv);
+elimination of u from the equations :
+−1 −6 I1,
+−5 p6 q3 −5 p6 −5 p3 q6 −5 p3 + 26 p3 q3 −5 q6 −5 q3 −6 p3 q3 I2,
+−(p3 −1 −q3) (p3 −1 + q3) (p3 + 1 −q3) −36 p3 q3 I3,
+1 −36 w p3 q3
+dimension of the signature manifold = 2
+the signature manifold is deﬁned by :
+[1 + 6 I1]
+qˆ2=pˆ3+ap.
+They are equivalent for all a. The number of symmetries is 36.
+>
+f:=(p,q)->p^3+p-q^2;
+f := (p, q) →p3 + p −q2
+>
+Pinv(f,3);
+[−1
+6
+27 q4 + 9 p2 q4 + 1 + 21 p2 + 63 p4 + 27 p6 −60 p q2 −36 p3 q2
+(3 p q2 −1 + 3 p2)2
+, −1
+6(729 p8
+−2916 p7 q2 −972 p6 −2916 p5 q2 + 486 p4 q4 + 1350 p4 + 7236 p3 q2 −972 p3 q6
+−2052 p2 q4 + 468 p2 −828 p q2 −756 q6 p + 41 −135 q8 −378 q4)/
+(3 p q2 −1 + 3 p2)3, 1
+9(2 + 36 p2 + 216 p4 + 540 p6 + 486 p8 −27 q8 −189 q4
+−918 p2 q4 −81 p4 q4 + 189 q6 p −27 p3 q6 + 117 p q2 + 999 p3 q2 −81 p5 q2
+−243 p7 q2)/(3 p q2 −1 + 3 p2)3]
+
+APPENDIX C. COMPUTATIONS ON TERNARY CUBICS.
+108
+>
+symN(inv,1,2);
+the number of symmetries = 36
+>
+symN(inv,2,3);
+the number of symmetries = 36
+>
+f:=(p,q)->-q^2+2*p+p^3;
+f := (p, q) →−q2 + 2 p + p3
+>
+Pinv(f,3):
+>
+symN(inv,1,2);
+the number of symmetries = 36
+qˆ2=pˆ3+ap+1. This is a family of equivalence classes. The number of sym-
+metries is the same: 18.
+>
+f:=(x,y,z)->-q^2+4+2*p+p^3;
+f := (x, y, z) →−q2 + 4 + 2 p + p3
+>
+Pinv(f,3);
+[−1
+6(−432 q2 −240 p q2 + 216 p2 q2 −72 p3 q2 + 880 + 576 p + 1464 p2 + 864 p3 +
+252 p4 + 54 p6 + 54 q4 + 9 p2 q4)/(3 p q2 −4 + 36 p + 6 p2)2, −1
+6(225504 p6 −972 p3 q6
++774144 p + 46656 p7 + 2916 p8 −135 q8 −670464 p3 + 142272 p q2
++ 295488 p2 q2 −10368 q2 + 512640 p2 −58320 p6 q2 −5832 p7 q2 + 972 p4 q4
+−8208 p2 q4 −41904 q4 −318816 p4 q2 −4320 q6 −211680 p4 + 1025600
+−828576 p3 q2 −10368 p q4 + 23328 p3 q4 −11664 p5 q2 −1512 q6 p
+−124416 p5)/(3 p q2 −4 + 36 p + 6 p2)3, −1
+9(−15984 p6 + 27 p3 q6 −1728 p
++ 2916 p9 −1944 p8 + 27 q8 −6912 p3 −118512 p q2 −45360 p2 q2 −145152 q2
+−16704 p2 + 2916 p6 q2 + 486 p7 q2 + 162 p4 q4 + 3672 p2 q4 + 44280 q4
++ 15552 p4 q2 −2052 q6 −26784 p4 + 27000 p3 q2 + 16848 p q4 −1944 p3 q4
++ 324 p5 q2 −378 q6 p −7776 p5 −3584)/(3 p q2 −4 + 36 p + 6 p2)3]
+>
+symN(inv,1,1);
+the number of symmetries = 18
+>
+f:=(p,q)->-q^2+1+3*p+p^3;
+f := (p, q) →−q2 + 1 + 3 p + p3
+
+APPENDIX C. COMPUTATIONS ON TERNARY CUBICS.
+109
+>
+Pinv(f,3);
+[−1
+6(18 + 36 p + 72 p2 + 36 p3 + 63 p4 + 9 p6 −18 q2 −60 p q2 + 6 p2 q2 −12 p3 q2
++9 q4 + p2 q4)/(p q2 −3 + 3 p + 3 p2)2, −1
+6(−432 p6 −36 p3 q6 + 1944 p + 648 p7
++ 243 p8 −5 q8 + 1944 + 1944 p3 −1944 p q2 + 6156 p2 q2 −324 q2 + 6804 p2
+−540 p6 q2 −324 p7 q2 + 54 p4 q4 −684 p2 q4 −468 q4 −4428 p4 q2 −40 q6
++ 3240 p4 + 5184 p3 q2 −144 p q4 + 216 p3 q4 −972 p5 q2 −84 q6 p −2592 p5)/
+(p q2 −3 + 3 p + 3 p2)3, −1
+9(−81 −567 p6 + p3 q6 −81 p + 27 p9 −162 p8 + q8
+−216 p3 −756 p q2 −945 p2 q2 −243 q2 −405 p2 + 27 p6 q2 + 27 p7 q2 + 9 p4 q4
++ 306 p2 q4 + 288 q4 + 216 p4 q2 −19 q6 −729 p4 −918 p3 q2 + 234 p q4
+−18 p3 q4 + 27 p5 q2 −21 q6 p −162 p5)/(p q2 −3 + 3 p + 3 p2)3]
+>
+symN(inv,1,0);
+the number of symmetries = 18
+>
+f:=(p,q)->-q^2+1-p+p^3;
+f := (p, q) →−q2 + 1 −p + p3
+>
+Pinv(f,3):
+>
+symN(inv,1,0);
+the number of symmetries = 18
+
+Bibliography
+[1] I. M. Anderson. Introduction to the variational bicomplex. Contemporary Math-
+ematics, 132:51–73, 1992.
+[2] I. A. Berchenko and P. J. Olver. Symmetries of polynomials. Journal of Symbolic
+Computations, to appear.
+[3] H. F. Blichfeldt. Finite Collineation Groups. University of Chicago Press, 1917.
+[4] R. L. Bryant, S. S. Chern, R. B. Gardner, H. L. Goldschmidt, and P. A. Grif-
+ﬁths. Exterior diﬀerential systems. Mathematical Sciences Research Institute
+Publications, 18. Springer-Verlag, New York, 1991.
+[5] ´E. Cartan. La m´ethode du rep`ere mobile, la th´eorie des groupes continus, et les
+espaces g´en´eralis´ees. Expos´es de G´eom´etrie, 5:Hermann, Paris, 1935.
+[6] ´E. Cartan. Groupes ﬁnis et continus et la g´eom´etrie diﬀ´erentielle trait´ees par la
+methode du rep`ere mobile. Gauthier-Villars, Paris, 1937.
+[7] ´E. Cartan. Les probl`emes d’´equivalence. Oeuvres completes, II, pp. 1311-1334.
+Gauthier-Villars, Paris, 1953.
+[8] D. Cox, J. Little, and D. O’Shea. Ideals, Varieties, and Algorithms. Undergrad-
+uate Text in Mathematics. Springer-Verlag, New-York, 1996.
+[9] D. Cox, J. Little, and D. O’Shea. Using Algebraic Geometry. Graduate Text in
+Mathematics, 185. Springer-Verlag, New-York, 1998.
+[10] O. Faugeras. Cartan’s moving frame method and its application to the geometry
+and evolution of curves in the Euclidean, aﬃne and projective planes. Application
+110
+
+BIBLIOGRAPHY
+111
+of Invariance in Computer Vision, J.L Mundy, A. Zisserman, D. Forsyth (eds.)
+Springer-Verlag Lecture Notes in Computer Science, 825:11–46, 1994.
+[11] M. Fels and P. J. Olver. On relative invariants. Math. Ann., 308:701–732, 1997.
+[12] M. Fels and P. J. Olver. Moving Coframes. I. A Practical Algorithm. Acta Appl.
+Math., 51:161–213, 1998.
+[13] M. Fels and P. J. Olver. Moving Coframes. II. Regularization and Theoretical
+Foundations. Acta Appl. Math., 55:127–208, 1999.
+[14] R. Fr¨oberg. An introduction to Gr¨obner bases. Pure and Applied Mathematics.
+John Wiley & Sons, Ltd., Chichester, 1997.
+[15] R. B. Gardner. The Method of Equivalence and its Applications. SIAM, Philadel-
+phia, 1989.
+[16] V. V Gorbatsevich, A. L. Onishchik, and E. B. Vinberg. Foundations of Lie
+Theory and Lie Transformations Groups. Springer, 1993.
+[17] P. Gordan and M. N¨other. Ueber die algebraischen Formen, deren Hesse’sche
+Determinate identisch verschwindet. Math. Ann., (10):547–568, 1876.
+[18] J. H. Grace and A. Young. The Algebra of Invariants. Cambridge Univ. Press,
+Cambridge, 1903.
+[19] M. L. Green. The moving frame, diﬀerential invariants and rigidity theorems for
+curves in homogeneous spaces. Duke Math. Journal, 45:735–779, 1978.
+[20] P. A. Griﬃths. On Cartan’s method of Lie groups as applied to uniqueness and
+existence questions in diﬀerential geometry. Duke Math. Journal, 41:775–814,
+1974.
+[21] G. Gurevich. Foundations of the theory of algebraic invariants. Noordhoﬀ, 1964.
+[22] W. C. Huﬀman. Polynomial invariants of ﬁnite linear groups of degree two. Can.
+J.Math., 32:317–330, 1980.
+
+BIBLIOGRAPHY
+112
+[23] N. Kamran. Contributions to the study of the equivalence problem of Elie Cartan
+and its applications to partial and ordinary diﬀerential equations. Acad. Roy.
+Belg. Cl. Sci. M´em. Collect. 8o(2), 45(7), 1989.
+[24] A. W. Knapp.
+Elliptic Curves.
+Mathematical Notes. Princeton Univ. Press,
+Princeton, 1992.
+[25] Kh. Kraft. Geometric methods in the theory of invariant. (Russian), translated
+from the second German edition by D. I. Panyushev. “Mir”, Moscow, 1987.
+[26] P. J. Olver. Applications of Lie Groups to Diﬀerential Equations. Springer, New
+York, 1986.
+[27] P. J. Olver. Equivalence Invariants and Symmetry. Cambridge University Press,
+Cambridge, 1995.
+[28] P. J. Olver. Classical Invariant Theory. Cambridge University Press, Cambridge,
+1999.
+[29] P. J. Olver. Moving frames and singularities of prolonged group actions on jet
+bundles. Selecta Math., 6:41–77, 2000.
+[30] L. V. Ovsiannikov. Group Analysis of Diﬀerential Equations. Academic Press,
+New York, 1982.
+[31] G. Sapiro and A. Tannenbaum. On aﬃne plane curve evolution. Journal of
+Functional Analysis, 119:79–120, 1994.
+[32] B. Sturmfels. Algorithms in Invariant Theory. Springer-Verlag, Vienna, 1993.
+[33] T. Tsujishita.
+On variation bicomplexes associated to diﬀerential equations.
+Osaka J. Math. 19, 2:311–363, 1982.
+[34] W. M. Tulczyjew. The Lagrange complex. Bull. Soc. Math., France, 105:419–431,
+1977.
+[35] E. B. Vinberg and V. L. Popov. Invariant theory. Algebraic geometry, 4, (Rus-
+sian). Itogi Nauki i Tekhniki, Akad. Nauk SSSR, VINITI, Moscow, 1989.
+
+BIBLIOGRAPHY
+113
+[36] A. M. Vinogradov. The C-spectral sequence, Lagrangian formalism, and conser-
+vation laws. I. The linear theory. J. Math. Anal. Appl., 100:1–40, 1984.
+

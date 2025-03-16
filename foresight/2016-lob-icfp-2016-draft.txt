@@ -1,0 +1,1556 @@
+Löb’s Theorem
+A functional pearl of dependently typed quining
+Jason Gross
+MIT CSAIL
+jgross@mit.edu
+Jack Gallagher
+Benya Fallenstein
+MIRI
+jack@gallabytes.com
+benya@intelligence.org
+Keywords
+Agda, Löb’s theorem, quine, self-reference, type the-
+ory
+Abstract
+Löb’s theorem states that to prove that a proposition is provable,
+it is sufﬁcient to prove the proposition under the assumption that
+it is provable. The Curry-Howard isomorphism identiﬁes formal
+proofs with abstract syntax trees of programs; Löb’s theorem thus
+implies, for total languages which validate it, that self-interpreters
+are impossible. We formalize a few variations of Löb’s theorem in
+Agda using an inductive-inductive encoding of terms indexed over
+types. We verify the consistency of our formalizations relative to
+Agda by giving them semantics via interpretation functions.
+1.
+Introduction
+If P’s answer is ‘Bad!’, Q will suddenly stop.
+But otherwise, Q will go back to the top,
+and start off again, looping endlessly back,
+till the universe dies and turns frozen and black.
+Excerpt from Scooping the Loop Snooper: A proof that the
+Halting Problem is undecidable (Pullum 2000)
+Löb’s theorem has a variety of applications, from providing an
+induction rule for program semantics involving a “later” opera-
+tor (Appel et al. 2007), to proving incompleteness of a logical the-
+ory as a trivial corollary, from acting as a no-go theorem for a large
+class of self-interpreters, to allowing robust cooperation in the Pris-
+oner’s Dilemma with Source Code (Barasz et al. 2014), and even
+in one case curing social anxiety (Yudkowsky 2014).
+In this paper, after introducing the content of Löb’s theorem,
+we will present in Agda three formalizations of type-theoretic lan-
+guages and prove Löb’s theorem in and about these languages:
+one that shows the theorem is admissible as an axiom in a wide
+range of situations, one which proves Löb’s theorem by assuming
+as an axiom the existence of quines (programs which output their
+own source code), and one which constructs the proof under even
+weaker assumptions; see section 5 for details.
+“What is Löb’s theorem, this versatile tool with wondrous ap-
+plications?” you may ask.
+Permission to make digital or hard copies of part or all of this work for personal or classroom use is granted without fee
+provided that copies are not made or distributed for proﬁt or commercial advantage and that copies bear this notice and
+the full citation on the ﬁrst page. Copyrights for components of this work owned by others than ACM must be honored.
+Abstracting with credit is permitted. To copy otherwise, to republish, to post on servers, or to redistribute to lists, contact
+the Owner/Author(s). Request permissions from permissions@acm.org or Publications Dept., ACM, Inc., fax +1 (212)
+869-0481.
+ICFP ’16
+September 19–21, 2016, Nara, Japan
+Copyright © 2016 held by owner/author(s). Publication rights licensed to ACM.
+ACM [to be supplied]...$15.00
+Consider the sentence “if this sentence is true, then you, dear
+reader, are the most awesome person in the world.” Suppose that
+this sentence is true. Then you are the most awesome person in the
+world. Since this is exactly what the sentence asserts, the sentence
+is true, and you are the most awesome person in the world. For
+those more comfortable with symbolic logic, we can let X be the
+statement “you, dear reader, are the most awesome person in the
+world”, and we can let A be the statement “if this sentence is true,
+then X”. Since we have that A and A \rightarrow X are the same, if we
+assume A, we are also assuming A \rightarrow X, and hence we have X.
+Thus since assuming A yields X, we have that A \rightarrow X. What went
+wrong?1
+It can be made quite clear that something is wrong; the more
+common form of this sentence is used to prove the existence of
+Santa Claus to logical children: considering the sentence “if this
+sentence is true, then Santa Claus exists”, we can prove that Santa
+Claus exists. By the same logic, though, we can prove that Santa
+Claus does not exist by considering the sentence “if this sentence
+is true, then Santa Claus does not exist.” Whether you consider it
+absurd that Santa Claus exist, or absurd that Santa Claus not exist,
+surely you will consider it absurd that Santa Claus both exist and
+not exist. This is known as Curry’s Paradox.
+The problem is that the phrase “this sentence is true” is not
+a valid mathematical assertion; no language can encode a truth
+predicate for itself (Tarski 1936). However, some languages can
+encode assertions about provability (Gödel 1931). In section 2, we
+will dig into the difference between truth predicates and provability
+predicates from a computational perspective. We will present an
+argument for the indeﬁnability of truth and for the deﬁnability of
+provability, which we hope will prove enlightening when we get to
+the formalization of Löb’s theorem itself.
+Now consider the sentence “if this sentence is provable, then
+Santa Claus exists.” To prove that that sentence is true, we suppose
+that it is provable. We must now show that Santa Claus exists. If
+provability implies truth, then the sentence is true, and thus Santa
+Claus exists. Hence, if we can assume that provability implies truth,
+then we can prove that the sentence is true. This, in a nutshell,
+is Löb’s theorem: to prove X, it sufﬁces to prove that X is true
+whenever X is provable. If we let \square X denote the assertion “X is
+provable,” then, symbolically, Löb’s theorem becomes:
+\square (\square X \rightarrow X) \rightarrow \square X.
+Note that Gödel’s incompleteness theorem follows trivially from
+Löb’s theorem: by instantiating X with a contradiction, we can see
+that it’s impossible for provability to imply truth for propositions
+which are not already true.
+1 Those unfamiliar with conditionals should note that the “if ... then ...”
+we use here is the logical “if”, where “if false then X” is always true, and
+not the counter-factual “if”.
+
+Logic
+Programming
+Set Theory
+Proposition
+Type
+Set of Proofs
+Proof
+Program
+Element
+Implication (\rightarrow )
+Function (\rightarrow )
+Function
+Conjunction (\wedge )
+Pairing (,)
+Cartesian Product (\times )
+Disjunction (\vee )
+Sum (+)
+Disjoint Union (\sqcup )
+Gödel codes
+ASTs
+—
+\square X \rightarrow X
+Interpreters
+—
+(In)completeness
+Halting problem
+—
+Table 1. The Curry-Howard Isomorphism between mathematical
+logic and functional programming
+Note that Löb’s theorem is speciﬁc to the formal system and to
+the notion of probability used. In particular, the formal system must
+be powerful enough to talk about which of its sentences are prov-
+able; examples of such formal systems include Peano Arithmetic,
+Martin–Löf Type Theory, and Gödel-Löb Modal Logic. In this pa-
+per, we ﬁx formal systems by formalizing them as object languages
+in Agda, and we ﬁx formalizations of provability in those systems
+by treating each formalized language as the metalanguage for some
+formalization of itself.
+2.
+Quines and the Curry–Howard Isomorphism
+Let us now return to the question we posed above: what went wrong
+with our original sentence? The answer is that self-reference with
+truth is impossible, and the clearest way we know to argue for this is
+via the Curry–Howard Isomorphism; in a particular technical sense,
+the problem is that self-reference with truth fails to terminate.
+The Curry–Howard Isomorphism establishes an equivalence be-
+tween types and propositions, between (well-typed, terminating,
+functional) programs and proofs. See Table 1 for some examples.
+Now we ask: what corresponds to a formalization of provability? A
+proof of P is a terminating functional program which is well-typed
+at the type corresponding to P. To assert that P is provable is to
+assert that the type corresponding to P is inhabited. Thus an encod-
+ing of a proof is an encoding of a program. Although mathemati-
+cians typically use Gödel codes to encode propositions and proofs,
+a more natural choice of encoding programs is abstract syntax trees
+(ASTs). In particular, a valid syntactic proof of a given (syntac-
+tic) proposition corresponds to a well-typed syntax tree for an in-
+habitant of the corresponding syntactic type. Other formalizations
+of self-representation of programs in programs abound (Church
+1940; Davies and Pfenning 2001; Geuvers 2014; Kiselyov 2012;
+Mogensen 2001; Pfenning and Lee 1991; Scott 1963; Altenkirch
+and Kaposi 2016; Berarducci and Böhm 1985; Brown and Palsberg
+2016).
+Note well that the type (\square X \rightarrow X) is the type of functions
+that take syntax trees and evaluate them; it is the type of an inter-
+preter or an unquoter.
+What is the computational equivalent of the sentence “If this
+sentence is provable, then X”? It will be something of the form
+“??? \rightarrow X”. As a warm-up, let’s look at a Python program that
+outputs its own source code.
+There are three genuinely distinct solutions, the ﬁrst of which is
+degenerate, and the second of which is cheeky. These solutions are:
+• The empty program, which outputs nothing.
+• The code print(open(\]\]file\]\], 'r').read()), which
+relies on the Python interpreter to get the source code of the
+program.
+• A program with a “template” which contains a copy of the
+source code of all of the program except for the template it-
+self, leaving a hole where the template should be. The pro-
+gram then substitutes a quoted copy of the template into the
+hole in the template itself. In code, we can use Python’s
+repr to get a quoted copy of the template, and we do sub-
+stitution using Python’s replacement syntax: for example,
+("foo \%s bar" \% "baz") becomes "foo baz bar". Our
+third solution, in code, is thus:
+T = 'T = \%s\textbackslash nprint(T \%\% repr(T))'
+print(T \% repr(T))
+The functional equivalent, which does not use assignment, and
+which we will be using later on in this paper, is:
+(lambda T: T \% repr(T))
+('(lambda T: T \%\% repr(T))\textbackslash n (\%s)')
+We can use this technique, known as quining (Hofstadter 1979;
+Kleene 1952), to describe self-referential programs.
+Suppose Python had a function \square that took a quoted repre-
+sentation of a Martin–Löf type (as a Python string), and returned
+a Python object representing the Martin–Löf type of ASTs of
+Martin–Löf programs inhabiting that type. Now consider the pro-
+gram
+\varphi = (lambda T: \square (T \% repr(T)))
+('(lambda T: \square (T \%\% repr(T)))\textbackslash n (\%s)')
+The variable \varphi evaluates to the type of ASTs of programs
+inhabiting the type corresponding to T \% repr(T), where T
+is '(lambda T: \square (T \%\% repr(T)))\textbackslash n (\%s)'. What Martin–
+Löf type does this string, T \% repr(T), represent? It represents
+\square (T \% repr(T)), of course. Hence \varphi is the type of syntax trees
+of programs that produce proofs of \varphi —-in other words, \varphi is a
+Henkin sentence.
+Taking it one step further, assume Python has a function
+Π(a, b) which takes two Python representations of Martin–Löf
+types and produces the Martin–Löf type (a \rightarrow b) of functions
+from a to b. If we also assume that these functions exist in the
+term language of string representations of Martin–Löf types, we
+can consider the function
+def Lob(X):
+T = '(lambda T: Π(\square (T \%\% repr(T)), X))(\%s)'
+\varphi = Π(\square (T \% repr(T)), X)
+return \varphi 
+What does Lob(X) return? It returns the type \varphi of abstract syn-
+tax trees of programs producing proofs that “if \varphi is provable, then
+X.” Concretely, Lob(\bot ) returns the type of programs which prove
+Martin–Löf type theory consistent, Lob(SantaClaus) returns the
+variant of the Santa Claus sentence that says “if this sentence is
+provable, then Santa Claus exists.”
+Let us now try producing the true Santa Claus sentence, the one
+that says “If this sentence is true, Santa Claus exists.” We need
+a function Eval which takes a string representing a Martin–Löf
+program, and evaluates it to produce a term. Consider the Python
+program
+def Tarski(X):
+T = '(lambda T: Π(Eval(T \%\% repr(T)), X)(\%s)'
+\varphi = Π(Eval(T \% repr(T)), X)
+return \varphi 
+Running Eval(T \% repr(T)) tries to produce a term that is
+the type of functions from Eval(T \% repr(T)) to X. Note that
+\varphi is itself the type of functions from Eval(T \% repr(T)) to X.
+
+If Eval(T \% repr(T)) could produce a term of type \varphi , then \varphi 
+would evaluate to the type \varphi \rightarrow X, giving us a bona ﬁde Santa
+Claus sentence. However, Eval(T \% repr(T)) attempts to pro-
+duce the type of functions from Eval(T \%
+repr(T)) to X by
+evaluating Eval(T \% repr(T)). This throws the function Tarski
+into an inﬁnite loop which never terminates. (Indeed, choosing
+X = \bot it’s trivial to show that there’s no way to write Eval such
+that Tarski halts, unless Martin–Löf type theory is inconsistent.)
+3.
+Abstract Syntax Trees for Dependent Type
+Theory
+The idea of formalizing a type of syntax trees which only permits
+well-typed programs is common in the literature (McBride 2010;
+Chapman 2009; Danielsson 2007). For example, here is a very
+simple (and incomplete) formalization with dependent function
+types (\Pi ), a unit type (\top ), an empty type (\bot ), and functions (\lambda ).
+We will use some standard data type declarations, which are
+provided for completeness in Appendix A.
+mutual
+infixl 2 _ \triangleleft _
+data Context : Set where
+\varepsilon : Context
+\] \triangleleft \] : (Γ : Context) \rightarrow Type Γ \rightarrow Context
+data Type : Context \rightarrow Set where
+`\top ' : \forall \{Γ\} \rightarrow Type Γ
+`\bot ' : \forall \{Γ\} \rightarrow Type Γ
+`Π' : \forall \{Γ\}
+\rightarrow (A : Type Γ) \rightarrow Type (Γ  \triangleleft A) \rightarrow Type Γ
+data Term : \{Γ : Context\} \rightarrow Type Γ \rightarrow Set where
+`tt' : \forall \{Γ\} \rightarrow Term \{Γ\} `\top '
+`\lambda ' : \forall \{Γ A B\} \rightarrow Term B \rightarrow Term \{Γ\} (`Π' A B)
+An easy way to check consistency of a syntactic theory which is
+weaker than the theory of the ambient proof assistant is to deﬁne an
+interpretation function, also commonly known as an unquoter, or a
+denotation function, from the syntax into the universe of types. This
+function gives a semantic model to the syntax. Here is an example
+of such a function:
+mutual
+J\]Kc : Context \rightarrow Set
+J \varepsilon Kc = \top 
+J Γ  \triangleleft T Kc = Σ J Γ Kc J T KT
+J\]KT : \forall \{Γ\}
+\rightarrow Type Γ \rightarrow J Γ Kc \rightarrow Set
+J `\top ' KT Γ\Downarrow = \top 
+J `\bot ' KT Γ\Downarrow = \bot 
+J `Π' A B KT Γ\Downarrow = (x : J A KT Γ\Downarrow ) \rightarrow J B KT (Γ\Downarrow , x)
+J\]Kt : \forall \{Γ T\}
+\rightarrow Term \{Γ\} T \rightarrow (Γ\Downarrow : J Γ Kc) \rightarrow J T KT Γ\Downarrow 
+J `tt' Kt Γ\Downarrow 
+= tt
+J `\lambda ' f Kt Γ\Downarrow x = J f Kt (Γ\Downarrow , x)
+Note that this interpretation function has an essential property
+that we will call locality: the interpretation of any given construc-
+tor does not require doing case analysis on any of its arguments.
+By contrast, one could imagine an interpretation function that in-
+terpreted function types differently depending on their domain and
+codomain; for example, one might interpret (`\bot ' `\rightarrow ' A) as \top ,
+or one might interpret an equality type differently at each type, as
+in Observational Type Theory (Altenkirch et al. 2007).
+4.
+This Paper
+In this paper, we make extensive use of this trick for validating
+models. In section 6, we formalize the simplest syntax that supports
+Löb’s theorem and prove it sound relative to Agda in 12 lines
+of code; the understanding is that this syntax could be extended
+to support basically anything you might want. We then present
+in section 7 an extended version of this solution, which supports
+enough operations that we can prove our syntax sound (consistent),
+incomplete, and nonempty. In a hundred lines of code, we prove
+Löb’s theorem in section 8 under the assumption that we are given
+a quine; this is basically the well-typed functional version of the
+program that uses open(\]\]file\]\], 'r').read(). After taking
+a digression for an application of Löb’s theorem to the prisoner’s
+dilemma in section 9, we sketch in section 10 our implementation
+of Löb’s theorem (code in the supplemental material) based on only
+the assumption that we can add a level of quotation to our syntax
+tree; this is the equivalent of letting the compiler implement repr,
+rather than implementing it ourselves. We close in section 11 with
+some discussion about avenues for removing the hard-coded repr.
+5.
+Prior Work
+There exist a number of implementations or formalizations of vari-
+ous ﬂavors of Löb’s theorem in the literature. Appel et al. use Löb’s
+theorem as an induction rule for program logics in Coq (Appel et al.
+2007). Piponi formalizes a rule with the same shape as Löb’s the-
+orem in Haskell, and uses it for, among other things, spreadsheet
+evaluation (Piponi 2006). Simmons and Toninho formalize a con-
+structive provability logic in Agda, and prove Löb’s theorem within
+that logic (Simmons and Toninho 2012).
+Gödel’s incompleteness theorems, easy corollaries to Löb’s the-
+orem, have been formally veriﬁed numerous times (Shankar 1986,
+1997; O’Connor 2005; Paulson 2015).
+To our knowledge, our twelve line proof is the shortest self-
+contained formally veriﬁed proof of the admissibility of Löb’s the-
+orem to date. We are not aware of other formally veriﬁed proofs of
+Löb’s theorem which interpret the modal \square operator as an induc-
+tively deﬁned type of syntax trees of proofs of a given theorem, as
+we do in this formalization, though presumably the modal \square op-
+erator Simmons and Toninho could be interpreted as such syntax
+trees. Finally, we are not aware of other work which uses the trick
+of talking about a local interpretation function (as described at the
+end of section 3) to talk about consistent extensions to classes of
+encodings of type theory.
+6.
+Trivial Encoding
+We begin with a language that supports almost nothing other than
+Löb’s theorem. We use \square T to denote the type of Terms of whose
+syntactic type is T. We use `\square ' T to denote the syntactic type
+corresponding to the type of (syntactic) terms whose syntactic type
+is T. For example, the type of a repr which operated on syntax
+trees would be \square T \rightarrow \square (`\square ' T).
+data Type : Set where
+\]`\rightarrow '\] : Type \rightarrow Type \rightarrow Type
+`\square ' : Type \rightarrow Type
+data \square : Type \rightarrow Set where
+L\"ob : \forall \{X\} \rightarrow \square (`\square ' X `\rightarrow ' X) \rightarrow \square X
+The only term supported by our term language is Löb’s theorem.
+We can prove this language consistent relative to Agda with an
+interpreter:
+
+J\]KT : Type \rightarrow Set
+J A `\rightarrow ' B KT = J A KT \rightarrow J B KT
+J `\square ' T KT = \square T
+J\]Kt : \forall \{T : Type\} \rightarrow \square T \rightarrow J T KT
+J L\"ob \square ‘X’\rightarrow X Kt = J \square ‘X’\rightarrow X Kt (L\"ob \square ‘X’\rightarrow X)
+To interpret Löb’s theorem applied to the syntax for a compiler f
+(\square `X'\rightarrow X in the code above), we interpret f, and then apply this
+interpretation to the constructor L\"ob applied to f.
+Finally, we tie it all together:
+l\"ob : \forall \{‘X’\} \rightarrow \square (`\square ' ‘X’ `\rightarrow ' ‘X’) \rightarrow J ‘X’ KT
+l\"ob f = J L\"ob f Kt
+This code is deceptively short, with all of the interesting work
+happening in the interpretation of L\"ob.
+What have we actually proven, here? It may seem as though
+we’ve proven absolutely nothing, or it may seem as though we’ve
+proven that Löb’s theorem always holds. Neither of these is the
+case. The latter is ruled out, for example, by the existence of an
+self-interpreter for F\omega (Brown and Palsberg 2016).2
+We have proven the following. Suppose you have a formaliza-
+tion of type theory which has a syntax for types, and a syntax for
+terms indexed over those types. If there is a “local explanation” for
+the system being sound, i.e., an interpretation function where each
+rule does not need to know about the full list of constructors, then
+it is consistent to add a constructor for Löb’s theorem to your syn-
+tax. This means that it is impossible to contradict Löb’s theorem
+no matter what (consistent) constructors you add. We will see in
+the next section how this gives incompleteness, and discuss in later
+sections how to prove Löb’s theorem, rather than simply proving
+that it is consistent to assume.
+7.
+Encoding with Soundness, Incompleteness,
+and Non-Emptiness
+By augmenting our representation with top (`\top ') and bottom
+(`\bot ') types, and a unique inhabitant of `\top ', we can prove sound-
+ness, incompleteness, and non-emptiness.
+data Type : Set where
+\]`\rightarrow '\] : Type \rightarrow Type \rightarrow Type
+`\square ' : Type \rightarrow Type
+`\top ' : Type
+`\bot ' : Type
+---- "\square " is sometimes written as "Term"
+data \square : Type \rightarrow Set where
+L\"ob : \forall \{X\} \rightarrow \square (`\square ' X `\rightarrow ' X) \rightarrow \square X
+`tt' : \square `\top '
+J\]KT : Type \rightarrow Set
+J A `\rightarrow ' B KT = J A KT \rightarrow J B KT
+J `\square ' T KT = \square T
+J `\top ' KT
+= \top 
+J `\bot ' KT
+= \bot 
+J\]Kt : \forall \{T : Type\} \rightarrow \square T \rightarrow J T KT
+2 One may wonder how exactly the self-interpreter for F\omega does not contra-
+dict this theorem. In private conversations with Matt Brown, we found that
+the F\omega self-interpreter does not have a separate syntax for types, instead
+indexing its terms over types in the metalanguage. This means that the type
+of Löb’s theorem becomes either \square (\square X \rightarrow X) \rightarrow \square X, which is not
+strictly positive, or \square (X \rightarrow X) \rightarrow \square X, which, on interpretation, must
+be ﬁlled with a general ﬁxpoint operator. Such an operator is well-known to
+be inconsistent.
+J L\"ob \square ‘X’\rightarrow X Kt = J \square ‘X’\rightarrow X Kt (L\"ob \square ‘X’\rightarrow X)
+J `tt' Kt = tt
+`\neg '\] : Type \rightarrow Type
+`\neg ' T = T `\rightarrow ' `\bot '
+l\"ob : \forall \{‘X’\} \rightarrow \square (`\square ' ‘X’ `\rightarrow ' ‘X’) \rightarrow J ‘X’ KT
+l\"ob f = J L\"ob f Kt
+---- There is no syntactic proof of absurdity
+soundness : \neg \square `\bot '
+soundness x = J x Kt
+---- but it would be absurd to have a syntactic
+---- proof of that fact
+incompleteness : \neg \square (`\neg ' (`\square ' `\bot '))
+incompleteness = l\"ob
+---- However, there are syntactic proofs of some
+---- things (namely \top )
+non-emptiness : \square `\top '
+non-emptiness = `tt'
+---- There are no syntactic interpreters, things
+---- which, at any type, evaluate code at that
+---- type to produce its result.
+no-interpreters : \neg (\forall \{‘X’\} \rightarrow \square (`\square ' ‘X’ `\rightarrow ' ‘X’))
+no-interpreters interp = l\"ob (interp \{`\bot '\})
+What is this incompleteness theorem? Gödel’s incompleteness
+theorem is typically interpreted as “there exist true but unprovable
+statements.” In intuitionistic logic, this is hardly surprising. A more
+accurate rendition of the theorem in Agda might be “there exist true
+but inadmissible statements,” i.e., there are statements which are
+provable meta-theoretically, but which lead to (meta-theoretically–
+provable) inconsistency if assumed at the object level.
+This may seem a bit esoteric, so let’s back up a bit, and make
+it more concrete. Let’s begin by banishing “truth”. Sometimes it is
+useful to formalize a notion of provability. For example, you might
+want to show neither assuming T nor assuming \neg T yields a proof
+of contradiction. You cannot phrase this is \neg T \wedge \neg \neg T, for that is
+absurd. Instead, you want to say something like (\neg \square T)\wedge \neg \square (\neg T),
+i.e., it would be absurd to have a proof object of either T or of \neg T.
+After a while, you might ﬁnd that meta-programming in this formal
+syntax is nice, and you might want it to be able to formalize every
+proof, so that you can do all of your solving reﬂectively. If you’re
+like us, you might even want to reason about the reﬂective tactics
+themselves in a reﬂective manner; you’d want to be able to add
+levels of quotation to quoted things to talk about such tactics.
+The incompleteness theorem, then, is this: your reﬂective sys-
+tem, no matter how powerful, cannot formalize every proof. For
+any ﬁxed language of syntactic proofs which is powerful enough
+to represent itself, there will always be some valid proofs that you
+cannot reﬂect into your syntax. In particular, you might be able to
+prove that your syntax has no proofs of \bot (by interpreting any such
+proof). But you’ll be unable to quote that proof. This is what the
+incompleteness theorem stated above says. Incompleteness, funda-
+mentally, is a result about the limitations of formalizing provability.
+8.
+Encoding with Quines
+We now weaken our assumptions further. Rather than assuming
+Löb’s theorem, we instead assume only a type-level quine in our
+representation. Recall that a quine is a program that outputs some
+function of its own source code. A type-level quine at \phi is program
+
+that outputs the result of evaluating the function \phi on the abstract
+syntax tree of its own type. Letting Quine \phi denote the construc-
+tor for a type-level quine at \phi , we have an isomorphism between
+Quine \phi and \phi \ulcorner Quine \phi \urcorner T, where \ulcorner Quine \phi \urcorner T is the ab-
+stract syntax tree for the source code of Quine \phi . Note that we
+assume constructors for “adding a level of quotation”, turning ab-
+stract syntax trees for programs of type T into abstract syntax trees
+for abstract syntax trees for programs of type T; this corresponds
+to repr.
+We begin with an encoding of contexts and types, repeating
+from above the constructors of ‘\rightarrow ’, ‘\square ’, ‘\top ’, and ‘\bot ’. We add to
+this a constructor for quines (Quine), and a constructor for syntax
+trees of types in the empty context (‘Type\varepsilon ’). Finally, rather than
+proving weakening and substitution as mutually recursive deﬁni-
+tions, we take the easier but more verbose route of adding construc-
+tors that allow adding and substituting extra terms in the context.
+Note that ‘\square ’ is now a function of the represented language, rather
+than a meta-level operator.
+Note that we use the inﬁx operator \]`'\] to denote substitution.
+mutual
+data Context : Set where
+\varepsilon : Context
+\] \triangleleft \] : (Γ : Context) \rightarrow Type Γ \rightarrow Context
+data Type : Context \rightarrow Set where
+\]`\rightarrow '\] : \forall \{Γ\} \rightarrow Type Γ \rightarrow Type Γ \rightarrow Type Γ
+`\top ' : \forall \{Γ\} \rightarrow Type Γ
+`\bot ' : \forall \{Γ\} \rightarrow Type Γ
+`Type\varepsilon ' : \forall \{Γ\} \rightarrow Type Γ
+`\square ' : \forall \{Γ\} \rightarrow Type (Γ  \triangleleft `Type\varepsilon ')
+Quine : Type (\varepsilon  \triangleleft `Type\varepsilon ') \rightarrow Type \varepsilon 
+W : \forall \{Γ A\}
+\rightarrow Type Γ \rightarrow Type (Γ  \triangleleft A)
+W1 : \forall \{Γ A B\}
+\rightarrow Type (Γ  \triangleleft B) \rightarrow Type (Γ  \triangleleft A  \triangleleft (W B))
+\]`'\] : \forall \{Γ A\}
+\rightarrow Type (Γ  \triangleleft A) \rightarrow Term A \rightarrow Type Γ
+In addition to ‘\lambda ’ and ‘tt’, we now have the AST-equivalents of
+Python’s repr, which we denote as \ulcorner \]\urcorner T for the type-level add-
+quote function, and \ulcorner \]\urcorner t for the term-level add-quote function. We
+add constructors quine\rightarrow and quine\leftarrow that exhibit the isomor-
+phism that deﬁnes our type-level quine constructor, though we elide
+a constructor declaring that these are inverses, as we found it un-
+necessary.
+To construct the proof of Löb’s theorem, we need a few other
+standard constructors, such as `VAR0', which references a term
+in the context; \]`'a\], which we use to denote function applica-
+tion; \]`\circ '\], a function composition operator; and `\ulcorner `VAR0'\urcorner t',
+the variant of `VAR0' which adds an extra level of syntax-trees. We
+also include a number of constructors that handle weakening and
+substitution; this allows us to avoid both inductive-recursive deﬁni-
+tions of weakening and substitution, and avoid deﬁning a judgmen-
+tal equality or conversion relation.
+data Term : \{Γ : Context\} \rightarrow Type Γ \rightarrow Set where
+`\lambda ' : \forall \{Γ A B\}
+\rightarrow Term \{Γ  \triangleleft A\} (W B) \rightarrow Term (A `\rightarrow ' B)
+`tt' : \forall \{Γ\}
+\rightarrow Term \{Γ\} `\top '
+\ulcorner \]\urcorner T : \forall \{Γ\} ---- type-level repr
+\rightarrow Type \varepsilon 
+\rightarrow Term \{Γ\} `Type\varepsilon '
+\ulcorner \]\urcorner t : \forall \{Γ T\} ---- term-level repr
+\rightarrow Term \{\varepsilon \} T
+\rightarrow Term \{Γ\} (`\square ' `' \ulcorner T \urcorner T)
+quine\rightarrow : \forall \{\phi \}
+\rightarrow Term \{\varepsilon \} (Quine \phi `\rightarrow ' \phi `' \ulcorner Quine \phi \urcorner T)
+quine\leftarrow : \forall \{\phi \}
+\rightarrow Term \{\varepsilon \} (\phi `' \ulcorner Quine \phi \urcorner T `\rightarrow ' Quine \phi )
+---- The constructors below here are for
+---- variables, weakening, and substitution
+`VAR0' : \forall \{Γ T\}
+\rightarrow Term \{Γ  \triangleleft T\} (W T)
+\]`'a\] : \forall \{Γ A B\}
+\rightarrow Term \{Γ\} (A `\rightarrow ' B)
+\rightarrow Term \{Γ\} A
+\rightarrow Term \{Γ\} B
+\]`\circ '\] : \forall \{Γ A B C\}
+\rightarrow Term \{Γ\} (B `\rightarrow ' C)
+\rightarrow Term \{Γ\} (A `\rightarrow ' B)
+\rightarrow Term \{Γ\} (A `\rightarrow ' C)
+`\ulcorner `VAR0'\urcorner t' : \forall \{T\}
+\rightarrow Term \{\varepsilon  \triangleleft `\square ' `' \ulcorner T \urcorner T\}
+(W (`\square ' `' \ulcorner `\square ' `' \ulcorner T \urcorner T \urcorner T))
+\rightarrow SW1SV\rightarrow W : \forall \{Γ T X A B\} \{x : Term \{Γ\} X\}
+\rightarrow Term (T `\rightarrow ' (W1 A `' `VAR0' `\rightarrow ' W B) `' x)
+\rightarrow Term (T `\rightarrow ' A `' x `\rightarrow ' B)
+\leftarrow SW1SV\rightarrow W : \forall \{Γ T X A B\} \{x : Term \{Γ\} X\}
+\rightarrow Term ((W1 A `' `VAR0' `\rightarrow ' W B) `' x `\rightarrow ' T)
+\rightarrow Term ((A `' x `\rightarrow ' B) `\rightarrow ' T)
+w : \forall \{Γ A T\} \rightarrow Term A \rightarrow Term \{Γ  \triangleleft T\} (W A)
+w\rightarrow : \forall \{Γ A B X\}
+\rightarrow Term \{Γ\} (A `\rightarrow ' B)
+\rightarrow Term \{Γ  \triangleleft X\} (W A `\rightarrow ' W B)
+\]w``''a\] : \forall \{A B T\}
+\rightarrow Term \{\varepsilon  \triangleleft T\} (W (`\square ' `' \ulcorner A `\rightarrow ' B \urcorner T))
+\rightarrow Term \{\varepsilon  \triangleleft T\} (W (`\square ' `' \ulcorner A \urcorner T))
+\rightarrow Term \{\varepsilon  \triangleleft T\} (W (`\square ' `' \ulcorner B \urcorner T))
+\square : Type \varepsilon \rightarrow Set \]
+\square = Term \{\varepsilon \}
+To verify the soundness of our syntax, we provide a model for
+it and an interpretation into that model. We call particular attention
+to the interpretation of `\square ', which is just Term \{\varepsilon \}; to Quine \phi ,
+which is the interpretation of \phi applied to Quine \phi ; and to the
+interpretations of the quine isomorphism functions, which are just
+the identity functions.
+max-level : Level
+max-level = lzero ---- also works for higher levels
+mutual
+J\]Kc : (Γ : Context) \rightarrow Set (lsuc max-level)
+J \varepsilon Kc = \top 
+J Γ  \triangleleft T Kc = Σ J Γ Kc J T KT
+J\]KT : \forall \{Γ\}
+\rightarrow Type Γ \rightarrow J Γ Kc \rightarrow Set max-level
+J `Type\varepsilon ' KT Γ\Downarrow = Lifted (Type \varepsilon )
+J `\square ' KT Γ\Downarrow = Lifted (Term \{\varepsilon \} (lower (snd Γ\Downarrow )))
+J Quine \phi KT Γ\Downarrow = J \phi KT (Γ\Downarrow , lift (Quine \phi ))
+---- The rest of the type-level interpretations
+---- are the obvious ones, if a bit obscured by
+---- carrying around the context.
+J A `\rightarrow ' B KT Γ\Downarrow = J A KT Γ\Downarrow \rightarrow J B KT Γ\Downarrow 
+J `\top ' KT Γ\Downarrow = \top 
+J `\bot ' KT Γ\Downarrow = \bot 
+
+J W T KT Γ\Downarrow = J T KT (fst Γ\Downarrow )
+J W1 T KT Γ\Downarrow = J T KT (fst (fst Γ\Downarrow ) , snd Γ\Downarrow )
+J T `' x KT Γ\Downarrow = J T KT (Γ\Downarrow , J x Kt Γ\Downarrow )
+J\]Kt : \forall \{Γ T\}
+\rightarrow Term \{Γ\} T \rightarrow (Γ\Downarrow : J Γ Kc) \rightarrow J T KT Γ\Downarrow 
+J \ulcorner x \urcorner T Kt Γ\Downarrow = lift x
+J \ulcorner x \urcorner t Kt Γ\Downarrow = lift x
+J quine\rightarrow Kt Γ\Downarrow x = x
+J quine\leftarrow Kt Γ\Downarrow x = x
+---- The rest of the term-level interpretations
+---- are the obvious ones, if a bit obscured by
+---- carrying around the context.
+J `\lambda ' f Kt Γ\Downarrow x = J f Kt (Γ\Downarrow , x)
+J `tt' Kt Γ\Downarrow = tt
+J `VAR0' Kt Γ\Downarrow = snd Γ\Downarrow 
+J `\ulcorner `VAR0'\urcorner t' Kt Γ\Downarrow = lift \ulcorner lower (snd Γ\Downarrow ) \urcorner t
+J g `\circ ' f Kt Γ\Downarrow x = J g Kt Γ\Downarrow (J f Kt Γ\Downarrow x)
+J f `'a x Kt Γ\Downarrow = J f Kt Γ\Downarrow (J x Kt Γ\Downarrow )
+J \leftarrow SW1SV\rightarrow W f Kt = J f Kt
+J \rightarrow SW1SV\rightarrow W f Kt = J f Kt
+J w x Kt Γ\Downarrow = J x Kt (fst Γ\Downarrow )
+J w\rightarrow f Kt Γ\Downarrow = J f Kt (fst Γ\Downarrow )
+J f w``''a x Kt Γ\Downarrow 
+= lift (lower (J f Kt Γ\Downarrow ) `'a lower (J x Kt Γ\Downarrow ))
+To prove Löb’s theorem, we must create the sentence “if this
+sentence is provable, then X”, and then provide and inhabitant
+of that type. We can deﬁne this sentence, which we call `H',
+as the type-level quine at the function \lambda v. \square v
+\rightarrow ‘X’. We
+can then convert back and forth between the types \square `H' and
+\square `H' \rightarrow `X' with our quine isomorphism functions, and a bit
+of quotation magic and function application gives us a term of
+type \square `H' \rightarrow \square `X'; this corresponds to the inference of the
+provability of Santa Claus’ existence from the assumption that
+the sentence is provable. We compose this with the assumption
+of Löb’s theorem, that \square `X' \rightarrow `X', to get a term of type
+\square `H' \rightarrow `X', i.e., a term of type `H'; this is the inference that
+when provability implies truth, Santa Claus exists, and hence that
+the sentence is provable. Finally, we apply this to its own quota-
+tion, obtaining a term of type \square `X', i.e., a proof that Santa Claus
+exists.
+module inner (‘X’ : Type \varepsilon )
+(‘f’ : Term \{\varepsilon \} (`\square ' `' \ulcorner ‘X’ \urcorner T `\rightarrow ' ‘X’))
+where
+`H' : Type \varepsilon 
+`H' = Quine (W1 `\square ' `' `VAR0' `\rightarrow ' W ‘X’)
+`toH' : \square ((`\square ' `' \ulcorner `H' \urcorner T `\rightarrow ' ‘X’) `\rightarrow ' `H')
+`toH' = \leftarrow SW1SV\rightarrow W quine\leftarrow 
+`fromH' : \square (`H' `\rightarrow ' (`\square ' `' \ulcorner `H' \urcorner T `\rightarrow ' ‘X’))
+`fromH' = \rightarrow SW1SV\rightarrow W quine\rightarrow 
+`\square `H'\rightarrow \square `X'' : \square (`\square ' `' \ulcorner `H' \urcorner T `\rightarrow ' `\square ' `' \ulcorner ‘X’ \urcorner T)
+`\square `H'\rightarrow \square `X''
+= `\lambda ' (w \ulcorner `fromH' \urcorner t
+w``''a `VAR0'
+w``''a `\ulcorner `VAR0'\urcorner t')
+`h' : Term `H'
+`h' = `toH' `'a (‘f’ `\circ ' `\square `H'\rightarrow \square `X'')
+XXXXXXXX
+B Says
+A Says
+Cooperate
+Defect
+Cooperate
+(1 year, 1 year)
+(0 years, 3 years)
+Defect
+(3 years, 0 years)
+(2 years, 2 years)
+Table 2. The payoff matrix for the prisoner’s dilemma; each cell
+contains (the years A spends in prison, the years B spends in
+prison).
+L\"ob : \square ‘X’
+L\"ob = `fromH' `'a `h' `'a \ulcorner `h' \urcorner t
+L\"ob : \forall \{X\} \rightarrow \square (`\square ' `' \ulcorner X \urcorner T `\rightarrow ' X) \rightarrow \square X
+L\"ob \{X\} f = inner.L\"ob X f
+J\]K : Type \varepsilon \rightarrow Set \]
+J T K = J T KT tt
+`\neg '\] : \forall \{Γ\} \rightarrow Type Γ \rightarrow Type Γ
+`\neg ' T = T `\rightarrow ' `\bot '
+l\"ob : \forall \{‘X’\} \rightarrow \square (`\square ' `' \ulcorner ‘X’ \urcorner T `\rightarrow ' ‘X’) \rightarrow J ‘X’ K
+l\"ob f = J\]Kt (L\"ob f) tt
+As above, we can again prove soundness, incompleteness, and
+non-emptiness.
+incompleteness : \neg \square (`\neg ' (`\square ' `' \ulcorner `\bot ' \urcorner T))
+incompleteness = l\"ob
+soundness : \neg \square `\bot '
+soundness x = J x Kt tt
+non-emptiness : Σ (Type \varepsilon ) (\lambda T \rightarrow \square T)
+non-emptiness = `\top ' , `tt'
+9.
+Digression: Application of Quining to The
+Prisoner’s Dilemma
+In this section, we use a slightly more enriched encoding of syntax;
+see Appendix B for details.
+9.1
+The Prisoner’s Dilemma
+The Prisoner’s Dilemma is a classic problem in game theory. Two
+people have been arrested as suspects in a crime and are being
+held in solitary conﬁnement, with no means of communication.
+The investigators offer each of them a plea bargain: a decreased
+sentence for ratting out the other person. Each suspect can then
+choose to either cooperate with the other suspect by remaining
+silent, or defect by ratting out the other suspect. The possible
+outcomes are summarized in Table 2.
+Suspect A might reason thusly: “Suppose the other suspect
+cooperates with me. Then I’d get off with no prison time if I
+defected, while I’d have to spend a year in prison if I cooperate.
+Similarly, if the other suspect defects, then I’d get two years in
+prison for defecting, and three for cooperating. In all cases, I do
+better by defecting.” If suspect B reasons similarly, then both
+decide to defect, and both get two years in prison, despite the
+fact that both prefer the (Cooperate, Cooperate) outcome over the
+(Defect, Defect) outcome!
+9.2
+Adding Source Code
+We have the intuition that if both suspects are good at reasoning,
+and both know that they’ll reason the same way, then they should
+
+be able to mutually cooperate. One way to formalize this is to
+talk about programs (rather than people) playing the prisoner’s
+dilemma, and to allow each program access to its own source code
+and its opponent’s source code (Barasz et al. 2014).
+We have formalized this framework in Agda: we use `Bot'
+to denote the type of programs that can play in such a prisoner’s
+dilemma; each one takes in source code for two `Bot's and outputs
+a proposition which is true (a type which is inhabited) if and only
+if it cooperates with its opponent. Said another way, the output of
+each bot is a proposition describing the assertion that it cooperates
+with its opponent.
+open lob
+---- `Bot' is defined as the fixed point of
+---- `Bot'
+---- \updownarrow (Term `Bot' \rightarrow Term `Bot' \rightarrow `Type')
+`Bot' : \forall \{Γ\} \rightarrow Type Γ
+`Bot' \{Γ\}
+= Quine (W1 `Term' `' `VAR0'
+`\rightarrow ' W1 `Term' `' `VAR0'
+`\rightarrow ' W (`Type' Γ))
+To construct an executable bot, we could do a bounded search
+for proofs of this proposition; one useful method described in
+(Barasz et al. 2014) is to use Kripke frames. This computation is,
+however, beyond the scope of this paper.
+The assertion that a bot b1 cooperates with a bot b2 is the result
+of interpreting the source code for the bot, and feeding the resulting
+function the source code for b1 and b2.
+---- N.B. "\square " means "Term \{\varepsilon \}", i.e., a term in
+---- the empty context
+\]cooperates-with\] : \square `Bot' \rightarrow \square `Bot' \rightarrow Type \varepsilon 
+b1 cooperates-with b2 = lower (J b1 Kt tt (lift b1) (lift b2))
+We now provide a convenience constructor for building bots,
+based on the deﬁnition of quines, and present three relatively simple
+bots: DefectBot, CooperateBot, and FairBot.
+make-bot : \forall \{Γ\}
+\rightarrow Term \{Γ  \triangleleft `\square ' `Bot'  \triangleleft W (`\square ' `Bot')\}
+(W (W (`Type' Γ)))
+\rightarrow Term \{Γ\} `Bot'
+make-bot t
+= \leftarrow SW1SV\rightarrow SW1SV\rightarrow W
+quine\leftarrow `'a `\lambda ' (\rightarrow w (`\lambda ' t))
+`DefectBot' : \square `Bot'
+`CooperateBot' : \square `Bot'
+`FairBot'
+: \square `Bot'
+The ﬁrst two bots are very simple: DefectBot never cooperates
+(the assertion that DefectBot cooperates is a contradiction), while
+CooperateBot always cooperates. We deﬁne these bots, and prove
+that DefectBot never cooperates and CooperateBot always cooper-
+ates.
+`DefectBot' = make-bot (w (w \ulcorner `\bot ' \urcorner T))
+`CooperateBot' = make-bot (w (w \ulcorner `\top ' \urcorner T))
+DB-defects : \forall \{b\}
+\rightarrow \neg J `DefectBot' cooperates-with b K
+DB-defects \{b\} pf = pf
+CB-cooperates : \forall \{b\}
+\rightarrow J `CooperateBot' cooperates-with b K
+CB-cooperates \{b\} = tt
+We can do better than DefectBot, though, now that we have
+source code. FairBot cooperates with you if and only if it can ﬁnd a
+proof that you cooperate with FairBot. By Löb’s theorem, to prove
+that FairBot cooperates with itself, it sufﬁces to prove that if there
+is a proof that FairBot cooperates with itself, then FairBot does, in
+fact, cooperate with itself. This is obvious, though: FairBot decides
+whether or not to cooperate with itself by searching for a proof that
+it does, in fact, cooperate with itself.
+To deﬁne FairBot, we ﬁrst deﬁne what it means for the other bot
+to cooperate with some particular bot.
+---- We can "evaluate" a bot to turn it into a
+---- function accepting the source code of two
+---- bots.
+`eval-bot' : \forall \{Γ\}
+\rightarrow Term \{Γ\} (`Bot'
+`\rightarrow ' (`\square ' `Bot' `\rightarrow ' `\square ' `Bot' `\rightarrow ' `Type' Γ))
+`eval-bot' = \rightarrow SW1SV\rightarrow SW1SV\rightarrow W quine\rightarrow 
+---- We can quote this, and get a function that
+---- takes the source code for a bot, and
+---- outputs the source code for a function that
+---- takes (the source code for) that bot's
+---- opponent, and returns an assertion of
+---- cooperation with that opponent
+``eval-bot'' : \forall \{Γ\}
+\rightarrow Term \{Γ\} (`\square ' `Bot'
+`\rightarrow ' `\square ' (\{- other -\} `\square ' `Bot' `\rightarrow ' `Type' Γ))
+``eval-bot''
+= `\lambda ' (w \ulcorner `eval-bot' \urcorner t
+w``''a `VAR0'
+w``''a `\ulcorner `VAR0'\urcorner t')
+---- The assertion "our opponent cooperates with
+---- a bot b" is equivalent to the evaluation of
+---- our opponent, applied to b. Most of the
+---- noise in this statement is manipulation of
+---- weakening and substitution.
+`other-cooperates-with' : \forall \{Γ\}
+\rightarrow Term \{Γ
+ \triangleleft `\square ' `Bot'
+ \triangleleft W (`\square ' `Bot')\}
+(W (W (`\square ' `Bot')) `\rightarrow ' W (W (`\square ' (`Type' Γ))))
+`other-cooperates-with' \{Γ\}
+= `eval-other''
+`\circ ' w\rightarrow (w (w\rightarrow (w (`\lambda ' `\ulcorner `VAR0'\urcorner t'))))
+where
+`eval-other'
+: Term \{Γ  \triangleleft `\square ' `Bot'  \triangleleft W (`\square ' `Bot')\}
+(W (W (`\square ' (`\square ' `Bot' `\rightarrow ' `Type' Γ))))
+`eval-other'
+= w\rightarrow (w (w\rightarrow (w ``eval-bot''))) `'a `VAR0'
+`eval-other''
+: Term (W (W (`\square ' (`\square ' `Bot')))
+`\rightarrow ' W (W (`\square ' (`Type' Γ))))
+`eval-other''
+= ww\rightarrow (w\rightarrow (w (w\rightarrow (w ``'a'))) `'a `eval-other')
+---- A bot gets its own source code as the first
+---- argument (of two)
+`self' : \forall \{Γ\}
+\rightarrow Term \{Γ  \triangleleft `\square ' `Bot'  \triangleleft W (`\square ' `Bot')\}
+(W (W (`\square ' `Bot')))
+`self' = w `VAR0'
+
+---- A bot gets its opponent's source code as
+---- the second argument (of two)
+`other' : \forall \{Γ\}
+\rightarrow Term \{Γ  \triangleleft `\square ' `Bot'  \triangleleft W (`\square ' `Bot')\}
+(W (W (`\square ' `Bot')))
+`other' = `VAR0'
+---- FairBot is the bot that cooperates iff its
+---- opponent cooperates with it
+`FairBot'
+= make-bot (``\square '' (`other-cooperates-with' `'a `self'))
+We leave the proof that this formalization of FairBot cooperates
+with itself as an exercise for the reader. In Appendix C, we present
+an alternative formalization with a simple proof that FairBot coop-
+erates with itself, but with no general deﬁnition of the type of bots;
+we relegate this code to an appendix so as to not confuse the reader
+by introducing a different way of handling contexts and weakening
+in the middle of this paper.
+10.
+Encoding with an Add-Quote Function
+Now we return to our proving of Löb’s theorem. Included in the
+artifact for this paper3 is code that replaces the Quine constructor
+with simpler constructors. Because the lack of \beta -reduction in the
+syntax clouds the main points and makes the code rather verbose,
+we do not include the code in the paper, and instead describe the
+most interesting and central points.
+Recall our Python quine from Table 2:
+(lambda T: Π(\square (T \% repr(T)), X))
+('(lambda T: Π(\square (T \%\% repr(T)), X))\textbackslash n (\%s)')
+To translate this into Agda, we need to give a type to T. Clearly,
+T needs to be of type Type ??? for some context ???. Since we
+need to be able to substitute something into that context, we must
+have T : Type (Γ  \triangleleft ???), i.e., T must be a syntax tree for a
+type, with a hole in it.
+What’s the shape of the thing being substituted? Well, it’s a
+syntax tree for a type with a hole in it. What shape does that hole
+have? The shape is that of a syntax tree with a hole in it. . . Uh-oh.
+Our quine’s type, naïvely, is inﬁnite!
+We know of two ways to work around this. Classical mathemat-
+ics, which uses Gödel codes instead of abstract syntax trees, uses
+an untyped representation of proofs. It’s only later in the proof of
+Löb’s theorem that a notion of a formula being “well-formed” is
+introduced.
+Here, we describe an alternate approach. Rather than giving up
+types all-together, we can “box” the type of the hole, to hide it.
+Using fst and snd to denote projections from a Σ type, using
+\ulcorner A \urcorner to denote the abstract syntax tree for A,4 and using \%s
+to denote the ﬁrst variable in the context (written as `VAR0' in
+previous formalizations above), we can write:
+dummy : Type (\varepsilon  \triangleleft \ulcorner Σ Context Type\urcorner )
+repr : Σ Context Type \rightarrow Term \{\varepsilon \} \ulcorner Σ Context Type\urcorner 
+cast-fst
+: Σ Context Type \rightarrow Type (\varepsilon  \triangleleft \ulcorner Σ Context Type\urcorner )
+cast-fst (\varepsilon  \triangleleft \ulcorner Σ Context Type\urcorner , T) = T
+cast-fst (\] , \]) = dummy
+3 In lob-build-quine.lagda.
+4 Note that \ulcorner \]\urcorner would not be a function in the language, but a meta-level
+operation.
+L\"obSentence : Type \varepsilon 
+L\"obSentence
+= (\lambda (T : Σ Context Type)
+\rightarrow \square (cast-fst T \% repr T) `\rightarrow ' X)
+( \varepsilon  \triangleleft \ulcorner Σ Context Type\urcorner 
+, \ulcorner (\lambda (T : Σ Context Type)
+\rightarrow \square (cast-fst T \% repr T) `\rightarrow ' X)
+(\%s) \urcorner 
+In this pseudo-Agda code, cast-fst unboxes the sentence that
+it gets, and returns it if it is the right type. Since the sentence is, in
+fact, always the right type, what we do in the other cases doesn’t
+matter.
+Summing up, the key ingredients to this construction are:
+• A type of syntactic terms indexed over a type of syntactic types
+(and contexts)
+• Decidable equality on syntactic contexts at a particular point (in
+particular, at Σ Context Type), with appropriate reduction on
+equal things
+Σ
+types, projections, and appropriate reduction on their projec-
+tions
+• Function types
+• A function repr which adds a level of quotation to any syntax
+tree
+• Syntax trees for all of the above
+In any formalization of dependent type theory with all of these
+ingredients, we can prove Löb’s theorem.
+11.
+Conclusion
+What remains to be done is formalizing Martin–Löf type theory
+without assuming repr and without assuming a constructor for
+the type of syntax trees (`Context', `Type', and `Term' or `\square '
+in our formalizations). We would instead support inductive types,
+and construct these operators as inductive types and as folds over
+inductive types.
+If you take away only three things from this paper, take away
+these:
+1. There will always be some true things which are not possible to
+say, no matter how good you are at talking in type theory about
+type theory.
+2. Giving meaning to syntax in a way that doesn’t use cases inside
+cases allows you to talk about when it’s okay to add new syntax.
+3. If believing in something is enough to make it true, then it
+already is. Dream big.
+A.
+Standard Data-Type Declarations
+open import Agda.Primitive public
+using (Level; _\sqcup _; lzero; lsuc)
+infixl 1 _, _
+infixr 2 _\times _
+infixl 1 _\equiv _
+record \top \{\ell \} : Set \ell where
+constructor tt
+data \bot \{\ell \} : Set \ell where
+\neg \] : \forall \{\ell \ell \prime \} \rightarrow Set \ell \rightarrow Set (\ell \sqcup \ell \prime )
+
+\neg \] \{\ell \} \{\ell \prime \} T = T \rightarrow \bot \{\ell \prime \}
+record Σ \{a p\} (A : Set a) (P : A \rightarrow Set p)
+: Set (a \sqcup p)
+where
+constructor \],\]
+field
+fst : A
+snd : P fst
+open Σ public
+data Lifted \{a b\} (A : Set a) : Set (b \sqcup a) where
+lift : A \rightarrow Lifted A
+lower : \forall \{a b A\} \rightarrow Lifted \{a\} \{b\} A \rightarrow A
+lower (lift x) = x
+\]\times \] : \forall \{\ell \ell \prime \} (A : Set \ell ) (B : Set \ell \prime ) \rightarrow Set (\ell \sqcup \ell \prime )
+A \times B = Σ A (\lambda _ \rightarrow B)
+data \]\equiv \] \{\ell \} \{A : Set \ell \} (x : A) : A \rightarrow Set \ell where
+refl : x \equiv x
+sym : \{A : Set\} \rightarrow \{x : A\} \rightarrow \{y : A\} \rightarrow x \equiv y \rightarrow y \equiv x
+sym refl = refl
+trans : \{A : Set\} \rightarrow \{x y z : A\} \rightarrow x \equiv y \rightarrow y \equiv z \rightarrow x \equiv z
+trans refl refl = refl
+transport : \forall \{A : Set\} \{x : A\} \{y : A\} \rightarrow (P : A \rightarrow Set)
+\rightarrow x \equiv y \rightarrow P x \rightarrow P y
+transport P refl v = v
+data List (A : Set) : Set where
+\varepsilon : List A
+\]::\] : A \rightarrow List A \rightarrow List A
+\]++\] : \forall \{A\} \rightarrow List A \rightarrow List A \rightarrow List A
+\varepsilon ++ ys = ys
+(x :: xs) ++ ys = x :: (xs ++ ys)
+B.
+Encoding of Löb’s Theorem for the Prisoner’s
+Dilemma
+module lob where
+infixl 2 _ \triangleleft _
+infixl 3 _‘’_
+infixr 1 _‘\rightarrow ’_
+infixr 1 _‘‘\rightarrow ’’_
+infixr 1 _‘“\rightarrow ”’_
+infixl 3 _‘’a_
+infixl 3 _w‘‘’’a_
+infixr 2 _‘\circ ’_
+infixr 2 _‘\times ’_
+infixr 2 _‘‘\times ’’_
+infixr 2 _w‘‘\times ’’_
+mutual
+data Context : Set where
+\varepsilon : Context
+\] \triangleleft \] : (Γ : Context) \rightarrow Type Γ \rightarrow Context
+data Type : Context \rightarrow Set where
+`\top ' : \forall \{Γ\} \rightarrow Type Γ
+`\bot ' : \forall \{Γ\} \rightarrow Type Γ
+\]`\rightarrow '\] : \forall \{Γ\} \rightarrow Type Γ \rightarrow Type Γ \rightarrow Type Γ
+\]`\times '\] : \forall \{Γ\} \rightarrow Type Γ \rightarrow Type Γ \rightarrow Type Γ
+`Type' : \forall Γ \rightarrow Type Γ
+`Term' : \forall \{Γ\} \rightarrow Type (Γ  \triangleleft `Type' Γ)
+Quine : \forall \{Γ\} \rightarrow Type (Γ  \triangleleft `Type' Γ) \rightarrow Type Γ
+W : \forall \{Γ A\} \rightarrow Type Γ \rightarrow Type (Γ  \triangleleft A)
+W1 : \forall \{Γ A B\}
+\rightarrow Type (Γ  \triangleleft B)
+\rightarrow Type (Γ  \triangleleft A  \triangleleft W B)
+\]`'\] : \forall \{Γ A\}
+\rightarrow Type (Γ  \triangleleft A)
+\rightarrow Term A
+\rightarrow Type Γ
+data Term : \{Γ : Context\} \rightarrow Type Γ \rightarrow Set where
+`tt' : \forall \{Γ\} \rightarrow Term \{Γ\} `\top '
+`\lambda ' : \forall \{Γ A B\}
+\rightarrow Term \{Γ  \triangleleft A\} (W B)
+\rightarrow Term (A `\rightarrow ' B)
+`VAR0' : \forall \{Γ T\} \rightarrow Term \{Γ  \triangleleft T\} (W T)
+\ulcorner \]\urcorner T : \forall \{Γ\}
+\rightarrow Type Γ
+\rightarrow Term \{Γ\} (`Type' Γ)
+\ulcorner \]\urcorner t : \forall \{Γ T\}
+\rightarrow Term \{Γ\} T
+\rightarrow Term \{Γ\} (`Term' `' \ulcorner T \urcorner T)
+`\ulcorner `VAR0'\urcorner t' : \forall \{Γ T\}
+\rightarrow Term \{Γ  \triangleleft `Term' `' \ulcorner T \urcorner T\}
+(W (`Term' `' \ulcorner `Term' `' \ulcorner T \urcorner T \urcorner T))
+`\ulcorner `VAR0'\urcorner T' : \forall \{Γ\}
+\rightarrow Term \{Γ  \triangleleft `Type' Γ\}
+(W (`Term' `' \ulcorner `Type' Γ \urcorner T))
+\]`'a\] : \forall \{Γ A B\}
+\rightarrow Term \{Γ\} (A `\rightarrow ' B)
+\rightarrow Term \{Γ\} A
+\rightarrow Term \{Γ\} B
+``\times ''' : \forall \{Γ\}
+\rightarrow Term \{Γ\} (`Type' Γ
+`\rightarrow ' `Type' Γ
+`\rightarrow ' `Type' Γ)
+quine\rightarrow : \forall \{Γ \varphi \}
+\rightarrow Term \{Γ\}
+(Quine \varphi `\rightarrow ' \varphi `' \ulcorner Quine \varphi \urcorner T)
+quine\leftarrow : \forall \{Γ \varphi \}
+\rightarrow Term \{Γ\}
+(\varphi `' \ulcorner Quine \varphi \urcorner T `\rightarrow ' Quine \varphi )
+SW : \forall \{Γ X A\} \{a : Term A\}
+\rightarrow Term \{Γ\} (W X `' a)
+\rightarrow Term X
+\rightarrow SW1SV\rightarrow W
+: \forall \{Γ T X A B\} \{x : Term X\}
+\rightarrow Term \{Γ\}
+(T `\rightarrow ' (W1 A `' `VAR0' `\rightarrow ' W B) `' x)
+\rightarrow Term \{Γ\}
+(T `\rightarrow ' A `' x `\rightarrow ' B)
+\leftarrow SW1SV\rightarrow W
+
+: \forall \{Γ T X A B\} \{x : Term X\}
+\rightarrow Term \{Γ\}
+((W1 A `' `VAR0' `\rightarrow ' W B) `' x `\rightarrow ' T)
+\rightarrow Term \{Γ\}
+((A `' x `\rightarrow ' B) `\rightarrow ' T)
+\rightarrow SW1SV\rightarrow SW1SV\rightarrow W
+: \forall \{Γ T X A B\} \{x : Term X\}
+\rightarrow Term \{Γ\} (T `\rightarrow ' (W1 A `' `VAR0'
+`\rightarrow ' W1 A `' `VAR0'
+`\rightarrow ' W B) `' x)
+\rightarrow Term \{Γ\} (T `\rightarrow ' A `' x `\rightarrow ' A `' x `\rightarrow ' B)
+\leftarrow SW1SV\rightarrow SW1SV\rightarrow W
+: \forall \{Γ T X A B\} \{x : Term X\}
+\rightarrow Term \{Γ\} ((W1 A `' `VAR0'
+`\rightarrow ' W1 A `' `VAR0'
+`\rightarrow ' W B) `' x
+`\rightarrow ' T)
+\rightarrow Term \{Γ\} ((A `' x `\rightarrow ' A `' x `\rightarrow ' B) `\rightarrow ' T)
+w : \forall \{Γ A T\}
+\rightarrow Term \{Γ\} A
+\rightarrow Term \{Γ  \triangleleft T\} (W A)
+w\rightarrow : \forall \{Γ A B X\}
+\rightarrow Term \{Γ  \triangleleft X\} (W (A `\rightarrow ' B))
+\rightarrow Term \{Γ  \triangleleft X\} (W A `\rightarrow ' W B)
+\rightarrow w : \forall \{Γ A B X\}
+\rightarrow Term \{Γ  \triangleleft X\} (W A `\rightarrow ' W B)
+\rightarrow Term \{Γ  \triangleleft X\} (W (A `\rightarrow ' B))
+ww\rightarrow : \forall \{Γ A B X Y\}
+\rightarrow Term \{Γ  \triangleleft X  \triangleleft Y\} (W (W (A `\rightarrow ' B)))
+\rightarrow Term \{Γ  \triangleleft X  \triangleleft Y\} (W (W A) `\rightarrow ' W (W B))
+\rightarrow ww : \forall \{Γ A B X Y\}
+\rightarrow Term \{Γ  \triangleleft X  \triangleleft Y\} (W (W A) `\rightarrow ' W (W B))
+\rightarrow Term \{Γ  \triangleleft X  \triangleleft Y\} (W (W (A `\rightarrow ' B)))
+\]`\circ '\] : \forall \{Γ A B C\}
+\rightarrow Term \{Γ\} (B `\rightarrow ' C)
+\rightarrow Term \{Γ\} (A `\rightarrow ' B)
+\rightarrow Term \{Γ\} (A `\rightarrow ' C)
+\]w``''a\] : \forall \{Γ A B T\}
+\rightarrow Term \{Γ  \triangleleft T\} (W (`Term' `' \ulcorner A `\rightarrow ' B \urcorner T))
+\rightarrow Term \{Γ  \triangleleft T\} (W (`Term' `' \ulcorner A \urcorner T))
+\rightarrow Term \{Γ  \triangleleft T\} (W (`Term' `' \ulcorner B \urcorner T))
+``'a' : \forall \{Γ A B\}
+\rightarrow Term \{Γ\} (`Term' `' \ulcorner A `\rightarrow ' B \urcorner T
+`\rightarrow ' `Term' `' \ulcorner A \urcorner T
+`\rightarrow ' `Term' `' \ulcorner B \urcorner T)
+``\square '' : \forall \{Γ A B\}
+\rightarrow Term \{Γ  \triangleleft A  \triangleleft B\}
+(W (W (`Term' `' \ulcorner `Type' Γ \urcorner T)))
+\rightarrow Term \{Γ  \triangleleft A  \triangleleft B\}
+(W (W (`Type' Γ)))
+\]``\rightarrow ''\] : \forall \{Γ\}
+\rightarrow Term \{Γ\} (`Type' Γ)
+\rightarrow Term \{Γ\} (`Type' Γ)
+\rightarrow Term \{Γ\} (`Type' Γ)
+\]```\rightarrow '''\] : \forall \{Γ A B\}
+\rightarrow Term \{Γ  \triangleleft A  \triangleleft B\}
+(W (W (`Term' `' \ulcorner `Type' Γ \urcorner T)))
+\rightarrow Term \{Γ  \triangleleft A  \triangleleft B\}
+(W (W (`Term' `' \ulcorner `Type' Γ \urcorner T)))
+\rightarrow Term \{Γ  \triangleleft A  \triangleleft B\}
+(W (W (`Term' `' \ulcorner `Type' Γ \urcorner T)))
+\]```\times '''\] : \forall \{Γ A B\}
+\rightarrow Term \{Γ  \triangleleft A  \triangleleft B\}
+(W (W (`Term' `' \ulcorner `Type' Γ \urcorner T)))
+\rightarrow Term \{Γ  \triangleleft A  \triangleleft B\}
+(W (W (`Term' `' \ulcorner `Type' Γ \urcorner T)))
+\rightarrow Term \{Γ  \triangleleft A  \triangleleft B\}
+(W (W (`Term' `' \ulcorner `Type' Γ \urcorner T)))
+\square : Type \varepsilon \rightarrow Set \]
+\square = Term \{\varepsilon \}
+`\square ' : \forall \{Γ\} \rightarrow Type Γ \rightarrow Type Γ
+`\square ' T = `Term' `' \ulcorner T \urcorner T
+\]``\times ''\] : \forall \{Γ\}
+\rightarrow Term \{Γ\} (`Type' Γ)
+\rightarrow Term \{Γ\} (`Type' Γ)
+\rightarrow Term \{Γ\} (`Type' Γ)
+A ``\times '' B = ``\times ''' `'a A `'a B
+max-level : Level
+max-level = lzero
+mutual
+J\]Kc : (Γ : Context) \rightarrow Set (lsuc max-level)
+J \varepsilon Kc = \top 
+J Γ  \triangleleft T Kc = Σ J Γ Kc J T KT
+J\]KT : \{Γ : Context\}
+\rightarrow Type Γ
+\rightarrow J Γ Kc
+\rightarrow Set max-level
+J W T KT JΓK
+= J T KT (Σ.fst JΓK)
+J W1 T KT JΓK
+= J T KT (Σ.fst (Σ.fst JΓK) , Σ.snd JΓK)
+J T `' x KT JΓK = J T KT (JΓK , J x Kt JΓK)
+J `Type' Γ KT JΓK
+= Lifted (Type Γ)
+J `Term' KT JΓK
+= Lifted (Term (lower (Σ.snd JΓK)))
+J A `\rightarrow ' B KT JΓK = J A KT JΓK \rightarrow J B KT JΓK
+J A `\times ' B KT JΓK = J A KT JΓK \times J B KT JΓK
+J `\top ' KT JΓK = \top 
+J `\bot ' KT JΓK = \bot 
+J Quine \varphi KT JΓK = J \varphi KT (JΓK , (lift (Quine \varphi )))
+J\]Kt : \forall \{Γ : Context\} \{T : Type Γ\}
+\rightarrow Term T
+\rightarrow (JΓK : J Γ Kc)
+\rightarrow J T KT JΓK
+J \ulcorner x \urcorner T Kt JΓK = lift x
+J \ulcorner x \urcorner t Kt JΓK = lift x
+J `\ulcorner `VAR0'\urcorner t' Kt JΓK
+= lift \ulcorner lower (Σ.snd JΓK) \urcorner t
+J `\ulcorner `VAR0'\urcorner T' Kt JΓK
+= lift \ulcorner lower (Σ.snd JΓK) \urcorner T
+J f `'a x Kt JΓK = J f Kt JΓK (J x Kt JΓK)
+J `tt' Kt JΓK = tt
+J quine\rightarrow \{\varphi \} Kt JΓK x = x
+
+J quine\leftarrow \{\varphi \} Kt JΓK x = x
+J `\lambda ' f Kt JΓK x = J f Kt (JΓK , x)
+J `VAR0' Kt JΓK = Σ.snd JΓK
+J SW t Kt = J t Kt
+J \leftarrow SW1SV\rightarrow W f Kt = J f Kt
+J \rightarrow SW1SV\rightarrow W f Kt = J f Kt
+J \leftarrow SW1SV\rightarrow SW1SV\rightarrow W f Kt = J f Kt
+J \rightarrow SW1SV\rightarrow SW1SV\rightarrow W f Kt = J f Kt
+J w x Kt JΓK = J x Kt (Σ.fst JΓK)
+J w\rightarrow f Kt JΓK = J f Kt JΓK
+J \rightarrow w f Kt JΓK = J f Kt JΓK
+J ww\rightarrow f Kt JΓK = J f Kt JΓK
+J \rightarrow ww f Kt JΓK = J f Kt JΓK
+J ``\times ''' Kt JΓK A B = lift (lower A `\times ' lower B)
+J g `\circ ' f Kt JΓK x = J g Kt JΓK (J f Kt JΓK x)
+J f w``''a x Kt JΓK
+= lift (lower (J f Kt JΓK) `'a lower (J x Kt JΓK))
+J ``'a' Kt JΓK f x
+= lift (lower f `'a lower x)
+J ``\square '' \{Γ\} T Kt JΓK
+= lift (`Term' `' lower (J T Kt JΓK))
+J A ``\rightarrow '' B Kt JΓK
+= lift
+(lower (J A Kt JΓK) `\rightarrow ' lower (J B Kt JΓK))
+J A ```\rightarrow ''' B Kt JΓK
+= lift
+(lower (J A Kt JΓK) ``\rightarrow '' lower (J B Kt JΓK))
+J A ```\times ''' B Kt JΓK
+= lift
+(lower (J A Kt JΓK) ``\times '' lower (J B Kt JΓK))
+module inner (‘X’ : Type \varepsilon )
+(‘f’ : Term \{\varepsilon \} (`\square ' ‘X’ `\rightarrow ' ‘X’))
+where
+`H' : Type \varepsilon 
+`H' = Quine (W1 `Term' `' `VAR0' `\rightarrow ' W ‘X’)
+`toH' : \square ((`\square ' `H' `\rightarrow ' ‘X’) `\rightarrow ' `H')
+`toH' = \leftarrow SW1SV\rightarrow W quine\leftarrow 
+`fromH' : \square (`H' `\rightarrow ' (`\square ' `H' `\rightarrow ' ‘X’))
+`fromH' = \rightarrow SW1SV\rightarrow W quine\rightarrow 
+`\square `H'\rightarrow \square `X'' : \square (`\square ' `H' `\rightarrow ' `\square ' ‘X’)
+`\square `H'\rightarrow \square `X''
+= `\lambda ' (w \ulcorner `fromH' \urcorner t
+w``''a `VAR0'
+w``''a `\ulcorner `VAR0'\urcorner t')
+`h' : Term `H'
+`h' = `toH' `'a (‘f’ `\circ ' `\square `H'\rightarrow \square `X'')
+L\"ob : \square ‘X’
+L\"ob = `fromH' `'a `h' `'a \ulcorner `h' \urcorner t
+L\"ob : \forall \{X\}
+\rightarrow Term \{\varepsilon \} (`\square ' X `\rightarrow ' X) \rightarrow Term \{\varepsilon \} X
+L\"ob \{X\} f = inner.L\"ob X f
+J\]K : Type \varepsilon \rightarrow Set \]
+J T K = J T KT tt
+`\neg '\] : \forall \{Γ\} \rightarrow Type Γ \rightarrow Type Γ
+`\neg ' T = T `\rightarrow ' `\bot '
+\]w``\times ''\] : \forall \{Γ X\}
+\rightarrow Term \{Γ  \triangleleft X\} (W (`Type' Γ))
+\rightarrow Term \{Γ  \triangleleft X\} (W (`Type' Γ))
+\rightarrow Term \{Γ  \triangleleft X\} (W (`Type' Γ))
+A w``\times '' B = w\rightarrow (w\rightarrow (w ``\times ''') `'a A) `'a B
+l\"ob : \forall \{‘X’\} \rightarrow \square (`\square ' ‘X’ `\rightarrow ' ‘X’) \rightarrow J ‘X’ K
+l\"ob f = J L\"ob f Kt tt
+incompleteness : \neg \square (`\neg ' (`\square ' `\bot '))
+incompleteness = l\"ob
+soundness : \neg \square `\bot '
+soundness x = J x Kt tt
+non-emptiness : Σ (Type \varepsilon ) (\lambda T \rightarrow \square T)
+non-emptiness = `\top ' , `tt'
+C.
+Proving that FairBot Cooperates with Itself
+We begin with the deﬁnitions of a few particularly useful dependent
+combinators:
+\]\circ \] : \forall \{A : Set\}
+\{B : A \rightarrow Set\}
+\{C : \{x : A\} \rightarrow B x \rightarrow Set\}
+\rightarrow (\{x : A\} (y : B x) \rightarrow C y)
+\rightarrow (g : (x : A) \rightarrow B x) (x : A)
+\rightarrow C (g x)
+f \circ g = \lambda x \rightarrow f (g x)
+infixl 8 _s_
+\]s\] : \forall \{A : Set\}
+\{B : A \rightarrow Set\}
+\{C : (x : A) \rightarrow B x \rightarrow Set\}
+\rightarrow ((x : A) (y : B x) \rightarrow C x y)
+\rightarrow (g : (x : A) \rightarrow B x) (x : A)
+\rightarrow C x (g x)
+f s g = \lambda x \rightarrow f x (g x)
+k : \{A B : Set\} \rightarrow A \rightarrow B \rightarrow A
+k a b = a
+\textasciicircum : \forall \{S : Set\} \{T : S \rightarrow Set\} \{P : Σ S T \rightarrow Set\}
+\rightarrow ((\sigma : Σ S T) \rightarrow P \sigma )
+\rightarrow (s : S) (t : T s) \rightarrow P (s , t)
+\textasciicircum f s t = f (s , t)
+It turns out that we can deﬁne all the things we need for proving
+self-cooperation of FairBot in a variant of the simply typed lambda
+calculus (STLC). In order to do this, we do not index types over
+contexts. Rather than using Term \{Γ\} T, we will denote the type
+of terms in context Γ of type T as Γ \vdash T, the standard notation for
+“provability”. Since our types are no longer indexed over contexts,
+we can represent a context as a list of types.
+infixr 5 _\vdash _ _‘\vdash ’_
+infixr 10 _‘\rightarrow ’_ _‘\times ’_
+data Type : Set where
+
+\]`\vdash '\] : List Type \rightarrow Type \rightarrow Type
+\]`\rightarrow '\] \]`\times '\] : Type \rightarrow Type \rightarrow Type
+`\bot ' `\top ' : Type
+Context = List Type
+We will then need some way to handle binding. For simplicity,
+we’ll make use of a dependent form of DeBrujin variables.
+data \]\in \] (T : Type) : Context \rightarrow Set where
+First we want our “variable zero”, which lets us pick off the
+“top” element of the context.
+top : \forall \{Γ\} \rightarrow T \in (T :: Γ)
+Then we want a way to extend variables to work in larger
+contexts.
+pop : \forall \{Γ S\} \rightarrow T \in Γ \rightarrow T \in (S :: Γ)
+And, ﬁnally, we are ready to deﬁne the term language for our
+extended STLC.
+data \]\vdash \] (Γ : Context) : Type \rightarrow Set where
+The next few constructors are fairly standard. Before anything
+else, we want to be able to lift bindings into terms.
+var : \forall \{T\} \rightarrow T \in Γ \rightarrow Γ \vdash T
+Then the intro rules for all of our easier datatypes.
+<> : Γ \vdash `\top '
+\],\] : \forall \{A B\} \rightarrow Γ \vdash A \rightarrow Γ \vdash B \rightarrow Γ \vdash A `\times ' B
+`\bot '-elim : \forall \{A\} \rightarrow Γ \vdash `\bot ' \rightarrow Γ \vdash A
+\pi 1 : \forall \{A B\} \rightarrow Γ \vdash A `\times ' B \rightarrow Γ \vdash A
+\pi 2 : \forall \{A B\} \rightarrow Γ \vdash A `\times ' B \rightarrow Γ \vdash B
+`\lambda ' : \forall \{A B\} \rightarrow (A :: Γ) \vdash B \rightarrow Γ \vdash (A `\rightarrow ' B)
+\]`'a\] : \forall \{A B\} \rightarrow Γ \vdash (A `\rightarrow ' B) \rightarrow Γ \vdash A \rightarrow Γ \vdash B
+At this point things become more delicate. To properly capture
+Gödel–Löb modal logic, abbreviated as GL, we want our theory to
+validate the rules
+1. \vdash A \rightarrow \vdash \square A
+2. \vdash \square A `\rightarrow ' \square \square A
+However, it should not validate \vdash A `\rightarrow ' \square A. If we only had
+the unary \square operator we would run into difﬁculty later. Crucially,
+we couldn’t add the rule Γ \vdash A \rightarrow Γ \vdash \square A, since this would
+let us prove A `\rightarrow ' \square A.
+We will use Gödel quotes to denote the constructor correspond-
+ing to rule 1:
+\ulcorner \]\urcorner : \forall \{\Delta A\} \rightarrow \Delta \vdash A \rightarrow Γ \vdash (\Delta `\vdash ' A)
+Similarly, we will write the rule validating \square A `\rightarrow ' \square \square A
+as repr.
+repr : \forall \{\Delta A\} \rightarrow Γ \vdash (\Delta `\vdash ' A) \rightarrow Γ \vdash (\Delta `\vdash ' (\Delta `\vdash ' A))
+We would like to be able to apply functions under \square , and for
+this we introduce the so-called “distribution” rule. In GL, it takes
+the form \vdash \square (A `\rightarrow ' B) \rightarrow \vdash (\square A `\rightarrow ' \square B). For us it
+is not much more complicated.
+dist : \forall \{\Delta A B\}
+\rightarrow Γ \vdash (\Delta `\vdash ' (A `\rightarrow ' B))
+\rightarrow Γ \vdash (\Delta `\vdash ' A)
+\rightarrow Γ \vdash (\Delta `\vdash ' B)
+And, ﬁnally, we include the Löbian axiom.
+L\"ob : \forall \{\Delta A\}
+\rightarrow Γ \vdash (\Delta `\vdash ' ((\Delta `\vdash ' A) `\rightarrow ' A))
+\rightarrow Γ \vdash (\Delta `\vdash ' A)
+From these constructors we can prove the simpler form of the
+Löb rule.
+l\"ob : \forall \{Γ A\} \rightarrow Γ \vdash ((Γ `\vdash ' A) `\rightarrow ' A) \rightarrow Γ \vdash A
+l\"ob t = t `'a L\"ob \ulcorner t \urcorner 
+Of course, because we are using DeBrujin indices, before we
+can do too much we’ll need to give an account of lifting. Thank-
+fully, unlike when we were dealing with dependent type theory, we
+can deﬁne these computationally, and get for free all the congru-
+ences we had to add as axioms before.
+Our deﬁnition of weakening is unremarkable, and sufﬁciently
+simple that Agsy, Agda’s automatic proof-ﬁnder, was able to ﬁll in
+all of the code; we include it in the artifact and elide all but the type
+signature from the paper.
+lift-tm
+: \forall \{Γ A\} T \Delta \rightarrow (\Delta ++ Γ) \vdash A \rightarrow (\Delta ++ (T :: Γ)) \vdash A
+Weakening is a special case of lift-tm.
+wk : \forall \{Γ A B\} \rightarrow Γ \vdash A \rightarrow (B :: Γ) \vdash A
+wk = lift-tm \] \varepsilon 
+Finally, we deﬁne function composition for our internal lan-
+guage.
+infixl 10 _\circ \prime _
+\]\circ '\] : \forall \{Γ A B C\}
+\rightarrow Γ \vdash (B `\rightarrow ' C)
+\rightarrow Γ \vdash (A `\rightarrow ' B)
+\rightarrow Γ \vdash (A `\rightarrow ' C)
+f \circ ' g = `\lambda ' (wk f `'a (wk g `'a var top))
+Now we are ready to prove that FairBot cooperates with itself.
+Sadly, our type system isn’t expressive enough to give a general
+type of bots, but we can still prove things about the interactions of
+particular bots if we substitute their types by hand. For example, we
+can state the desired theorem (that FairBot cooperates with itself)
+as:
+distf : \forall \{Γ \Delta A B\}
+\rightarrow Γ \vdash (\Delta `\vdash ' A `\rightarrow ' B)
+\rightarrow Γ \vdash (\Delta `\vdash ' A) `\rightarrow ' (\Delta `\vdash ' B)
+distf bf = `\lambda ' (dist (wk bf) (var top))
+evf : \forall \{Γ \Delta A\}
+\rightarrow Γ \vdash (\Delta `\vdash ' A) `\rightarrow ' (\Delta `\vdash ' (\Delta `\vdash ' A))
+evf = `\lambda ' (repr (var top))
+fb-fb-cooperate : \forall \{Γ A B\}
+\rightarrow Γ \vdash (Γ `\vdash ' A) `\rightarrow ' B
+\rightarrow Γ \vdash (Γ `\vdash ' B) `\rightarrow ' A
+\rightarrow Γ \vdash (A `\times ' B)
+fb-fb-cooperate a b
+= l\"ob (b \circ ' distf \ulcorner a \urcorner \circ ' evf)
+, l\"ob (a \circ ' distf \ulcorner b \urcorner \circ ' evf)
+We can also state the theorem in a more familiar form with a
+couple abbreviations
+`\square ' = \]`\vdash '\] \varepsilon 
+\square = \]\vdash \] \varepsilon 
+fb-fb-cooperate' : \forall \{A B\}
+\rightarrow \square (`\square ' A `\rightarrow ' B)
+\rightarrow \square (`\square ' B `\rightarrow ' A)
+\rightarrow \square (A `\times ' B)
+fb-fb-cooperate' = fb-fb-cooperate
+In the ﬁle fair-bot-self-cooperates.lagda in the artifact,
+we show all the meta-theoretic properties we had before: sound-
+ness, inhabitedness, and incompleteness.
+Acknowledgments
+We would like to thank Patrick LaVictoire for facilitating the work-
+shop where most of the initial ideas originated, Matt Brown for
+helping us discover the reason that the self-interpreter for F\omega 
+doesn’t contradict this formalization of Löb’s theorem, and Nate
+Soares, Adam Chlipala, and Miëtek Bak for their timely and in-
+valuable suggestions on the writing of this paper.
+
+References
+T. Altenkirch and A. Kaposi. Type theory in type theory using quotient
+inductive types. In POPL ’16 The 43rd Annual ACM SIGPLAN-SIGACT
+Symposium on Principles of Programming Languages. ACM, 2016.
+URL http://eprints.nottingham.ac.uk/31169/.
+T. Altenkirch, C. McBride, and W. Swierstra.
+Observational equality,
+now!
+In Proceedings of the 2007 Workshop on Programming Lan-
+guages Meets Program Veriﬁcation, PLPV ’07, pages 57–68, New York,
+NY, USA, 2007. ACM.
+ISBN 978-1-59593-677-6.
+doi: 10.1145/
+1292597.1292608.
+URL http://www.cs.nott.ac.uk/\textasciitilde psztxa/
+publ/obseqnow.pdf.
+A. W. Appel, P.-A. Mellies, C. D. Richards, and J. Vouillon.
+A very
+modal model of a modern, major, general type system. ACM SIGPLAN
+Notices, 42(1):109–122, 2007. URL https://www.cs.princeton.
+edu/\textasciitilde appel/papers/modalmodel.pdf.
+M. Barasz, P. Christiano, B. Fallenstein, M. Herreshoff, P. LaVictoire, and
+E. Yudkowsky. Robust cooperation in the prisoner’s dilemma: Program
+equilibrium via provability logic.
+ArXiv e-prints, Jan 2014.
+URL
+http://arxiv.org/pdf/1401.5577v1.pdf.
+A. Berarducci and C. Böhm.
+Automatic synthesis of typed \lambda -
+programs on term algebras.
+Theoretical Computer Science, 39
+(820076097):135–154, 1985.
+doi: 10.1016/0304-3975(85)90135-5.
+URL http://www.sciencedirect.com/science/article/pii/
+0304397585901355.
+M. Brown and J. Palsberg. Breaking through the normalization barrier: A
+self-interpreter for f-omega. In Proceedings of the 43rd Annual ACM
+SIGPLAN-SIGACT Symposium on Principles of Programming Lan-
+guages, pages 5–17. ACM, 2016. doi: 10.1145/2837614.2837623. URL
+http://compilers.cs.ucla.edu/popl16/popl16-full.pdf.
+J. Chapman.
+Type theory should eat itself.
+Electronic Notes in
+Theoretical Computer Science, 228:21–36, 2009.
+ISSN 1571-
+0661.
+doi: http://dx.doi.org/10.1016/j.entcs.2008.12.114.
+URL
+http://www.sciencedirect.com/science/article/pii/
+S157106610800577X. Proceedings of the International Workshop on
+Logical Frameworks and Metalanguages: Theory and Practice (LFMTP
+2008).
+A. Church.
+A formulation of the simple theory of types.
+The Journal
+of Symbolic Logic, 5(2):56–68, 1940. ISSN 00224812. URL http:
+//www.jstor.org/stable/2266170.
+N. A. Danielsson.
+A formalisation of a dependently typed language as
+an inductive-recursive family.
+In T. Altenkirch and C. McBride, ed-
+itors, Types for Proofs and Programs, volume 4502 of Lecture Notes
+in Computer Science, chapter A Formalisation of a Dependently Typed
+Language as an Inductive-Recursive Family, pages 93–109. Springer
+Berlin Heidelberg, Berlin, Heidelberg, 2007. ISBN 978-3-540-74464-
+1. doi: 10.1007/978-3-540-74464-1_7. URL http://dx.doi.org/
+10.1007/978-3-540-74464-1\]7.
+R. Davies and F. Pfenning. A modal analysis of staged computation. J.
+ACM, 48(3):555–604, May 2001.
+ISSN 0004-5411.
+doi: 10.1145/
+382780.382785.
+URL http://doi.acm.org/10.1145/382780.
+382785.
+H. Geuvers.
+The Church-Scott representation of inductive and coin-
+ductive data, 2014.
+URL http://www.cs.ru.nl/\textasciitilde herman/PUBS/
+ChurchScottDataTypes.pdf.
+K. Gödel. Über formal unentscheidbare Sätze der Principia Mathematica
+und verwandter Systeme I.
+Monatshefte für mathematik und physik,
+38(1):173–198, 1931.
+URL http://www.w-k-essler.de/pdfs/
+goedel.pdf.
+D. R. Hofstadter. Gödel, Escher, Bach: An Eternal Golden Braid. Vintage,
+1979. ISBN 978-0394745022.
+O. Kiselyov.
+Beyond church encoding: Boehm-berarducci isomor-
+phism of algebraic data types and polymorphic lambda-terms, April
+2012.
+URL http://okmij.org/ftp/tagless-final/course/
+Boehm-Berarducci.html.
+S. C. Kleene. Introduction to Metamathematics. Wolters-Noordhoff, 1952.
+ISBN 0-7204-2103-9.
+C. McBride.
+Outrageous but meaningful coincidences: Dependent
+type-safe syntax and evaluation.
+In Proceedings of the 6th
+ACM SIGPLAN workshop on Generic programming, pages 1–12.
+ACM, 2010. URL https://personal.cis.strath.ac.uk/conor.
+mcbride/pub/DepRep/DepRep.pdf.
+T. Æ. Mogensen. An investigation of compact and efﬁcient number rep-
+resentations in the pure lambda calculus. In Perspectives of System In-
+formatics, 4th International Andrei Ershov Memorial Conference, PSI
+2001, Akademgorodok, Novosibirsk, Russia, July 2-6, 2001, Revised Pa-
+pers, pages 205–213, 2001.
+doi: 10.1007/3-540-45575-2_20.
+URL
+http://dx.doi.org/10.1007/3-540-45575-2\]20.
+R. O’Connor. Essential incompleteness of arithmetic veriﬁed by coq. CoRR,
+abs/cs/0505034, 2005. URL http://arxiv.org/abs/cs/0505034.
+L. C. Paulson.
+A mechanised proof of Gödel’s incompleteness theo-
+rems using Nominal Isabelle.
+Journal of Automated Reasoning, 55
+(1):1–37, 2015. URL https://www.cl.cam.ac.uk/\textasciitilde lp15/papers/
+Formath/Goedel-ar.pdf.
+F. Pfenning and P. Lee.
+Metacircularity in the polymorphic \lambda -
+calculus. Theoretical Computer Science, 89(1):137–159, 1991. ISSN
+0304-3975.
+doi: http://dx.doi.org/10.1016/0304-3975(90)90109-U.
+URL http://www.sciencedirect.com/science/article/pii/
+030439759090109U.
+D. Piponi.
+From löb’s theorem to spreadsheet evaluation, Novem-
+ber
+2006.
+URL
+http://blog.sigfpe.com/2006/11/
+from-l-theorem-to-spreadsheet.html.
+G. K. Pullum. Scooping the loop snooper, October 2000. URL http:
+//www.lel.ed.ac.uk/\textasciitilde gpullum/loopsnoop.html.
+D. Scott. A system of functional abstraction. Unpublished manuscript,
+1963.
+N. Shankar. Proof-checking Metamathematics (Theorem-proving). PhD
+thesis, The University of Texas at Austin, 1986. AAI8717580.
+N. Shankar. Metamathematics, Machines and Gödel’s Proof. Cambridge
+University Press, 1997.
+R. J. Simmons and B. Toninho.
+Constructive provability logic.
+CoRR,
+abs/1205.6402, May 2012.
+URL http://arxiv.org/abs/1205.
+6402.
+A. Tarski. Der Wahrheitsbegriff in den formalisierten Sprachen. Studia
+Philosophica, 1:261–405, 1936. URL http://www.w-k-essler.de/
+pdfs/Tarski.pdf.
+B. Yudkowsky.
+Lob’s theorem cured my social anxiety, Febru-
+ary 2014.
+URL http://agentyduck.blogspot.com/2014/02/
+lobs-theorem-cured-my-social-anxiety.html.
+

@@ -1,0 +1,297 @@
+CS 445 / 645 
+Introduction to Computer Graphics 
+Lecture 21 
+Representing Rotations 
+
+Parameterizing Rotations 
+Straightforward in 2D 
+•  A scalar, θ, represents rotation in plane 
+ 
+More complicated in 3D 
+•  Three scalars are required to define orientation 
+•  Note that three scalars are also required to define position 
+•  Objects free to translate and tumble in 3D have 6 degrees 
+of freedom (DOF) 
+
+Representing 3 Rotational DOFs 
+3x3 Matrix (9 DOFs) 
+•  Rows of matrix define orthogonal axes 
+Euler Angles (3 DOFs) 
+•  Rot x + Rot y + Rot z 
+Axis-angle (4 DOFs) 
+•  Axis of rotation + Rotation amount 
+Quaternion (4 DOFs) 
+•  4 dimensional complex numbers 
+ 
+
+Rotation Matrix 
+9 DOFs must reduce to 3 
+Rows must be unit length (-3 DOFs) 
+Rows must be orthogonal (-3 DOFs) 
+Drifting matrices is very bad 
+•  Numerical errors results when trying to gradually rotate matrix by 
+adding derivatives 
+•  Resulting matrix may scale / shear 
+•  Gram-Schmidt algorithm will re-orthogonalize your matrix 
+Difficult to interpolate between matrices 
+•  How would you do it? 
+
+Euler Angles 
+(θx, θy, θz) = RzRyRx 
+•  Rotate θx degrees about x-axis 
+•  Rotate θy degrees about y-axis 
+•  Rotate θz degrees about z-axis 
+Axis order is not defined 
+•  (y, z, x), (x, z, y), (z, y, x)… 
+ are all legal 
+•  Pick one 
+
+Euler Angles 
+Rotations not uniquely defined 
+•  ex: (z, x, y) = (90, 45, 45) = (45, 0, -45) 
+takes positive x-axis to (1, 1, 1) 
+•  Cartesian coordinates are independent of one another, but Euler 
+angles are not 
+•  Remember, the axes stay in the same place during rotations 
+Gimbal Lock 
+•  Term derived from mechanical problem that arises in gimbal 
+mechanism that supports a compass or a gyro 
+
+Gimbal Lock 
+http://www.anticz.com/eularqua.htm 
+
+Gimbal Lock 
+Occurs when two axes are 
+aligned 
+Second and third rotations 
+have effect of transforming 
+earlier rotations 
+•  ex: Rot x, Rot y, Rot z 
+– If Rot y = 90 degrees,  
+Rot z == -Rot x 
+
+A Gimbal 
+Hardware implementation of Euler angles (used for 
+mounting gyroscopes and globes) 
+
+Interpolation 
+Interpolation between two Euler angles is not 
+unique 
+ex: (x, y, z) rotation 
+•  (0, 0, 0) to (180, 0, 0) vs. (0, 0, 0) to (0, 180, 180) 
+•  Interpolation about different axes are not 
+independent 
+
+Interpolation 
+
+Axis-angle Notation 
+Define an axis of rotation (x, y, z) and a rotation 
+about that axis, θ: R(θ, n) 
+4 degrees of freedom specify 3 rotational degrees 
+of freedom because axis of rotation is 
+constrained to be a unit vector 
+
+Axis-angle Notation 
+r 
+Rr 
+n 
+θ
+rpar = (n.r) n 
+rperp = r – (n.r) n 
+V = n x (r – (n.r) n) = n x r 
+Rr = Rrpar + Rrperp 
+= Rrpar + (cos θ) rperp + (sin θ) V 
+=(n.r) n + cos θ(r – (n.r)n) + (sin θ) n x r 
+= (cos θ)r + (1 – cos θ) n (n.r) + (sin θ) n x r 
+
+Axis-angle Rotation 
+r 
+r’ 
+n 
+Given 
+   r – Vector in space to rotate 
+   n – Unit-length axis in space about which to rotate 
+   θ – The amount about n to rotate 
+ 
+Solve 
+   r’ – The rotated vector 
+
+Axis-angle Rotation 
+Step 1 
+•  Compute rk an extended version of the rotation axis, n 
+•  rk = (n ¢ r) n 
+r 
+r’ 
+rk 
+
+Axis-angle Rotation 
+Compute r?    
+r? = r – (n ¢ r) n 
+r 
+r’ 
+r? 
+
+Axis-angle Rotation 
+Compute v, a vector perpendicular to rk and r? 
+v = rk £ r?      
+Use v and r? and θ to compute r’ 
+ 
+v 
+θ
+cos(θ) r? + sin(θ) v 
+r? 
+
+Axis-angle Notation 
+No easy way to determine how to concatenate 
+many axis-angle rotations that result in final 
+desired axis-angle rotation 
+No simple way to interpolate rotations 
+
+Quaternion 
+Remember complex numbers: a + ib 
+•  Where i2 = -1 
+Invented by Sir William Hamilton (1843) 
+•  Remember Hamiltonian path from Discrete II? 
+Quaternion: 
+•  Q = a + bi + cj + dk 
+– Where i2 = j2 = k2 = -1 and ij = k and ji = -k 
+•  Represented as: q = (s, v) = s + vxi + vyj + vzk 
+
+Quaternion 
+A quaternion is a 4-D unit vector q = [x y z w] 
+•  It lies on the unit hypersphere x2 + y2 + z2 + w2 = 1 
+For rotation about (unit) axis v by angle θ 
+•  vector part = (sin θ/2) v   = [x y z] 
+•  scalar part = (cos θ/2)     = w 
+•  (sin(θ/2) nx, sin(θ/2) ny, sin(θ/2) nz, cos (θ/2)) 
+Only a unit quaternion encodes a rotation - normalize 
+
+Quaternion 
+Rotation matrix corresponding to a quaternion: 
+•  [x y z w] =  
+Quaternion Multiplication 
+•  q1 * q2 = [v1, w1] * [v2, w2] = [(w1v2+w2v1+ (v1 x v2)), w1w2-v1.v2] 
+•  quaternion * quaternion = quaternion 
+•  this satisfies requirements for mathematical group 
+•  Rotating object twice according to two different quaternions is equivalent 
+to one rotation according to product of two quaternions 
+!
+!
+!
+"
+#
+$
+$
+$
+%
+&
+−
+−
+−
++
++
+−
+−
+−
+−
++
+−
+−
+2
+2
+2
+2
+2
+2
+2
+2
+1
+2
+2
+2
+2
+2
+2
+2
+2
+1
+2
+2
+2
+2
+2
+2
+2
+2
+1
+y
+x
+wx
+yz
+wy
+xz
+wx
+yz
+z
+x
+wz
+xy
+wy
+xz
+wz
+xy
+z
+y
+
+Quaternion Example 
+X-roll of π
+•  (cos (π/2), sin (π/2) (1, 0, 0)) = (0, (1, 0, 0)) 
+Y-roll 0f π
+•  (0, (0, 1, 0)) 
+Z-roll of π
+•  (0, (0, 0, 1)) 
+Ry (π) followed by Rz (π) 
+•  (0, (0, 1, 0) times (0, (0, 0, 1)) = (0, (0, 1, 0) x (0, 0, 1) 
+                                                 = (0, (1, 0, 0)) 
+
+Quaternion Interpolation 
+Biggest advantage of quaternions 
+•  Interpolation 
+•  Cannot linearly interpolate between two quaternions 
+because it would speed up in middle 
+•  Instead, Spherical Linear Interpolation, slerp() 
+•  Used by modern video games for third-person 
+perspective 
+•  Why? 
+
+SLERP 
+Quaternion is a point on the 4-D unit sphere 
+•  interpolating rotations requires a unit quaternion at each step 
+–  another point on the 4-D unit sphere 
+•  move with constant angular velocity along the great circle between two 
+points 
+Any rotation is defined by 2 quaternions, so pick the 
+shortest SLERP 
+To interpolate more than two points, solve a non-linear 
+variational constrained optimization 
+•  Ken Shoemake in SIGGRAPH ’85 (www.acm.org/dl) 
+
+Quaternion Interpolation 
+Quaternion (white) vs. 
+Euler (black) 
+interpolation 
+Left images are linear 
+interpolation 
+Right images are cubic 
+interpolation 
+
+Quaternion Code 
+http://www.gamasutra.com/features/programming/
+19980703/quaternions_01.htm 
+•  Registration required 
+ 
+Camera control code 
+•  http://www.xmission.com/~nate/smooth.html 
+– File, gltb.c 
+– gltbMatrix and gltbMotion 
+

@@ -1,0 +1,984 @@
+Query Optimization in Inductive Logic
+Programming by Reordering Literals
+Jan Struyf and Hendrik Blockeel
+Katholieke Universiteit Leuven, Dept. of Computer Science,
+Celestijnenlaan 200A, B-3001 Leuven, Belgium
+{Jan.Struyf, Hendrik.Blockeel}@cs.kuleuven.ac.be
+Abstract. Query optimization is used frequently in relational database
+management systems. Most existing techniques are based on reordering
+the relational operators, where the most selective operators are executed
+ﬁrst. In this work we evaluate a similar approach in the context of In-
+ductive Logic Programming (ILP). There are some important diﬀerences
+between relational database management systems and ILP systems. We
+describe some of these diﬀerences and list the resulting requirements for
+a reordering transformation suitable for ILP. We propose a transforma-
+tion that meets these requirements and an algorithm for estimating the
+computational cost of literals, which is required by the transformation.
+Our transformation yields a signiﬁcant improvement in execution time
+on the Carcinogenesis data set.
+1
+Introduction
+Many Inductive Logic Programming (ILP) systems construct a predictive or de-
+scriptive model (hypothesis) for a given data set by searching a large space of
+candidate hypotheses. Diﬀerent techniques exist to make this search more eﬃ-
+cient. Some techniques improve eﬃciency by reducing the number of hypotheses
+that are evaluated during the search. Examples of such techniques are language
+bias speciﬁcation mechanisms [10], which limit the number of valid hypotheses,
+and search strategies (e.g. branch-and-bound search [9], heuristic search [12] and
+stochastic search [16]), which reduce the number of hypotheses to be evaluated
+by cutting away branches in the search.
+Evaluating a candidate hypothesis can also be made more eﬃcient. In ILP
+each hypothesis is represented by a number of clauses in ﬁrst order logic. For
+example, in an ILP rule learner such as Progol [9] or FOIL [12], the condition
+of each rule r is a ﬁrst order logic query q. Rules are generated and evaluated
+one by one. In order to evaluate the performance of a rule, the query q has to
+be executed on each example in the data set.
+Many techniques designed for eﬃciently executing relational queries (e.g.
+SQL) in a relational database management system [4] can, after some modiﬁc-
+ations, also be used for eﬃciently executing ﬁrst order queries. An example of
+this is index structures (e.g., hash-tables), which are used to eﬃciently retrieve
+tuples from a relational database given the value of some attribute. Most ILP
+
+systems provide a similar kind of indexing [7, 3] on the datalog facts that are
+commonly used to describe the examples.
+Query optimization [4, 5] is another technique that is frequently used in rela-
+tional database management systems. Query optimizers transform queries into
+a diﬀerent form, which is more eﬃcient to execute. Also in ILP, techniques have
+been introduced for optimizing ﬁrst order queries (see [13] for an overview). One
+speciﬁc approach that is popular in relational database management systems is
+to reorder the relational operators such that the most selective ones are executed
+ﬁrst. A similar approach has not yet been evaluated in the context of ILP. In
+this work we introduce a query transformation that optimizes ﬁrst order queries
+by reordering literals. The basic idea is that also ﬁrst order queries become more
+eﬃcient to execute if “selective” literals are placed ﬁrst.
+This paper is organized as follows. In Section 2 we present a motivating ex-
+ample that illustrates the amount of eﬃciency that can be gained by a reordering
+transformation in ILP. In Section 3 we list three important requirements for such
+a transformation and point out some signiﬁcant diﬀerences with query optimiz-
+ation in relational databases. In Section 4 we introduce a reordering transform-
+ation for optimizing ﬁrst order queries in ILP. We also describe an extension
+able to handle queries that are the output of the cut-transform [13]. Section 5
+presents experiments that evaluate the performance of the transformation on
+the Carcinogenesis data set. Section 6 concludes the paper.
+2
+A Motivating Example
+We start with a motivating example that illustrates the amount of eﬃciency that
+can be gained by reordering the literals of a ﬁrst order query. In this example we
+use the Carcinogenesis data set [14], which stores structural information about
+330 molecules. Each molecule is described by a number of atom/41 and bond/4
+facts.
+Consider the following query:
+atom(M,A1,h,3),atom(M,A2,c,16),bond(M,A2,A1,1).
+This query succeeds for a molecule M that contains a hydrogen atom A1 of type 3
+that is bound to a carbon atom A2 of type 16 by a single bond. We execute each
+possible reordering (i.e., permutation) of the query on each example molecule.
+Table 1 lists all permutations sorted by average execution time.
+As can be seen from Table 1, the most eﬃcient permutation is 6 times faster
+than the original query q4 and 9 times faster than the least eﬃcient one. This
+can be explained by looking at the size of the SLD-tree [8] that is generated
+when the ILP system executes the permutation on a given example.
+Given a query q = l1 . . . ln and example e, the SLD-tree will contain at level
+i diﬀerent nodes vi,j that correspond to calls to literal li with input substitution
+θi,j. The input substitution for the root node θ1,1 binds the key variable of the
+1 We have omitted the atom charge to simplify the presentation.
+
+Table 1. Averaged execution times (ms/example) for the 6 permutations of an example
+query. The queries were executed using the YAP Prolog system version 4.4.2 on an Intel
+P4 1.8GHz with 512MB RAM running Linux.
+Time
+Permutation
+q1
+0.010
+atom(M,A2,c,16),bond(M,A2,A1,1),atom(M,A1,h,3).
+q2
+0.023
+atom(M,A2,c,16),atom(M,A1,h,3),bond(M,A2,A1,1).
+q3
+0.052
+bond(M,A2,A1,1),atom(M,A2,c,16),atom(M,A1,h,3).
+q4
+0.061
+atom(M,A1,h,3),atom(M,A2,c,16),bond(M,A2,A1,1).
+q5
+0.081
+atom(M,A1,h,3),bond(M,A2,A1,1),atom(M,A2,c,16).
+q6
+0.091
+bond(M,A2,A1,1),atom(M,A1,h,3),atom(M,A2,c,16).
+query (M in the example) to the identiﬁer of example e. The children of a node
+vi,j correspond to the solutions of liθi,j. The size of the SLD-tree thus depends
+on the length of the query, which is the maximum depth of the tree, and the
+number of children of each node.
+We will call this number of children the non-determinacy of a literal given the
+corresponding input substitution (Deﬁnition 1). Because the non-determinacy of
+a literal depends on the input substitution, it also depends on the position of
+the literal in the SLD-tree and hence also on its position in the query.
+Deﬁnition 1. (Non-determinacy) The non-determinacy nondet(l, θ) of a literal
+l given an input substitution θ is the number of solutions or answer substitutions
+that are obtained by calling lθ.
+Example 1. We continue the Carcinogenesis example. The non-determinacy of
+atom(M,A1,h,3) given {M/m1} is equal to the number of hydrogen atoms of
+type 3 in molecule m1. If we consider {M/m1,A1/a1} then the non-determinacy
+is either 1 if a1 is a hydrogen atom of type 3 or 0 if it is another kind of atom.
+Non-determinacy as deﬁned above is always associated with one speciﬁc
+call, i.e., with one literal and input substitution. The notion of average non-
+determinacy (Deﬁnition 2) is useful to make more general statements about the
+number of solutions of a literal.
+Deﬁnition 2. (Average non-determinacy) Consider a distribution over possible
+input substitutions D. We deﬁne the average non-determinacy of a literal l with
+respect to D as:
+nondet(l, D) =
+X
+(θ,p)k∈D
+pk · nondet(l, θk)
+with pk the probability of θk given D.
+Example 2. Consider all N molecules in the Carcinogenesis domain and let D be
+a uniform distribution over the input substitutions that ground the key argument
+of a literal to one of the molecule identiﬁers. The average non-determinacy of
+
+bond(M,A1,A2,N) with respect to D is about 20, which is the average number
+of bonds that occurs in a molecule. Whenever D is not speciﬁed in the future it
+refers to the same distribution as is deﬁned in this example.
+Consider again the fastest (q1) and slowest (q6) permutation from Table 1. In
+permutation q1 the average non-determinacy of l1 is low because few molecules
+contain carbon atoms of type 16. The non-determinacy of l2, given an input
+substitution, is at most 4 because carbon atoms can have at most 4 bonds. The
+non-determinacy of l3 is either zero or one because A1 is ground at that point.
+Since only few molecules contain carbon atoms of type 16, the average SLD-tree
+size will be small for q1. In permutation q6 the bond/4 literal is executed ﬁrst.
+Because both A1 and A2 are free at that point, the non-determinacy of this call
+will be equal to the number of bonds in the molecule (about 20 on average).
+The non-determinacies of l2 and l3 will be either zero or one. The SLD-trees
+for q6 will be much bigger on average and hence the execution time, which is
+proportional to the average SLD-tree size, will also be longer.
+3
+Requirements
+We start by listing a number of requirements for a reordering transformation for
+ﬁrst order queries in the context of ILP.
+R1 (Correctness) The reordering transformation should be correct, i.e. the trans-
+formed query should succeed (fail) for the same examples as the original
+query succeeds (fails).
+R2 (Optimality) The reordering transformation should approximate the optimal
+transformation, which replaces the original query by the permutation that
+has the shortest average execution time.
+R3 (Eﬃciency) The reordering transformation itself should be eﬃcient. The time
+for performing the transformation should be smaller than the eﬃciency dif-
+ference that can be obtained by executing the transformed query instead of
+the original one.
+If all predicates are deﬁned by sets of facts, then the order of the literals does
+not inﬂuence the result of the query (cf. the switching lemma [8]) and the cor-
+rectness requirement (R1) is met. If some predicates have input arguments that
+should be ground (e.g., background predicates that perform a certain computa-
+tion), then it is possible that a given permutation is invalid because it breaks
+this constraint. The reordering transformation must make sure not to select such
+a permutation.
+The eﬃciency requirement (R3) can be easily met in the context of a rela-
+tional database where executing a query typically involves (slow) disk access. In
+ILP, query execution is much faster. In many applications the entire data set
+resides in main memory. Even if the data set does not ﬁt completely in main
+memory at once, ILP systems can still use eﬃcient caching mechanisms that
+load examples one by one [1, 15] to speed up query execution. When queries
+
+are executed fast, transformation time becomes more important. ILP systems
+also consider diﬀerent subsets of the data during the reﬁnement process. Some
+queries are executed on very small sets of examples. If a query is executed on
+a smaller set, it will be executed faster, which again makes R3 more diﬃcult to
+achieve.
+To meet the optimality requirement (R2), query optimizers in relational data-
+base management systems place selection operators with a high selectivity, joins
+that are expected to return a small number of tuples, and projections that select
+few attributes, as early as possible. Similarly, a reordering transformation for
+ﬁrst order queries should place literals with a low average non-determinacy ﬁrst
+in order to avoid unnecessary backtracking.
+An important diﬀerence between relational database management systems
+and ILP systems is that relational database management systems execute queries
+bottom-up instead of top-down. The user is always interested in obtaining all
+solutions for a given query. In ILP, query execution stops after ﬁnding the ﬁrst
+solution (success). This is because the ILP system only needs to know for a
+given example whether a given query succeeds or not. In this context, a top-
+down execution strategy is more eﬃcient.
+A consequence of the top-down strategy is that a query optimizer for ﬁrst or-
+der queries should place literals that ground many variables as early as possible.
+Grounding variables decreases the non-determinacy of the literals that follow,
+which decreases execution time.
+Typical for ILP applications are predicates that have a long execution time
+(e.g., background predicates that compute aggregates). Such predicates should
+be placed after fast predicates with a low non-determinacy and before predic-
+ates with a high non-determinacy. Due to the top-down strategy, the expensive
+predicate is not executed if the low non-determinacy predicate fails and may be
+executed several times if the high non-determinacy predicate has several solu-
+tions for a given example.
+A last diﬀerence is that in relational database systems queries are mostly
+generated directly by humans and not by a reﬁnement operator ρ as is the case
+for ILP systems. In ILP systems the eﬃciency of the original query (as it is
+generated by ρ) depends (much) on the deﬁnition of ρ and on the language bias
+speciﬁcation that is used.
+4
+Reordering Transformation
+4.1
+Reordering Dependent Literals
+In this section we introduce a possible reordering transformation for ﬁrst order
+queries suitable to be implemented in ILP systems. We will introduce two ver-
+sions of this transformation. In this section we describe the ﬁrst version T1. The
+second version, which extends T1, will be discussed in Section 4.2.
+Given a query q, the optimal reordering transformation T1 should return the
+permutation T1(q) that has the shortest average execution time. More formally,
+
+we can deﬁne T1 as follows (cost(q) represents the average execution time of q
+and perms(q) the set of all permutations of q).
+T1(q) = argminqk∈perms(q) cost(qk)
+Of course, cost(qk) can not be computed without executing permutation qk on
+all examples. Therefore, we will try to approximate T1 by replacing the average
+execution time by an estimate. We call the resulting approximate transformation
+c
+T1.
+c
+T1(q) = argminqk∈perms(q) d
+cost(qk)
+We will now explain how the estimated average execution time d
+cost(q) of a
+query q can be computed.
+The average execution time of a query q depends on the individual execution
+times of its literals. The execution time and average execution time of a literal
+can be deﬁned in the same way as non-determinacy and average non-determinacy
+where deﬁned in Section 2.
+Deﬁnition 3. (Cost) The execution time cost(l, θ) of a literal l given an input
+substitution θ is deﬁned as the time necessary to compute all solutions to the call
+lθ (i.e., the execution time of the Prolog query ‘?- lθ, fail.’).
+Deﬁnition 4. (Average cost) Consider a distribution over possible input substi-
+tutions D. We deﬁne the average execution time of a literal l with respect to D
+as:
+cost(l, D) =
+X
+(θ,p)k∈D
+pk · cost(l, θk)
+with pk the probability of θk given D.
+Using the deﬁnitions of average non-determinacy and average execution time
+of literals we can compute the average execution time of a query q as follows.
+cost(q) =
+n
+X
+i=1
+wi · cost(li, Di)
+(1)
+w1 = 1.0;
+wi =
+i−1
+Y
+j=1
+nondet(lj, θj) ≈
+i−1
+Y
+j=1
+nondet(lj, Dj), i ≥2
+Equation (1) computes the average execution time by summing the average
+execution times of all individual literals. Each term is weighted with a weight
+wi which is the average number of calls to this literal in a SLD-tree generated
+by the ILP system. The correct value of wi is the average of the product of
+the non-determinacies of the preceding literals. For transformation c
+T1 we will
+approximate this value by the product of average non-determinacies as shown
+above.
+
+Each literal in a given query will be called with diﬀerent instantiations for
+its arguments (one for each occurrence of the literal in the SLD-tree for a given
+example). We average over these diﬀerent instantiations by considering for each
+literal li, a distribution of input substitutions Di.
+Example 3. Consider the query q = l1(X), l2(X) and suppose that l1 has non-
+determinacy 2 and execution time 2ms. Literal l2 has average non-determinacy
+0.5 and average execution time 1ms with respect to D2. Distribution D2 is a
+distribution over the answer substitutions for X of l1. The average execution
+time of q is cost(q) = 1 × 2ms + 2 × 1ms = 4ms because l1 will be called once,
+which takes 2ms, and l2 will be called twice (once for each solution to l1), which
+also takes 2ms.
+In order to perform c
+T1(q) we need to estimate the average execution time
+of each permutation qk. We compute d
+cost(qk) with (1) where the average non-
+determinacy and execution time are replaced by estimates, which we compute
+based on the data.
+In practice, it is not feasible to obtain for each literal in each query an
+estimate for the corresponding distribution Di and associated cost(li, Di) and
+nondet(li, Di). Therefore, we will use an approximate uniform distribution to
+estimate average cost and non-determinacy. An algorithm for constructing such
+an approximate distribution is discussed in Section 4.3. In order to select the
+appropriate approximate distribution we will use the following constraint that
+holds on Di and that must also hold for reasonable approximate distributions.
+Each input substitution in Di must assign a value to the input variables of li
+that are grounded by calls to preceding literals. Consider again q = l1(X), l2(X),
+and assume that l1 grounds X. Then all input substitutions in D2 must also
+ground X. More formally,
+∀(θ, p)k ∈Di : vars(θk) ⊇
+
+vars(li) ∩
+i−1
+[
+j=1
+groundvars(lj)
+
+
+with pk the probability of θk given Di, vars(θk) the variables grounded by input
+substitution θk, vars(li) the set of (input) variables of li and groundvars(li) the
+set of variables that is grounded by calling li.
+Note that (1) computes the execution time for generating a complete SLD-
+tree, which may have several succeeding paths. As said before, most ILP systems
+stop execution after ﬁnding the ﬁrst success. Having said that, we will (for simpli-
+city reasons) still use (1) to estimate the average execution time of the diﬀerent
+permutations.
+In order to meet R1 (correctness), the transformation must rule out quer-
+ies that call background predicates p with free variables for arguments that are
+required to be ground. This is accomplished by setting d
+cost(p, D) = ∞for dis-
+tributions D that do not ground all these variables.
+Because the transformation requires computing all permutations of q, it has
+an exponential time complexity in the number of literals n. For large values of
+
+n it may become diﬃcult to meet requirement R3 with such a transformation.
+However, in our experiments, where query lengths varied from 1 to 6, this was
+not a problem.
+4.2
+Reordering Sets of Literals
+Some queries can be split in several independent sets of literals [13, 6]. Consider
+for example the following query.
+atm(M,A1,n,38),bond(M,A1,A2,2),atm(M,A3,o,40).
+This query succeeds if a given molecule contains a nitrogen atom of type 38 with
+one double bond and an oxygen atom of type 40. If l1 and l2 succeed, but l3 fails,
+then alternative solutions for l1 and l2 will be tried. However, this is useless if
+l3 does not depend on l1 and l2, i.e. if it does not share variables with l1 and l2.
+The cut-transformation proposed in [13] avoids this unnecessary backtracking,
+by putting cuts between the independent sets of literals.
+atm(M,A1,n,38),bond(M,A1,A2,2),!,atm(M,A3,o,40).
+If S1 and S2 are independent sets of literals, then the execution time of S2
+will not depend on the execution time of S1. This implies that S1 and S2 can
+be transformed by our reordering transformation c
+T1 independently. Once S1
+and S2 have been transformed the question remains whether we should execute
+S1,!,S2 or S2,!,S1. The eﬃciency of both permutations of the sets may be
+diﬀerent because the set after the cut does not need to be executed if the ﬁrst
+set fails for a given example. The following equation deﬁnes transformation c
+T2,
+which extends c
+T1, for reordering a query that is a conjunction of independent
+sets separated by cuts.
+c
+T2(S1, !, S2, !, . . . , Sm) = argminqk∈perms(S1,!,S2,!,...,Sm) d
+cost(qk)
+We approximate the average execution time of S1, !, S2, !, . . . , Sm as follows.
+cost(S1, !, S2, !, . . . , Sm) =
+m
+X
+i=1
+wi · cost(Si)
+w1 = 1.0;
+wi =
+i−1
+Y
+j=1
+Psucceeds(Sj), i ≥2
+with wi the probability that Si will be executed and Psucceeds(Si) the probability
+that Si succeeds. We estimate Psucceeds(Si) in the following, rather ad-hoc way.
+Psucceeds(S) = min
+ 
+1.0 ,
+Y
+li∈S
+nondet(li, Di)
+!
+(2)
+
+The motivation for (2) is that if a set has a low non-determinacy (e.g., if
+it has on average 0.3 solutions) then we can use this value as an estimate for
+Psucceeds(Si). If the non-determinacy is high (e.g., if the set has on average 5
+solutions) then we assign a probability of 1.0.
+In order to transform a query that contains several independent sets of lit-
+erals, we ﬁrst transform each of these sets separately using c
+T1 and after that
+reorder the sets using c
+T2. Both c
+T1 and c
+T2 require estimates for nondet(li, Di)
+and cost(li, Di). We will show how these can be obtained from the training ex-
+amples in the following section.
+4.3
+Estimating the Cost and Non-determinacy of a Literal
+The average non-determinacy and execution time of a literal depend both on the
+constants that occur as arguments of the literal and on the relevant distribution
+of input substitutions D. In this section we describe an algorithm that automat-
+ically estimates average non-determinacy and execution time for each possible
+combination of constants and for diﬀerent uniform distributions D (with diﬀer-
+ent groundness constraints for the arguments). The algorithm takes as input a
+set of predicate type deﬁnitions. Consider the following type deﬁnitions from the
+Carcinogenesis example.
+type(atom(mol:key,atom:any,element:const,atype:const,charge:any).
+type(bond(mol:key,atom:any,atom:any,btype:const).
+Each argument of a type deﬁnition is of the form a:b with a the type of
+the argument and b its tag. Arguments marked with tag key are grounded to
+the example key by each substitution in D. Arguments marked with const will
+always occur with one of the possible constants for the corresponding type ﬁlled
+in. Arguments with tag any can be free or can be ground depending on D. The
+algorithm works as follows.
+1. For each type deﬁnition typedefk, collect in a set Ck the possible combin-
+ations of constant values that occur in the data for the arguments marked
+with const.
+2. For each type typei that occurs with tag any, collect for each example ej in
+a set Di,j the constants that occur for arguments of typei in ej for any of
+the predicates that has at least one such argument.
+3. Run for each type deﬁnition typedefk the algorithm shown in Fig. 1.
+The algorithm from Fig. 1 computes for a given type deﬁnition, for each
+possible combination of constants C and for diﬀerent input substitution distri-
+butions D the average execution time and non-determinacy with respect to D for
+a literal l with name and arity as given by the type deﬁnition and the constants
+from C ﬁlled in.
+The ﬁrst loop of the algorithm is over the diﬀerent combinations of con-
+stants and the second loop over the diﬀerent distributions. For each distribu-
+tion, a diﬀerent subset I of the arguments with tag any will be ground. For the
+
+function compute avg nondet and cost(typedefk)
+Ik = set of all arguments from typedefk that have tag any
+for each C ∈Ck
+for each I ∈2Ik
+create literal l (name/arity as in typedefk, constants from C ﬁlled in)
+cost = 0; nondet = 0; count = 0
+for each example ej
+θj = substitution that replaces key variable by identiﬁer ej
+if I = ∅then
+nondet = nondet + nondet(l, θj); cost = cost + cost(l, θj)
+count = count + 1
+else
+P = the set of all possible combinations of constants for the
+attributes in I (constructed using Di,j)
+for each combination of constants P ∈P
+σ = θj ∪substitution for each constant in P
+nondet = nondet + nondet(l, σ); cost = cost + cost(l, σ)
+count = count + 1
+d
+cost[typedefk, D(I), C] = cost / count
+d
+nondet[typedefk, D(I), C] = nondet / count
+Fig. 1. An algorithm for estimating average non-determinacy and execution time.
+bond(M,A1,A1,T) type deﬁnition, there are two arguments with tag any. The
+ﬁrst distribution D(1) that the algorithm considers will leave both atom argu-
+ments free. Consecutive iterations will consider D(2) with A1 ground, D(3) with
+A2 ground and ﬁnally for D(4) with both A1 and A2 ground.
+The part inside the double loop computes for literal l the average execution
+time and non-determinacy with respect to D(I). The ﬁrst instructions construct
+l based on the type deﬁnition and constants in C. If all arguments with tag
+any are free (i.e., I = ∅), then D(I) becomes a distribution of substitutions that
+unify the key argument with one of the example identiﬁers. The average cost
+and non-determinacy for such a distribution can be estimated by averaging over
+all examples ej (cf. the then branch in Fig 1). If some of the arguments with tag
+any are ground in D(I), then constructing a uniform distribution over possible
+input substitutions is more complex (cf. the else branch in Fig 1). In that case,
+the averages have to be computed over each possible combination of relevant
+constants (from Di,j).
+Example 4. We will illustrate the algorithm for the bond/4 type deﬁnition. The
+ﬁrst step is to collect constants in Ck. For bond/4, there is only one argument
+tagged const: the bondtype. The corresponding constants are {1, 2, 3, 7} (7 rep-
+resenting an aromatic bond). Type atom is the only type tagged any. We collect
+for each example ej in set Datom,j all constants of type atom that occur, i.e., for
+each example the set of atom identiﬁers. The next step is to run the algorithm
+of Fig. 1. It will compute the average non-determinacy and execution time for
+
+bond/4 with diﬀerent constant combinations from Ck ﬁlled in and for diﬀerent
+subsets of its two tag any arguments ground. A subset of the results is shown in
+Table 2.
+Table 2. Average non-determinacy and execution time for bond(M,A1,A2,T) with
+diﬀerent constant combinations ﬁlled in and for diﬀerent subsets of its two tag any
+arguments ground. The results were obtained with YAP Prolog version 4.4.2. Only the
+relative values of the costs are important.
+A1
+A2
+T
+nondet(l, D) cost(l, D)
+free
+free
+1
+20.4
+0.0081
+free
+ground 1
+0.74
+0.0034
+ground free
+1
+0.74
+0.0016
+ground ground 1
+0.017
+0.0022
+free
+free
+2
+1.36
+0.0074
+. . .
+. . .
+. . . . . .
+. . .
+Note that our algorithm uses uniform distributions over the possible identi-
+ﬁers to estimate average non-determinacy and execution time. If a literal occurs
+somewhere in the middle of a conjunction, the distribution over input substi-
+tutions will probably not be uniform. Using the estimates based on uniform
+distributions is an approximation.
+The computational complexity of the algorithm is O(2|Ik||Ck|), i.e., expo-
+nential in the number of variables that occur in a type deﬁnition. In practice,
+the arity of predicates is usually relatively small, so that this approach is not
+problematic. Moreover, the computation needs to happen only once, not once for
+each query to be transformed; so the requirement that the query transformation
+must be eﬃciently computable, remains fulﬁlled.
+In those cases where the complexity of the algorithm is nevertheless pro-
+hibitive, other techniques for estimating the selectivity of literals could be used
+instead of this straightforward method; see for instance [11].
+5
+Experimental Evaluation
+5.1
+Aims
+The aim of our experiments is to obtain more insight in the behavior of the
+reordering transformation, both with and without the reordering of independent
+sets.
+A ﬁrst experiment compares for a given query q the eﬃciency of c
+T1(q) and
+c
+T2(q) with the eﬃciency of the original query and that of the most eﬃcient
+permutations T1(q) and T2(q). It also provides more insight in the inﬂuence of the
+query length on the obtainable eﬃciency gain. A second experiment compares the
+
+eﬃciency of running the ILP system Aleph without a reordering transformation
+with its eﬃciency when using c
+T1 and c
+T2. In each experiment we use the average
+non-determinacies and execution times estimated as described in Section 4.3 to
+perform c
+T1 and c
+T2 (see also Table 2).
+5.2
+Materials
+All experiments are performed on the Carcinogenesis data set [14], which is the
+same data set that has been used as running example throughout this paper. As
+Prolog system we use YAP Prolog2 version 4.4.2 on an Intel P4 1.8GHz system
+with 512MB RAM running Linux. We also use the ILP system Aleph3 version
+4 (13 Nov 2002) which implements a version of Progol [9] and runs under YAP.
+Aleph uses the cut and theta transformations as deﬁned in [13]. The language bias
+we use in the experiments only contains modes for the atom and bond predicates
+and is deﬁned as follows.
+:- mode(*,bond(+drug,+atomid,-atomid,#integer)).
+:- mode(*,atom(+drug,-atomid,#element,#integer,-charge)).
+:- set(clauselength,7), set(nodes,50000).
+We have implemented both transformations c
+T1 and c
+T2 as an add-on library
+for Aleph. This library (written in C++) is available from the authors upon
+request.
+5.3
+Experiment 1
+c
+T1 In this experiment we have sampled 45000 sets of linked literals (i.e., sets
+that are separated by cuts in the queries, after they have been processed by the
+cut-transform) uniformly from the queries that occur during a run of Aleph on
+the Carcinogenesis data set. For each permutation of each of these queries we
+estimated the average execution time over all 330 molecules. Figure 2 presents
+the results. The ﬁrst bar represents the average execution time of the original
+queries q that are generated by the reﬁnement operator of Aleph, the second
+bar is the average execution time of the permutations that are selected by c
+T1(q)
+and the last bar the average execution time of the most eﬃcient permutations
+T1(q). Above each set of bars, N is the number of queries, Tmax the average
+execution time of the slowest permutations, Tavg the average of the average
+execution time over all permutations, Tref the average execution time of the
+original queries, Sbest the eﬃciency gain of T1(q) over the original query and
+Str the eﬃciency gain of c
+T1(q). In some cases Tmax and Tavg are marked with
+a >-sign. This occurs because we have set a maximum execution time of 4s for
+each permutation (in order to make the experiment feasible). When this time is
+exceeded the execution of the permutation is aborted and its execution time is
+2 http://yap.sourceforge.net
+3 http://web.comlab.ox.ac.uk/oucl/research/areas/machlearn/Aleph/
+
+excluded from the averages. All execution times are averaged over all queries and
+examples (the ﬁrst set of bars) and also averaged over all examples and queries
+with a given length (the other bars). The averages shown for the long queries
+have a rather large variance.
+AVERAGE
+1
+2
+3
+4
+5
+6
+Query length
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Time relative to Tref
+Query execution time
+Str
+Sbest
+Tref
+Tavg
+Tmax
+N
+2.1
+2.1
+0.010
+0.016
+0.094
+45000
+1.0
+1.0
+0.004
+0.004
+0.004
+31248
+1.0
+1.0
+0.005
+0.010
+0.016
+7738
+1.3
+1.3
+0.009
+0.019
+0.041
+3513
+4.1
+4.4
+0.036
+>0.092
+>0.42
+1567
+15
+17
+0.15
+>0.27
+>2.0
+689
+20
+34
+0.35
+>0.76
+>11
+245
+Best
+Transformed
+Reﬁnement
+N = number of queries
+T = execution time (ms/query/example)
+Fig. 2. Experiment on independent sets of literals.
+The main conclusion from this experiment is that c
+T1 almost always succeeds
+in selecting the most eﬃcient permutation or a permutation with execution time
+close to that of the most eﬃcient one (because Str is close to Sbest). The diﬀer-
+ence is larger for longer queries, probably because the approximations made for
+estimating the cost a query are less accurate in that case. Surprisingly there is
+almost no gain possible for queries of length 2. This is because in that case the
+reﬁnement operator of Aleph always generates the most eﬃcient permutation (if
+compared to Tavg it is possible to gain a factor of 2 in eﬃciency). Aleph always
+generates atom,bond instead of bond,atom. The second one is less eﬃcient than
+the ﬁrst one because the highly non-determinate bond literal comes ﬁrst. If we
+look at longer queries we see that the transformation yields higher gains (up to
+20× for queries of length 6). Comparing Tref with Tavg shows that the original
+queries are already very eﬃcient. This would probably not be the case anymore if
+we would use a more naively deﬁned language bias (e.g. one that allows adding
+bonds with the two atom identiﬁers free): c
+T1 would yield much higher gains.
+
+Note also that Aleph generates much more small independent sets than larger
+ones, which also reduces the average gain. This again depends on the language
+bias that is used.
+c
+T2 In this experiment we have sampled 5000 queries uniformly from the queries
+that occur during a run of Aleph. Each of these queries can contain up to 6
+independent sets of linked literals. We estimated for each permutation of the sets
+and for each permutation of the literals in each set the average execution time
+over all examples. Figure 3 presents the results. The ﬁrst bar again corresponds
+to the execution time of the original query q, the second bar to that of the best
+possible permutation without reordering the sets (i.e., T1(q)), the third bar to
+that of the permutation returned by c
+T2 and the last one to that of T2(q). The
+other quantities are deﬁned similarly to the previous experiment. One important
+diﬀerence is that here the sets of bars are averaged over queries with a given
+maximum independent set size (1 - 6).
+AVERAGE
+1
+2
+3
+4
+5
+6
+Max independent set size
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+Time relative to Tref
+Query execution time
+Str
+Sbest
+Tref
+Tavg
+Tmax
+N
+3.3
+3.5
+0.019
+0.049
+0.45
+5000
+1.1
+1.1
+0.005
+0.005
+0.005
+1802
+1.1
+1.1
+0.006
+0.009
+0.016
+1621
+1.6
+1.8
+0.011
+0.016
+0.039
+910
+5.3
+5.7
+0.039
+0.068
+0.36
+427
+11
+13
+0.096
+>0.29
+>2.3
+193
+67
+78
+0.69
+>2.7
+>35
+47
+Best (rs=0)
+Reﬁnement
+Best (rs=1)
+Transformed
+N = number of queries
+T = execution time (ms/query/example)
+Fig. 3. Experiment on entire clauses.
+The main conclusion is that not much eﬃciency can be gained by reorder-
+ing the sets. This is expected because reordering sets does not alter the average
+non-determinacy of literals. Contrary to the previous experiment some gain can
+be obtained for queries that have 6 independent literals and queries where all
+
+independent sets have at most two literals. Transformation c
+T2 performs reas-
+onably well for a low maximum set size and less good for queries with larger
+independent sets. Note that, to simplify the presentation, Fig. 3 does not show
+results for c
+T1.
+5.4
+Experiment 2
+In this experiment we compare the runtime of Aleph without any reordering
+transformation, with its runtime when using c
+T1 and c
+T2. Table 3 presents the
+results for the original Carcinogenesis data set and Table 4 for an over-sampled
+version in which each molecule occurs 5 times. The total execution time is split
+up in three components: the query execution time Texec., the time used for per-
+forming the reordering transformation Ttrans. and a term Tother which includes,
+for example, the time for computing the bottom-clauses and the time taken by
+the reﬁnement operator.
+Table 3. Runtime of Aleph (in seconds) on the Carcinogenesis data set.
+Transformation Texec. Ttrans. Tother Sexec. Stotal
+none
+2230
+/
+3900
+/
+/
+b
+T1
+1330
+100
+3920
+1.7
+1.15
+b
+T2
+1310
+110
+3850
+1.7
+1.16
+Table 4. Runtime of Aleph (in seconds) on a 5× over-sampled version of the Carcino-
+genesis data set.
+Transformation Texec. Ttrans. Tother Sexec. Stotal
+none
+22720 /
+14530 /
+/
+b
+T1
+13720 320
+14550 1.7
+1.3
+b
+T2
+13690 370
+14570 1.7
+1.3
+Table 3 and Table 4 both show an eﬃciency gain in query execution time of
+1.7 times. This is less than the average gain of 3.5 times that was obtained in the
+previous experiment (Fig. 3). The diﬀerence is that in that case, each query was
+executed on the entire data set. Aleph considers diﬀerent subsets of the data in
+each reﬁnement step: longer queries are executed on a smaller subset. Because
+longer queries yield higher gains, the average gain drops. Comparing Ttrans. with
+Texec. shows that the transformation introduces no signiﬁcant overhead (7.5%
+on the original data set and 2.3% on the over-samples version).
+Recall from the previous experiment (Fig. 2 and Fig. 3) that the eﬃciency
+gain obtained with c
+T1 and c
+T2 is close to the best possible eﬃciency gain (i.e., that
+
+of T1 an T2). This means that the rather low gain (factor 1.7) obtained in this
+experiment is not caused by the fact that we use an approximate transformation,
+but rather by the fact that the queries generated by the reﬁnement operator are
+already very eﬃcient. This depends on the language bias that is used: here it is
+well designed and generates eﬃcient queries. Another reason for the low gain is
+that the reﬁnement operator generates much more small sets of linked literals
+than larger ones.
+6
+Conclusion
+We have introduced a query transformation that aims at reducing the average
+execution time of queries by replacing them with one of their permutations.
+Similar techniques are used in relational database management systems but there
+are some important diﬀerences. ILP systems execute queries top-down instead
+of bottom-up, look only for the ﬁrst solution, may use expensive background
+predicates, and valid permutations of queries are constrained by the modes of
+the literals. Queries are also generated by the system itself and not (directly) by
+humans.
+We have deﬁned two versions of the transformation. Our ﬁrst version trans-
+forms a query by replacing it with the permutation that has the lowest estimated
+average execution time. For computing this estimate we make two important ap-
+proximations. The ﬁrst one is that we use an approximate formula for computing
+the average execution time of a query based on the average execution times and
+non-determinacies of its literals. The second one is that we use uniform dis-
+tributions over input substitutions to estimate the average execution time and
+non-determinacy of a literal. Such a uniform distribution will diﬀer from the
+actual distribution of input substitutions for the literal, which depends on its
+position in the SLD-trees.
+A second version of the transformation extends the ﬁrst one and is able to
+handle queries that are composed of diﬀerent independent sets of linked literals,
+separated by cuts. Such queries are generated by the cut-transform [13], which
+is implemented in the ILP system Aleph.
+Our experiments show that the two versions of the transformation both ap-
+proximate the theoretical optimal transformations, which replace a query by the
+permutation that has minimal average execution time, very well. The obtainable
+eﬃciency gain of the transformation over using the original queries, as generated
+by the reﬁnement operator of the ILP system, depends much on the language
+bias that is used. The language bias used in our experiments was well designed
+in the sense that the eﬃciency of the generated queries was close to that of the
+best possible permutations. Our experiments further show that the eﬃciency
+gain increases with the length of the sets of linked literals. By reordering the
+sets themselves, not much eﬃciency can be gained.
+The time complexity of our transformation is exponential in query-length (or
+independent set size) because it considers all possible permutations of a given
+query. We would like to develop a diﬀerent version of our transformation that
+
+uses a greedy method to ﬁnd an approximate solution in less time. In this way it
+could be possible to obtain a better trade-oﬀbetween the overhead introduced by
+the transformation itself and the eﬃciency gained by executing the transformed
+queries.
+Kietz and L¨ubbe introduce in [6] an eﬃcient subsumption algorithm which is
+based on similar ideas. Their algorithm moves deterministic literals to the front
+while executing a query on a given example. One important diﬀerence is that
+their transformation is dynamic, because it is performed for each query and each
+example. The transformation described in this work is static: a given query is
+transformed once and then executed on all examples. One advantage of a static
+transformation is that the possible overhead introduced by the transformation
+itself decreases if the number of examples increases. Further work will include
+comparing both transformations.
+Another approach for improving the eﬃciency of query execution is the use
+of query-packs [2]. The basic idea here is that sets of queries that have a common
+preﬁx, as they are generated by the reﬁnement operator of a typical ILP system,
+can be executed more eﬃciently by putting them in a tree structure called a
+query-pack. In further work, we intend to combine the transformations presented
+here with query-packs. Combining query transformations with query-packs is
+diﬃcult because the transformation may ruin the structure of the pack. Currently
+we are working on combining query-packs with the transformations described in
+[13].
+Because the language bias has an important inﬂuence on the eﬃciency gain,
+we would like to try our transformation on more data sets with diﬀerent types
+of language bias. One interesting approach here would be to use a language bias
+that generates larger sets of linked literals. Such a language bias is useful for
+ﬁrst order feature construction, where one is interested in predictive relational
+patterns, which can be used for example, in propositional learning systems.
+Acknowledgments
+Jan Struyf is a research assistant and Hendrik Blockeel a post-doctoral fellow of
+the Fund for Scientiﬁc Research (FWO) of Flanders.
+References
+1. H. Blockeel, L. De Raedt, N. Jacobs, and B. Demoen. Scaling up inductive lo-
+gic programming by learning from interpretations. Data Mining and Knowledge
+Discovery, 3(1):59–93, 1999.
+2. H. Blockeel, L. Dehaspe, B. Demoen, G. Janssens, J. Ramon, and H. Vandecasteele.
+Improving the eﬃciency of inductive logic programming through the use of query
+packs. Journal of Artiﬁcial Intelligence Research, 2001. Submitted.
+3. M. Carlsson. Freeze, indexing, and other implementation issues in the WAM. In
+Jean-Louis Lassez, editor, Proceedings of the 4th International Conference on Logic
+Programming (ICLP87), Series in Logic Programming, pages 40–58. MIT Press,
+1987.
+
+4. R. Elmasri and S. B. Navathe.
+Fundamentals of Database Systems.
+Ben-
+jamin/Cummings, 2nd edition, 1989.
+5. M. Jarke and J. Koch. Query optimization in database systems. ACM Computing
+Surveys, 16(2), 1984.
+6. J.U. Kietz and M. L¨ubbe. An eﬃcient subsumption algorithm for inductive logic
+programming. In Proceedings of the 11th International Conference on Machine
+Learning, pages 130–138. Morgan Kaufmann, 1994.
+7. A. Krall.
+Implementation techniques for prolog.
+In N. Fuchs and G. Gottlob,
+editors, Proceedings of the Tenth Logic Programming Workshop, WLP 94, pages
+1–15, 1994.
+8. J.W. Lloyd.
+Foundations of Logic Programming.
+Springer-Verlag, 2nd edition,
+1987.
+9. S. Muggleton. Inverse entailment and Progol. New Generation Computing, Special
+issue on Inductive Logic Programming, 13(3-4):245–286, 1995.
+10. C. N´edellec, H. Ad´e, F. Bergadano, and B. Tausend.
+Declarative bias in ILP.
+In L. De Raedt, editor, Advances in Inductive Logic Programming, volume 32 of
+Frontiers in Artiﬁcial Intelligence and Applications, pages 82–103. IOS Press, 1996.
+11. D. Pavlov, H. Mannila, and P. Smyth. Beyond independence: Probabilistic mod-
+els for query approximation on binary transaction data. IEEE Transactions on
+Knowledge and Data Engineering, 2003. To appear.
+12. J.R. Quinlan. Learning logical deﬁnitions from relations. Machine Learning, 5:239–
+266, 1990.
+13. V. Santos Costa, A. Srinivasan, R. Camacho, H. Blockeel, B. Demoen, G. Janssens,
+J. Struyf, H. Vandecasteele, and W. Van Laer. Query transformations for improving
+the eﬃciency of ILP systems. Journal of Machine Learning Research, 2002. In
+press.
+14. A. Srinivasan, R.D. King, and D.W. Bristol. An assessment of ILP-assisted models
+for toxicology and the PTE-3 experiment. In Proceedings of the Ninth International
+Workshop on Inductive Logic Programming, volume 1634 of Lecture Notes in Ar-
+tiﬁcial Intelligence, pages 291–302. Springer-Verlag, 1999.
+15. J. Struyf, J. Ramon, and H. Blockeel. Compact representation of knowledge bases
+in ILP. In Proceedings of the 12th International Conference on Inductive Logic
+Programming, volume 2583 of Lecture Notes in Artiﬁcial Intelligence, pages 254–
+269. Springer-Verlag, 2002.
+16. F. ˇZelezn´y, A. Srinivasan, and D. Page. Lattice-search runtime distributions may
+be heavy-tailed. In S. Matwin and C. Sammut, editors, Inductive Logic Program-
+ming, 12th International Conference, ILP 2002, volume 2583 of Lecture Notes in
+Computer Science, pages 333–345. Springer-Verlag, 2003.
+

@@ -1,0 +1,444 @@
+New Frontier:  
+Using Wikidata on Commons 
+By Jarek Tuszyński  
+(user:jarekt) 
+August 2017 
+
+Infobox templates on Commons 
+•
+Purpose: 
+– Preserve metadata - Many files come from institutions which store rich 
+metadata. When uploading files to Commons we want to preserve it all. 
+– Present metadata – Present metadata to the users in the most simple and 
+readable way 
+– Internationalization (I18n) - Commons serves Wikimedia projects using 
+many languages. Our goal is to show pages in the language of the viewer. 
+– Machine readability  
+•
+Metadata is stored in variety of templates, for example 
+– {{Information}} – for user generated photographs 
+– {{Artwork}} –  for artworks, artifacts and other objects 
+– {{Creator}} – for authors 
+– {{Institution}} – for galleries, museums and other institutions 
+– We also have {{Book}}, {{Authority control}}, {{Location}} (for coordinates) 
+taxonomic templates and many more 
+•
+Originally infobox templates stored metadata in wikitext format 
+ 
+
+Preserving metadata during upload 
+
+Internationalization 
+•
+The same page as seen by 
+English and German 
+speakers 
+•
+Language determined from 
+user preferences or from 
+Wikipedia they come from  
+
+I18n templates 
+{{Artwork}} 
+{{Creator}} 
+{{Institution}} 
+{{Authority Control}} 
+{{location}} 
+{{City}} 
+{{ISOdate}} 
+{{NationAndOccupation}} 
+{{Technique}} 
+Translated on 
+ Translatewiki.net 
+Translated using  
+{{LangSwitch}} template 
+•
+Need for I18n templates is 
+unique to Commons and 
+few other multi-language 
+projects 
+
+Infobox uses 
+• Single file: 
+– Most files store metadata relevant to a single file in 
+templates like {{Information}}, {{Artwork}}, etc.  
+• Multiple files: 
+– When matadata can be shared among multiple files it is 
+stored in designated templates which are transcluded into 
+multiple files.  
+– We have large collections of infobox templates, like : 
+• Creator templates – 30k - have their own namespace 
+• Institution templates – 4.4k - have their own namespace 
+• Book templates – 1.8k - stored in template namespace 
+• Artwork templates – 12k - stored in category namespace (!) 
+– Collections of infobox templates served for years some of 
+the functions of wikidata: mass metadata storage which 
+than can be accessed from the files 
+
+Introduction of Wikidata an Lua 
+• The system become very esoteric, with some 
+templates becoming too complicated to maintain. 
+• We were rescued by two 2013 developments: 
+– Introduction of Lua programing language 
+– Introduction of Wikidata 
+• In April 2016 arbitrary access was enabled on 
+Commons, which finally made Wikidata useful to 
+Commons. 
+• Since then much work was done on rewriting 
+templates using Lua and accessing Wikidata. 
+ 
+ 
+
+New Frontier 
+Wikidata can simplify three of the purposes of 
+infoboxes: 
+• Internationalization – Wikidata can be also used for 
+translation 
+• Machine readability  
+• Preserve metadata – Much of metadata about people, places, 
+institutions, books, artworks, etc. can be stored on Wikidata, 
+which serves as central repository shared by all the projects.  
+– Benefit for Wikidata – there is a wealth of metadata stored on Commons  
+– Benefit to Commons - more users will bring better quality and simplify 
+maintenance. Using Wikidata also greatly simplifies creation of the templates 
+Parallel to the effort of conversion of Infobox templates to use 
+Wikidata, we also work on importing data from Commons to 
+Wikidata. 
+
+Stages of moving metadata to Wikidata 
+1. Link Commons pages with Wikidata (often using mix-
+n-match tool) 
+–
+Store Commons page name in Wikidata properties 
+–
+Store Wikidata q-code on Commons page 
+2. Rewrite Infobox in Lua to allow pulling metadata from 
+Wikidata 
+3. Reconcile Commons and Wikidata metadata, through 
+automatic comparison: 
+–
+The same → remove from Commons, as redundant 
+–
+Missing from Wikidata → move to Wikidata 
+–
+Present in both but different → reconcile by human as 
+one of the pages is likely wrong 
+
+Quick Statements 
+• Quick statements (QS) is an life-saving tool by Magnus 
+Manske for moving data to Wikidata 
+• It reades a list of text commands and adds statements 
+(with optional qualifiers and sources) to Wikidata items. 
+• It can be operated in 2 modes: 
+– Batch mode: collect the data through a database query or  
+scrape it using AWB tool. Convers the data into proper text 
+commands using text editor or spreadsheet, and than run a 
+batch of commands. 
+– Individual template mode: Lua code can detect that local 
+template has information missing from Wikidata, and can create 
+proper QS commands which are then embedded in URL. 
+Template displays         arrow which when clicked uploads the 
+data to Wikidata. 
+ 
+
+Progress 
+Template 
+Lua 
+Wikidata link Reconcile 
+Comment 
+{{City}} 
+100% 
+100% 
+100% 
+{{Authority 
+control}} 
+100% 
+138k (98%) 
+100% 
+See Category:Pages using authority 
+control without Wikidata link 
+{{Creator}} 
+90% 
+27.6k (94%) 
+~50% 
+Utilizing as much of Wikidata data 
+as possible is a long term process  
+{{Institution}} 
+0% 
+4k (97%) 
+0% 
+Should be similar to {{Creator}} 
+{{Artwork}} 
+5% 
+60k (6%) 
+? 
+Sum of all Paintings project added 
+metadata for 148k paintings and 
+11k sculptures 
+{{Book}} 
+0% 
+0% 
+0% 
+{{Object 
+Location}} 
+100% 
+~30k 
+80% 
+{{VN}} 
+80% 
+? 
+Template:VN is for vernacular 
+names of taxons 
+
+{{Authority control}} 
+• Used 140k times on some Category pages and most Creator 
+and Institution pages 
+• We matched most instances to Wikidata and modified each 
+template by adding ‘’Wikidata” parameter 
+• Pages using both local and Wikidata parameters use color to 
+identify the source 
+• We reconciled and removed local parameters from 138k 
+pages. 2.5k remains unmatched. 
+Matching values 
+Commons value Wikidata value 
+Code which can be 
+used with quick 
+statements tool to add 
+Commons value to 
+Wikidata 
+
+{{Creator}} 
+• {{Creator}} template allows creation of a creator template 
+with basic information about people. We have almost 30k of 
+them. 
+• We matched 95% of them to Wikidata and wrote Lua code 
+that closely mimics current template: 
+Local parameters (over 100 lines of wikicode): 
+Wikidata based infobox ( {{Creator | Wikidata = Q35548 | Option = {{{1|}}} }} ): 
+
+Challenges 
+•
+Many Commons templates and many Wikidata statements do not have 
+references, making reconciliation of differences hard. 
+•
+More options to specify approximate dates on Commons than on 
+Wikidata. Dates like born in “Spring of 993” or “first half of 18-th century” 
+can not the used (at the moment?) so we need to use less precise dates.  
+•
+Places of birth/death on Commons are at city-precision, On Wikipedia 
+they are at the highest precision available (house, hospital, street, etc.) so 
+it is a challenge to extract city-precision locations. 
+•
+Dates on Wikidata come from many sources. There might be several dates 
+with different precision (day / month/ year) and different quality of 
+references. Not clear how to compare and pick the “preferred” date if not 
+indicated 
+•
+Multiple ways to model the same type of data. For example “Burial date” 
+or “Work period”/”floruit” can be modeled 2-3 different ways on Wikidata 
+•
+Wikidata does not store “nationality” of people. “Country of citizenship” 
+(P27), “ethnic group” (P172) can be often used to determine nationality  
+•
+Location coordinates of countiers, cities, etc. are not well defined  and 
+users setting them often do not use precision field correctly, resulting in 
+discrepancies between different sources.  
+ 
+
+Commons’ Structured data 
+• {{Information}} template is the most used 
+infobox on Commons used by 37M files. 
+• In the future, data from {{Information}} 
+templates will be moved to Commons’ 
+structured data. 
+• Lessons learned from migrating other 
+infoboxes to Wikidata will be important when 
+we begin that process. 
+
+Help Needed 
+• Help with geographical coordinates 
+– Category:Pages with local coordinates and mismatching wikidata coordinates 
+– Category:Pages with local coordinates and similar wikidata coordinates 
+• Help with reconciling biographical data 
+– Category:Creator template maintenance 
+– Category:Creator templates with Wikidata link: quick statements 
+– Category:Pages using authority control without Wikidata link 
+ 
+
+Backup slides 
+
+Trouble brewing 
+• The system become very esoteric, with some 
+templates becoming too complicated to maintain. 
+• Many of i18n templates are used on a lot of 
+pages, like {{Dir}} used on 41M out of 47M pages. 
+• We were often tripping the expansion limit 
+“safety fuse” 
+• We were rescued by two 2013 developments: 
+– Introduction of Lua programing language 
+– Introduction of Wikidata 
+
+Timeline 
+•
+January 2013 - Wikidata phase I went live on Wikipedia projects 
+allowing storage of interwiki links in a single place as Wikidata 
+''sitelinks''.  
+•
+March 2013 - Lua is introduced on all Wikimedia projects, including 
+Commons. Many templates were rewritten in Lua. 
+•
+September 2013 - Wikidata phase I went live on Commons, with 
+little notice since most interwiki links on Commons were from 
+Commons categories to Wikipedia articles and back then there was a 
+semi-consensus that sitelinks should not be between pages in 
+different namespaces 
+•
+September 2015 - Arbitrary access to Wikidata properties was 
+enabled on English Wikipedia allowing calls like 
+{{#property:P36|from=Q183}} 
+•
+April 2016 - Arbitrary access was enabled on Commons, which finally 
+made Wikidata useful to Commons. 
+ 
+
+Rewriting Templates in Lua 
+• Commons templates often rely on a lot of other 
+templates, which again rely on even more 
+templates 
+• One challenge of moving to Lua is to minimize 
+number of calls to other templates 
+•  Luckily many of the most basic templates, are 
+already translated  
+ 
+
+{{City}} template 
+• {{City}} template serves as a giant lookup table matching 
+1890 names of cities and countries, like ‘’Mосква’’ or 
+“Moscow”, to 1315 location templates, like {{Moscow}}. 
+• Location templates return name of location in user’s 
+language with a link to user’s native Wikipedia. All names 
+and links for hundreds of languages were stored in each 
+template  
+• We matched all location templates to Wikidata and 
+rewrote them so they pull all the information required 
+directly from Wikidata. 
+• {{City}} still works as a lookup table but also calls 
+Wikidata directly 
+
+•
+Sitelinks work for 1-to-1 linking with Wikipedia 
+•
+Commons Can have several pages that need to access Wikidata properties: 
+category, creator, institution or gallery pages, but only one sitelink is allowed. 
+ 
+ 
+ 
+Commons / Wikidata Linking (current) 
+Article 
+Q123 
+ 
+Category 
+(store Q123) 
+ 
+Gallery 
+(store Q123) 
+ 
+Creator 
+(store Q123) 
+ 
+P373 
+P935 
+P1472 
+Category 
+Q321 
+sitelink 
+sitelink 
+P910 
+P301 
+Sometimes present 
+Commons 
+Wikidata 
+•
+Current solution: 
+–
+Store Commons page names in Wikidata 
+properties 
+–
+Store Wikidata q-code on Commons page 
+–
+Not use sitelinks which can be pointing to 
+any page 
+•
+Issues: 
+– Two places to store the same information 
+means a lot of maintenance to keep them in 
+synch 
+– Commons moving, redirecting or deleting 
+pages does not update Wikidata 
+– Wikidata merges, even deletes, pages 
+without updating Commons 
+– Wikidata maintenance tools do not work with 
+linking through properties 
+ 
+
+Article 
+Q123 
+ 
+•
+Create Wikidata page for every Category, 
+Creator or Institution page on Wikidata. 
+Connect to Commons through sitelinks. 
+Link them to each other through 
+properties.  
+– Issue 1: that is a lot of new pages on Wikidata 
+and interconnections to maintain 
+– Issue 2: Where to keep properties? Usually 
+only article pages on Wikidata have 
+properties. 
+•
+Allow Commons pages to detect when 
+they are used as a property of some 
+Wikidata page 
+– Issue: not the way Wikidata is designed to 
+operate. The properties would become a little 
+like sitelinks 
+Commons 
+Wikidata 
+Commons / Wikidata Linking 
+(alternatives) 
+Category 
+(store 
+Q123) 
+ 
+Gallery 
+(store 
+Q123) 
+ 
+Creator 
+(store 
+Q123) 
+ 
+P373 
+P935 
+P1472 
+Category 
+Q321 
+sitelink 
+Creator 
+Q231 
+Article 
+Q123 
+ 
+Category 
+ 
+Gallery 
+ 
+Creator 
+ 
+P373 
+P935 
+P1472 
+sitelink 
+Wikidata 
+Commons 
+
