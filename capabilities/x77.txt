@@ -1,0 +1,100 @@
+received the number ga from Lisa, which he raises to the b-th power, thereby
+getting (ga)b = ga∙b = gb∙a. Therefore, both Lisa and David end up with the same
+number: gb∙a, which was created in a special way from the numbers they chose
+independently of each other. This number could serve as a joint encryption key,
+but, unfortunately someone could intercept their communication and get to know
+g, ga, and gb. It would then only be a matter of trial and error to manipulate and
+combine these numbers in the right way to obtain the key ga∙b. In this process,
+however, an eavesdropper would have to compute a from ga, or b from gb. This
+operation, which is the inverse of exponentiation, is called “the logarithm to the
+base g.” More precisely, a number a is called the logarithm to base g of a number
+r, if ga = r. Here, g and r are assumed to be positive real numbers, and a can be
+any real number. For example, the logarithm to the base 2 of 8 is 3, since 23 = 8,
+and the logarithm to the base 3 of 81 is 4, since 34 = 81. If the considered
+numbers are larger, one may not be able to find out the logarithm by using paper
+and pencil, but it can still be determined without effort under the assistance of an
+electronic calculator. For very large numbers, say, with hundreds of digits, one
+may need a really powerful computer, but it can still be done in reasonable time
+
+with enough computational power.
+Essentially, the ingenious idea underlying the Diffie-Hellman-Merkle method
+is to modify the generation of the joint key ga∙b via exponentiation in such a way
+that the inverse operation of determining a from ga or b from gb becomes
+significantly harder in the sense that finding the solution would consume an
+immense amount of time, no matter how powerful your calculating machine may
+be. The safety of the Diffie-Hellman-Merkle key exchange relies on the fact that
+even the fastest computers in the world would need more time than the age of
+the universe for this task.
+To reveal the trick that is used in this method, we have to introduce another
+mathematical operation, which is called the modulo operation. Basically, the
+modulo operation finds the remainder after division of one integer by another.
+For example, 8 mod 2 = 0 (which is read as “8 is congruent to 0 modulo 2” or,
+shorter, “8 modulo 2 is 0”), because if we divide 8 by 2, the remainder is 0.
+Analogously, we have 20 mod 2 = 0, but if we divide an odd number by 2, then
+the remainder will be 1, for example 5 mod 2 = 1. More generally, all even
+numbers are congruent to 0 under the modulo-2 operation, and all odd numbers
+are congruent to 1. Calculating modulo 3, we have three different possible
+remainders after division by 3, so all numbers will fall in one of three “classes”
+determined by the remainder after division by 3. To visualize the modulo
+operation, we may think of a polygon with k vertices, labeled counterclockwise
+from 0 to k – 1.
+Figure 8.36.
+Then, to determine n mod k, we start at vertex 0 and move exactly n steps
+counterclockwise, hopping from vertex to vertex. The number of the vertex at
+which we finally end up, is n mod k. In figure 8.36, this procedure is shown for
+
+the case k = 7, using a 7-gon. All natural numbers are congruent modulo 7 to one
+of the numbers 0,1,2,3,4,5, and 6. For example, 10 mod 7 = 3, since 10 steps will
+lead us from vertex 0 to vertex 3. In the Diffie-Hellman-Merkle method, the
+modulo operation is used to give the joint key creation as described above a
+decisive twist. First, Lisa and David agree on some prime number p and a
+number g between 1 and p – 1, such that gk mod p can take on any value from 1
+to p – 1, if k runs through all natural numbers. As an example, let us consider p =
+7 and g = 3 (see figure 8.37).
+Figure 8.37.
+Next, Lisa chooses a positive integer a and computes ga mod p. Let us assume
+she chooses a = 4. Then, using the table in figure 8.37 and the 7-gon in figure
+8.36, she obtains the following:
+ga mod p = 34 mod 7 = 4 mod 7
+and sends this number, 4, to David. Analogously, David chooses a number b,
+say, b = 5, and computes:
+gb mod p = 35 mod 7 = 5 mod 7.
+Here we may use that x ∙ y mod p = (x mod p) (y mod p), which is clear since
+replacing a factor x of a composite number by (x mod p) means that we subtract
+a multiple of p from the number, which doesn't change the result modulo p. Now
+David sends his result, 5, to Lisa. Just as described earlier, Lisa computes (gb
+mod p)a mod p = (54 mod 7) = 2, and David computes (ga mod p)b mod p = (45
+mod 7) = 2. Again, both parties will obtain the same result, since (gb)a = (ga)b.
+Thus, they have created their joint decryption key, just as in the original setting.
+However, let's switch to the role of an eavesdropper, say, Evan, where we see
+that the situation is now different. Listening in on the exchange of numbers, he
+finds out that p = 7, g = 3, ga = 4 mod 7, and gb = 5 mod 7. (Lisa and David may
+even communicate this information publicly.) To determine the secret key (gb)a
+mod p, Evan has to determine a, meaning that he has to take the logarithm of ga
+to base g, modulo p. This operation is called the discrete logarithm. But while
+the “classical” logarithm to base g can be computed very quickly even if ga has
+
+hundreds of digits, there exists no efficient method to compute the discrete
+logarithm. Essentially, one has to compute gk mod p for all numbers k between 1
+and p – 1 and compare the result with ga. For instance, our eavesdropper, Evan,
+has to compute 3k mod 7 for all values of k from 1 to 7 – 1 = 6. As soon as he
+obtains the result 4 (which is ga mod 7 in our example), he can stop. This is the
+case for k = 4 (see figure 8.37). He then knows the number a that Lisa had
+chosen. With this knowledge, he can calculate Lisa's and David's secret key gab
+mod 7 (which was 2), since he already knows that gb = 5 mod 7:
+gab mod 7 = (gb)amod 7 = 54 mod 7 = 52 ∙ 52 mod 7 = 16 mod 7 = 2,
+which is exactly the key Lisa and David had established. Looking at the table in
+figure 8.37, we see that Evan had to compute the first four powers of 3 until he
+got the desired result 4 mod 7. Of course, this can be done rather quickly, but
+here we just presented a simple example to demonstrate the basic principle
+behind the Diffie-Hellman-Merkle key exchange. The prime numbers p typically
+used in real applications have approximately 300 digits, meaning that p ≈ 10300
+and, therefore, an eavesdropper would have to compute and test 10300 numbers
+individually. Notice that the number 10300 is a 1 with 300 zeros attached!
+Considering that the number of atoms in the observable universe5 is only about
+1080, we would have to replace each atom in the universe by a whole universe
+the size of our own universe, to obtain 1080 ∙ 1080 = 10160 atoms, and then repeat
+this process once more to finally gain a number of atoms which is larger than
+10300. It is obvious that even for modern supercomputers, computing the discrete
+logarithm of such incredibly large numbers is a task that cannot be achieved in a
+reasonable amount of time.
