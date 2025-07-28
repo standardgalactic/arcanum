@@ -1,0 +1,40 @@
+FILE "Inglés [English]꞉ El Secreto Para Hablar Inglés Como un Nativo en 6 Meses Para Personas Ocupadas [The Secret to Speaking English Like a Native in Six Months for Busy People] [B07283PSCW].m4b" MP3
+TRACK 1 AUDIO
+  TITLE "Opening Credits"
+  INDEX 01 0:00:00
+TRACK 2 AUDIO
+  TITLE "Capítulo 1"
+  INDEX 01 0:20:42
+TRACK 3 AUDIO
+  TITLE "Capítulo 2"
+  INDEX 01 7:43:45
+TRACK 4 AUDIO
+  TITLE "Capítulo 3"
+  INDEX 01 11:18:08
+TRACK 5 AUDIO
+  TITLE "Capítulo 4"
+  INDEX 01 23:00:63
+TRACK 6 AUDIO
+  TITLE "Capítulo 5"
+  INDEX 01 25:15:32
+TRACK 7 AUDIO
+  TITLE "Capítulo 6"
+  INDEX 01 32:56:11
+TRACK 8 AUDIO
+  TITLE "Capítulo 7"
+  INDEX 01 39:52:19
+TRACK 9 AUDIO
+  TITLE "Capítulo 8"
+  INDEX 01 47:13:53
+TRACK 10 AUDIO
+  TITLE "Capítulo 9"
+  INDEX 01 50:49:70
+TRACK 11 AUDIO
+  TITLE "Capítulo 10"
+  INDEX 01 75:55:35
+TRACK 12 AUDIO
+  TITLE "Capítulo 11"
+  INDEX 01 78:32:68
+TRACK 13 AUDIO
+  TITLE "End Credits"
+  INDEX 01 79:39:13

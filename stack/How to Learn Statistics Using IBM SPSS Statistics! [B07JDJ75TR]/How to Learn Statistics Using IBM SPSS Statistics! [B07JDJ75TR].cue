@@ -1,0 +1,19 @@
+FILE "How to Learn Statistics Using IBM SPSS Statistics! [B07JDJ75TR].m4b" MP3
+TRACK 1 AUDIO
+  TITLE "Opening Credits"
+  INDEX 01 0:00:00
+TRACK 2 AUDIO
+  TITLE "Chapter 1"
+  INDEX 01 0:14:54
+TRACK 3 AUDIO
+  TITLE "Chapter 2"
+  INDEX 01 8:58:35
+TRACK 4 AUDIO
+  TITLE "Chapter 3"
+  INDEX 01 20:46:23
+TRACK 5 AUDIO
+  TITLE "Chapter 4"
+  INDEX 01 41:25:52
+TRACK 6 AUDIO
+  TITLE "End Credits"
+  INDEX 01 46:14:06

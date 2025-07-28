@@ -1,0 +1,52 @@
+FILE "Deep Learning with Python꞉ A Fundamentals Guide to Understanding Machine Learning and Artificial Intelligence with Scikit-Learn, TensorFlow, and Keras [B07KQL4CLJ].m4b" MP3
+TRACK 1 AUDIO
+  TITLE "Opening Credits"
+  INDEX 01 0:00:00
+TRACK 2 AUDIO
+  TITLE "Chapter 1"
+  INDEX 01 0:21:44
+TRACK 3 AUDIO
+  TITLE "Chapter 2"
+  INDEX 01 1:45:66
+TRACK 4 AUDIO
+  TITLE "Chapter 3"
+  INDEX 01 8:51:02
+TRACK 5 AUDIO
+  TITLE "Chapter 4"
+  INDEX 01 20:48:54
+TRACK 6 AUDIO
+  TITLE "Chapter 5"
+  INDEX 01 35:12:13
+TRACK 7 AUDIO
+  TITLE "Chapter 6"
+  INDEX 01 44:25:03
+TRACK 8 AUDIO
+  TITLE "Chapter 7"
+  INDEX 01 47:40:45
+TRACK 9 AUDIO
+  TITLE "Chapter 8"
+  INDEX 01 49:53:07
+TRACK 10 AUDIO
+  TITLE "Chapter 9"
+  INDEX 01 56:14:55
+TRACK 11 AUDIO
+  TITLE "Chapter 10"
+  INDEX 01 62:58:67
+TRACK 12 AUDIO
+  TITLE "Chapter 11"
+  INDEX 01 67:02:46
+TRACK 13 AUDIO
+  TITLE "Chapter 12"
+  INDEX 01 89:46:35
+TRACK 14 AUDIO
+  TITLE "Chapter 13"
+  INDEX 01 108:07:24
+TRACK 15 AUDIO
+  TITLE "Chapter 14"
+  INDEX 01 136:35:35
+TRACK 16 AUDIO
+  TITLE "Chapter 15"
+  INDEX 01 160:24:67
+TRACK 17 AUDIO
+  TITLE "End Credits"
+  INDEX 01 161:11:07

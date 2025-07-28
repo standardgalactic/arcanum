@@ -1,0 +1,52 @@
+FILE "The Alignment Problem꞉ Machine Learning and Human Values [B085DJZRPC].m4b" MP3
+TRACK 1 AUDIO
+  TITLE "Opening Credits"
+  INDEX 01 0:00:00
+TRACK 2 AUDIO
+  TITLE "Prologue"
+  INDEX 01 0:54:18
+TRACK 3 AUDIO
+  TITLE "Introduction"
+  INDEX 01 7:56:72
+TRACK 4 AUDIO
+  TITLE "I. Prophecy"
+  INDEX 01 32:01:07
+TRACK 5 AUDIO
+  TITLE "1. Representation"
+  INDEX 01 32:04:04
+TRACK 6 AUDIO
+  TITLE "2. Fairness"
+  INDEX 01 119:17:18
+TRACK 7 AUDIO
+  TITLE "3. Transparency"
+  INDEX 01 197:47:25
+TRACK 8 AUDIO
+  TITLE "II. Agency"
+  INDEX 01 288:52:36
+TRACK 9 AUDIO
+  TITLE "4. Reinforcement"
+  INDEX 01 288:58:33
+TRACK 10 AUDIO
+  TITLE "5. Shaping"
+  INDEX 01 367:54:45
+TRACK 11 AUDIO
+  TITLE "6. Curiosity"
+  INDEX 01 443:52:54
+TRACK 12 AUDIO
+  TITLE "III. Normativity"
+  INDEX 01 519:21:60
+TRACK 13 AUDIO
+  TITLE "7. Imitation"
+  INDEX 01 519:26:42
+TRACK 14 AUDIO
+  TITLE "8. Inference"
+  INDEX 01 613:47:70
+TRACK 15 AUDIO
+  TITLE "9. Uncertainty"
+  INDEX 01 679:13:00
+TRACK 16 AUDIO
+  TITLE "Conclusion"
+  INDEX 01 766:54:10
+TRACK 17 AUDIO
+  TITLE "End Credits"
+  INDEX 01 812:41:51

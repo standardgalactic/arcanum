@@ -1,0 +1,34 @@
+FILE "Machine Learning with Python꞉ A Step-by-Step Guide to Learn and Master Python Machine Learning [B07L6Q73QM].m4b" MP3
+TRACK 1 AUDIO
+  TITLE "Opening Credits"
+  INDEX 01 0:00:00
+TRACK 2 AUDIO
+  TITLE "Chapter 1"
+  INDEX 01 0:17:65
+TRACK 3 AUDIO
+  TITLE "Chapter 2"
+  INDEX 01 2:23:65
+TRACK 4 AUDIO
+  TITLE "Chapter 3"
+  INDEX 01 22:26:32
+TRACK 5 AUDIO
+  TITLE "Chapter 4"
+  INDEX 01 34:52:29
+TRACK 6 AUDIO
+  TITLE "Chapter 5"
+  INDEX 01 50:17:35
+TRACK 7 AUDIO
+  TITLE "Chapter 6"
+  INDEX 01 58:03:20
+TRACK 8 AUDIO
+  TITLE "Chapter 7"
+  INDEX 01 79:54:27
+TRACK 9 AUDIO
+  TITLE "Chapter 8"
+  INDEX 01 89:33:45
+TRACK 10 AUDIO
+  TITLE "Chapter 9"
+  INDEX 01 99:02:71
+TRACK 11 AUDIO
+  TITLE "End Credits"
+  INDEX 01 100:26:55

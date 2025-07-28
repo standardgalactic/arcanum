@@ -1,0 +1,1092 @@
+Hey everyone. Hello. Thank you all for coming. My name is Mahesh and I'm on the Applied AI team
+at Anthropic. I'm really excited to see a very full room and very excited that you chose me
+over OpenAI. Thanks very much. So today we're going to be talking about MCP, Model Context Protocol.
+This is more of a talk than a workshop, but I'll do my best to keep it interactive. If you want to
+ask questions, feel free to do so and I'll do my best to answer them. Today we're going to talk
+about the philosophy behind MCP and why we at Anthropic thought that it was an important thing
+to launch and build. We're going to talk about some of the early traction of MCP in the last couple
+of months and then some of the patterns that allow MCP to be adopted for AI applications, for agents,
+and then the roadmap and where we're going from here.
+Cool. So our motivation behind MCP was the core concept that models are only as good as the context
+we provide to them. This is a pretty obvious thing to us now, but I think a year ago when most AI
+assistance or applications were chatbots, you would bring in the context to these chatbots by
+copy pasting or by typing or kind of pasting context from other systems that you're using.
+But over the past few months, in the past year, we've seen these evolve into systems where the model
+actually has hooks into your data and your context, which makes it more powerful and more personalized.
+And so we saw the opportunity to launch MCP, which is an open protocol that enables seamless
+integration between AI apps and agents and your tools and data sources. The way to think about MCP
+is by first thinking about the protocols and systems that preceded it. APIs became a thing that
+a while ago to standardize how web apps interact between the front end and the back end. It's a
+kind of protocol or layer in between them that allows them to translate requests from the back end
+to the front end and vice versa. And this allows the front end to get access to things like servers
+and databases and services. LSP came later, and that standardizes how IDEs interact with language
+specific tools. LSP is a big part of our inspiration and it's called Language Server Protocol and allows
+an IDE that's LSP compatible to go and talk to and figure out the right ways to interact with different
+features of coding languages. You could build a Go LSP server once and any IDE that is LSP compatible can
+hook into all the things about Go when you're coding in Go. So that's where MCP was born.
+MCP standardizes how AI applications interact with external systems and does so in three primary ways
+and three interfaces that are part of the protocol, which are prompts, tools, and resources.
+So here is the lay of the land before MCP that Anthropic was seeing. We spent a lot of time with
+customers and people trying to use our API to build these agents and AI applications. And what we were
+seeing is across the industry, but also even inside of the companies that we were speaking to, there was a
+ton of fragmentation about how to build AI systems in the right way. One team would kind of create this
+AI app that hooks into their context with this custom implementation that has its own custom prompt logic
+with different ways of bringing in tools and data and then different ways of federating access to those
+tools and data to the agents. And if different teams inside of a company are doing this, you can imagine that
+the entire industry is probably doing this as well. The world with MCP is a world of standardized AI
+development. You can see in the left box, which is the world of an MCP client, and there's some client
+examples here like our own first party applications, recently applications like Cursor and Windsurf,
+agents like Goose, which was launched by Block, all of those are MCP clients. And there's now a standard
+interface for any of those client applications to connect to any MCP server with zero additional work.
+An MCP server on the right side is a wrapper or a way of federating access to various systems and tools
+that are relevant to the AI application. So it could be a database to query and fetch data and to give
+the LM access to databases and records. It could be a CRM like Salesforce, where you want to read and
+write to something that is hosted on a remote server, but you want the LLM to have access to it. It could
+even be things on your local laptop or your local system, like version control and Git, where you want
+the LM to be able to connect to the APIs that run on your computer itself.
+So we can talk about the value that we've seen for different parts of the ecosystem over the past
+few months. The value for application developers is once your client is MCP compatible, you can connect
+it to any server with zero additional work. If you're a tool or API provider or someone that wants to give
+LLMs access to the data that matters, you can build your MCP server once and see adoption of it
+everywhere across all of these different AI applications. And just a quick aside, the way I
+like to frame this is before MCP, we saw a lot of the n times m problem, where there were a ton of
+different permutations for how these folks interact with each other, how client applications talk to
+servers. And MCP aims to flatten that and be the layer in between the application developers and the tool and
+API developers that want to give LLMs access to these data. For end users, obviously, this leads
+to more powerful and context rich AI applications. If you've seen any of the demos on Twitter with
+Cursor and Windsurf, even our own first party applications, you've seen that these systems are
+kind of context rich, and they actually know things about you and can go and take action in the real
+world. And for enterprises, there's now a clear way to separate concerns between different teams
+that are building different things on the roadmap. You might imagine that one team that owns the data
+infrastructure layer has a vector DB or a rag system that they want to give access to to other teams
+building AI ops. In a pre-MCP world, what we saw was every single individual team would build their own
+different way of accessing that vector database and deal with the prompting and the actual chunking
+logic that goes behind all of this. But with MCP, an enterprise can have a team that actually owns the
+vector DB interface and turns it into an MCP server. They can own and maintain and improve that, publish a
+set of APIs, they can document it, and then all of the other teams inside their company can now build these
+AI apps in a centralized way where they're moving a lot faster without needing to go and talk to
+that team every time that they need access to it or need a way to get that data. And so you can kind
+of imagine this is like the world with microservices as well, where different people, different teams
+can own their specific service, and the entire company and the roadmap can move a lot faster.
+Well, so let's talk about adoption. This is something that's been really exciting over the past couple
+of months. It kind of comes up in almost every anthropic conversation with people that we work
+with and a lot of our customers. The slide covers a few different personas, but we can start with the
+applications and the IDEs. This has been really exciting recently, and it provides this really nice
+way for people that are coding in an IDE to provide context to that IDE while they're working, and the
+agents inside those IDEs go and talk to these external systems like GitHub, like documentation
+sites, etc. We've also seen a lot of development on the server side. I think to date, there are
+something like 1100 community built servers that folks have built and published open source. There are
+also a bunch of servers built by companies themselves. I just built one as an example. There are folks like
+and a bunch of others that have published official integrations for ways to hook into their systems.
+There's also a ton of adoption on the open source side as well. So people that are actually contributing
+to the core protocol and the infrastructure layer around it. So those are
+a bit about what it actually means to build with MCP and some of the core concepts that are part of the protocol itself.
+Here's kind of the view of the world of how to actually build with MCP. So on the left side,
+you have the MCP client that invokes tools that queries for resources and interpolates prompts
+and kind of fills prompts with useful context for the model. On the server side, the server builder
+exposes each of these things. They expose the tools, the resources, and the prompts in a way that's
+consumable by any client that connects to it. So it's like each of these components. A tool is maybe the
+most intuitive and the thing that's developed the most over the past few months. A tool is model
+controlled. And what that means is the server will expose tools to the client application and the model
+within the client application, the LLM, can actually choose when the best time to invoke those tools is.
+So if you use Cloud4Desktop or any of these agent systems that are MCP compatible, usually the way this
+works is you'll interpolate various tools into the prompt. You'll give descriptions about how those
+tools are used as part of the server definition and the model inside the application will choose
+when the best time to invoke those tools are. And these tools are kind of the possibilities are kind
+of endless. I mean, it's read tools to retrieve data. It's write tools to go and send data to
+applications or kind of take actions in various systems. It's tools to update databases, to write files on your
+files on your local file system. It's kind of anything. Now we get to resources. Resources
+are data exposed to the application and they're application controlled. What that means is the
+server could define or create images. It could create text files, JSON. Maybe it's keeping track of,
+you know, the actions that you've taken with the server within a JSON file and it exposes that to the
+application. And then it's up to the application how to actually use that resource. Resources provide
+this rich interface for applications and servers to interact that go just beyond you talking to a
+chatbot using text. So some of some of the use cases we've seen for this are files where the server
+either surfaces a static resource or a static file or a dynamic resource where the client application can
+send the server some information about the user, about the file system that they're working in,
+and the server can interpolate that into this more complex data structure and send that back to the
+client application. Inside Cloud for Desktop, resources manifest as attachments. So we let people,
+when they're interacting with the server, go and click into our UI and then select a resource and it gets
+attached to the chat and optionally sent to the model for whatever the user is working on. But
+resources could also be automatically attached. You could have the model decide, hey, I see that
+there's this list of resources. This one is super relevant to the task we're working on right now. Let
+me automatically attach this to the chat or send it to the model and then proceed from there.
+And finally, prompts. Prompts are user controlled. We like to think of them as the tools that the user
+invokes as opposed to something that the model invokes. These are predefined templates for common
+interactions that you might have with the specific server. A really good manifestation of this I've
+seen is in the IDE called Z where you have the concept of slash commands where you're talking to
+the LLM, to the agent, and you say, hey, I'm working on this PR. Can you go and summarize the work that
+I've done so far? And you just type slash GHPR, you give it the PR ID, and it actually will
+interpolate this longer prompt that's predefined by Z inside of the MTP server, and it gets sent to the
+LLM, and you generate this really nice full data structure or full prompt that you can then send
+to the LLM itself. A few other common use cases that we've seen are different teams have these
+standardized ways of, let's say, doing document Q&A. Maybe they have formatting rules, they have,
+you know, inside of a transcript, they'll have different speakers and different ways they want
+the data to be presented. They can service that or surface that inside the server as a prompt,
+and then the user can choose when it makes the most sense to invoke.
+Cool. I'll pause there. Any questions so far about these various things and how they all fit together?
+Yeah, I think we, a big part of MCP, sorry, the question is why aren't resources modeled in the
+same way as tools? Why couldn't they have just been tools? A big part of the thinking behind MCP broadly
+is it's not just about making the model better, it's about actually defining the ways that the
+application itself can kind of interact with the server in these richer ways. And so tools are
+typically model controlled, and we wanted to create a clean separation between what's model controlled
+and application controlled. So you could actually imagine an application that's MCP compatible decides
+when it wants to put a resource into context. Maybe that's based on predefined rules. Maybe that's
+based on it makes an LLM call and makes that decision. But we wanted to create a clean separation for
+the client builder and the server builder for what should be invoked by the model and what should be
+invoked by the application. I saw you go first. Yeah, Glasses.
+Yeah, the question is, are tools the right way to expose, let's say, a vector database to model?
+The answer is kind of up to you. We think that these are really good to use when it's kind of
+ambiguous when a tool should be invoked. So maybe the LLM sometimes should go and call a vector db. Maybe
+sometimes it already has the information in context, and sometimes it needs to go talk to, maybe it needs
+to go ask the user for more information before it does a search. So that's probably how we think about it.
+If it's predetermined, then you probably don't need to use a tool. You just always call that vector db.
+Sorry, sorry.
+So the most things the MCP is able to do, the more important authorization and authentication becomes.
+How are we modeling with these right now? We just inject them as part of the one of the parameters.
+I'm going to get to that one later because it's very relevant and we have a lot to say.
+So I may have missed this on-depth, but so if you've gone down the route of using the
+agency framework which did tool calling, if you progress, would you just wrap the MCP with a tool
+if you had a system solution?
+Yeah, I think that it sounds like the broader question is how does MCP fit in with agent frameworks?
+Cool. Yeah, I mean, the answer is they kind of complement each other. Actually,
+LandGraph just this week released a bunch of connectors for, or I think they're called adapters,
+for LandGraph agents to connect to MCP. So if you already have a system built inside LandGraph or
+another agent framework, if it has this connector to MCP servers, you can expose those servers to the
+agent without having to change your system itself as long as that adapter is installed. So we don't think
+MCP is going to replace agent frameworks. We just think it makes it a lot easier to hook into servers,
+tool prompts, and resources in a standardized way.
+Okay, so by cancel method, the framework was a tool, the tool to call MCP, so going forward,
+many of the tools would just be a wrapper for an MCP forward?
+Yeah, the framework could call it tool, and that tool could be exposed to that framework from an MCP server,
+if the adapter exists. Does that make sense? Yeah. Cool. I'll take one more if there are. Yeah.
+So the question is kind of does MCP replace an agent framework and why still use one? I don't think it
+replaces them. I think parts of it, it might replace the parts related to bringing context into the agent
+and calling tools and invoking these things. But a lot of the agent framework's value, I think, is in the
+knowledge management and the agentic loop and how the agent actually responds to the data that's brought
+in by tools. And so I would think that there is still a lot of value in something where the agent
+framework defines how the LLM is running in the loop and how it actually decides when to invoke the
+tools and reach out to other systems. But I don't think MCP as a protocol itself fully replaces it.
+MCP is more focused on being the standard layer to bring that context to the agent or to the agent
+framework. Yeah. I don't know if that's the most clear answer, but that that's the one that we've
+at least seen so far that might change as MCP involves. Cool. Sorry, I saw one more,
+which I'll take, and then I will move on if that exists. Yeah.
+So why should I express tools that return your data?
+Yeah.
+So why should I express tools that return your data?
+Yeah.
+Yeah.
+So the question is why do resources and prompts exist and why isn't this all baked into tools? Because
+you can serve a lot of the same context via tools themselves.
+So I think we touched on this a little bit, but there's actually a lot more protocol capabilities
+built around resources and prompts than what I'm talking about here. So part of your question was,
+aren't resources and prompts static? Can't they just be served as static data as part of a tool?
+In reality, resources and prompts in MCP can also be dynamic. They can be interpolated with context
+that's coming in from the user or from the application. And then the server can return a
+dynamic or kind of customized resource or customized prompt based on the task at hand.
+Another kind of really valuable thing we've seen is resource notifications,
+where the client can actually subscribe to a resource. And anytime that resource gets updated
+by the server with new information, with new context, the server can actually notify the client
+and tell the client, Hey, you need to go update the state of your system or surface new information to the user.
+But the broader answer to your question is, yes, you can do a lot of things with just tools.
+But MCP isn't just about giving the model more context. It's about giving the application richer
+ways to interact with the various capabilities the server wants to provide. So it's not just you want
+to give a standard way to invoke tools. It's also if I'm a server builder and I want there to be a standard
+way for people to talk to my application. Maybe that's a prompt. Maybe I, you know, I have a
+a prompt that's like a five step plan for how someone should invoke my server and I want the client
+applications or the users to have access to that. That's a different paradigm because it's me giving
+the user access to something as opposed to me giving the tool access to something. And so I kind of
+tried to write this out as model controlled application controlled and user controlled.
+The point of MCP is to give more control to each of these different parts of the system as opposed
+to only just the model itself. Yeah, I hope that that kind of makes sense.
+All right. Let's see what this actually looks like. The Wi Fi is a bit weird. This works cool. So
+what we're looking at is cloud for desktop, which is an MCP client. Let me try to pause as this goes
+through. So cloud for desktop, which is on the left side, an MCP client. And on the right side,
+I'm working inside of a GitHub application. Let's say I'm a repo maintainer for the Anthropic Python SDK.
+I need to get some work done. What I'm doing here is I give the cloud for desktop app,
+the URL of the repo I'm working in. And I say, can you go and pull in the issues from this GitHub repo
+and help me triage them or help suggest the ones that sound most important to you.
+The model cloud automatically decides to invoke the list issues tool, which it thinks is the most
+relevant here and actually pulls calls that and pulls these into context and summarizing it for me.
+You'll also notice that I told it to triage them. So it's automatically using what it knows about me
+from my previous interactions with Claude, maybe other things in this chat or in this project to
+kind of intelligently decide here are the top five that sound most important to you based on what I know
+about you. And so that's where the interplay between just giving models tools and actually the
+application itself having other context about who I am, what I'm working on, the types of ways I like to interact with it.
+And then those things interplay with each other. The next thing I do is can you, I ask it, can you
+triage the top three highest priority issues and add them to my Asana project? I don't give it the
+name of the Asana project, but Claude knows that it needs to go and find that information autonomously.
+So I've also installed an Asana server and that has like 30 tools. It first decides to use list
+workspaces, then search projects, it finds the project, and then it starts invoking tools to start
+adding these as tasks inside Asana. So this might be a pretty common application that you like to use,
+but the things I want to call out are, one, I didn't build the Asana server or the GitHub server.
+These were built by the community. Each of them are just a couple hundred lines of code. Primarily,
+it's a way of surfacing tools to the server. And so it's not a ton of additional logic to build. I would
+expect they could be built in an hour. And they're all kind of playing together with Claude for desktop
+being the central interface. It's really powerful to have these various tools that someone else built
+for systems that I care about all interplaying on this application that I like to use every single day.
+Claude, Claude for desktop kind of becomes the central dashboard for how I bring in context from my life
+and I actually like run my day to day. And so inside Anthropic, we've been using things
+like this a ton to go and reach out to our archit repos to even make PRs or to bring in context from
+PRs. And MTP is the standard layer across all of this. Cool. And so just to close that out,
+here's windsurf. And it's an example with using different servers, but it's windsurf's own
+application layer for connecting to MTP. They have their own kind of UI inside of their agent,
+it's their own way of talking to the MTP tools. Other applications don't even call them MTP tools.
+For example, Boost calls them extensions. It's really up to the application builder how to actually
+bring this context into the application. The point is that there's a standard way to do this across all
+of these applications. Awesome. So, so far we've talked about how to bring context in and how MTP
+brings context into a lot of AI applications that you might already be familiar with. But the thing
+that we are most excited about and starting to see signs of is that MTP will be the foundational
+protocol for agents broadly. And there's a few reasons for this. One is the, the actual protocol
+features and the capabilities that we're going to talk about in just a second. But it's also the,
+the fact that these agent systems are becoming better, that the models themselves are becoming
+better and they use the data you can bring to them in increasingly effective ways. And so,
+we think that there's some really nice tailwinds here. And let's talk about how or why we think that
+this is going to be the case.
+So, you might be familiar with the blog that we put out, my friends Perry and Eric put out a couple
+months ago called Building Effective Agents. And one of the core things in the blog that one of the
+first ideas that was introduced is this idea of an augmented LLM. It's an LLM in the traditional way
+that it takes inputs, it takes outputs, and it kind of uses its intelligence to decide on some actions.
+But the augmentation piece are those arrows that you see going to things like retrieval systems,
+to tools, and to memory. So, those are the things that allow the LLM to query and write data to
+various systems. It allows the LLM to go and invoke tools and respond to the results of those tools in
+intelligent ways. And it allows the the LLM to actually have some kind of state such that every
+interaction with it isn't a brand new fresh start. It actually kind of keeps track of the progress
+it's made as it goes on. And so, MCP fits in as basically that entire bottom layer. MCP can
+federate and make it easier for these LLMs to talk to retrieval systems, to invoke tools, to bring in
+memory. And it does so in a standardized way. It means that you don't need to pre-build all of these
+capabilities into the agent when you're actually building it. It means that agents can expand after
+they've been programmed, even after they've been initialized and are starting to run, to start
+discovering different capabilities and different interactions with the world, even if they weren't
+programmed or built in to start. And the core thing in the blog, or one of the simpler ideas in the blog,
+is agent systems at its core aren't that complicated. They are this augmented LLM
+concept running in a loop where the augmented LLM goes and does a task. It kind of works towards some
+kind of goal. It invokes a tool, looks at the response, and then does that again and again and
+again until it's done with the task. And so, where MCP fits in is it gives the LLM, the augmented LLM,
+these capabilities in an open way. What that means is even if you as an agent builder don't know
+everything that the agent needs to do at the time that you're building it, that's okay. The agent
+can go and discover these things as it's interacting with the system and as it's interacting with the
+real world. You can let the users of the agent go and customize this and bring in their own context
+in their own ways that they want the agent to touch their data. And you as the agent builder can focus
+on the core loop. You can focus on context management. You can focus on how it actually uses
+the memory, what kind of model it uses. The agent can be very focused on the actual interaction with
+the LLM at its core. So I want to talk about a little bit about what this actually looks like in
+practice. Let me switch over to screen sharing my screen. Cool. So to talk about this, we're going to
+be talking about this framework, this open source framework called MCP Agent that was built by our
+friends at Last Mile AI. I'm just using it as a really clean and simple example of how we've seen
+some of these agent systems kind of play in with MCP. So I'm switching over to my code editor,
+make this bigger. And what you see here is a pretty simple application. The entire thing is maybe 80 lines of
+code. And I'm defining a set of agents inside of this type of file. The overall task that I want this
+agent to achieve is defined in this, this task.md. And basically, I wanted to go and do research
+about quantum computing. I want it to give me a research report about quantum computing's impact
+on cybersecurity. And I tell it a few things I want. I want to go look at the internet,
+synthesize that information, and then give that back to me in this nicely formatted file.
+And so what MCP Agent, the framework, lets us do is define these different sub-agents. The first one
+I'm defining is what's called a research agent, where I give it the task that it's an expert web
+researcher. Its role is to go look on the internet, to go visit some nice URLs, and to give that data
+back in a nice and structured way in my file system. And you'll see on the bottom is I've given it access to
+a few different MCP servers. I've given it access to Brave for searching the web, I've given it a fetch
+tool to actually go and pull in data from the internet, and I've given access to my file system.
+I did not build any of those MCP servers. And I'm just telling it the name, and it's going to go and
+invoke them and install them and making sure make sure that the agent actually has access to them.
+The next one, similarly, is a fact checker agent. It's going to go and verify the information that's
+coming in from the research agent. It's using the same tools, Brave, Fetch, and File System.
+And these are just MCP servers that I'm giving it access to.
+And finally, there's the research report writer agent. And that actually synthesizes all the data,
+looks at all the references and the fact checking, and then produces a report for me in this nice
+format. This time, I'm only giving it the file system and fetch tools or servers. I don't need
+it to go look at the internet, I just need it to process all the data that it has here.
+And it knows what servers each of them have access to. And then once I kick it off, the first thing
+it's going to do is go and form a plan. A plan is just a series of steps for how it should go and
+interact with all these systems and the various steps you should take until it can call the task
+done. So as an example, the first step, it's going to go and look at authoritative sources on
+quantum computing. And it's going to invoke the searcher agent in various different ways.
+It knows, it creates this plan based on the context about the agent's task, about the servers it has
+access to, and so on. The next step is maybe it goes and verifies that information by focusing on
+the fact checker agent specifically. And then finally, it intends to use the writer agent to go and
+synthesize all of this. The kind of core piece of this is MCP becomes this abstraction layer where
+the agent builder can really just focus on the task specifically, and the way that the agent should
+interact with the systems around it, as opposed to the agent builder having to focus on the actual
+servers themselves, or the tools, or the data, it just gives, it kind of declares this in this really
+nice declarative way of, this is what your task is supposed to be, and here are the servers or tools
+that you have available to you to go and accomplish that task. And so just to close out that part of
+demo, I'm just going to kick this off. And what's going to be going on in the background is it's going
+to start doing some research. It's invoking the search tool, the search agent, and it's going to invoke
+the fact checking agent. And you'll start to see these outputs appear on the left side of the screen.
+And so this is a pretty simple demo, but I think it's a very powerful thing for agent builders,
+because you can now focus specifically on the agent loop and on the actual core capabilities of
+the agent itself and the tasks that the sub agents are working on, as opposed to on the server
+capabilities and the ways to provide context to those agents. The other really nice piece of this,
+which is obvious is we didn't write those servers. Someone else in the community built them,
+maybe the most authoritative source of research papers on quantum computing wrote them.
+But all we're doing is telling our agents to go and interface with them in a specific way.
+And so you start to see the outputs form. It looks like the searcher agent put a bunch of sources in
+here. It's already started to draft the actual final report, and it's going to continue to iterate
+in the background. Definitely. Yeah. So the question is, have we seen agent systems
+also working for proprietary data? The really nice thing about MTP, again, is that it's open. And so
+you can actually run MTP servers on inside your own VPC. You can run it on top of on your employees,
+individual systems and laptops themselves. So the answer is definitely no.
+Yeah, so the question is, what does it mean
+Yeah, so the question is, what does it mean to separate the agent itself and now the capabilities that other folks kind of give to it, I think the answer kind of varies.
+Some of the ways that we've seen to improve agent systems are, you know, what kind of model do you use, is it actually the right model for the specific task if you're building a coding agent or probably you should use cloud.
+And there's also things like context management or knowledge management, how do you store the context and summarize it or compress that context as the context window gets larger, there's orchestration systems like if you're using multi agent, are they in series are they in parallel.
+And so there's a lot more that you can focus on based on your task.
+In that sense, as well as the interface itself like how is the surface to the user and the separation is then.
+Maybe you build a bunch of your own MCP servers for your agent that are really, really customized to what you want to do, but when you want to expand the context to what the rest of the world is also working on, or the systems that exist in the rest of the world.
+That's where MCP fits in like you don't need to go and figure out how to hook into those systems that's all pre built for you.
+So,
+so let's do yeah in this one.
+Let's do yeah.
+That
+I
+don't know well this
+I don't know what happens, but I know that's a lot of people using this kind of way, like one.
+And the agent knows what to do.
+Yes, there is a slide that we'll get to, which is exactly that.
+No, you're good. That's great. Really good questions. Let's I'm going to do this side of the room.
+Yeah, I'm not a ton of this is specific to last mile.
+I think it's a really great framework. It's called mcp-agent, and specifically what they worked on is they saw these things come out.
+One was the agents framework. There's really simple ways to think about agents.
+Then they saw mcp, which is there are really simple ways to think about bringing context to agents.
+And so they built this framework, which allows you to implement the various workflows that were defined in the agents blog post using mcp and using these really nice declarative frameworks.
+So what's specific to mcp agent, the framework, is these these different components or building blocks for building agents.
+So one is the concept of an agent.
+An agent, as we've talked about, is an augmented LLM running in a loop.
+So when you invoke an agent, you give it a task.
+You give it tools that it has access to, and the framework takes care of running that in a loop.
+It takes care of the LLM that's under the hood and all of those interactions.
+And then using these building blocks, you go a layer above, and you hook those agents together in different ways that are more agentic.
+And those are described in the paper.
+But one of the things in the in the blog post was this orchestrator workflow example.
+So that's what I've implemented here, which is I've initialized an orchestrator agent, which is the one in charge of planning and keeping track of everything.
+And then I give it to give it access to these various sub agents using all these nice things that are part of mcp agent.
+That being said, it's open source like it's not that I'm blessing.
+This is the right way to do it necessarily, but it's a really simple and elegant way of doing it.
+So the question is, how do resources and prompts fit in in this case?
+The answer is they don't.
+This example was more focused on the agentic loop and giving tools to them.
+I would say resources and prompts come in more where the user is within the loop.
+So you might imagine, instead of me just kicking this off as a Python script, I have this nice UI where I'm talking to the agent, and then it goes and does some asynchronous work in the background.
+And it's a chat interface like what you might see with Claude.
+In that case, the chat interface, the application could, you know, take this plan that I just showed you and surface this to me as a resource.
+The application could have this nice UI on the side that says here's the first step, the second step, the third step, and it's getting that as the server surfaces it to surface is the plan to it as this kind of formula.
+Prompts could come in if there's a few examples, but you could say a slash command to summarize all of the steps that have occurred already.
+You could say slash summarize, and there's a predefined prompt inside of the server that says here's the right way to give the user a summary.
+Here's what you should provide to the LM when you go and invoke the summarization point.
+So the answer to your question is it doesn't fit in here, but there are ways it could.
+Okay, I'll take like two more.
+That's good with you.
+Does this introduce any like new workflows as it relates to like evaluations?
+I think the answer, the question is, how did this fit into evaluations, in particular evals related to assessing tools?
+Calls and that's being done the right way.
+I think largely it should be the same as it is right now.
+There is potential to have MCP be even a standard layer inside evals themselves.
+I probably need to think this through, but you can imagine that there's an MCP server that surfaces, you know, the same five tools.
+And you give that server to one set of evals.
+You also let's say you have one eval system running somewhere to evaluate these five different use cases.
+They have a different eval system.
+The MCP server could be the standard way to surface the tools that are relevant to your company to both of them.
+But largely, I think it's similar to how it's been done already.
+Yeah.
+And the way.
+I'll get to that.
+Yep.
+Thanks a lot.
+What I see, I think it's kind of a separate sort of
+.
+There's a lot of the stuff that you put on the side side.
+How would you say that stuff like authentication,
+or all of that stuff,
+that's one of the side, like the feature networks,
+or the one that you put on the server side?
+I think I'm not .
+Yeah, I can address part of this.
+So the question is, what is the separation between a lot of the logic
+that you need to implement in these systems?
+Where should it sit?
+Should it sit with the client or the server?
+And the specific examples are things like retry logic, authentication.
+I'll get to auth in a bit, but on things like retry logic,
+I think my personal opinion, and I think this remains to be seen
+how it shakes out, is a lot of that should happen on the server side.
+The server is closer to the end application and to the end system that's actually running somewhere,
+and therefore the server should have more control over the interactions with that system.
+A big part of the design principle is ideally MCP supports clients that have never seen a server before.
+They don't know anything about that server before the first time it's connected,
+and therefore they shouldn't have to know the right ways to do retries.
+They shouldn't have to know how to do logging in the exact way that the server wants and things like that.
+So the server is ideally closer to the end application, and it's the one that's the end of service,
+and it's the one that's implementing a lot of that business logic.
+It depends. I don't have a really strong opinion to take on where the agent frameworks themselves go.
+I could see one counter argument being that you don't always want the server builders to have to deal with that logic either.
+Like maybe the server builders want to just focus on exposing their APIs and like letting all the agents do the work.
+And yeah, honestly, I don't have a really strong take on that. Yeah, that's a really good question.
+I'm glad you asked that. So a lot of the questions that we get.
+Sorry, the question here is, is there a best practice or a limit to the number of servers that you expose to an LM?
+In practice, the models of today, I think, are good up to like 50 or 100 tools like Claude is good up to a couple hundred in my experience.
+But beyond that, I think the the question becomes, how do you search through or expose tools in the right way without overwhelming the context with that, especially if you have thousands?
+And I think there are a few different ways. Like one of the ones that's exciting is a tool to search tools.
+And so you can imagine a tool abstraction that implements rag over tools.
+It implements fuzzy search or keyword search based on, you know, the entire library of tools that's available.
+That's one way. We've also seen like hierarchical systems of tools.
+So maybe you have a group of tools that's, you know, finance tools.
+You have like read data, then you have a group of tools that's for writing data.
+And you can progressively expose those groups of tools based on the current task at hand, as opposed to putting them all in the system, for example.
+So there are a few ways to do it. I don't think everyone's landed on one way.
+But the answer is there's technically no limit if you implement it the right way.
+I don't know if you're going to get into this, but is there like a methodology or best practice of like I have a
+Yeah, I'm not gonna go through it yet, but we do have that documented.
+So the question is like, what are the right steps to approach building an MCP server?
+What's the order of operations?
+We actually have this entire docs page.
+That's like, how do you build an MCP server using cloud or using LMS?
+All the servers that we launched with in November, I think there were like 15 of them.
+I wrote all of those in like 45 minutes each with the cloud.
+And so it's like really easy to approach it.
+And I think tools are typically the best way for people to start rocking what a server is, and then going to prompts and resources.
+from there.
+Yeah, definitely.
+I'll share links later.
+Yeah, in the red.
+I guess that takes a question a minute.
+But scanning back our own systems.
+At what point is the servers where it's kind of generic
+Yeah, so.
+The question is, if a lot of these servers are simple, can LMS just generate them automatically?
+The answer is yes.
+If you guys have heard of Klein, which is one of the most popular ideas that's open source, it has like 30 K stars on GitHub.
+They actually have an MCP auto generator tool inside the app.
+You can just say, hey, I want to start talking to get lab.
+Can you make me a server and just auto generates on the fly?
+That being said, I think that that works for like the simpler servers like the ones that are closer to just exposing an API.
+But there are more complex things that you want to do.
+You'll want to have logging or logic for data transformations.
+But the answer is, yeah, for the more simple ones, I think that's a pretty normal workflow.
+Yeah, so question is, are we talking to the actual owners of the services and the data?
+The answer is yes.
+The answer is yes.
+A lot of them, a lot of the servers actually are official and public already.
+So if I just scroll through official integrations, these are like real companies like Cloudflare and Stripe that have already built official versions of these.
+We're also talking to bigger folks, but I can't speak to that yet.
+They might also host the servers remotely.
+Yes, like they'll build it and then they also maybe provide the infrastructure to expose it in the back.
+So you're asking about versioning as it relates to the protocol or to servers.
+Yeah. So the question is, how do we do best practices for versioning?
+All these servers are so far.
+A lot of them are TypeScript packages on NPM or on PIP.
+Therefore, they also have version package versions associated with them.
+And so there shouldn't generally be code breaking changes.
+There should be a pretty clear upgrade path.
+But yeah, I don't think we actually have best practices just yet for what to do when a server itself changes for something like.
+I mean, generally, I think it might break the workflow, but I don't think it breaks the application if the server changes.
+Since as long as the client and server are both following the MCP protocol, the the tools that are available might change over time or they might evolve.
+But the model can still invoke those in intelligent ways for resource and prompts.
+They might break users workflows if those resources and prompt changes.
+But like they'll still work as long as they're being exposed as part of the MCP protocol with the right list tools, call tools, list resources, etc.
+I don't know if that answers your question, though.
+Right. I think using versioning of the packages themselves make sense for that.
+And then I'm going to talk a little bit about a registry and having a registry MCP registry layer on top of all of this will also help a lot with that.
+Okay, I'll take one more and then continue.
+Yeah.
+Question is, how are we thinking about distribution and extension system?
+I'll get there, too.
+Yeah, cool.
+Let's let's keep going.
+So, so we've talked about one way to build effective agents, and I showed how to do that using the MCP agent framework.
+Now I want to talk about the actual protocol capabilities that relate to agents and building agentic systems with a caveat that these are capabilities in the protocol.
+But it's still early days for how people are using these.
+And so I think a lot of this is going to evolve, but these are some early ideas.
+So one of the most powerful things that's underutilized about MCP is this paradigm called sampling.
+Sampling allows an MCP server to request completions, aka LLM inference calls from the client instead of the server itself having to go and implement interaction with an LLM or to go host an LLM or call cloud.
+So what this actually means is, you know, in typical applications, the one that we've talked about so far, it's a client where you talk to it and then it goes and invokes.
+Server to have some kind of capability to get user inputs and then decide, hey, I actually don't have enough input from the user, let me go ask it for more information.
+Or let me go formulate a question that I need to ask the user to give me more information.
+And so there's a lot of use cases where you actually want the server to have access to intelligence.
+And so sampling allows you to federate these requests by letting the client own all interactions with the LLM.
+They can, the client can own hosting the LLM if it's open source, they can own, you know, what kind of models it's actually using under the hood.
+And the server can request inference using a whole bunch of different parameters.
+So things like model preferences, maybe the server says, hey, I actually really want, you know, specifically this version of Claude or I want a big model or a small model.
+Do your best to get me one of those. The server obviously will pass through a system prompt and a task prompt to the client.
+And then things like temperature max tokens, it can request the client doesn't have to listen to any of this.
+The client can say, hey, this looks like a malicious call.
+Like, I'm just not going to do it. And the client has full control over things like privacy over the cost parameters.
+Maybe it wants to limit the server to, you know, a certain number of requests.
+But the point is, this is a really nice interaction because one of the design principles, as we talked about, is oftentimes these servers are going to be something where the client has never seen them before.
+It knows nothing about them, yet it still needs to have some way for that server to request intelligence.
+And so we're going to talk about how this builds up a little bit to agents.
+But just putting this out there is something you should definitely explore because I think it's a bit underutilized thus far.
+Cool. One of the other kind of building blocks of this is the idea of composability.
+So I think someone over there asked about composability, which is a client in a server is a logical separation.
+It's not a physical separation. And so what that means is any application or API or agent can be both an MCP client and an MCP server.
+So if you look at this very simple diagram, let's say I'm the user talking to Cloud for desktop on the very left side, and that's where the LLM lives.
+And then I go and make a call to an agent. I say, hey, can you go, you know, find me this information?
+I ask a research agent to go do that work, and that research agent is an MCP server, but it's also an MCP client that research agent can go and invoke other servers.
+Maybe it decides it wants to call, you know, the file system server, the fetch server, the web search server, and it goes and makes those calls and then brings the data back, does something with that data, and then brings it back to the user.
+So there's this idea of chaining and of these interactions kind of hopping from the user to a client server combination to the next client server combination and so on.
+And so this allows you to build these really nice complicated or complex architectures of different layers of LLM systems where each of them specializes in a particular task that's particularly relevant as well.
+Any questions about composability? I'll touch on agents as well.
+Yeah, so the question is, how do you deal with compounding errors if the system itself is is complex and multi layered?
+I think the answer is the same as it is for complex hierarchical like agent systems as well.
+I don't think MCP necessarily makes that more or less difficult.
+But in particular, in particular, I think it's up to each successive layer of the the agent system to deal with information or controlling data as it's structured.
+So like to be more specific, you know the third node there the kind of the middle client server node should collect data and fan in data from all of the other ones that just reached out to, and it should make sure it's up to par or meets whatever data structure days on spec.
+It needs to before passing that data to the system right before it I don't think that's special to MCP I think that is true for all these like multi node systems.
+It's just this provides like a nice face between each of them does that answer your question.
+So I saw their hands.
+Yeah, the question is, why are these and why do they have to be MCP servers as opposed to just a regular HTTP server.
+The answer in this case for composability and like the layered approach is that each of these can basically be agents like in the system that you're kind of talking about here.
+It's I think that there's there are there are reasons for a bunch of protocol capabilities like resource notifications like server to client communication, the server requesting more information from the client that are built into the MCP protocol itself.
+So that each of these interactions are more powerful than just data passing between different nodes like let's say each of these are agents like the first agent can ask the next agent for you know specific set of data.
+It goes and does does a bunch of asynchronous work talks to the real world brings it back and then sends that back to the first client which.
+That might be multi step it might take multiple interactions between each of those two nodes and that's a more complex interaction that's captured within the MCP protocol that might not be captured if it were just regular HTTP servers.
+I think that the point I'm trying to make is that I.
+Each of these so you're you're asking like if the Google API or the file system things were just API is like regular non MTP servers but MC making it an MTP server in this at least in this case allows you to capture those as.
+Agents as in like they're more intelligent than just you know exposing data to the LM it's like the each of them has autonomy.
+You can give a task to the second server and it can go and make a bunch of decisions for how to pull in Richard data.
+You could in theory just make them regularly eyes, but you lose out on like these being independent autonomous agents each node in that system in the way it interacts with the task it's working on.
+Yeah.
+So in terms of controlling the last sort of rate limits.
+Is that just kind of like.
+Or is there a more.
+Yeah, kind of depends on on the builders, but I do think it's federated because the LM is at the application layer.
+And so that has control over how random rate limits work or how it should actually interact with the LM.
+It doesn't have to be that way like in theory if the server builder like the first node wanted to own the interaction with the specific LM maybe it's running open source on that specific server.
+It could either one that controls the LM interaction, but in the example I'm giving here, the LM lives at the very base layer and at the application there and it's the one that's controlling rate limits and control flow and things like that.
+So.
+If it wants user input, it does have to go all the way back.
+Yeah, and MCP does allow you to pass those interactions all the way back and then all the way back forward.
+Yeah.
+I'm going to go on this side first.
+Yeah.
+Do you have to collect the primary?
+I'm zooming out a little bit, but if there's a discrepancy, it's just flat.
+Is there room for vibrating?
+Yeah, the question is, how do you elect a primary?
+How do you make decisions and network?
+The answer is it's kind of up to you.
+I don't I'm not a pining on like network systems themselves or how, you know, these these like logic.
+It's not a requirement.
+It's not part of the protocol itself.
+It's just that MTP enables this architecture to exist.
+Yeah.
+So I think the idea, so the question is, how do you do observability?
+How do you know the the other systems that are being invoked from a technical perspective?
+There is no specific reason that the application or the user layer would know about those servers?
+In theory, for example, like the first client application or the first MTP server you see there is kind of a black box.
+It makes the decisions about if it wants to go invoke other sub agents or other services.
+And I think that's just how like the Internet layer like APIs work today.
+Like you don't exactly know always what's going on behind the hood.
+The protocol doesn't opine on how observability should work or enforcing that you need to know the interactions.
+It's that's really up to the builders and the ecosystem itself.
+It's building on that.
+Like you love yourself.
+I mean, I heard.
+It's like just.
+It's not even not even posability.
+It's like you guys have best practices on this where now we don't even know like calling a server that's created by somebody else.
+Yeah, you're right.
+If I call Stripe API, I don't know exactly what that API is based on the interface or how to describe the dots.
+But the MTP server, if it's more than risky, like a wrapper on the API APIs that already exists,
+like how can you tell, how can you debug between that?
+You don't actually know what's even going on.
+Yeah. So the question is, how do you actually make MTP servers debuggable, especially if it's more than just a wrapper around an API and it's actually doing more complex things?
+The answer is that the protocol itself doesn't enforce like specific observability and interactions.
+It's kind of like incentive alignment for the server builder to expose useful data to the client.
+The MTP does, of course, have ways for you to pass metadata between the client and the server.
+And so if you build a good server that has good debugging and actually provides that data back to the client, you're more likely to be useful and actually like have a good UX.
+But the protocol itself doesn't kind of enforce that if that's kind of what you're asking, which I think is the same answer for APIs.
+Like people will use your API if it's ergonomic and it's good and it makes sense and provides you debugging and logs.
+So we think service should do that. I think we do have best practices.
+I don't know off the top of my head, but I can follow up with that.
+I guess somebody asked this, but for best practices and beliefs to the servers, it's kind of goes into that theory.
+Because now we're just talking about that wrapper that you're talking about resources and the cost.
+You know, something was wrong.
+What was the resource I was given?
+It wasn't there.
+It sounds like those are the kind of things that are still in development.
+Yeah, I think the answer is we will get there like either anthropic or MCP builders themselves or the community will start to converge on best practices.
+But I agree with you that there needs to be best practices on how to debug and stuff.
+And this is more of an observation to other architectural patterns that you have.
+You have to have a trace and you have techniques going on right through.
+It's only when you need that microservice to have reasoning that you're not turned over to.
+So I think there are patterns that are analogous to what we're doing here.
+It's just like we're bringing in, hey, we also want this service to now reason.
+That's exactly right.
+Yeah, just comment on like, this is very similar to microservices, except this time we're bringing in intelligence.
+But there are patterns that exist that we should be drawing from.
+Yeah.
+Great.
+I would like a question to ask you, guy said,
+search yeah the question is um let's say that the client wants some amount of control or
+influence over the server itself or the tool call like uh limit the number of web pages you go and
+look like look at how do you do that so yeah one suggestion is by doing that via the prompt like
+that's an obvious one that you can do one thing we're thinking about is something called like tool
+annotations these extra parameters or metadata that you can surface in addition to the regular
+tool call or specifying the tool name to influence something like can you limit the number of tools
+or limit equals five that's something that the server builder and the tool builder inside that
+server would have to expose to be invoked by the the client but we're thinking about at least in
+the protocol a standard uh a couple of standard fields that could could help with this so one
+example that comes to mind is maybe the server builder exposes a tool annotation that's read
+versus write and so the client actually can now know hey is this tool going to take action or is
+it only just like read only um and i think the opposite vice versa of that is what you're talking
+about where uh is there a way for the server to expose more parameters for how to control its behavior
+um yeah so question on like on devx and how to actually you know look at the logs and actually
+respond to them so one um shout out is we have something called inspector in our repo and inspector
+lets you go look at logs and actually make sure that the connections to servers are making sense
+so definitely check that out i think your question is uh could you build a server that debugs servers
+i'm pretty sure that exists and i've seen it where it goes and looks at the standard io logs and goes
+and make changes to to make that work i've seen servers that go and set up the desktop config to make
+this work so yeah the answer is definitely you can have loops here i'll take the last one and then i'll
+come back to these at the end
+uh
+Yeah, the question is around governance and security and who makes the decisions about what a client gets access to.
+I think a lot of that should be controlled by the server builder.
+We're going to talk about auth very shortly, but that's a really big part of it.
+There should be a default way in the protocol to do authorization authentication, and that should be a control layer to the end application that the server is connecting to.
+And yeah, I think that's the design principle is like you could have not malicious clients, but clients that want to ask you for all the information, and it's the server builder's responsibility to control that flow.
+I'm going to keep going, and then I'll make sure to get back to questions in just a second.
+So I think we basically have covered this, but the combination of sampling and composability I think is really exciting for a world with agents, specifically where if I'm an end user talking to my application and chatbot, I can just go talk to that, and it's an orchestrator agent.
+That orchestrator agent is a server, and I can reach out to it from my Cloud4Desktop, but it's also an MCP client, and it goes and talks to an analysis agent that's an MCP server, a coding agent, another MCP server, and a research agent as well.
+And this is composability, and sampling comes in where I am talking to Claude from Claude4Desktop, and each of these agents and servers here are federating those sampling requests through the layers to get back to my application, which actually controls the interaction with Claude.
+So you get these really nice hierarchical systems of agents, and sometimes these agents are going to live, you know, on the public web, or they won't be built by you, but you'll have this way to connect with them while still getting the privacy and security and control that you actually want when you're building these systems.
+So in a sec, we're about to talk about what's next and registry and discovery, but this is kind of the vision that I personally really want to see, and I think we're going to get there, of this, like, connectivity layer while they're still being guarantees about who has control over the specific interactions in each of these.
+Okay, I'll get to questions in a sec. I'm just going to keep going.
+So, so we've talked about a few things. We've talked about how people are using MCP today.
+We've talked about how it fits in with agents. There's a lot of really exciting things that a lot of you have already asked about that are on the roadmap and coming very soon.
+So, one is remote servers and auth. So, let me pause this to say what's going on.
+So, first, this is Inspector. This is the application I was just talking about, where it lets you, you know, install a server and then see all the kinds of various interactions.
+Inspector already actually has auth support. So, we added auth to the protocol about two, three weeks ago.
+We then added to Inspector. It's about to land in all the SDKs. So, you should go and check for that as soon as it's available.
+But basically, what we're doing here is we provide a URL to an MCP server for Slack.
+This is happening over SSE, which, as opposed to standard IO, SSE is the best way to do remote servers.
+And so, I just give it the link, which is on the left side of the screen there, and then I hit connect.
+And what happens now is that the server is orchestrating the handoff between the server and Slack.
+It's doing the actual authentication flow. And the way it's doing that is the protocol now supports OAuth 2.0.
+And the server deals with the handshake, where it's going out to the Slack server, getting a callback URL, giving it to the client.
+The client opens that in Chrome. The user goes through the flow and clicks, yeah, this sounds good, allow.
+And then the server holds the actual OAuth token itself.
+And then the server federates the interactions between the user and the Slack application by giving the client a session token for all future interactions.
+So, the highlight here, and I think this is the number one thing we've heard since day one of launch, is this will enable remotely hosted servers.
+This means servers that live on a public URL and can be discoverable by people through mechanisms I'll talk about in a sec.
+But you don't have to mess with standard IO.
+You can have the server fully control those interactions, those requests, and they're all happening remotely.
+The agent and the LLM can live on a completely different system than wherever the server is running.
+Maybe the server is an agent, if you bring in that composability piece we just talked about.
+But this, I think, is going to be a big, like, explosion in the number of servers that you see because it removes the devx friction.
+It removes the fact that you, as a user, even need to know what MCP is.
+You don't even need to know, you know, how to host it or how to build it.
+It's just there. It exists like a website exists, and you just go visit that website.
+So, any questions on remote server, actually, because I know a lot of people are interested in this.
+Yeah, I think the question is, does our support of OAuth also allow for, it sounds like, scope change?
+These are, like, again, starting off with basic permissions, but allowing people to request elevated permissions, and for those to be respected through the server protocol.
+Yeah, like, elevating from basic to advanced permissions.
+I think, in the first version of it, it does not support it out of the box, but we are definitely interested in evolving our support for OAuth.
+So, the question is, isn't it a bad thing that the server holds the actual token?
+I think, if you think about the design principle of the server being the one that actually is closest to the end application of Slack, or wherever you want the data to exist.
+Like, let's say Slack itself builds a public MCP server and decides the way that people should opt into it.
+I think Slack will want to control the actual interaction between that server and the Slack application.
+And then the way that, I think the fundamental reason for this is, clients and servers don't know anything about each other before they start interacting.
+And so, giving the server more control over how the interaction with the final application exists, I think, is what allows there to be a separation.
+Does that kind of make sense?
+Yes, you should be judicious about what servers you connect to, I think that's true for all web apps today as well.
+For what servers they have access to, but yes, trust of servers is going to be increasingly important, which we'll talk about with the registry in just a second.
+Yeah, the question is, how does this fit in with RESTful APIs, and does it interact?
+I think MCP is particularly good when there's data transformations or some kind of logic that you want to have on top of just the interaction over REST.
+Maybe that means there are certain things that are better for LLMs than they would be for just a regular old client application that's talking to a server.
+Maybe that's the way that the data is formatted.
+Maybe that's the amount of context you give back to the model.
+You get a request, you get something back from a server, and you say, hey, Claude, these are the five things you need to pay attention to.
+This is how you should handle this interaction after this.
+The server is controlling all that logic and surfacing here.
+RESTful is going to still exist forever, and that's going to be more for those stateless interactions.
+We're just going back and forth.
+You just want the data itself.
+Noah?
+Here we go.
+Okay.
+Yeah, the question is how do we think about regressions
+as servers change, as tool descriptions change?
+How do we do evals?
+So a couple of things.
+One is we're gonna talk about the registry in just a sec,
+but that's probably something we talked about
+with versioning where you can pin a registry
+and as it changes, you should test that new behavior.
+I think that this doesn't change too much
+about the evals ecosystem around tools.
+You might imagine like a lot of the customers
+that we work with, we help them go and build these frameworks
+around how their agent talks to tools.
+And that's, what's the right way?
+When should you be triggering a tool call?
+How do you handle the response?
+These are preexisting evals that exist or should exist.
+I think MCP makes it easier for people
+to build these systems around tool calls,
+but that doesn't change anything about
+how robust these evals need to be.
+But it does make it easier, right?
+Because you could, at least the way I think about it is like,
+I have my MCP server 1.0,
+my builder, my developer publishes 1.1,
+and then I just run 1.1 against the exact same evals framework
+and it provides this really nice like diff, I guess.
+Yeah, I don't think it changes too much about the needs
+of building evals themselves, just the ergonomics.
+Can I confirm, is this the thing right now?
+I look at a program and it still says that it's in the program.
+It's in the draft spec.
+It's in, there's an open PR in the SDKs.
+So it's like, I would say days away.
+Yeah.
+It is an inspector though, it's like fully implemented in there.
+So check it out.
+I want to go to registry because a lot of questions about registry.
+So a huge, huge thing that we've seen over the past two months is there's no centralized
+way to discover and pull in MCP servers.
+You've probably seen the servers repo that we launched.
+It's kind of a mess.
+There, there are like a bunch that we launched there, a bunch that our partners launched,
+and then like 1000 that the community launched, and then a whole bunch of different ecosystems
+have spun up around this, which is pretty fragmented.
+And part of the reason is like, we didn't think it would grow this fast, meant that we
+weren't quite ready to do that.
+But what we are working on is an official MCP registry API.
+This is a unified and hosted metadata service owned by the MCP team itself, but built in the
+open.
+That means the schema is in the open, the actual development of this is completely in the open,
+but it lives on an API that we're owning just for the sake of there being something hosted.
+And what it allows you to do is have this layer above the various package systems that already
+exists where MCP servers already exist and are deployed.
+These are things like NPM, PyPy.
+We've started to see other ones develop as well around Java and Rust and Go.
+But the point is, a lot of the problems that we've been talking about today, like how do
+you discover what the protocol for an MCP server is?
+Is it standard IO?
+Is it SSE?
+Does it live locally on a file that I need to go and build and install?
+Or does it live at a URL?
+Who built it?
+Are they trusted?
+Was this verified by, you know, if Shopify has an official MCP server, did Shopify bless
+this server?
+And so a lot of these problems I think are going to be solved with a registry and we're
+going to work to make it as easy as possible for folks to port over the entire ecosystem
+that already exists for MCP servers.
+But the point is, this is coming, it's going to be great.
+And we're very excited about it because I think a huge problem right now is discoverability.
+And people don't know how to find MCP servers and people don't know how to publish them and
+where to put them.
+So we're very, very excited about this.
+And the last thing I'll touch on is versioning, which a lot of people are asking about.
+But you can imagine that this has its own versioning where there's this log of, hey, what's
+changed between this and this?
+Maybe the APIs themselves didn't change, but I added a new tool or I added a new tool description
+or changed it.
+And this allows you to capture that within this central ecosystem or metadata service.
+When?
+When?
+When?
+Soon.
+I, I, it's under development.
+We're actually working with Block, for example, like they're one of the open source folks that
+we work pretty closely with on MCP, but it's coming.
+There's a spec and I've, I've read it.
+Yeah.
+So question is, can companies host their own registry?
+Yeah.
+We think of it, I think, kind of like artifactory where there's a public one, there's, there's
+an open registry.
+You can still obviously do your own.
+The nice artifact of this as well is there are ecosystems like cursor or like yes code,
+where you could hook into, if you have an existing application and marketplace that you've
+worked with, you just hook into the API as like a second set of servers.
+But we are not going to opine on what the UI for that necessarily looks like.
+We're just providing the data.
+Is there a path to putting something in the registry that's not even an NPM or 510 module
+does that endpoint?
+Yes.
+Yeah.
+That's a great point because yeah, not all of these need to live on NPM.
+Yeah.
+The answer is yes.
+Basically, we can just let you put in a URL as long as it's like trusted and you provide
+more data.
+Sorry.
+Yeah.
+Yeah.
+It was a question.
+How are you?
+How are you?
+How are you?
+How are you?
+When you say execution, do you mean like how to actually surface these tools and like,
+let them be built or like, can you say more about that?
+Yeah, I mean, it could actually just be Docker.
+We like work really closely with Docker themselves and they have a, an exact mirror of that repository
+that reposite the service repo, but it's all Docker images and they've done the whole build system.
+So it literally could just be Docker.
+There's also a world where it's entirely remote servers.
+Like maybe you self host and you don't want anyone to deal with building.
+So you just publish it at a URL as well.
+Yeah.
+Payments and permission batteries.
+So haven't thought about payments yet.
+It's not something we're thinking about right now.
+Permission boundaries.
+What do you mean by that?
+Does that mean like who gets to install or like look at one of these servers?
+Yeah, it's a good question.
+I think we've touched on this a bit and this sounds a little bit separate from the registry API or like maybe parallel.
+Honestly, I think best practices are still emerging.
+That's the real answer.
+Like people are still figuring out the right way to do data governance around this.
+See, I don't really have like a, like the authoritative answer on this.
+So I think our philosophy or like,
+the principle maybe generally about open source is we built it.
+We launched it and we want our products to be the world's best MCP clients, but they're not going to be the world's only MCP clients.
+And we are totally fine with that.
+We have and are talking to other foundational model providers.
+Can't come in on like who, but the point is this is open and we intend for it to be open.
+And if that creates more competition, that's broadly good.
+And I think it's good for users and it's good for developers.
+So I think there will be periods of time where Claude and our first party services and APIs are the best.
+That might always not always be the case, and I think that's that's fine and that's a good thing as well.
+But yeah, we'll talk to other model companies if they're down.
+There is no specific advantage really relating to MCP that requires you to use Claude with MCP.
+Claude is just better for many reasons, but like that's I mean, it's true.
+But that's that's more about like Claude is just really good at tool use and agentic work.
+And that's not about something fundamental with MCP itself, at least for now.
+Yeah, the question is like, how do we think about servers being more proactive or initiating connections to the client?
+So there's a lot that we're thinking about here for server-initiated actions.
+So the simplest one that we can think about that already is supported is server-initiated notifications.
+When a resource changes or the server is maintaining a file or a log list and it wants to tell the client, hey, I just made an update to this or a new resource is available.
+When it comes to sampling, there isn't something in the protocol just yet for the server-initiating sampling from scratch,
+where maybe it makes some decisions on its own and it reaches out.
+That's that is something we're going to build where the server will say, hey, actually, like completely unrelated.
+Like you didn't ask me any questions, but I want to start this interaction with you, and it reaches out to the client, and the client is ready to receive those messages.
+The server reaching out to the client would happen if like the system itself decides it needs something like deterministically.
+Maybe not even predefined.
+It could be event-driven.
+It could be like it just got a request from a user from some other system.
+It got an API request and it initiates the client thing.
+Also, if you think about composability, the server could in theory also be a client and have its own LLM that it controls.
+So that's another reason why it could initiate connections.
+Yeah.
+Yeah.
+Yeah.
+I think this is both standardized out in .
+Like, there will be like a .
+Like, either you could have one that does standardize out .
+Do you have any guidelines for that?
+Yeah, the question is guidelines between standard IO and SSE.
+The answer is like MCP is transport agnostic.
+So the actual like behavior and the interactions between the client and server don't matter about, you know, the fundamental nature of like the underlying transport.
+That being said, the divide that we've seen so far is local or in-memory communication happens over standard IO, and remote is going to happen over SSE.
+And I think that's the pattern that makes most sense.
+But again, it's transport agnostic.
+If you want to build your own transports and support them with MTP, you can easily do that.
+Yeah.
+Yeah.
+Yeah.
+Yeah.
+Yeah.
+Yeah.
+The question is, does the-
+Yeah.
+Does the model have to be in the loop to interact with the server?
+The answer is no.
+The server exposes a standard set of APIs, or that's probably the wrong word to use, but a standard set of functions.
+So call tools, list tools, call resources, list resources.
+The client application can call those deterministically.
+Like, if you want like two different apps, like different tools to transport, which is a moment.
+There's a basic way that this would text.
+Can it be something like a firewall?
+Like, the first one, it's a really big chase.
+And just, you know, it's a really big chase.
+And just, you know, it's a really big chase.
+Yeah.
+Yeah.
+Yeah.
+Yeah.
+Yeah.
+Yeah.
+Yeah.
+Yeah.
+Yeah.
+Yeah.
+Oh, interesting.
+Are you talking about like server to server communication perhaps as well?
+So that would be like, imagine that you have a tool that says like, if you met the store.
+Hmm.
+The combination between the four tools to have the text to them all.
+Hmm.
+I see.
+Yes.
+Yes.
+I just want to say, like, well, this is the, but we just want to have a fire on the, so the
+second one is like, okay, if you have a list.
+Yeah.
+I don't think there's a built in way in the protocol to do this today.
+A lot of the interactions do have to go back to the client before it allows the tools to
+talk to each other.
+And the main reason for that is servers don't really know that other servers exist for the
+most part.
+That being said, I'm pretty sure it's possible.
+Like it's pretty flexible.
+So I think you could make that happen.
+It's just not like a first class thing that we support.
+Yeah.
+Yeah.
+It's just not a good idea.
+Yeah.
+Yeah.
+Yeah.
+Yeah.
+Yeah.
+Yeah.
+Yeah.
+Yeah.
+Yeah.
+Yeah.
+Yeah.
+Yeah.
+Yeah.
+Yeah.
+So it sounds like this is a bet that like this function, or you just mentioned the code
+approach.
+I generate all that.
+Let's say.
+To be quite honest, I don't know, or like, I don't have a strong opinion on this.
+But yeah, happy to chat with you after, if that makes sense.
+Okay, I'm gonna keep going.
+I want to talk about real quick why registry is amazing, besides the reasons of ergonomics
+and verification, all that stuff we've talked about.
+But for agents specifically, an MCP server registry allows you to make agents self evolving.
+What that means is you can dynamically discover new capabilities, new data on the fly without
+having to know anything about those from the time that that agent was initialized or programmed
+in the first place.
+So if you're a user and you have this general coding agent that knows exactly how you work
+and knows the systems that you usually already have access to, and it has a control flow that
+really works well for you.
+You say, can you go check my Grafana logs?
+I think something's wrong with them, and can you go fix this bug?
+Let's say the agent wasn't programmed to know that the Grafana server existed.
+So it's gonna go talk to our registry.
+It's gonna do a search for an official verified Grafana server that has access to the right
+APIs, and then it's gonna install or invoke that server.
+Maybe it lives on remote over SSE, and then go and do the actual querying and go and fix
+fix the bug.
+So this pretty simple example.
+But the point is, as Barry mentioned in his talk a couple of days ago at this conference,
+agents are gonna become self evolving by letting them discover and choose their own tools.
+And that makes that augmented LLM system that we've talked about even more powerful, because
+you don't have to prepackage these.
+You don't have to predefine these.
+The agent itself will go out and look for them and make itself better.
+It gives itself context.
+And I just wanna close that loop, because I think that's gonna be really powerful, and I'm
+really excited for that.
+Yeah.
+Yeah.
+Yes, the question is, how do you enforce control over arbitrary servers, arbitrary access?
+I think the artifactory example is a really common one.
+Like you can self-host registries and federate which ones are approved or not approved.
+You could also, instead of using, let's say, if we had a search API, you could have a white
+list of specific servers and allow there to be a tool in between where that agent has to
+go through that tool and the tool filters which servers it has access to.
+There's also the concept of verification.
+Like we'll, in the registry, figure out how to do this, but allowing there to be an official
+Shopify server, an official Grafana server, which of course helps with this just a little
+bit, but largely it will follow similar things to like artifactory and enterprise tools as
+they exist today.
+This, this is the future.
+Yeah.
+Not something that I currently am using, but I don't think it's very far away.
+I trust agents to do it correctly from a functional perspective.
+I don't trust yet like the, the servers themselves because there isn't like a great registry and
+all that kind of stuff, but the claw or the, again, models are, are good enough already
+at like deciding which tools to use among hundreds.
+So I do trust that part of it.
+Cool.
+We're getting close to time.
+So I'm gonna keep going.
+There's another compliment to server discovery.
+That's different from a registry.
+And that is the concept of a dot well known.
+On the top here, this is not a real URL, but let's say Shopify had a dot well known slash
+mcp.json.
+And that provided this, this nice interface for, you know, here's Shopify.
+We have an MCP endpoint that you should know about.
+It has the resources and tools capabilities and you auth with it using OAuth2.
+And what that means is if I'm a user and I talk to my agent and I say, Hey, help me go
+manage my store on shopify.com.
+And so this is a really nice compliment to the registry where the registry is focused
+on discovery and verification and the ability for people to find tools from scratch.
+But if you also want to go top down approach where, you know, you want to talk to Shopify
+or you have an agent that's going and looking around on the internet, it can go and check
+this dot well known as a verified way of, Hey, these tools do exist and this is how you
+use them.
+And that's really powerful.
+And a specific thing that I'm particularly excited about is there's a really nice compliment
+to computer use.
+Anthropic release computer use model in October or just our regular model is a computer use
+model.
+And what it allows you to do is go and click around in these systems and these UIs that
+it's never seen before that don't have APIs that it can go and interact with.
+But what if you could have that plus mcp.json, there's a predefined way for that agent to
+go and call the APIs that are surfaced by shopify.com.
+But for the long tail where that doesn't work, it can use computer use.
+It can click around on the UI and go log in.
+It can go interact with buttons.
+And I think the world where those coexist inside one agent is the future.
+And I think that's something we're thinking about.
+I'm sure other people are thinking about it as well.
+And I think mcp is going to be a big part of that.
+Cool.
+I'm going to keep going and I'll take questions at the end.
+Actually, this is the last slide.
+But besides everything that we've talked about today, there's a lot more things that we're
+thinking about in the medium term.
+This is roughly in order of how much we're thinking about it right now.
+But there's a big discussion.
+This is a bit granular about stateful versus stateless connections.
+Right now, mcp servers are somewhat stateful.
+They hold state around the connection between the server and client.
+A lot of folks are interested in these more short-lived connections where the client can
+disconnect from an mcp server, go offline for a little bit, come back later, and continue
+the conversation or the request in the same way without having to re-provide data.
+And so we're working on this idea around maybe that there's a bifurcation between the more
+basic capabilities where it's the client asking the server for things versus capabilities where
+the server is asking clients for things.
+And I think this is going to be really elegant, but you can imagine for more advanced capabilities
+like sampling or server-to-client notifications, they use something like SSE, which requires
+there to be a long-lived connection.
+But for short-lived things where it's just say, hey, can you help me invoke this tool?
+Maybe that's a more short-lived like HTTP or a regular request that doesn't require a
+long-lived connection.
+Streaming, big one we're thinking about is how do we stream data and actually have like
+multiple chunks of data arrive at the client from the server over time?
+How to support that first class in the protocol?
+Namespacing, which is also somewhat relevant to agents and registries as we've been talking
+about, but right now tools, if you install 10 servers, they have tools of the same name.
+There is conflict often, and like there isn't a great way right now to separate that other
+than like appending the server plus the tool name before you service it.
+I think the registry is going to help a lot with this, but we also want to kind of allow
+this to exist first class in the protocol and maybe even allow people to create these
+like logical groups of different tools that are pre-packaged into a really nice like package
+of finance tools that are specific to these finance services that people care about.
+And finally, I think someone asked about this over there, but proactive server behavior,
+elicitation, where the server is either event-driven or has some kind of deterministic system
+where it decides it needs to go and ask the user for more information or notify them about
+something.
+We're just trying to figure out better patterns for that existing kind of protocol.
+Cool.
+That's my talk.
+My name is Mahesh.
+You can reach out.
+LinkedIn.
+I don't really use Twitter, but I felt compelled to put it on there.
+I'm not going to respond to you on Twitter, though.
+But yeah, thanks so much for listening.
+This is really great.

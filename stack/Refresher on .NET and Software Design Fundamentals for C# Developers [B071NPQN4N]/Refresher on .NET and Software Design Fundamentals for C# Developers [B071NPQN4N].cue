@@ -1,0 +1,28 @@
+FILE "Refresher on .NET and Software Design Fundamentals for C# Developers [B071NPQN4N].m4b" MP3
+TRACK 1 AUDIO
+  TITLE "Opening Credits"
+  INDEX 01 0:00:00
+TRACK 2 AUDIO
+  TITLE "Chapter 1"
+  INDEX 01 0:15:62
+TRACK 3 AUDIO
+  TITLE "Chapter 2"
+  INDEX 01 1:42:36
+TRACK 4 AUDIO
+  TITLE "Chapter 3"
+  INDEX 01 4:02:06
+TRACK 5 AUDIO
+  TITLE "Chapter 4"
+  INDEX 01 68:09:30
+TRACK 6 AUDIO
+  TITLE "Chapter 5"
+  INDEX 01 114:44:50
+TRACK 7 AUDIO
+  TITLE "Chapter 6"
+  INDEX 01 152:28:74
+TRACK 8 AUDIO
+  TITLE "Chapter 7"
+  INDEX 01 153:48:54
+TRACK 9 AUDIO
+  TITLE "End Credits"
+  INDEX 01 154:22:36

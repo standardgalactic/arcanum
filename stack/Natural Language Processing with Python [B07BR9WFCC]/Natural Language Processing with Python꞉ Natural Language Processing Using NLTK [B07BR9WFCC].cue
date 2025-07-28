@@ -1,0 +1,37 @@
+FILE "Natural Language Processing with Python꞉ Natural Language Processing Using NLTK [B07BR9WFCC].m4b" MP3
+TRACK 1 AUDIO
+  TITLE "Opening Credits"
+  INDEX 01 0:00:00
+TRACK 2 AUDIO
+  TITLE "Chapter 1"
+  INDEX 01 0:16:22
+TRACK 3 AUDIO
+  TITLE "Chapter 2"
+  INDEX 01 2:46:64
+TRACK 4 AUDIO
+  TITLE "Chapter 3"
+  INDEX 01 28:13:70
+TRACK 5 AUDIO
+  TITLE "Chapter 4"
+  INDEX 01 42:42:48
+TRACK 6 AUDIO
+  TITLE "Chapter 5"
+  INDEX 01 62:29:52
+TRACK 7 AUDIO
+  TITLE "Chapter 6"
+  INDEX 01 84:24:65
+TRACK 8 AUDIO
+  TITLE "Chapter 7"
+  INDEX 01 106:47:72
+TRACK 9 AUDIO
+  TITLE "Chapter 8"
+  INDEX 01 115:36:12
+TRACK 10 AUDIO
+  TITLE "Chapter 9"
+  INDEX 01 132:07:08
+TRACK 11 AUDIO
+  TITLE "Chapter 10"
+  INDEX 01 143:16:50
+TRACK 12 AUDIO
+  TITLE "End Credits"
+  INDEX 01 145:34:34

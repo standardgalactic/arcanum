@@ -1,0 +1,67 @@
+FILE "Nexus (Spanish Edition)꞉ Una breve historia de las redes de información desde la Edad de Piedra hasta la IA [A Brief History of Information Networks from the Stone Age to AI] [B0DCL9QFJZ].m4b" MP3
+TRACK 1 AUDIO
+  TITLE "Capítulo 1"
+  INDEX 01 0:00:00
+TRACK 2 AUDIO
+  TITLE "Capítulo 2"
+  INDEX 01 0:21:14
+TRACK 3 AUDIO
+  TITLE "Capítulo 3"
+  INDEX 01 0:32:65
+TRACK 4 AUDIO
+  TITLE "Capítulo 4"
+  INDEX 01 55:33:37
+TRACK 5 AUDIO
+  TITLE "Capítulo 5"
+  INDEX 01 55:40:22
+TRACK 6 AUDIO
+  TITLE "Capítulo 6"
+  INDEX 01 93:20:57
+TRACK 7 AUDIO
+  TITLE "Capítulo 7"
+  INDEX 01 145:59:68
+TRACK 8 AUDIO
+  TITLE "Capítulo 8"
+  INDEX 01 220:59:30
+TRACK 9 AUDIO
+  TITLE "Capítulo 9"
+  INDEX 01 290:24:27
+TRACK 10 AUDIO
+  TITLE "Capítulo 10"
+  INDEX 01 341:52:58
+TRACK 11 AUDIO
+  TITLE "Capítulo 11"
+  INDEX 01 400:53:18
+TRACK 12 AUDIO
+  TITLE "Capítulo 12"
+  INDEX 01 460:43:38
+TRACK 13 AUDIO
+  TITLE "Capítulo 13"
+  INDEX 01 532:04:51
+TRACK 14 AUDIO
+  TITLE "Capítulo 14"
+  INDEX 01 532:11:73
+TRACK 15 AUDIO
+  TITLE "Capítulo 15"
+  INDEX 01 628:08:19
+TRACK 16 AUDIO
+  TITLE "Capítulo 16"
+  INDEX 01 695:41:60
+TRACK 17 AUDIO
+  TITLE "Capítulo 17"
+  INDEX 01 814:06:40
+TRACK 18 AUDIO
+  TITLE "Capítulo 18"
+  INDEX 01 814:13:60
+TRACK 19 AUDIO
+  TITLE "Capítulo 19"
+  INDEX 01 924:55:00
+TRACK 20 AUDIO
+  TITLE "Capítulo 20"
+  INDEX 01 955:22:08
+TRACK 21 AUDIO
+  TITLE "Capítulo 21"
+  INDEX 01 1044:59:12
+TRACK 22 AUDIO
+  TITLE "Capítulo 22"
+  INDEX 01 1069:34:13

@@ -1,0 +1,19 @@
+FILE "Gather ‘Round the Sound꞉ Holiday Stories from Beloved Authors and Great Performers Across the Globe [B07811SBXY].m4b" MP3
+TRACK 1 AUDIO
+  TITLE "Chapter 1"
+  INDEX 01 0:00:00
+TRACK 2 AUDIO
+  TITLE "Chapter 2"
+  INDEX 01 1:12:21
+TRACK 3 AUDIO
+  TITLE "Chapter 3"
+  INDEX 01 17:16:59
+TRACK 4 AUDIO
+  TITLE "Chapter 4"
+  INDEX 01 20:50:10
+TRACK 5 AUDIO
+  TITLE "Chapter 5"
+  INDEX 01 26:42:54
+TRACK 6 AUDIO
+  TITLE "Chapter 6"
+  INDEX 01 58:50:09

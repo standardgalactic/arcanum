@@ -1,0 +1,25 @@
+FILE "Python for Beginners꞉ A Step-by-Step Guide on How to Program with Python in 7 Simple Steps [B07S8QZSGP].m4b" MP3
+TRACK 1 AUDIO
+  TITLE "Opening Credits"
+  INDEX 01 0:00:00
+TRACK 2 AUDIO
+  TITLE "Chapter 1"
+  INDEX 01 0:16:25
+TRACK 3 AUDIO
+  TITLE "Chapter 2"
+  INDEX 01 2:47:36
+TRACK 4 AUDIO
+  TITLE "Chapter 3"
+  INDEX 01 17:08:37
+TRACK 5 AUDIO
+  TITLE "Chapter 4"
+  INDEX 01 35:00:44
+TRACK 6 AUDIO
+  TITLE "Chapter 5"
+  INDEX 01 73:57:49
+TRACK 7 AUDIO
+  TITLE "Chapter 6"
+  INDEX 01 140:57:38
+TRACK 8 AUDIO
+  TITLE "End Credits"
+  INDEX 01 189:54:50

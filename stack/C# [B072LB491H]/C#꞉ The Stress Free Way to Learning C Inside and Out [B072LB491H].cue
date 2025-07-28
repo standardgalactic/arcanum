@@ -1,0 +1,28 @@
+FILE "C#꞉ The Stress Free Way to Learning C Inside and Out [B072LB491H].m4b" MP3
+TRACK 1 AUDIO
+  TITLE "Opening Credits"
+  INDEX 01 0:00:00
+TRACK 2 AUDIO
+  TITLE "Chapter 1"
+  INDEX 01 0:20:15
+TRACK 3 AUDIO
+  TITLE "Chapter 2"
+  INDEX 01 3:26:64
+TRACK 4 AUDIO
+  TITLE "Chapter 3"
+  INDEX 01 8:54:21
+TRACK 5 AUDIO
+  TITLE "Chapter 4"
+  INDEX 01 16:32:61
+TRACK 6 AUDIO
+  TITLE "Chapter 5"
+  INDEX 01 41:47:59
+TRACK 7 AUDIO
+  TITLE "Chapter 6"
+  INDEX 01 50:00:27
+TRACK 8 AUDIO
+  TITLE "Chapter 7"
+  INDEX 01 60:16:63
+TRACK 9 AUDIO
+  TITLE "End Credits"
+  INDEX 01 73:16:27

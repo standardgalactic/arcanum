@@ -1,0 +1,58 @@
+FILE "Neural Networks꞉ A Practical Guide for Understanding and Programming Neural Networks and Useful Insights for Inspiring Reinvention [B07GWXZ5P8].m4b" MP3
+TRACK 1 AUDIO
+  TITLE "Opening Credits"
+  INDEX 01 0:00:00
+TRACK 2 AUDIO
+  TITLE "Chapter 1"
+  INDEX 01 0:36:30
+TRACK 3 AUDIO
+  TITLE "Chapter 2"
+  INDEX 01 2:42:50
+TRACK 4 AUDIO
+  TITLE "Chapter 3"
+  INDEX 01 3:56:24
+TRACK 5 AUDIO
+  TITLE "Chapter 4"
+  INDEX 01 6:03:36
+TRACK 6 AUDIO
+  TITLE "Chapter 5"
+  INDEX 01 15:16:05
+TRACK 7 AUDIO
+  TITLE "Chapter 6"
+  INDEX 01 26:57:37
+TRACK 8 AUDIO
+  TITLE "Chapter 7"
+  INDEX 01 40:25:69
+TRACK 9 AUDIO
+  TITLE "Chapter 8"
+  INDEX 01 48:36:35
+TRACK 10 AUDIO
+  TITLE "Chapter 9"
+  INDEX 01 59:02:56
+TRACK 11 AUDIO
+  TITLE "Chapter 10"
+  INDEX 01 66:00:57
+TRACK 12 AUDIO
+  TITLE "Chapter 11"
+  INDEX 01 78:17:11
+TRACK 13 AUDIO
+  TITLE "Chapter 12"
+  INDEX 01 85:08:60
+TRACK 14 AUDIO
+  TITLE "Chapter 13"
+  INDEX 01 93:46:62
+TRACK 15 AUDIO
+  TITLE "Chapter 14"
+  INDEX 01 128:07:42
+TRACK 16 AUDIO
+  TITLE "Chapter 15"
+  INDEX 01 141:01:15
+TRACK 17 AUDIO
+  TITLE "Chapter 16"
+  INDEX 01 150:28:10
+TRACK 18 AUDIO
+  TITLE "Chapter 17"
+  INDEX 01 162:17:73
+TRACK 19 AUDIO
+  TITLE "End Credits"
+  INDEX 01 163:23:20

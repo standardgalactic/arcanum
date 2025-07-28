@@ -1,0 +1,19 @@
+FILE "Summary of The War of Art by Steven Pressfield [B0725DJSTC].m4b" MP3
+TRACK 1 AUDIO
+  TITLE "Opening Credits"
+  INDEX 01 0:00:00
+TRACK 2 AUDIO
+  TITLE "Chapter 1"
+  INDEX 01 0:12:68
+TRACK 3 AUDIO
+  TITLE "Chapter 2"
+  INDEX 01 2:31:71
+TRACK 4 AUDIO
+  TITLE "Chapter 3"
+  INDEX 01 10:59:36
+TRACK 5 AUDIO
+  TITLE "Chapter 4"
+  INDEX 01 19:52:01
+TRACK 6 AUDIO
+  TITLE "End Credits"
+  INDEX 01 25:44:40

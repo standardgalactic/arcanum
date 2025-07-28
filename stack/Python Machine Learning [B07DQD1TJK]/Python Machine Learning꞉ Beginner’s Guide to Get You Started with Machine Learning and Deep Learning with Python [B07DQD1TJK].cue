@@ -1,0 +1,34 @@
+FILE "Python Machine Learning꞉ Beginner’s Guide to Get You Started with Machine Learning and Deep Learning with Python [B07DQD1TJK].m4b" MP3
+TRACK 1 AUDIO
+  TITLE "Opening Credits"
+  INDEX 01 0:00:00
+TRACK 2 AUDIO
+  TITLE "Chapter 1"
+  INDEX 01 0:18:11
+TRACK 3 AUDIO
+  TITLE "Chapter 2"
+  INDEX 01 4:27:16
+TRACK 4 AUDIO
+  TITLE "Chapter 3"
+  INDEX 01 8:03:39
+TRACK 5 AUDIO
+  TITLE "Chapter 4"
+  INDEX 01 24:53:03
+TRACK 6 AUDIO
+  TITLE "Chapter 5"
+  INDEX 01 30:26:32
+TRACK 7 AUDIO
+  TITLE "Chapter 6"
+  INDEX 01 48:58:46
+TRACK 8 AUDIO
+  TITLE "Chapter 7"
+  INDEX 01 65:42:73
+TRACK 9 AUDIO
+  TITLE "Chapter 8"
+  INDEX 01 73:38:42
+TRACK 10 AUDIO
+  TITLE "Chapter 9"
+  INDEX 01 95:51:19
+TRACK 11 AUDIO
+  TITLE "End Credits"
+  INDEX 01 102:57:25

@@ -1,0 +1,25 @@
+FILE "Python Machine Learning꞉ Machine Learning Algorithms for Beginners - Data Management and Analitics for Approaching Deep Learning and Neural Networks from Scratch [B07FYS7Y1G].m4b" MP3
+TRACK 1 AUDIO
+  TITLE "Opening Credits"
+  INDEX 01 0:00:00
+TRACK 2 AUDIO
+  TITLE "Chapter 1"
+  INDEX 01 0:19:65
+TRACK 3 AUDIO
+  TITLE "Chapter 2"
+  INDEX 01 14:00:31
+TRACK 4 AUDIO
+  TITLE "Chapter 3"
+  INDEX 01 54:18:34
+TRACK 5 AUDIO
+  TITLE "Chapter 4"
+  INDEX 01 68:24:12
+TRACK 6 AUDIO
+  TITLE "Chapter 5"
+  INDEX 01 80:07:16
+TRACK 7 AUDIO
+  TITLE "Chapter 6"
+  INDEX 01 110:44:08
+TRACK 8 AUDIO
+  TITLE "End Credits"
+  INDEX 01 122:28:48

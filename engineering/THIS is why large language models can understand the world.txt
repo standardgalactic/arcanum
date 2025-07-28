@@ -1,0 +1,262 @@
+Large language models have gotten so good that by now virtually everyone agrees that
+they are going to fundamentally change society.
+And each new generation of LLMs is bigger and better than the previous.
+It seems obvious that just by scaling up the size of these models, they will keep getting
+better and better, and eventually surpass human intelligence.
+Except that actually, no, that isn't obvious at all.
+In fact, the entirety of statistical learning theory, developed over the last 300 years,
+predicts the exact opposite.
+Larger models should perform worse than smaller models, not better.
+This is why, just five years ago, nobody would have predicted that LLMs would be this successful.
+I mean, the foundational technology behind LLMs, that is, autoregressive transform and neural
+nets, has existed pretty much unchanged since 2017.
+But back then, nobody bothered to train extremely large models, because, well, the theory predicted
+that the models would get worse with scale, not better.
+So then, why was everyone wrong?
+Well, it all comes down to the concept of overfitting.
+In machine learning, we train a model to do what we want it to do, by giving it a bunch
+of examples.
+Suppose you wanted to train a neural net to add two numbers together.
+You would give it a list of examples of a pair of numbers as input, and the corresponding
+sum as the desired output.
+The neural net then learns, that is, it adjusts its weights, until it can successfully map the
+inputs to the outputs.
+And ideally, the result of this learning process will be that the neural net somehow manages
+to set its weights to just the right values, so that it effectively performs the algorithm
+for adding two numbers together, digit by digit.
+If it does, then great, we can now use this neural net to add any two numbers together.
+However, another way that the model can solve this task would be to simulate a sort of lookup
+table, which just lists every single training example and its corresponding output.
+Remember, the model only cares about making correct predictions for the training examples.
+Nothing else matters.
+So this lookup table is a perfectly valid solution.
+But of course this lookup table is a terrible solution, because if you apply it to new numbers,
+which aren't in the training data, you get a completely random output.
+It's like memorizing all of the answers to a test, instead of actually studying and understanding
+the material.
+And in fact, most possible configurations of weights that solve the training set will behave
+like this lookup table, not the algorithm.
+So if you think of the model as just randomly picking one of the possible solutions, then it
+will almost always end up learning something like this lookup table.
+This is known as overfitting.
+The model memorizes all of the details of the training data, but fails to learn the underlying
+mechanism or rule behind the data, so it can't generalize to new situations.
+One way to prevent overfitting is to reduce the size of the neural net, so that it simply
+does not have enough capacity to memorize all of the training examples.
+In order for a neural net to simulate a lookup table, it needs to somehow encode all of the
+information in the training data into its weights.
+If there's 100,000 training examples, all of that information needs to be in the weights,
+somewhere.
+But if there aren't enough weights, then it's simply impossible to store all that information.
+But even a very small neural net can still implement the algorithm for addition.
+After all, it only takes about 5 lines of code, regardless of how many training examples
+there are.
+So if we choose the size of the neural net just right, then the only solution that it
+can implement will be the correct one, and it will be forced to learn that.
+And then the model will be able to generalize to new inputs.
+And this is a very general phenomenon.
+Almost always, the underlying rule or mechanism behind the data is going to be the smallest
+way of representing that data.
+So choosing the model's capacity to be just large enough to accurately fit the training
+data, but no larger, should be the best strategy to produce models which generalize well.
+And this is exactly what we observe in practice.
+Here are the results you get training neural nets of varying sizes on an image classification
+dataset.
+As you can see, the test error, that is the error rate when evaluated on new inputs, not
+in the training data, decreases as the neural net is made bigger up to this point.
+But then it begins to go up again when the size is increased further.
+It's at this point that the neural net has just enough capacity to learn the mechanisms
+behind the data, and adding more capacity just results in memorization.
+The very largest neural net actually achieves zero training error.
+It perfectly memorizes the entire training set.
+But it's not the best model.
+The model with the lowest test error is this one in the middle.
+This is why if you were to ask an AI researcher five years ago, do you think training gigantic
+neural nets with trillions of parameters on internet text is a good idea, they would
+have said no.
+It's just going to overfit.
+Sure, it'll learn the training dataset, but it will just be a stochastic parrot repeating
+things that it's memorized.
+It won't have any real understanding.
+Nobody was thinking about scaling up models because it didn't work.
+Instead, AI researchers were all trying to come up with better learning algorithms and
+better neural net architectures to improve model performance.
+The designing of these algorithmic improvements is an intensely creative process, and there was
+no way to brute force a solution with more compute.
+But this would all change in 2019, when a new paper came out demonstrating something
+very interesting.
+In this paper, the authors again trained various neural nets of different sizes.
+But this time, they didn't stop when the neural net achieved zero training error.
+They kept increasing the size even further.
+And what they found was, after the neural net could perfectly memorize the training data,
+the test error actually started to decrease again.
+And it kept decreasing.
+In fact, it went even lower than the previously best performing neural net.
+And it just kept going lower for all of the sizes they tested.
+They dubbed this phenomenon double descent.
+As you increase the size of a neural net past the point of overfitting, the test error begins
+to descend a second time.
+And this time, it's seemingly without limit.
+This result came as quite a big surprise.
+It seemed to open up a new avenue for improving AI.
+Just keep making the models bigger.
+But at the same time, this result flies in the face of all known statistical learning
+theory.
+It shouldn't be possible for models large enough to memorize the training data many
+times over to have real understanding that generalizes.
+So what's going on?
+Why do larger models generalize better?
+Around the same time, another paper came out which demonstrated that most of the weights
+in a large neural net are useless.
+The authors of this paper found a way to remove up to 96% of the weights from a large neural
+net without affecting its test error at all.
+The process they used was as follows.
+To start with, all weights are initialized to small random values, as usual.
+And the network is fully trained on the training data.
+They then removed the 10% of weights with values closest to zero.
+The reasoning here is that if a weight has a value of zero, then it doesn't do anything.
+So weights close to zero should be the ones which contribute the least amount.
+The remaining weights are reset to the same initial values they had before training started.
+This whole process is then repeated around 30 times.
+At the final iteration, they had a network just 4% the size of the original, which, when trained
+from its initial random weights, achieved the same test error as the full network.
+This finding hints at what's really going on.
+Hidden inside of a large neural net is a much smaller sub-network that is actually doing
+all of the work.
+The rest is just useless fluff.
+That's why it can generalize.
+But why does it generalize better than a small network of the same size as the sub-network?
+Remember, normally when you train a smaller network, it performs worse.
+But that's when the networks are trained from initially random values.
+The only thing that's different about this sub-network is the initial values it starts
+with before training.
+To understand what's going on here, you need to know a bit about the way that neural
+nets are trained.
+Gradient descent.
+The gist of it is that for each training example, you make a small change to every weight in
+order to make the net's output closer to their label.
+We like to visualize this process as a ball rolling down a hill.
+The hill is the graph of the function which maps possible weight configurations to training
+error.
+So each point in this graph is showing you, if you set the weights of the network to some
+specific combination of values, what the training error would then be.
+The ball represents the current configuration of weights, and it's initially placed at
+a completely random point.
+The goal is to move the ball to the lowest point on the landscape.
+That corresponds to the weights with the lowest training error.
+Gradient descent moves the ball just like an actual ball rolling due to gravity, in the
+direction of steepest descent.
+The problem with this method is that you can get stuck in sub-optimal configurations.
+In such a configuration, making any small change to the weights results in more error,
+so the weights just stop changing.
+There are better configurations for the weights with lower error, but gradient descent will never
+find them.
+Because of this, depending on the initial weights you start with, you can end up with different
+final training errors.
+A neural net may end up at zero training error with some initializations, but might get stuck
+early when started from others.
+For large neural nets, it's really easy to fit the training data, so you end up with zero
+training error no matter where you start.
+However, for smaller networks, the initialization becomes crucial, as more possible initializations
+result in sub-optimal performances.
+For small enough networks, the vast majority of initializations result in sub-optimal performance.
+Some initializations may still result in zero training error, but it's astronomically unlikely
+to start there when picking at random.
+Now inside of a large neural net, there are lots of small sub-networks, which are just big
+enough to fit the training data, but only if they have a really lucky initialization.
+Every subset of weights can be thought of as a small neural net, each with a different
+random initialization.
+The authors of the pruning paper claim that when you train a large neural net, the result
+is the same as training all of these different small sub-networks independently, and keeping
+only the best one while discarding the rest.
+Most of these sub-networks will have bad initializations and will be unable to learn, but as long as one
+of them has a lucky initialization, it will go on to solve the training task all by itself.
+When the authors performed their pruning procedure, they were essentially uncovering the sub-network
+with the best initialization.
+The authors call this the lottery ticket hypothesis.
+Each sub-network is like a lottery ticket.
+It's incredibly unlikely that it will have a good initialization, but when you have billions
+of tickets to choose from, winning the lottery becomes a certainty.
+And the number of tickets, equivalent to the number of sub-networks in the full network,
+grows exponentially in the size of the full network.
+Training a larger network means more initializations to choose from.
+With more initializations to choose from, even smaller sub-networks will be able to reliably
+fit the data.
+Remember, the smaller a network is, the rarer it is for it to have a good initialization,
+and the more tickets you need for it to reliably win.
+So by making the network larger, you get more tickets, allowing even smaller sub-networks to
+win.
+Putting all of this together, we have the very counter-intuitive result that the larger you
+make a neural net, the smaller the winning sub-network will be, and thus the simpler
+the learned model.
+This is why larger neural nets generalize better.
+Phew, statistical learning theory is saved.
+The simplest model really is the best generalizer, and it's a good thing too, because it's not
+just machine learning.
+All of science is built on this same idea too, though scientists call it Occam's razor.
+But this really is a miraculous result.
+Almost by complete accident, we stumbled across a learning algorithm that gets better simply
+by dumping more computing power into it.
+No longer do we need to rely on human researchers to come up with clever ideas to push the frontier
+of AI forward.
+Now we can just scale.
+I would like to point out that as of now, no one knows for sure why training a large neural
+net behaves like training all of its sub-networks in parallel and selecting the best.
+It definitely isn't obvious that this should be the case.
+But one working hypothesis is that the better initializations, the ones which lead to lower
+training error, also lead to faster learning.
+That is, they will fit the data with fewer steps of gradient descent.
+So the sub-network with the best initialization learns to solve the task first, before the
+other sub-networks have a chance to learn anything.
+I would also like to point out that the pruning strategy used in the lottery ticket hypothesis
+paper is nowhere near optimal.
+Choosing the smallest weights at each iteration is not guaranteed to result in the smallest
+possible network at the end of multiple iterations.
+So the 4% identified in the lottery ticket hypothesis paper is an upper bound on the true size of
+the minimal sub-network that is doing all of the work.
+The true size, I suspect, is much smaller than that.
+So what does all this mean for the future of AI?
+Right now, there is a lot of debate about whether making better language models will ever result
+in human-level intelligence.
+Prominent AI researcher and Turing Award recipient, Jan Lecun, has made the argument that it isn't
+possible for language models to learn models of the world.
+He argues that humans don't bother to explicitly communicate shared common sense knowledge about
+the world, and so this information isn't present in the internet text used to train language
+models.
+But it isn't that simple.
+Remember, the whole point of a good learning algorithm is that it doesn't just fit the
+training data.
+It learns the mechanisms behind the data so that it can generalize.
+And it does this by finding a small and simple model of the data.
+So what happens when we apply this idea to language modeling?
+Well, the smallest program that generates all of the text on the internet is going to be
+something like a physics engine that simulates all of the particle interactions inside a human
+brain.
+It only takes about a few thousand lines of code to specify all of quantum mechanics plus initial
+configurations for a human brain.
+So, in principle, a perfect learning algorithm, when trained to predict the next word in internet
+text, should learn to implement that program.
+And that program would definitely possess a world model, and have common sense understanding
+and do everything that a human can do.
+I mean, it's literally simulating a human brain.
+Now to be clear, neural nets are nowhere near as good as this ideal perfect learning algorithm,
+and the world models they induce are nowhere near human level.
+But it is certainly clear that modern LLMs do possess models of the world that allow them
+to generalize beyond their training data, to some extent.
+And we know that as neural nets are scaled up, they get better at finding smaller and smaller
+models for their data.
+So, there is a very real argument to be made that just by scaling up LLMs, they will approach
+this ideal learner, and hence human level intelligence.
+I mean, there's a reason why every large company and government in the world is pumping billions
+of dollars into scaling LLMs.
+Now personally, I don't believe that scaling up neural nets alone will be enough to get
+us to human level intelligence, and the reason is just that the rate of improvement is way
+too slow.
+Yes, neural nets get better when they are scaled up, but it's taking way too much compute
+to get relatively modest gains in ability.
+But I do think that language modelling alone is enough to produce human level intelligence.
+Even if scaling neural nets eventually reaches a plateau, I see no reason why better learning
+algorithms, perhaps using entirely different architectures, or maybe neural nets combined
+with external tools, wouldn't induce human level intelligence when trained to predict the
+next word in internet text.
+In fact, if the learning algorithm is good enough, it's virtually guaranteed to.

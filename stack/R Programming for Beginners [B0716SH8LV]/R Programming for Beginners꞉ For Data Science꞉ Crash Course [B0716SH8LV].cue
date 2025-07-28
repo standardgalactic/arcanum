@@ -1,0 +1,31 @@
+FILE "R Programming for Beginners꞉ For Data Science꞉ Crash Course [B0716SH8LV].m4b" MP3
+TRACK 1 AUDIO
+  TITLE "Opening Credits"
+  INDEX 01 0:00:00
+TRACK 2 AUDIO
+  TITLE "Chapter 1"
+  INDEX 01 0:18:67
+TRACK 3 AUDIO
+  TITLE "Chapter 2"
+  INDEX 01 4:49:41
+TRACK 4 AUDIO
+  TITLE "Chapter 3"
+  INDEX 01 16:22:15
+TRACK 5 AUDIO
+  TITLE "Chapter 4"
+  INDEX 01 30:27:55
+TRACK 6 AUDIO
+  TITLE "Chapter 5"
+  INDEX 01 40:57:72
+TRACK 7 AUDIO
+  TITLE "Chapter 6"
+  INDEX 01 50:54:47
+TRACK 8 AUDIO
+  TITLE "Chapter 7"
+  INDEX 01 70:11:09
+TRACK 9 AUDIO
+  TITLE "Chapter 8"
+  INDEX 01 83:25:35
+TRACK 10 AUDIO
+  TITLE "End Credits"
+  INDEX 01 84:58:02

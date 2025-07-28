@@ -1,0 +1,22 @@
+FILE "Summary of Sapiens꞉ Includes Key Takeaways & Analysis [B076HCR1MJ].m4b" MP3
+TRACK 1 AUDIO
+  TITLE "Opening Credits"
+  INDEX 01 0:00:00
+TRACK 2 AUDIO
+  TITLE "Chapter 1"
+  INDEX 01 0:14:26
+TRACK 3 AUDIO
+  TITLE "Chapter 2"
+  INDEX 01 2:32:72
+TRACK 4 AUDIO
+  TITLE "Chapter 3"
+  INDEX 01 24:18:47
+TRACK 5 AUDIO
+  TITLE "Chapter 4"
+  INDEX 01 45:18:02
+TRACK 6 AUDIO
+  TITLE "Chapter 5"
+  INDEX 01 75:41:61
+TRACK 7 AUDIO
+  TITLE "End Credits"
+  INDEX 01 116:31:11

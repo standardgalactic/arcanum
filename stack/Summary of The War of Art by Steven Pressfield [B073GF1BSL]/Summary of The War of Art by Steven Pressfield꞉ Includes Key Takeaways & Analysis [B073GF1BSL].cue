@@ -1,0 +1,22 @@
+FILE "Summary of The War of Art by Steven Pressfield꞉ Includes Key Takeaways & Analysis [B073GF1BSL].m4b" MP3
+TRACK 1 AUDIO
+  TITLE "Opening Credits"
+  INDEX 01 0:00:00
+TRACK 2 AUDIO
+  TITLE "Chapter 1"
+  INDEX 01 0:18:43
+TRACK 3 AUDIO
+  TITLE "Chapter 2"
+  INDEX 01 1:47:03
+TRACK 4 AUDIO
+  TITLE "Chapter 3"
+  INDEX 01 3:58:59
+TRACK 5 AUDIO
+  TITLE "Chapter 4"
+  INDEX 01 21:23:69
+TRACK 6 AUDIO
+  TITLE "Chapter 5"
+  INDEX 01 31:01:30
+TRACK 7 AUDIO
+  TITLE "End Credits"
+  INDEX 01 41:57:13

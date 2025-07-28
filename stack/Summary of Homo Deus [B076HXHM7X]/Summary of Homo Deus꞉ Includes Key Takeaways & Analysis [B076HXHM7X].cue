@@ -1,0 +1,22 @@
+FILE "Summary of Homo Deus꞉ Includes Key Takeaways & Analysis [B076HXHM7X].m4b" MP3
+TRACK 1 AUDIO
+  TITLE "Opening Credits"
+  INDEX 01 0:00:00
+TRACK 2 AUDIO
+  TITLE "Chapter 1"
+  INDEX 01 0:14:29
+TRACK 3 AUDIO
+  TITLE "Chapter 2"
+  INDEX 01 2:47:45
+TRACK 4 AUDIO
+  TITLE "Chapter 3"
+  INDEX 01 6:34:48
+TRACK 5 AUDIO
+  TITLE "Chapter 4"
+  INDEX 01 13:00:52
+TRACK 6 AUDIO
+  TITLE "Chapter 5"
+  INDEX 01 29:37:26
+TRACK 7 AUDIO
+  TITLE "End Credits"
+  INDEX 01 46:41:43

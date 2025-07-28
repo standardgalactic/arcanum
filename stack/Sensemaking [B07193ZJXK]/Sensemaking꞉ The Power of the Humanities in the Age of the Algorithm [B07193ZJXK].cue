@@ -1,0 +1,31 @@
+FILE "Sensemaking꞉ The Power of the Humanities in the Age of the Algorithm [B07193ZJXK].m4b" MP3
+TRACK 1 AUDIO
+  TITLE "Chapter 1"
+  INDEX 01 0:00:00
+TRACK 2 AUDIO
+  TITLE "Chapter 2"
+  INDEX 01 7:35:36
+TRACK 3 AUDIO
+  TITLE "Chapter 3"
+  INDEX 01 29:17:14
+TRACK 4 AUDIO
+  TITLE "Chapter 4"
+  INDEX 01 76:32:08
+TRACK 5 AUDIO
+  TITLE "Chapter 5"
+  INDEX 01 96:09:72
+TRACK 6 AUDIO
+  TITLE "Chapter 6"
+  INDEX 01 148:14:54
+TRACK 7 AUDIO
+  TITLE "Chapter 7"
+  INDEX 01 204:29:42
+TRACK 8 AUDIO
+  TITLE "Chapter 8"
+  INDEX 01 264:53:51
+TRACK 9 AUDIO
+  TITLE "Chapter 9"
+  INDEX 01 345:57:08
+TRACK 10 AUDIO
+  TITLE "Chapter 10"
+  INDEX 01 409:38:45

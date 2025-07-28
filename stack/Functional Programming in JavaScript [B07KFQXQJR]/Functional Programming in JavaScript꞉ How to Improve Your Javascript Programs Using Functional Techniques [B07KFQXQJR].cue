@@ -1,0 +1,40 @@
+FILE "Functional Programming in JavaScript꞉ How to Improve Your Javascript Programs Using Functional Techniques [B07KFQXQJR].m4b" MP3
+TRACK 1 AUDIO
+  TITLE "Opening Credits"
+  INDEX 01 0:00:00
+TRACK 2 AUDIO
+  TITLE "Chapter 1"
+  INDEX 01 0:12:12
+TRACK 3 AUDIO
+  TITLE "Chapter 2"
+  INDEX 01 1:57:33
+TRACK 4 AUDIO
+  TITLE "Chapter 3"
+  INDEX 01 48:18:33
+TRACK 5 AUDIO
+  TITLE "Chapter 4"
+  INDEX 01 103:15:72
+TRACK 6 AUDIO
+  TITLE "Chapter 5"
+  INDEX 01 105:18:63
+TRACK 7 AUDIO
+  TITLE "Chapter 6"
+  INDEX 01 151:15:35
+TRACK 8 AUDIO
+  TITLE "Chapter 7"
+  INDEX 01 206:43:47
+TRACK 9 AUDIO
+  TITLE "Chapter 8"
+  INDEX 01 256:20:00
+TRACK 10 AUDIO
+  TITLE "Chapter 9"
+  INDEX 01 258:06:02
+TRACK 11 AUDIO
+  TITLE "Chapter 10"
+  INDEX 01 306:07:61
+TRACK 12 AUDIO
+  TITLE "Chapter 11"
+  INDEX 01 349:08:22
+TRACK 13 AUDIO
+  TITLE "End Credits"
+  INDEX 01 392:18:25
