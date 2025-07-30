@@ -1,0 +1,711 @@
+Cool. So Ross is probably one of the few professors to be in three different departments.
+He's the Toyota professor at EECS. He's also a professor at Aeronautics and Astronautics and
+also at MECI at MIT. He's the director of the Center for Robotics at CISIL and the leader of
+the team MIT's entry at the DARPA Robotics Challenge a few years ago. Ross is also the
+Vice President of Robotics Research at Toyota Research Institute at TRI and he's also the
+recipient of the NSF Career Award, the MIT Jerome Sanzer Award for Undergraduate Teaching,
+the DARPA Young Faculty Award in Mathematics, and the 2012 Ruth and John Spira Teaching Award.
+And also was named a Microsoft Research New Faculty Fellow. When he studied, he studied computer
+engineering at Michigan and then he did his PhD here with us at CISIL in 2004 working with Sebastian
+Sun. And after graduation, he did it at BCS, also at MIT, to doing his postdoc. And finally,
+some of his education has also been at Microsoft and Santa Fe Institute. Let's welcome Ross the
+radio. Hi, everybody. Thank you for coming. And I'm actually more worried about talking to the void
+than having too many questions. So I appreciate your seminar advice, like I said, but I think
+you could probably ask questions and I'd be happy or show your face and, you know, emote and I'd be happy.
+Okay, so I wanted to talk today about sort of a curious problem and one particular example here of
+of an experiment we've been doing in feedback control from pixels. But I wanted to actually have a
+discussion ideally if the format works. The original idea for this was a chalk talk and we'd just have a few
+people sitting around and talking it out. But, you know, we've so far, I feel, struggled to do
+rigorous control from pixels. And I don't know that we really understand why. And so I want to just dig
+into that a little bit today and talk that out and see if we can start making some progress.
+Okay, so what do I mean by feedback control from pixels? Some of you have seen
+what I hope is starting to play here. Good. This is also an experiment in presentations here.
+So this is Pete and Lucas showing what it, what it, what can be achieved if you actually close a tighter
+feedback loop with a depth camera in this case, right? Is the ability to sort of interact with,
+in this case, a variety of objects and have the richness of a perceptual input, but have the
+closed loop update rate that you'd expect. And you can sort of get much more reactive,
+much more robust feeling behaviors for admittedly a kind of a silly task of just trying to flip up a
+shoe, but we wanted to flip up any old shoe. Okay. We did an open house not so long ago,
+for those of you that came. It works well. It works sort of surprisingly, almost frustratingly well.
+So this was the, you know, a non-trivial contact task with a policy that was using visual inputs,
+primarily commanding end effector positions and doing non-trivial tasks. This one was trained with
+imitation learning and we'll talk about that. But boy, once you start getting these things to work,
+it feels so exciting. And it's like, how could we go back after something like this to the, you know,
+to the times where we had our robots basically sensing, planning, acting, and air balling with their hands?
+My ability to control is somewhat limited here, but this is just a couple different views of that.
+I wonder if I can make it better. Oh, here we go. This is showing that it works for surprisingly
+deformable objects. Okay. And this is some of the back end of it was that one of the primary visual
+capabilities that enabled this was this training of correspondences. So if you see
+the mouse is sort of over on the left frame, a particular point on the hat, and then despite the
+hat being in very different configurations before, there's a highlighted area of the network recognizing
+the most similar point on the hat in the new image. Okay. And that was the sort of core coordinate
+system, core framework that we used in order to close the feedback loop. And I'll tell you a little
+bit more about that. Okay. But actually, I won't tell you too much about that because Lucas is going
+to defend his thesis fairly soon. And I highly encourage all of you to attend his talk. He's got
+more results since then, and it's going to be a great talk soon to be scheduled and I hope you tune in.
+But one of the things that I think Lucas would, I know Lucas would say, and that we say together,
+is that it's sort of frustrating that although that works very well, and it's certainly a feedback loop,
+and it's certainly, you know, doing dynamics and control kind of things, it's really not built on
+the fundamental tenants of control in the way that we'd like, right? So there is a language of control
+that goes through models, that talks about, for instance, I have a plant with control inputs U,
+with outputs Y, has some internal state X. I'm just putting these down so we can have a common
+vocabulary through the talk. Okay. With disturbances coming in as W and noise coming in as V. Okay.
+And then, I've got too many computers here.
+And then, my goal is to try to find a controller, which I'm going to call pi today here, which ultimately
+is going from a history of observations, Y, into a control action U, right? And there's many different
+ways to try to tell the system which pi I'd like to find of the many to choose from. Maybe I'm trying to
+stabilize an equilibrium. Maybe I'm trying to guarantee that my state will arrive at some goal. Maybe I've
+formulated an optimal control problem, and I'm trying to optimize some objectives subject to constraints,
+right? Lots of different ways to think about that, all in the service of trying to find some policy pi.
+Okay. But, I've never ever seen any proofs that sort of say, if G happens to be a camera,
+right? Then, stop. Nothing works, right? In fact, one of the things that drew me to controls in the
+first place, I remember when I came to MIT, I had been doing a lot of reinforcement learning. And as I
+joined the faculty, I started interacting with the controls faculty even more. And it was so compelling
+to me that I felt like every question I had, you know, they could view almost anything as a systems
+theoretical problem. And they almost always had thought deeply about the systems theory enough to apply it
+in a way to a new problem. So, pretty much everything you could take to Sasha Magretsky or Pablo or
+somebody, they've already thought about that in some deep way, right? And that's like, that had a major
+impact on what I wanted to do. Accept cameras. Like, as soon as you say cameras or computer vision,
+there's kind of like, whoa, whoa, whoa, you know, controls doesn't do cameras. That's a whole, that's like,
+go to the other department for that. So, why is that? I want to dig into that a little bit today,
+right? You could argue that maybe it's because once we have a camera, we start trying to do more
+ambitious problems. And that maybe we're in situations where we don't even know what F is.
+And maybe that's the fundamental thing that happens. But, but I think there's plenty of
+places where we know F, okay, where I know the dynamics. But even if I give you a perfect simulator,
+let's say of Michelle's working about on a robot trying to tie shoelaces, for instance,
+like we, I think we can build a simulator that is high fidelity enough of tying shoelaces. It's not
+easy. But I think if we can get things to work with a simulated camera on a simulated system over
+a variety of shoes and simulation that I'd have confidence, it's going to transition to reality.
+So, although there are certainly some problems where the model is unknown, I think there's enough
+problems that, you know, that I'm willing to give you F and you still can't solve the problem if the,
+if the feedback control has to be closed through a camera. So let's talk today, I'm not saying that's
+not a good problem, but let's today assume that F is given. Okay. So, so what is it then about G and,
+or, you know, if I'm willing to give you F, I'm willing to tell you G, I'm going to give you a model
+for perfect model for G. What is it about G that makes, if it's a camera, makes things so hard?
+Right? In practice, we're not using the full toolkit of control. It's not that we're designing pi in these
+control theoretic ways. We're often doing things that involve, for instance, separately training
+a perception system with some big deep network trained for perception only often. And that's
+often a huge network or ResNet or something like this. And then we're tacking on a small policy that
+will train with either imitation learning or deep RL or something like this afterwards. And in many cases,
+I think they are relatively inefficient to synthesize. Maybe they're hard to trust. You know,
+it's not even really clear how well they work, right? I would say that about our own work as well
+as everything. So I'm, I think the next few years is that we're going to see some, us being able to do
+better in this problem. And I, and I think the topic, you know, I'd like to talk about today is how do,
+if, is control theory up to the challenge? Can we, can we bring some more tools from rigorous feedback
+control to vision based feedback? Okay. Or if not, you know, I hope that if the exploration ends
+up in a, no, you really can't do that, then at least I'll understand in a deeper way why that was.
+I think there's lots of things that people say. It's like, it's relatively easy to make excuses,
+right? The, the, the image is suddenly very high dimensional. G is non-differentiable. You know,
+the variability in the outputs is, you know, there's, there's huge complex distributions over the type of
+visual environments. Um, yes. I mean, those are all true maybe, but not always. We can find examples
+where we want to close a feedback loop from a camera where those aren't necessarily the case.
+We could isolate those and start asking, are there, are any of them actually deal breakers?
+And I don't claim to have any of these answers here. This is a discussion where everybody's muted and,
+and, uh, and, you know, mostly just me talking, but, but if we, if anybody wants to talk,
+that's great. It's a discussion. Um, okay. And in particular, maybe one thing I will offer, I've been,
+we've been struggling for a while to try to find like, what's the limiting case where everything
+is simple? Like, is there a problem in vision where, you know, it's like the linear Gaussian case
+or the simple tabular MDP case or something like that? And I kind of, I feel like we found a bit of
+that in this onion problem where I'll tell you about in a second. Okay. So, um, let me set it up with a
+little bit of the framework. If there's, there's one thing I sort of want to communicate is that
+there are some tools from controls that we should be trying, um, that may or may not be on your radar,
+right? So, um, before we called it pixels to Torx, um, did that transition? My.
+All right. There we, there we go. Okay. I hope that doesn't have to happen very often.
+Um, all right. Before it was called pixels to Torx, um, the, the problem of designing a controller
+that goes, takes some observations Y and that's a whole sequence of observations in this block
+diagram. There's a signal Y coming in and you're going to put out your job is to put out a signal
+you coming out as a controller, um, and construct constructing a controller of this form, which
+potentially can use all of the information of previous Y's that's called the output feedback
+problem. Okay. And the most common recipe that I think, um, we all know is this, uh, idea of
+doing state estimation and then feedback, full state feedback, right? So in the particular case,
+um, well, in the particular case of linear quadratic Gaussian problems, the separation principle is
+rigorously justified, uh, but we use it all the time, right? And, and I would argue that it's almost,
+it's so compelling and they can, in our work on, on legged robots, you know, I felt like often we had to
+stop relying on full state feedback that we weren't able to, you know, that the fundamental problems
+in the, in the task were the fact that we were too heavily dependent on our state estimate,
+but it's just so tempting to build a better state estimator or spend a little bit more money on your
+IMU or, or whatever. And to write these systems in this form where you, you're writing a state estimate,
+it is some recursive filter of, of a form like this. And in the case of a linear quadratic
+Gaussian, it's the Kalman filter, um, gains are for L. Okay. And then I'm building a controller that's
+just as if I had perfect sensing, I can, I could build a controller that knows the state X and makes
+those decisions. All right. So is that it? Is that the, did it really not update? Okay. So is this
+the fundamental problem? Is the reason that we're not good? I, I, I assume people agree that we're not
+good at doing feedback control through cameras. We're, we're getting better at it, but maybe the
+fundamental problem, the reason that we haven't done it with rigorous control is that, um, we shouldn't
+be doing the state estimation step that maybe, you know, X and is often not observable in problems
+like this thing that we were, I wish the visual motor examples I was showing in the first few slides,
+maybe not all the states are even task relevant. So, so observing it could be a false goal, having to,
+having to try to come up with estimates of the entire state vector X, right? There's a bunch of state
+in my image that it's just not relevant. For instance, like what is the state if I'm trying to, if I'm
+trying to program a robot to, to make a salad, you know, what's the state of the salad or my other
+favorite example here is, you know, let's say I'm, I'm, I'm going to button my shirt. I'm going to
+build a controller that should button my shirt or button all shirts, right? If state one, step one is
+to estimate the full state of my shirt, you know, it feels like probably we've gone down a rabbit hole
+there. So maybe that's the fundamental problem. Okay. So of course, um, many people on the call will say
+it's a, it's a POMDP. Of course we shouldn't be estimating the state. There's a more general
+framework that can capture this. Um, and in fact, maybe in the full glory, we should be actually
+estimating an entire distribution over possible states and then be doing feedback that can understand
+that distribution. Right. Um, right. This should be general enough to work. I agree. In fact, I think
+this has led to lots of insights about what the optimal controllers could be in these more complicated
+setting, but it's hard to get tractable results, especially in, in the forms I'm writing here.
+And the problems we're talking about, they're relatively high dimensional continuous state
+conviction, continuous action and POMDPs. Um, so that's maybe hard going.
+So, um, there's a subtle difference. I want to make, I want to make sure we're pointing out here,
+which I think people know and talk about this in slightly different language, but let me use it in my
+language. Right. So there's a difference between the controller state and the estimated plant state,
+right? So having state in your controller can be good. It's an efficient way to encode a dynamic
+controller. Right. But I think what's starting to happen is that the state of the world as I would
+be parametrized in, for instance, to write the equations of motion for simulation, right? I'll call
+that the Lagrangian state, right? Is probably not the right state space for us to do, to have in our
+controller. If I'm trying to program a robot to, to make pasta or, or something, then probably the,
+I don't need to estimate the entire continuum state of every noodle and the contact mechanics
+in which they're, they're interacting. I just want to know if the noodles are basically in the bowl or
+they're basically in the pot, right? Um, so that's the question of state representation learning and
+other things that we, we talk a lot about that Philip talked about when in the first EI seminar,
+I guess. Um, now here's maybe a more, um, you know, optimistic view. I think that should just
+be a control problem, right? So, so ideally perception should just be the output of my
+controller synthesis. If I've got strong enough control synthesis, then the idea of what's the
+right latent state should be whatever it's, whatever it's required to find this transition from
+Y all the way to you, right? Um, you know, we, and we're doing this already a little bit in practice.
+Our visual motor policies did have internal state, you know, we, we trained via imitation learning,
+um, LSTM networks in order to do this, Pete and Lucas did, and they were encoding some internal state,
+and you could sort of watch and try to guess what those states were meant. Um, you know, after the fact,
+uh, like there's some that seemed to be, one just seemed to be time, which was ridiculous. But, uh,
+you know, another one that was sort of seemed to be indicating that you're in a different phase of
+emotions. They would sort of turn on and turn off. Okay. So having internal state in your controller
+is a good thing, I think, but expecting the internal state of your controller to be the full state of
+the mechanics of the world is probably not a good goal. And I think the, you know, the problems in
+computer of using, you know, that would come up when you have the opportunity to do crazy things
+with a camera, maybe show those off. Okay. So we have done things which use, you know, which try to do good
+control with less, with, you know, with less just to show off that even hand designed or hand labeled and then
+trained in a deep network features, um, can do non-trivial tasks over a variety of objects. So this was another way that we
+sort of used in an intermediate representation from a perception system to do a variety of tasks.
+It was called K-PAM. Okay. So key point affordances. And the idea was actually, you don't need to know
+the full state of the world. You don't need to know the state of the shoe in order to program a lot of
+meaningful tasks. Or if you wanted to do something like put a mug on the rack, then actually just knowing a few
+key points, right? And it turns out key points are exactly the, in the same way that people use in, in
+perception, right? In computer vision, training a network to, to put out a few key points, which are
+somehow the affordances of the task. They don't necessarily have to, they certainly don't have to
+completely specify the geometry of the problem. Um, they don't necessarily say anything about the
+dynamics of the problem, but they're enough for me to say, I'd like the goal is to find key points in the
+current image, transform them through some rigid transformation, which I can do with an end effector
+command on my robot in order to make that yellow key point end up on that, um, you know, on that rack.
+And that actually turns out to be one hand designed intermediate representation, which is not the full
+Lagrangian state. Uh, and of course people have lots of other proposals for this about latent, um,
+state variables and state representations that could potentially work. Um, you know, that particular work
+was still quite limited because we didn't have any model of the, the dynamics of the key point,
+how those would go forward, but way continues to surprise. Um, he can make now, uh, just with the
+key point base affordances thinking about end of, you know, forces at the key points, he's actually
+able to make K PAM, uh, do pretty dynamic tasks with contact, rich assembly of, of Legos and plugs and
+erasers and everything like this. So, um, so for the places where the dynamics are, are relatively
+easy or they can be rigidly attached to a, to a hand, you can actually do a surprising amount of,
+uh, cool things with that. Okay. So, um, so state estimation is bad, uh, you know, full state
+estimation is bad belief space planning seems hard. Um, so people are sort of saying, well, let's do less
+or maybe I'll just take the direct approach, right? I'm going to just learn a map directly from, uh, from
+y to u, right? And so maybe an alternative that, that avoids the complexity of naming a state space,
+it avoids the complexity about reasoning over a complete belief distribution. I think the right
+way to think about it for today is that we're, we're going to search over a suboptimal class of
+policies, the full opt, the optimal policies for most of these problems are full belief space plans.
+Okay. But if I write down a class, a simpler class of policies and can search over them directly,
+then, um, then maybe that's a way to get around this, right? And we've seen a lot of success,
+including the, the first slides, a lot of good work, uh, out in the world of deep RL and imitation
+learning. Um, but I want to stop for a second and say, so I, so that's a good idea. I think that's an
+interesting idea to do policy search directly, but all too quickly people say, okay, we're going to
+do policy search. And then they say, the only way we can do this is by either imitation learning or
+black box optimization and deep RL. And I think that's, uh, throwing a little about a little bit
+too much out. I agree that an interesting formulation is to just search over a simpler restricted class of
+policies, even if that restriction is a deep neural network. Okay. But that doesn't mean you have to
+give up on the fact that you might know the equations of motion. You might know the, the renderer,
+for instance, uh, you might be able to, to, to do lots more things than we would traditionally do with
+black box optimization. And there are approaches to model based control that do not assume the
+separation principle. Okay. So if you take away one thing, maybe two things, this would be the first
+of two things I really want you to take away from the talk is that there is, there are ideas of doing
+joint, you know, integrated perception and control from control, and we should be trying these. Okay.
+So what does it mean to do model based policy search? Okay. So, so simple, a warmup example here
+is if I have a linear system and I want to do linear feedback control. Okay. For instance, when,
+when we're writing a problem like a linear quadratic regulator, the optimal controller we know takes this
+form U equals negative K of X. Okay. But we typically don't get K by policy search, right? We get it by
+K calling LQR in Metlab, which is solving the Riccati equation, an algebraic Riccati equation.
+It's indirectly, it's computing the cost to go, and then it's computing K from that. And in fact,
+we sort of know that's, that the set of stabilized, that K is a, you know, as parameterized like, like
+this is a bad set to, to search over. Okay. Um, in the sense that regardless of your objective,
+I haven't even named an objective. Uh, this is of course related to LQR, but even if you just look at the,
+the set of K, which stabilizes this system, right? Then that is actually a non-convex set.
+So almost any objective you put on top of that, you're going to have a non-convex optimization.
+Now there's some cool work that just, you know, fairly recent by Miriam Fazel, uh, you know,
+that showed for instance, that you can still find with direct gradient descent on, on the parameters K,
+the optimal policy in many cases with probability one. Um, but I don't think that holds in a more general,
+I mean, we're not sure how far that holds. That's, that was a, uh, a recent result of an old idea.
+So, um, I think we have reason to be a little suspicious of this, of searching directly in K.
+And we don't have to search directly in K because we actually know better parameterizations.
+And control has known these for a long time. Okay. So if you have a system that is, um,
+I've added in disturbances here because that's going to be a useful in our parameterization,
+but basically the same system that I, that we had before, instead of writing U equals negative K,
+UN equals negative K XN, I'm going to prefer to write it actually as disturbance-based feedback.
+So I'll do a K based on the initial condition X, but otherwise I'm going to just multiply,
+look for K, K matrices that are multiplied by this additive input W. And the idea is if you think
+about it that the nominal, um, you know, from any one initial X zero, I could actually have the,
+the rolled out solution. If there was really no disturbances, then I could encode what U should be
+for the rest of time just in this K matrix, right? It's a, it's a time varying K matrix that goes,
+goes out, but I could just basically have my entire solution into this one K matrix.
+The only way that that has to change is by responding to these disturbances. So this is a complete
+parameterization. It can perfectly recover the original parameterization.
+But the big difference here is while multiplying by XN puts the recursion back in and you get K times
+K times K times K for, for anything like this and makes it non-convex, this is additive in K. And the,
+most of the objectives we like, you know, L1 objectives, LQR objectives, other things,
+they are, they are convex in this parameterization, okay? This is, um, you know, it's a special case
+of the EULA parameterization. It's also known as system, it's also used in system level synthesis,
+which adds an additional, um, system level synthesis is kind of like the direct transcription
+versus shooting approach to this. If, for those of you that have, uh, heard or taken underactuated,
+for instance, okay, it's, they're very related. Um, okay. So there, there's a better parameterization.
+And actually, you know, we should probably be using that in reinforcement learning too. I feel like we've
+known this for a while. Uh, maybe this was, this was April, 2011 and it was maybe after it was cool
+and before it was cool. So poorly timed, but, but, you know, we thought we, we showed that, uh, you know,
+EULA parameters are just obviously a better parameterization for, for reinforcement learning
+tools too. And I think, uh, they, I, we did mostly the linear case in that paper too, but actually
+the EULA parameters are a nice choice for even nonlinear plants. And I, I think there's just
+some, some core lessons from controls that we should be using in RL. Okay.
+Um, it turns out for the purposes here, it turns out that the EULA parameters also allow you to
+formulate a policy search that does integrated perception and control. And I, I'm almost
+embarrassed to say this because I, I feel like it's been hiding in plain sight. Uh, and, and I did,
+we should have been working on this for years, but, um, but, but here we go. So, so for the
+output feedback case here, let's think about it for the linear systems to begin with. Okay.
+If you write down this same sort of disturbance based feedback, which is this, now it's got, you,
+you have feedback both on your disturbances and your noise here. Okay. Which you can measure
+after the fact, it's always using, it's always causal on those variables. Then actually the
+objectives like the LQR objective are still convex in K. Okay. And the cool thing is that this is a,
+these are finite horizon formulations typically. Um, but for if, if you put in, um, you know,
+that the, the W's come in as a Gaussian IID and V comes in Gaussian IID, then actually, even though
+this is jointly designing the filter gains and the control gains, it's actually recovering the Kalman
+filter. Okay. So, but it's applicable in cases where, I mean, where W might not be, um, Gaussian IID.
+You can, you can write more rich specifications. Sadra, uh, in our group has been thinking,
+thinking about lots of different ways that you can leverage that fact and do more, um, with,
+with sort of these sort of parameterizations. Okay. So that's observation one is that there just,
+there's a pay, there's a lesson to learn from control, I think, which is that there are better
+parameterizations if you're going to do policy search. Okay. Sadra in particular has been, um,
+pointing out, you know, because that the equations I wrote just now still declared that we need to do,
+to effectively, you know, declare a state, right? And, and I said, I don't know what the state of
+my salad or my shirt is. So I don't want to, I don't want to do that. Uh, the same kind of
+disturbance-based feedback parameterizations can also work for ARX models, right? So ARX models,
+the linear ARX models would being of this form where you're just predicting your next Y as a,
+some combination of your previous Y's and some, and some of your previous use plus some error
+term, simply called the error now, uh, instead of noise or disturbances, but it plays the same role.
+Okay. And when people say, I'm okay, my image is my state and in RL, um, that I think this,
+this is what I hear when they say that is, is that they're actually just doing a one-step ARX model.
+And, um, and that's good. And that makes sense, right? And more generally, everybody knows we
+could do a history of images and control inputs as the state. And I think that is justified,
+but it puts you into a slightly different class of models. And I think we should be a little careful
+calling it state because you can, you can trip yourself up with that. Okay. There are natural
+extensions of this to, um, none. Yeah. There's a question from Luca Carlone. Okay. Awesome. Luca.
+Can I mute myself? Um, just quick question. If you go to the previous slide, uh, you said that the
+noise terms are known a posteriori, but how do you get the noise in the previous one?
+Yeah. I'm, uh, navigating here. Yes. How do you get the noise? Because also a posteriori for
+retrieving the noise, essentially you need the state to be known. Right, right. So I thought about it more
+in, do you agree that it's easy in the state feedback case? Yeah. If you have an estimate,
+yeah, you can estimate the noise as well. But so, yes. So, so afterwards, if you observe your next
+xn, then you can just subtract it out, um, in the past and, and, and figure out what w was the
+difference between my repeated measurements. I believe that's all still true in the output case,
+um, that you can, after the fact by using y's, you know, that the next step, you can figure out
+what v must have been. And then again, you can figure out what w must have been. It's all done sort of
+after the fact you see the error in your, uh, prediction and the error in your, uh, in your
+observations. But implicitly, I guess my comment is that you are figuring out the state as a, you
+know, as a byproduct of figuring out the noise, you're figuring out the state as well there.
+Ah, yes. So absolutely. They, they are equivalent, they are able to do the same things. Um,
+and this one in this, in this particular slide, we still have to require a state space, which I think
+is a limitation. Um, but the parameterization is better in this case.
+Okay. Just wanted to make sure I was not missing anything. Thanks.
+Oh, I appreciate the question. You know, interaction is good.
+Okay. So, um, and, and this is the case where we don't need to have declare a state and you can
+just measure in the on proceed on succeeding measurements, what e must have been, you know,
+based on what I've observed and what my prediction was, and I could figure out what e must have been,
+right? If I had had my model exactly, I would have gotten one y. I measure a different y. The
+difference is e. And there, and you move from there. Okay. So, um, so, so I guess there are natural
+ways to apply it. I think the obvious question that should be in your head now is like, okay,
+this is a linear model. You start talking about cameras. What the heck, you know, you can't do linear
+models for cameras, right? Well, it actually, I just want to check that. Like the step one, let's just make
+sure we can't do okay with linear models in, uh, on cameras. Okay. So there is some history of doing
+linear ARX models and computer vision, right? There's some precedents based on some work,
+some older work and dynamics textures or rigid mode, just in segmentation, video in painting.
+There's examples where people actually fit linear ARX models to, for instance, you know, if they,
+if they want to put, um, um, you know, the waves on in the ocean in the background or something,
+you can, there are, there are cases where that has actually already worked. Um, but let's get to
+a, uh, manipulation example here. So, um, Terry, who, I don't know if he's on the call here,
+Terry Sue joined the lab, uh, last year. And, uh, and I, I was saying, you know, we're too dependent
+on state feedback. We got to pick a problem right off the bat. You know, you're, you're, you're fresh,
+you're not corrupted yet. We're going to start with a new problem where state is not an option. Okay.
+And so we, we said, let's, let's think about chopping an onion. Okay. Um, so what's the state space
+of the onion, right? And is it changing every time someone makes a cut is the number,
+the dimension of my state, like my classical controls approach to this would be, I'm going
+to write a hybrid model, which every time the knife comes down, it does a jump and a reset.
+And it does actually does like hundreds of them on every cut. And that means every controller has
+to be designed separately for every one of those cuts, even though my God, it's the third cut and
+the fourth cut must be pretty much the same. Right? So this seems like a place where
+there's no risk of us trying to estimate the full state of the, of the Lagrangian state of the world.
+Uh, so we kind of, we're not going to get sucked into the state estimation loco minima. Let's try
+to do image based control on that. Okay. And then, so we thought about how to actually turn that into a
+research problem. And, uh, well, so lesson one was that, um, you shouldn't use onions. Carrots are way better
+because I don't know the lab smells better. You can see them better on a camera. They like last longer. Uh,
+so, so I still like the, I still call it the onion problem. Probably I should update myself, but, but, uh,
+I recommend carrots. Okay. Second step, second idea, um, probably, you know, handing a deep network and a
+big sharp knife to a robot. Maybe that's not where we start. Maybe we should start with like the second
+part of that where the, the things have been chopped and we just want to move them around the cutting board.
+That's already pretty impressive. Let's do that part of it first. Okay. So, so now here's the setup.
+We've got a Kuka with a soft, uh, you know, um, blade that can move around in the, in the vertical
+axis here with a camera looking down from above, taking pictures of bright orange carrots. And the
+goal is to, to make it a more of a controls problem is to, to drive those carrots into some target set.
+Now, my goal was to actually use the iPad here. Let me just try one last experiment on that.
+Okay. So, um, the objective here, hopefully this is going to work.
+The objective is to, that's really poor writing, but okay. Um, you know, move all carrot pieces
+into a target set. Okay. Um, my, um, observations, my Y, right. Y at N, which is actually going to be, I'm going to use two notations.
+I'll use the image at time N image, or sometimes we're actually going to write subscript K. Okay.
+And then we'll also talk about the Y is the vectorized image, right? So if I take that whole image and I squish it down into a vector, vectorized image.
+Okay. And that's it. We're going to take, those are my observations. My control inputs,
+U of N are going to be a push in the, on the system. So I'm going to parameterize that in the same way that a lot of the good work on sort of pushing and, and the like have been have working in robotics.
+I'm going to just parameterize that with four numbers. This would be like the initial location of the pusher in the, in the image and the final location of the pusher in the image.
+Okay. And I'm going to assume that that's just a constant size paddle and it's going to move along this and I'm going to write the dynamics of the system ultimately in the time of this push.
+So, so basically I'm not going to model the dynamics of the push. I'm going to say the, a single action is an, is an entire push of a constant velocity.
+And I'm going to look at the, the, the image beforehand and the image afterhand, after, after the fact.
+Okay. The way that we're going to write, you know, my goal is to somehow write a single controller, which is going to be, you know, U N is some pi of Y N.
+Okay. Now we could in general take the entire history of Y, but I think for this problem, there is not that it's a quasi static problem.
+So the current image contains everything we need to know. And so I think it's, it's reasonable to look under, over this.
+And Terry thought it was most natural to think of this in terms of Lyapunov functions.
+Okay. So we're actually going to write down a Lyapunov function, which is somehow specifies my task.
+Okay. A Lyapunov function in this case, I could write it in a couple of different ways.
+But if I want to take some, some, my, my function of Y or my image Y, and I'm going to take us, I'm going to basically measure the distance between all of the nonzero pixels in the image.
+With the, from the target set. Okay. So it's going to be a sum of the distances between all of my nonzero pixels, which are, which will be my YI, an indicator sort of function of YI and my target set, which I typically write S. Okay.
+And I'm going to make a picture of that soon. I see flipping back and forth is going to stink, but let me, I'll try to do it minimally. But here we go.
+Okay. So the original image here from the camera looking down the board frame, I've now just cropped it into the board frame, thresholded it.
+I've got my, just my now black and white or my gray scale image, I, and then I can vectorize it into a 1024 vector Y.
+The notation hopefully is clear. Yeah. Okay. Now this is my, my Lyapunov function candidate here.
+Terry's Lyapunov function candidate here. I've got a bunch of points, a bunch of carrot pieces that we can indicate anything that's nonzero in our, in our image.
+And I'm going to take the distance between some, some, every one of those and the target set, the distance inside there zero, of course.
+And, and actually I just take a moment to say that the target set is almost arbitrary. It doesn't have to be, we made a simple square here.
+It doesn't have to be a square, but it has to be something for which it admits a control Lyapunov function.
+So I'm going to, I'm going to say, you're not allowed to make a target set. It doesn't have to be convex, but, but it's not allowed to have some weird corners or something such that my paddle, I must have the property that if I can take a single,
+there exists a single action of my paddle that will make anything that's outside the set, go into the set without pushing sets and things that are inside the set out. Okay.
+So that's sort of a, sort of a detail there. Now, this is a, this is a horribly, or not horribly, this is a non-convex function, non-convex problem. How do we go, go downhill?
+And the first observation here is actually that if you write the, instead of writing this in sort of the space of the, of the different carrot pieces that exist, the X, Y coordinates, if you write it in image coordinates, then actually the Lyapunov function becomes a linear function.
+Okay. So I can just take the picture of my, I could take sort of the sign distance. I can pre-compute the distance of every point on the picture from the target set.
+And then I can take the current image and just Hadamard product it with the, with that distance and suddenly evaluating my Lyapunov function becomes just a linear function.
+So that's already kind of cool. That's sort of, sort of the first time somehow the image coordinates or is actually easier than the state coordinates of that. And hopefully we're hoping for more here.
+Okay. All right. So the next step is to try to learn a model. So we wanted to learn a model from one image to the next image. And we took a page from the visual foresight.
+We wanted to try sort of the, to replicate the results here. And in fact, the story was, was pretty funny. You know, Terry came to the lab and started working on, on, you know, this deep visual foresight approach.
+He had a deep network and his first, the first meeting was like, this is awesome. The network is, you know, my, my training error is like super low. It's clearly solving the task image to image prediction. It just works. Right.
+Right. And then he goes to put it on the real robot. And this is what it did.
+Starts pushing, doing well. Oh, so on closer inspection, although the, the loss function had gone down very beautifully, there was some sort of maddening behaviors.
+And you could say we didn't have the right loss function and maybe we don't, but, but it was sort of incredibly frustrating to not be able to encode some basic ideas into the network to somehow say, for instance, carrots don't evaporate.
+Carrots don't, carrots don't appear out of nothing. There was, you know, you should not hallucinate new carrots.
+And, and the conversation was roughly like, you know, it's frustrating because it's, we're, we're struggling to figure out how to put that into the network.
+It would have been simple to put that into a linear model. Okay. So, so we stopped and said, okay, what would, how well would a linear model do for predicting image to image translation on the carrots?
+Okay. And it turns out that it's not crazy. And the reason it's not care crazy is that here's a simple thought experiment. Okay. So, so for a particular push, let's say in this, in the limiting case, I have just one carrot in the middle of my, of my image, and I'm going to do a push.
+Then that's the, the operation of pushing is effectively relocating that carrot to the new spot. That is perfectly encoded as a permutation matrix. I've just permuted the location of my,
+of my one carrot piece to a new location. Okay. Now let's say I have a lot of different carrot location, carrot pieces. If they, in the case, in the, with the assumption that they all move independently, it's still basically a permutation matrix. Okay. So, so I can just say, I want to push anything that started off in this cell, ended up in this cell, anything that started up in this cell, ended up in this cell, right? And actually an image coordinates, the linear map didn't feel as restrictive as we thought it would.
+Now asking for a perfect permutation matrix was too much because actually some carrot pieces bunch up and they end up being on top of each other and, and other things. So what we, what we did end up asking for was that there's a, well, what we thought we wanted to do here was the, to, of course, say that you can't create or destroy carrots.
+So there's an element wise positivity constraint. And then there's a column sum constraint, which is again, this, this sort of mass preservation constraint. Okay.
+So that ends up, that ends up, of course, you can do now linear, you know, you can do least, constraint least squares, which in this case would be a quadratic program. But because these are big images, so the, you know, if, if YK is my image, you know, to, the map A for, to the next IK, even for a single push, is already 1024 by 1024.
+So, um, so, um, it gets to be too big to be useful for QPs, especially if you have to do lots of different, um, actions.
+So we ended up dropping the column sum constraint. And, uh, that way you can solve each row independently. Okay. And just decompose the problem into a lot of smaller problems.
+And then we actually checked after the fact and found that, in fact, even without that column sum constraint, just to match the data and have the, the positivity constraint, we ended up the columns typically summed to approximately one.
+Okay. So we saw, in that case, we can solve each row independently, smaller optimization problems. Um, but that's only for a particular action. Uh, to do a little bit better, we tried to transform all of our data into the action frame.
+This is a standard sort of trick in the, in the visual foresight type worlds. Um, so you could take any particular swipe of a constant length, uh, and, and then basically rotate, translate, fill in the background, come up with, you know, with your mask and, and basically reuse lots of your data in the coordinates of the push in order to, for a lot of different, uh, you know, with a lot of relatively small amount of data, we could train a good A.
+And we actually only have to think about A's being discretized on the length of the push and not the position orientations and everything like that. That dramatically reduced the amount of training data.
+It was something we could have done and we did do eventually with the deep network approach, but we, it was, it occurred to us when we were thinking about it in the simple case.
+And then what was surprising was with the amount of data we tried actually the least squares models work better than the, uh, deep foresight models.
+Now that is absolutely not me saying that linear models are better than the deep models because deep models are a superset, right?
+Uh, they, but I'm just saying that in the amount of data we had here, there was a sort of a stronger inductive bias on the, you know, on the linear, the constraints we were able to put on the linear system that the non-negative least squares is the one that did the best was able to match the data.
+You know, with a lot less data actually than the deep visual foresight, the original being the one just doing it image to image.
+The, the, the, this is the one with the deep visual foresight also given the benefit of doing the affine transformations for data augmentation.
+Okay.
+And, um, you know, it actually worked surprisingly well.
+So, um, you know, you could, you could see the, the linear map here, the actual transition from one thing to the other, the linear map would predict, you know, nicely.
+Um, and the, the, the, the training, training and test error played out.
+Okay.
+Okay.
+So, um, you know, each row of a is an image.
+So you can actually sort of go through and look at the, the same way people look at the receptive field of a neuron in the middle.
+You can, you can go and inspect how it learned in the, in, in the middle and, and, and visualize it.
+And it, it's pretty compelling.
+It does seem to do all the right stuff.
+Okay.
+So this is now the, um, you know, we, we expect it to effectively learn the identity map until it goes here.
+So this is the pre-image of, of the pixels.
+Okay.
+So the pre-image of the pixels up to here is just the pixel because it's the identity map.
+And then when you get to the part where the push happens, there is nothing in the pre-image for the one that's inside the length of the push.
+But the ones that were at the boundary of the push have the whole sort of pre-image is the whole stretch of places that could have landed it to.
+So it was doing intuitively the right thing.
+Okay.
+So we put this back on the KUKA, um, to run the experiment.
+Here we go.
+It works surprisingly well with the, the, the linear model.
+Okay.
+And ultimately we evaluated ourselves based on both the, um, you know, the image to image prediction model, but also the closed loop performance of the controller on the task.
+Okay.
+So the closed loop performance, they all did ultimately fairly well, except for the maddening case of getting stuck on a hallucinated carrot, which was, which the original deep visual foresight model was, was subject to.
+Okay.
+All right.
+So I know I'm running out of time.
+Sorry for the awkwardness with the, with zoom here.
+Um, so the obvious question is how far can you get with this?
+And, um, I think we know, in fact, I, we came from a group, we had a group meeting like two hours ago in which, uh, Terry presented again.
+And he basically spent a half hour saying, it's never going to do more than the onions.
+And I said, Terry, I'm about to present your work to a whole bunch of people.
+And you're telling me, you know, but, but I think we know the limitations of this.
+I think for now, you know, we now have, I think a clearer understanding.
+I mean, this is very much like sort of the Koopman version, if you will.
+It's, it's, it's a nice story where if you lift the, the, the pixel space is sort of lifting us into this higher dimensional space.
+Where under the specific assumption that those pixels move independently, a linear map does a perfect job in, in, in summarizing it.
+Okay.
+As soon as you break that independence assumption, if those, if it's a, if those bodies are connected to a rigid body, then we're, then we're in a different regime, right?
+Where the linear, we don't expect the linear model to do, do well.
+And actually, well, you could, you could lift it up even to a higher dimensional space and expect linear models to do well.
+But in the image space, you only expect it to do well in the limit where the pixels move independently.
+Having said that, we can use robust control type ideas, for instance, to fit approximate ARX linear models.
+And Sadr has been doing this nicely to try to do some of the classic tasks in image based feedback.
+Okay.
+And it's a story that's still emerging.
+Yeah.
+Sadr actually sent me more material this morning that I was able to slide slide into the talk.
+Sorry.
+But, but you know, this is an emerging story of trying to understand how well linear robust control can actually do in images.
+And I feel like we finally have at least sort of the, what's the simple case?
+Well, next time we say, you know, what was the simple case where, where, where vision based control is easy?
+I think the answer is now when the pixels move independently and actually carrots are the case, are an instantiation of that case that I don't know.
+I mean, it wasn't, it's not my life dream, but it's, you know, it's still, it's, it's a real problem, right?
+So, and the cool thing, and I was planning to do more on the way on the board here, but the cool thing is that there's a natural, there's a whole bunch of tools that open up to us from the controls community.
+If we're in this space, especially of linear models, but even I think the next steps are going to be looking beyond linear models, piecewise a lot and piecewise models, nonlinear models, but there's natural extensions of the tools we know and love.
+For instance, Sadra is looking at Riccati equations for, uh, ARX models in this space and looking at Liopinav functions, which now take, it's a quadratic function of the history of images and the history of inputs.
+history of inputs and it predicts, you could then predict
+that you'd like to go downhill on that function.
+And similarly, you might be able to check,
+you might be able to monitor yourself
+and if things are starting to go wrong
+with your vision-based control,
+you could detect that quickly
+if your laptop and a function starts going uphill.
+Okay, so I think we're at the beginning
+of this really nice sort of opportunity
+to think more rigorously about the vision-based control stuff.
+Okay, so obligatory, let's move the carrots into an MIT pattern.
+Okay, but I'll basically wrap up there
+and take any questions.
+2.59.
+Maybe we have time for one or two questions.
+I'm happy to stay, I have time, but please ask anybody.
+Hey, is my microphone working?
+Yeah, hi Geronimo.
+Hey, I was just trying to conceptualize when you said
+that basically the pixels have to move independently
+in the task for it to be a linear controller works.
+Do you have like an example of one where the,
+I mean, that might have been one on the screen,
+but like where one where basically the fact
+that pixels don't move independently causes the controller
+just you can't represent it?
+Let me say it back to you.
+The, so I think a linear image to image, you know,
+a linear forward model can describe the data well.
+It's not a statement about whether a linear control
+can work well, but it's a statement about whether a linear
+prediction can work well.
+And I think as soon as you get, so we already see it a little bit,
+because in fact, when carrots do bunch up,
+they will push each other around.
+And that is a violation of our basic model that isn't captured,
+but it, but it's captured well enough to accomplish the task in this case.
+Yeah.
+Now that makes sense.
+Sorry.
+Yeah.
+Yeah.
+And if you were to now try to push a big domino sugar box,
+for instance, then, then you'd see that that's quickly violated
+because there's a rigid body assumption that a rigid body constraint
+that holds those pixels together.
+Great.
+Makes sense.
+I have a quick question.
+Yeah.
+Yeah, Luca.
+Yeah.
+So I completely agree.
+First of all, very cool talk.
+I really liked it.
+So I completely agree on the idea that somehow like, you know,
+the representation for the robots should be like something that
+is task driven.
+Right.
+I was wondering if you thought about, it's clear that, you know,
+in the case in which you have a single very specific task,
+you can engineer it like a representation, which is more clever.
+For example, you can get linearity out of the representation,
+but I'm wondering if you start considering many, many tasks,
+you know, a robot that has to do general purpose actions in the
+apps, for example, I wonder if at the end of the day,
+to support a variety of tasks, you end up going back to a full state
+that you have to build.
+In other words, like it seems that if you have to do many, many tasks
+at the end of the day, thinking about the 3D representation
+when our objects end up being like the more clever and general
+formulation for the state.
+I think that's an awesome question.
+I completely understand your question.
+I've been thinking along these, I've been questioning myself
+in that way.
+I think actually, so I think the diversity of tasks that we want
+our robots to do is far greater than anything we're trying
+right now, but it's actually probably not the case that we have
+to, like, I don't think I ever need to know the state of the salad.
+I mean, I'm never going to ask the robot to have to distinguish
+between Crouton 13 and Crouton 14 or whatever, right?
+So I think there's, you know, there's something there.
+We probably don't need the full state ever.
+The other, the more subtle thing though, I would actually,
+I'm of the opinion today, ask me again in a few months,
+but I'm of the opinion today that asking for one task to work
+is might be a harder problem than trying to get something to works
+for a diversity of tasks up to some point.
+You're right that at some point, maybe if you're trying to do too
+crazy of a set of tasks, we have to know everything about the system.
+But I think we're almost possibly making the problem harder
+by having a very narrow specification.
+And maybe my analogy for that is if you look at even like trajectory
+optimization versus stochastic trajectory optimization,
+if I ask my, if I give myself a particular system,
+a particular initial condition, you try to solve the problem,
+there's lots of local minima often.
+And if you say that the same controller, the same control inputs
+have to work for many initial conditions in a stochastic problem,
+then actually all the non-robust solutions tend to fall away
+and the optimization gets a little bit better.
+And I wonder if that's going to happen in the task place too,
+that if you ask the system to do, you know, many similar things,
+it might actually help us discard the quirky solutions
+that happened to work in a narrow case but didn't make sense
+and it might actually make the problem better.
+So I'm hoping to look into that sort of first step.
+Good. Thanks.
+Any other question?
+Okay, then let's leave it here since it's past 3 p.m.
+Thank you for a great talk.
+Quick question about the...
+There you go.
+I think that might have been Katie, yeah?
+Yeah, go ahead, Katie.
+That might be a little unstable.
+No, it's just a question about the 3D nature of the problem.
+The pixels that you take, do you see any shadowing?
+Is there...
+You talked about...
+I think you talked about columns summing to sort of a containing
+of everybody having their own location that isn't stacking
+on top of each other, isn't occupying the same pixels,
+that kind of information.
+Do you think you could actually tease out some information
+from the shading of the pixels to give you that more 3D information
+about interactions?
+Is it...
+It's a...
+It's a good question.
+I think it's...
+It's still hope of working even when you do those interactions.
+Kind of going back to questions,
+Sidronimo's question building off of that following up.
+Yeah, yeah, thanks.
+So it's...
+I think it is actually doing that to some extent,
+which is why actually we couldn't ask for it to be a permutation matrix.
+Having the rows sum to one didn't actually work because if...
+Almost every case, in fact, any...
+If there's two pixels or two carats on the same line,
+then they will both land up in the same place
+and we have to allow the system to have a value that was greater than this...
+You know, somehow it was the sum of those two values.
+So we actually saw that in the data that we had to allow that.
+And it supports that.
+But the thing that really can't support is that if the...
+The interaction between those two particles caused any one of them to land in a different cell,
+that's the part that the linear model cannot capture.
+Right?
+So summing them up is fine.
+And to some extent, the 3D is roughly a sum.
+I mean, we're approximating...
+Or it's...
+The data is approximating it that way.
+George, you also had a question?
+Yes.
+I had a question on...
+It seems that in the specific case with the carats,
+you've more or less chosen a state representation such that a linear model can predict it well.
+But you also talked earlier about learning...
+Or not state representation maybe, but some sort of representation.
+You also talked about a representation being sufficient to do the task as a way of learning it.
+Do you have any ideas about combining these two sort of things maybe?
+Awesome.
+So in my mind, the ARX model is powerful in the sense you don't have to name us data representation.
+It's massively inefficient in terms of data.
+Right?
+And the size of the matrices we're learning are enormous.
+Right?
+Which means we're...
+I mean, I could say we're over-parametrized and maybe that makes it sound good.
+But we also just need tons of data to feed it.
+So to the extent that linear models work well, there are well-known techniques for output feedback,
+output system identification, input-output system identification, where you do subspace identification.
+And there's rigorous approaches to defining the latent space.
+Right?
+So I think there's a big question of...
+I think we know that the linear models are going to taper in what they can handle.
+But there's a whole world of linear robust models where you're saying it's linear plus or minus some bits.
+And I don't know if we...
+I don't know how much to expect out of that yet.
+But I long for the ability to bring in some of the more mature models in system ID and state representation tools that we have from systems theory into the problem of like images.
+So there is a route.
+There is a route forward.
+Sounds good.
+Thanks.
+You also had a question, I think.
+You're muted, Isaiah.
+There you go.
+Got it.
+Thanks for the talk, Russ.
+Really interesting.
+So you were talking about potentially acquiring representations that were not representing the full state.
+As in for certain tasks, we don't need to keep track of different things.
+But obviously, if we want our robots to become very general, maybe there will be tasks that they encounter someday that require them to have access to part of the state that they weren't previously modeling.
+So do you think there's any room for sort of a goal conditioned state representation?
+Is that something that's worth addressing?
+Or is that just too far down the road?
+Oh, no, no.
+Now's the time.
+No better time than maybe is yesterday.
+Today is better than yesterday.
+But yeah, I think that's one that I really like to think about.
+I don't know exactly.
+I mean, I've got...
+Yeah.
+So when I'm walking through this room, right, I probably don't think at all...
+The pencil on my desk doesn't enter my state representation at all until I go to write something down.
+And then suddenly, boom, it's like the most important part of my state.
+And how do you build these hierarchical models?
+This is something that Leslie and Tomas have talked about for a long time.
+And, you know, I am very interested in that.
+And how do you flexibly go up and down those hierarchies?
+Yeah, it's hard.
+But I think now's the time.
+You know, I think actually Ferrand's, but, you know, his work on trying to build modular prediction models and taking neural networks and plugging them in and out and things like this.
+You know, which he built on Jacob's stuff, Jacob Andre's stuff.
+And so I think there's a lot of people probably on this call that have really good ideas about that.
+And I do think it's the time and it's a good problem.
+Cool.
+Thank you.
+Cool.
+Let's leave it here now.
+Next seminar will be Wednesday.
+Next Wednesday at 2 p.m.
+For the next two weeks, we'll also have the seminars on Wednesday.
+Thanks for all for coming.
+Stay well.
+Yeah.
+Bye.
+Bye.
