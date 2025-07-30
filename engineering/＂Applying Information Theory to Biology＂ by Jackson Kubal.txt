@@ -1,0 +1,513 @@
+All right. Well, I just wanted to start by saying thanks for having me on. It's a real
+honor to be able to present to you all today. I consider myself to be an 11 lab enthusiast,
+and I think anybody who's met me over the course of the last five years who's let me
+talk for long enough could attest to that. So with that said, I'll get into it. So my
+name is Jackson Kubel, and I'm a graduate student at Michigan State where I work with
+both the Adami lab and the Bhattacharya lab, though today I'll just be telling you about
+my research in the Adami lab. So my project, well, I guess let me give you a little bit
+of background. So in our lab, we have developed a software called IDSeq that leverages information
+theory to solve classification problems. The goal of my project in particular is to use software
+in conjunction with pure information theory to make predictions about whether cancer cells
+will be sensitive or resistant to drugs based on their transcriptomic profile.
+Though, of course, in order for this project to be worthwhile, we want to thoroughly demonstrate
+that our software makes predictions better than state-of-the-art machine learning methods.
+This project currently utilizes data from cells in a dish. However, we hope to eventually apply
+IDSeq to patient sample data in a clinical setting, thus enhancing personalized cancer therapy
+and potentially drug discovery. Before we get into my project, though, I just want to cover
+some background on information theory. I'll start by introducing two commonly misunderstood concepts
+in information theory, namely information and entropy, and then I'll get into how we are currently
+applying it in our lab, and then discuss some of our findings and where we plan on going from here.
+One sec.
+All right.
+Okay. So to start, we got to go back to 1948. Imagine you're driving your Cadillac and Frank Sinatra
+is playing on the radio, but you can hardly tell. Is it Frank Sinatra? Is it Bing Crosby?
+We don't know. Why does it sound so bad? That's because the channels for radio communication
+are inherently noisy. They're inefficient. And in addition to that, they're insecure.
+And circa 1948, there wasn't really any unified approach to solve problems in communication.
+Meaning if you wanted to fix that radio signal, your only chance of fixing it was really fixing your
+receiver manually.
+So born out of this desperation to hear Frank Sinatra without any static or have any, you know,
+foreign spies intercept any radio signals, Claude Shannon sets out to develop a mathematical framework
+capable of, capable of quantifying information. Um, and in addition to that, uh, reducing noise and
+air and transmission, and also, uh, optimally encoding information.
+So in his paper, uh, that he publishes in 1948, he puts forward this, uh, this framework, uh, that allows
+us to understand what an information channel is. So in it, we have, uh, the information source, which you
+can think of as a song, uh, being recorded in a studio, uh, the transmitter, which converts the, the
+different, the sound waves into an electric current, which then transmitted over, uh, a medium or through
+a medium in this, in the case of radio, it would be through the atmosphere where a receiver then
+performs the inverse operation of the transmitter, namely converting the, uh, electric current back into a
+sound, uh, sequence of sound waves, um, that you then hear out in your car, um, as a song. So of course,
+anyone who's ever listened to radio, uh, can attest, attest to the fact that there is noise that gets
+introduced, um, in the process of the signal being transmitted. Uh, so with this, Shannon puts forth what
+he, uh, claims to be the fundamental problem of communication, uh, namely reproducing at one point,
+either exactly or approximately, uh, a message selected at another point. And he states that in
+order to solve this problem, you need to quantify and localize the information lost during transmission.
+Excuse me. So, uh, with this, we get to our first, uh, term, um, namely information. So what is
+information? Uh, it's commonly misunderstood. And, uh, before we get into any of the equations to define
+information, I'll, uh, just kind of describe some attributes of information. So information is that
+which provides the ability to make a prediction better than chance. It is the opposite of uncertainty.
+So rather intuitive, um, information must be about something else. Uh, it describes a relationship
+between at least two variables. And lastly, uh, information is symmetric. So given the, uh, example
+from the diagram, Shannon puts forth, imagine you have your receiver, uh, which can be characterized by
+a sequence of electric currents. Uh, and you have your song, uh, likewise, the sequence of different
+sound waves with a relative position. So in this case, we would say that the receiver has information
+about the song. And likewise, the song has information about the receiver and knowing the
+state of the receiver reduces the uncertainty of the song. So here we get to uncertainty and why
+it's important to be able to quantify uncertainty. Um, and so how does, uh, well, I guess to start
+intuitively, we, we already have a pretty good understanding of what uncertainty is. Uh, so, uh,
+an event, which I'll refer to as a variable X, uh, capital X with an equal probability distribution
+between outcomes has maximum uncertainty. So in the case of a coin flip, the, uh, probability of the coin
+being either heads or tails is equal and then, and hence the uncertainty of the event is maximal.
+And then accordingly, if you, uh, have a, an event with no probability distribution between
+outcomes, then there is no uncertainty. So the probability of the penny still being a penny
+after the flip is one. And we would say that this, uh, event has no uncertainty. And then,
+so from this, uh, Shannon puts forth his, um, H of X, which allows us to quantify uncertainty,
+uh, wherein H of X is equal to the negative summation of all the log transformed, um, outcome
+probabilities weighted by their respective probability, um, wherein N, uh, represents the
+possible states that X, uh, variable X can assume. And P of X sub I is the probability of that, uh, state
+occurring. So in the case of, uh, the event being a coin flip, uh, we would say N is equal to heads,
+tails, and the probability of heads and tails accordingly is equal to 0.5. So using log base two,
+um, a unit of uncertainty as a binary digit commonly referred to as a bit. And, uh, sure enough, if we
+plug in these outcome probabilities into a formula, we see that sure enough, uh, when you have a coin
+flip, uh, and the probability outcomes are equal, namely heads or tails, then you have a maximal one bit
+of uncertainty. And likewise, if you do the same thing, uh, except plug in the outcome probability
+for the penny still being a penny after the flip, then we see that there is no bits
+and, uh, according to no uncertainty. So, uh, upon putting forth this, um, this equation to quantify
+uncertainty, uh, Shannon famously, uh, goes down his, uh, goes down the hall at Princeton, I believe,
+uh, where he bumps into, uh, another, none other than, uh, John von Neumann, uh, where he asks
+von Neumann what he should call this equation, um, to which von Neumann responds, uh, you should call it
+entropy for two reasons. Um, in the first place, your uncertainty function has been used in statistical
+mechanics under that name, so it already has a name, and in the second place, and more importantly,
+no one really knows what entropy really is, so in a debate you will always have the advantage.
+So, of course, it's worth pointing out here that von Neumann is actually lying in this quote because
+there was, in fact, one person, at least at that time, who understood entropy, um, and it was none other
+than von Neumann himself who actually put forth the p log p formulation of entropy
+in 1927, about 20 years before Shannon, except he used it for quantifying the uncertainty of disorder
+in quantum states. Um, I could go into more detail about the similarities between thermodynamic entropy
+and, uh, informational entropy, but I'll save that for another presentation, uh, just know that
+there, there is a stark similarity between the two. Um, uh, so here we get basically just, uh, this,
+the, the graph that Shannon actually puts in his initial paper, uh, characterizing the relationship
+between entropy and probability outcomes, um, essentially characterizing that when outcome
+probabilities approach, uh, 0.5, um, or in other words, random chance, you have maximal uncertainty,
+and the likewise is true as you move away from 0.5, that the amount of entropy in the system, uh,
+moves towards, uh, 0 and 1.
+So, given this, uh, formulation of entropy, uh, the question then is, what is information?
+Uh, well, put it simply, information is just entropy that is shared between variables.
+So, in the example, uh, where we have the receiver, uh, just a sequence of electric states,
+and, uh, the destination, which we can represent as a song, and, uh, respectively as x and y,
+we would just simply say that the information between x and y is equal to the entropy that's
+shared between x and y, so that those colons, uh, denote, uh, between. Um,
+and then we, we can say the amount of information between x and y is equal to how much, uh, h of x is
+reduced by knowing y. So, we just write that mathematically as, uh, h of x, but the entropy
+between x and y is equal to the maximal uncertainty of x minus the uncertainty of x given y,
+um, where h of x given y is essentially just, uh, a slightly modified version of that, uh, equation I
+have at the top of the slide, wherein instead of just plugging in the probabilities of x, we just
+condition those probabilities on us already knowing y. So, instead of it just being p of x sub i, it's p of x
+sub i given that we know what y is. Um, thus we could state if h of x given y is less than h of x by itself,
+then y has information about x and vice versa.
+So, now we can, uh, apply this to, um, actually understanding, uh, information channel and where
+information resides in the channel. So, now imagine you have your receiver state or your, uh, yeah,
+your receiver states and you have your relative position on the receiver. So, just imagine a
+sequence of different, um, electric states on the receiver currents, whether or not it's on or off,
+essentially. Um, and then we can quantify the entropy of that by just plugging in the distribution
+of states, uh, wherein, uh, we, we see that there's an equal probability distribution between
+states. So, we would say that this receiver state is maximally uncertain. Uh, in other words,
+there is one bit of entropy. Um, and then we can do the same thing for the, the, the destination
+or the song. And we plug in those probability distributions and we see sure enough that there
+is one bit of entropy. And now what we could do is essentially apply those, uh, formulas we just learned
+to figure out what is the information, uh, relation, informational relationship between
+receiver and destination. So, we just plug in, um, those values. So, we, we see that h of x,
+uh, excuse me, the entropy between x and y is just equal to the entropy of x by itself minus the entropy of x
+given y. And by just looking at the states of the receiver and the destination in this example,
+very straightforward, we see that when we know y, we can predict what x will be with perfect
+certainty. Uh, in other words, when y is one, x is one, when y is zero, y is zero. Uh, so the probability
+of our predictions will be one, um, therefore the uncertainty of x given y, uh, the pipe denotes
+given, uh, just a conditional, uh, is equal to zero. So, therefore, uh, the shared entropy between x and y is
+one and the information between x and y is one. So, all of the entropy between receiver and destination
+is shared. And therefore, we would say that this is a, a noiseless, uh, channel.
+So, now bringing it back, uh, we can see that if given two states in a information transmission
+channel, we can now apply, uh, information theory to understand where that information is. Um, if we
+know x and y, if we know any two states of the, in the, in the, in the system, we can calculate, uh,
+the conditional entropies, h of x given y, h of y given x, because, uh, it's symmetrical. And then
+we can figure out, uh, the informational relationship and we can quantify and localize
+specifically, regardless of whatever transmission channel we're working with, um, essentially where
+that information is and where it's being lost. So, given this, uh, Shannon then puts forth his, uh,
+error correcting code, uh, as well as, um, the, the possibility to encrypt information so as to secure
+it. Uh, and in that, uh, we, we see where the application of information theory, uh, kind of comes
+from. So, that, that's all great, but now you're probably wondering, uh, well, how does this all apply to
+biology? Uh, to which I would reply, it doesn't just apply to biology, um, but rather it is biology.
+Um, so by definition, life is that which, uh, self-replicates information with its environment.
+Um, if you can't accurately transmit and store information about your environment,
+then, uh, you're not going to be able to survive for long. So, in order to do that, organisms, uh,
+not just organisms, but really biological units, um, because it scales all the way down to a sub
+organismal level, uh, have had to transmit information internally, externally, and temporally,
+um, for the last 3.8 billion years. Um, and if you aren't able to do that, then yeah, like I said,
+you're not going to stick around for long. Um, in fact, what makes an organism fit is by
+definition its ability to, uh, store information about its environment.
+So here we, I, I included this, uh, in here as a canonical example of information transmission in,
+uh, biology. Um, and if you have ever taken, taken a molecular biology class, uh, you've, uh, probably seen
+this, um, and it's the lac operon, which is just a gene locus in, uh, E. coli bacteria that is
+either on or off depending upon what nutrients are available to the cell. So if you just take
+basically my receiver and destination example, uh, in radio communication from earlier and plug in,
+uh, glucose availability and lactose availability, and then plug in gene expression levels, um, instead of,
+uh, the song, then you have yourself an information transmission channel, wherein knowing the states of
+glucose and lactose gives you, uh, a high, a high fidelity, um, uh, predictive power about the state
+of the, uh, gene locus. Um, the problem of course is that just like in radio, excuse me, these information
+channels exist in extremely noisy environments. So in the case of E. coli, its primary surrounding
+environment is the human GI tract. Thus, in order to accurately transmit information in this environment,
+uh, E. coli essentially needed to figure out how to encode and encrypt information. So really,
+uh, I think it's, it's safe to say that when Claude Shannon proposed, uh, the fundamental problem
+of communication, what he was really doing was capturing a problem that life has been, uh, dealing
+with for the last 3.8 billion years. And just like Shannon, or rather Shannon, just like life figured
+out that in order to deal with these issues, it was necessary to encode and encrypt information.
+And so what do I mean, um, by life, uh, encode coding information?
+Um, well, suppose that, uh, you have, uh, a small colony of E. coli cells that are hanging around in the
+human gut and, um, in the presence of glucose, the quantity and the location of the glucose is
+captured by this, uh, sequence of cells in this, in the colony. Um, we can think of each cell as being
+either in an on or off state and recent research, I think at UCSD, um, I'm sure other people who are
+doing this as well, um, has shown that, uh, bacterial bio, biofilms are actually capable of storing
+collective memories in their, um, individual constituent, uh, cell membranes. Um, but anyways,
+the important point, the important point here is that in order for the individual cells to know
+what say they should be in, uh, namely whether or not to grow or to sequester nutrients, it is imperative
+that, uh, accurate information about their environment, uh, be transmitted. It's in the
+cell's best interest to accurately provide information to their neighboring cells, um,
+and vice versa. So in order to ensure that information is transmitted accurately, uh, the cells essentially
+redundantly encode their state space in their gene pathways. So what do I mean by that? Well, instead
+of having, uh, each cell represented as just a one or a zero cells encode, they blow up their state space
+into the different gene pathways. And now instead of just, uh, having one signal being transmitted,
+you can transmit five signals. Um, and then, uh, just using, uh, a majority vote, you can, uh, decode
+that error in transmission. Um, assuming that there is a, a one in 10 chance, uh, in this example, uh, of
+your, uh, signal being, uh, flipped in the process of transmitting, um, they can essentially, uh, error
+correct that code by just redundantly encoding it in their gene pathways. Um, and then with the majority
+vote decode that image, uh, that signal and, uh, recreate a, uh, high fidelity, uh, state space of
+the cells. So of course the price that organisms pay for this is the rate of transmission slows down,
+but by blowing it up, you, um, by blowing up the message into, uh, the different gene pathways,
+uh, the cells can, uh, reduce error to, so from about one in 10, uh, states, um, miss, uh,
+transmitted errantly to approximately eight errors in a thousand states. And if they were in this
+example to encode it in, in 10 different gene pathways, instead of just five, uh, they could
+reduce error down to approximately one error, uh, in 10,000 states transmitted.
+So, um, so I said life encodes information, uh, and, but life also encrypts information. So
+a classic example of this is in the codons of an amino acid. So of course, this is also an example of,
+uh, encoding information, uh, in the sense that, um, the information is redundantly stored in, uh,
+uh, the, the genetic code, as opposed to the information being stored directly in the proteins
+themselves. But, uh, codons themselves, uh, as we know, don't provide all the information necessary
+to predict protein expression, um, in order to know if a gene is transcribed, uh, you need to know
+the epigenetic code on the DNA. And furthermore, uh, there are genes, uh, especially present in
+viruses where you actually need to know the physical structure of the RNA molecule, uh, in addition to
+the codons themselves, if you want to accurately predict the resultant protein. So it's worth pointing
+out here that, uh, codons themselves, um, actually have information, uh, about the environment that
+you wouldn't be able to predict from the amino acids themselves. So, uh, and that's because, uh,
+different environmental selective pressures, uh, favorite, favorite usage of different codons.
+Um, so in different organisms, we have different codons being used and that's because different,
+uh, selective pressures at different levels are, uh, selecting for different codons for different
+reasons. So, um, this isn't really anything new though. This is, this is fairly well understood
+all conceptually. Um, so what we wanted to ask with this project, uh, and explore with this project,
+is, is information and, uh, encrypted in the transcriptome and in the transcriptome alone.
+So how do we, uh, how do we go about doing that? Well, we just start off with asking, uh,
+the simple question is a cell going to be sensitive or resistant to a drug.
+Um, and we determine that based on, uh, by, by essentially binning all the cell lines into
+two groups, um, sensitive, uh, and resistant wherein, uh, we based that off the IC50 score
+for the respective cell line. Um, and then we then bin the gene expression levels for the respective
+cell lines into, uh, on or off. Uh, and we did that using just RNA-seq data. So given this
+formulation, we can then ask the question, how much information is shared or how much information do,
+uh, the transcriptomes of the cell lines have about, uh, the drug response? In other words,
+how much entropy or, uh, how much entropy is shared, um, between the two or how much entropy
+resides in that middle, uh, sliver of the Venn diagram.
+So, uh, the standard approach for a question like this is, of course, to just do differential
+expression analysis wherein you just take your, uh, two groups of cells, uh, in this case,
+sensitive and resistant, and then you look at the principle, uh, the principally differentially
+expressed genes. Uh, so when I just doing my, uh, my differential expression analysis,
+uh, I see that, uh, this gene, uh, ALF1, right, IF1, um, uh, it comes up as the number one
+most differentially expressed genes, uh, between the two groups. Um, and then what we would, uh,
+do typically, or what, uh, most labs I'm aware would do typically is they would, uh, take this list
+of differentially expressed genes and rank them based on, um, how confident, uh, the DE-seq is
+in, in this case, and then, uh, rank them. So that's what we, what I did here is I basically
+took all the, the genes that are differentially expressed between the two groups and then rank
+them in terms of confidence of the, uh, basically how confident are we that these genes are truly
+differentially expressed. And then, uh, along the y-axis, we have, uh, the respective p-value
+ranking, uh, for those, for those genes. And then if we were, wanted to train a neural network,
+uh, to make predictions or a random forest classifier, what we might do is take, say, the top,
+uh, 200 genes or top 100 genes, uh, depending on what you're using and then try to train, uh, a model
+on those and then call it a day. Uh, we would look at those genes, analyze them. And, um, that seems to be
+about the, the, the standard approach, uh, to me at least. And then, um, with that, uh, list of ranked
+genes, we can go a step further. We can, uh, rank them, uh, not based just on their individual, uh,
+expression levels, but we can kind of look at trends, um, between groups of genes that are expressed
+similarly in the different conditions. And we can, uh, look at the principal components that explain
+that variance. And then we can, uh, even use that to do a rudimentary classification, uh, which in some
+cases is more than enough because the, the transcriptomic signatures of the different cell lines
+are so distinct that it becomes obvious, uh, which cells belong to which groups. But in, uh, a problem
+as convoluted as this, we see that it obviously is not, um, a great classifier. So from that,
+uh, we get into where information theory and, uh, ID seek, uh, shines. So I think, uh, the reason
+as to why the standard approach fails, uh, and why, uh, utilize information theory is so advantageous,
+is perfectly characterized by, uh, this CS Lewis quote, where, in which he says, of three friends,
+A, B, and C, uh, A should die. Then B loses not only A, but A's part in C, while C loses not only A,
+but A's part in B. In each of my friends, there is something that only some other friend can fully
+bring out. Uh, and I think this quote, uh, so perfectly captures, um, uh, how information can be
+encrypted in the transcriptome. Uh, and all you have to do is just change where he says friends to, uh, genes.
+So now we see that essentially in each of my genes, there is something that only can, uh,
+that only some other gene can fully bring out. Um, so what does that mean in terms of information
+theory and ID-seq? Um, well, uh, suppose we have, uh, a gene, gene X, and we have our class,
+which will represent with sensitive and resistant, uh, SR, and then the gene expression levels,
+um, high and low. Um, so given this, we can, we can look at how much information is shared between
+the gene, or how much information gene X has about the class. Uh, and doing that, we, well,
+first we see that the entropy of the gene is one that has an equal, uh, probability of being high
+and low. So we would put that one there, and then we would see that class, uh, likewise has an equal
+probability of being sensitive, uh, or resistant. So a one there. Uh, but we see that knowing the gene
+doesn't give you any predictive power about the class, uh, and vice versa. So we would say that
+the shared entropy between, uh, gene X and the class is zero. Um, what information theory allows us to do
+is explicitly define the information that X has about class in the presence of another gene,
+gene Y. Oh, sorry. Uh, I got ahead of myself. So this is, uh, what we refer to as first order
+information. So in this, uh, case we would say that there's zero bits of first order information
+between gene X and the cell. Um, but like I said, what information theory allows us to do is, uh, now condition
+the entropy between X and class on the presence of another gene. So now we can introduce gene Y
+and we can see that gene Y also has one bit of entropy, um, that has equal chance of being a
+lower high. But what we see is that gene X in the presence of gene Y actually, which, which I represent in
+that, uh, upper sliver of the middle of the diagram, uh, becomes one in the presence of gene Y. Uh, and
+what does that mean, uh, functionally? That means that given gene X and gene Y together, all of a sudden,
+uh, we have perfect predictive power about the state of the class. In other words, when gene X and gene Y
+are both high, uh, excuse me, when, when they're both high or they're both low, then we know that
+the class is going to be resistant. So the entropy of the class drops down to zero and the entropy of
+gene X and gene Y also drops down to zero in the presence of the other two. So, uh, now we can say
+that the entropy of class given X and Y is zero and there is one bit of what we refer to as second order
+information between, uh, gene X and the cell given, uh, gene Y. So, uh, oh, sorry about that. So this,
+that was obviously an example, um, but to our knowledge, this is not something that has been
+thoroughly tested. Um, and so what we wanted to do is say, okay, well, does that actually happen to be
+the case in, uh, this particular case? So looking at these cancer cell lines, do we see any
+information stored in pairs of genes that isn't inherently stored in individual genes? Uh, and so
+we did a screen, uh, of, of just 100 genes, just like a base level screen to see, is there any
+information stored in X and Y together that isn't stored in either of them by themselves? And, uh, that,
+that center sliver of the diagram, that negative one, that represents encrypted information.
+Um, so sure enough, we ran our, uh, analysis and if you see that the, uh, that the mode is shifted,
+in fact, to the left. So there is, uh, negative information. In other words, there is, uh,
+uh, encrypted information stored in gene pairs that gives us more predictive power about the class.
+So that was reassuring. Um, but that, that's just looking at second order information. So there's no
+law that says there can't be, uh, information stored. Uh, so like I said, that's second order
+information, which in other words is entropy between two variables and the class. Um, but there's no law
+that says there can't be information stored in even higher order, uh, parents. So if we introduce
+another gene, uh, now we have third order information about the class, um, and then why stop there?
+We can go on to fourth order information, uh, where, where in which we use four genes in combination
+with each other to predict the class, um, and so on. So in theory, uh, the dataset I'm working with, well,
+the dataset I'm working with has, uh, 18,775 genes. So in theory, um, we could run this analysis all the
+way up to order 18,776 and, and potentially find, uh, information that is encrypted, uh, all the way,
+uh, up until that order, wherein you're not going to see that information until you take in all the
+whole entire transcriptome together. Um, but of course you would need, uh, a dataset, uh, that is
+probably like bigger than the amount of atoms in the universe to have statistical significance for doing
+that, uh, that level of decrypting. Um, but to get to, uh, these orders, we have, we have plenty of cell
+lines. So now, uh, what we did is we basically, uh, implemented a information theoretic, uh, based
+algorithm that simply iterates through, uh, all the genes. Um, and then, uh, we, we use those to
+identify the genes that contain, um, information that is stored in the higher order, uh, parents,
+uh, and gives us predictive power about the class. So using that, we identified eight genes,
+um, which we refer to as the jury, uh, that when taken in conjunction with each other,
+give us maximal functional information about the class. Um, so essentially what this means is
+you're not going to be able to, uh, uh, uh, make any better prediction using any other set of genes
+in the transcriptome about the class than you would be able to, uh, using these eight genes.
+So who, what, who are these eight genes? Uh, which we refer to as the jury. Uh, so jury number one,
+uh, uh, uh, uh, THB S1, uh, this angiogenesis inhibitor, um, zero number two, uh, we're not a cancer
+biology lab, uh, so I don't, I don't know, uh, exactly the full extent to which these are, are, um,
+implicated in, in cancer biology. Um, but, but, but just by doing a quick Google search, I kind of generated
+some of these, uh, descriptions, um, but jury number three, and then we get all the way down to our, uh,
+full jury, our full cast of characters that are capable of, um,
+making a, a maximally informative prediction about the class. Um, and what's, what's noteworthy about this list
+is that really only three of these jury members, namely THB S1, uh, TSP, OAP1, GER1 and 2, and then
+GER number seven, HCK are, uh, implicated in drug resistance in cancer cell lines. So that means that
+these other, uh, five members could be potentially novel genes that up until now have not been implicated
+in any, uh, cancer drug response pathways at all simply because they haven't been taken into
+consideration in conjunction with the presence of other genes in these drug response screens. Um,
+and then, uh, of course I have on my, on the right, uh, a picture here of the jury, um, deliberating
+about the fate of the cancer cell line as all the scientists look in the other direction, uh, bamboozled
+by the cancer cell lines lawyer. So from that, uh, we, we obviously want to ask, okay, so these, these,
+these A genes are, uh, highly informative about, uh, the class, but where do they, uh, stack up in, uh,
+compared to our, uh, initial differential expression analysis, uh, rankings, because we, we would obviously
+assume that, uh, uh, these highly informative genes would be all, you know, highly differentially
+expressed and probably, uh, the most, um, if not, uh, in the, the top eight, right? Well, it turns out
+that that is not the case. So when we take these genes into combination at higher orders, um, uh,
+the number one ranked gene in the jury, um,
+is ranked number 200 and, uh, or excuse me, is ranked number 400 in the list of differential
+expressed genes between these two groups. So what does that mean? That means if you were to be doing
+feature selection, uh, to train your neural network, uh, or your random force classifier, uh, and you were
+to stop at 200, the top 200 genes, uh, you would miss all of the most informative genes, uh, capable of
+reducing the entropy of the class. Um, of course you, you could still make a pretty good, uh, classification,
+um, but you're not going to be making the best, uh, prediction possible. Uh, and what's fascinating
+is that once you get into, uh, the, the end of the jury, um, we get one gene that's ranked at
+approximately four and a half thousand, uh, in terms of, uh, just standard differential expression
+analysis. Uh, and then the final two don't come in until about 15,000. So this means that you would
+have to essentially include the whole transcriptome in your analysis if you wanted to, uh, not miss out on
+these informative genes that when taken into consideration in the context of the presence
+of other genes, uh, are in fact highly informative. And, uh, why is this the case? Well, it's the case
+because some genes only contain context-dependent information. Namely, if I were to only look at lag
+3 and PCCA by themselves, I would have, I would have no, uh, my, my ability to predict the class would be
+as good as random. However, if I look at lag 3 and PCCA in conjunction with those first seven genes
+that we already know are highly informative, then all of a sudden those genes become highly informative
+themselves. Um, and so what does this mean, uh, in terms of actually making a prediction? So here I, I
+represent three different, uh, uh, predictors, which is a random force classifier, uh, a standard, uh,
+you know, tool used by a lot of different labs and, um, a, uh, neural network. And then we have IDC,
+our software. So this is just our software, uh, IDC at order one, meaning it's only looking at the
+information contained within the individual members of the jury. Um, and we see here that the neural
+network outperforms all the other ones at just one gene, but then by all the genes are, uh, once all
+the genes are included, then they're essentially equal in, in terms of prediction accuracy. Um, but
+with just one gene, it's not surprising that the neural network does so good because for the neural
+network, we don't have to bin any of the data, uh, same thing for the random forest, but for IDC,
+we do bin the data. Um, but now we can take into consideration, uh, order two and we see it still
+not doing much better than order one, uh, and definitely not better than, uh, a random forest or
+neural network. Um, then we can, uh, go a step beyond, go to order three and we see, uh, definitely
+an improvement over order one and two, but not much better than the neural network or the random forest
+classifier. Um, it isn't until we go to order four that we see, uh, an about four point jump, uh, in
+prediction accuracy. Um, and, and what's more, if we take it one step further than we go to order five,
+we can actually go above, uh, 0.8 and we see a, uh, six point, uh, jump in prediction accuracy when we
+utilize our, um, IDC at order five. Um, so an AUC of 0.8 isn't, uh, it's something crazy. Um, however,
+what is worth pointing out here is that the error in the IC50 scores, uh, that in the Z scores that
+we're using to bin, uh, the sensitive or resistant, uh, classes has error built into it already. So if we
+remove, um, a lot of the, the cell lines, uh, that, uh, have a Z score very close to zero,
+um, but basically, uh, yeah, if we remove the cell lines that have a Z score very close to zero,
+then we can essentially, um, improve the accuracy of this prediction all the way up to a perfect
+classifier. Uh, it's just because there's noise inherently built into the, uh, the IC50 measurements.
+Um, but so with, with, uh, IDC at order five, we are able to, uh, increase our prediction accuracy,
+uh, uh, by six points. So we find this to be, uh, rather exciting.
+So what is it in summary that is giving information theory the predictive edge here?
+Uh, well, uh, it explicitly captures information that is distributed over many variables.
+Uh, other methods don't do this. So if, if you're using a neural network, uh, there's a good chance
+you'll, you'll pick up on some of these higher order correlations between variables.
+Um, however, there's a chance that it misses it because it's ultimately you're, what you're
+doing is you're fitting, you're fitting a probability distribution to your data. Um,
+whereas information theory does not attempt to fit a probability distribution, uh, information
+theory, uh, calculates probability distributions directly from the data presented. Uh, and so
+in essence, it's a principle way of not overfitting. Um, so in this, in this example, uh, in this project,
+what, what I've used, uh, our software and information theory to do is make a prediction
+about drug response given the transcriptome. Uh, and in addition to that, um, uh, characterize some
+potentially novel, insightful, uh, biologically relevant pathways. And why is this important? Well,
+I think that speaks for itself. Uh, this, this is, um, a potential avenue for novel drug design as well
+as patient screening, um, by basically characterizing these relational, uh, uh, structures that exist
+between the different genes. We can actually, uh, unveil deeper insight about, uh, things like drug
+response, but it doesn't actually have to stop there. Um, we can look at membrane, uh, voltages on
+cell lines in conjunction with transcriptomics to make predictions about morphology. Uh, we can make
+predictions about whether or not disease will arise based on, uh, membrane voltages morphology,
+um, try to predict developmental outcomes. Um, the list really goes on. Uh, the point here is that
+we're really only limited, uh, by what sort of, uh, measurement devices, um, are available to us. So
+whatever, whatever information is present within, um, a, uh, classification problem, we can, we can discern it,
+uh, uh, maximally. Um, and so, uh, the, the reason why this is so advantageous, at least in my,
+uh, at least in our lab's, uh, view is that the chances are, and it seems to be apparent that this is
+the case that the primary information containing signals are not going to be a point mutation,
+uh, and they're not going to be a single gene pathway. They're not gonna be a single protein,
+but rather they're going to be a distributed signal that is contained within multiple different
+transmission channels. Uh, and so in order to discern that signal, you're going to need something
+that can explicitly, um, define those relationships. Um, so in closing, I want to leave you with a quote
+that you're probably familiar with, uh, that I, I came across when I was, uh, listening to one of
+your talks earlier this week, where in which you say, uh, biomedicine and bioengineering boil down to
+finding out the informational structures of the material of life. And, and I couldn't agree with
+this more. And I think that, uh, it, it's more often than not, not going to be a, a single variable
+that is informative, but rather the higher order correlations between variables that unveil the,
+um, information necessary to, uh, devise novel life forms, uh, like you guys are doing in your
+lab and also to, uh, address, um, diseases such as cancer as well as, uh, come up with cures for those
+diseases. So, uh, with that said, uh, here's the resources, uh, from where I got the data, uh,
+transcriptomes, um, from the, the link, uh, at the top and then the drug response data from the link at
+the bottom. So feel free to, uh, check that out. And, um, lastly, and most importantly, um, in addition to,
+uh, Shannon and von Neumann, I would like to thank, uh, these, these three gentlemen for whom without this
+project would not have been possible. Uh, Chris Adami, who, uh, wrote the book on applying information
+theory to biology, uh, Jory Chacao, who, uh, built the foundation of IDSeq and Vinnie Ragusa, who, um,
+continues to improve IDSeq today and, uh, has also been a tremendous help, uh, for me in this project.
+Uh, and I'll, lastly, uh, leave you with this, but, uh, that's, that's really, um, uh, the end of my
+presentation and, uh, I hope you all enjoyed and, uh, please reach out if you have any questions,
+uh, and, uh, let's do some collaborating.
+Super. Thank you so much. Uh, questions, comments, ideas, everybody.
+I have a quick question. Great presentation, by the way. Um, how, maybe I missed this. How did you arrive at
+the number eight out of the eight genes from among the 18,000 ARC genes or is the method that you use?
+Yeah. So that, that comes down to just the statistics of the data set we're working with.
+So, uh, two to the power of nine is 512. And at that point, what we're, what we're really doing is
+just hashing the cell lines. So we're, you can basically uniquely identify every cell line in the
+dataset by, uh, going to order nine, but at order eight, we're still, uh, we believe picking up on
+biologically relevant data that gives us insight, uh, into what differentiates these two classes
+because two to the eight is only, uh, 256.
+Beyond that, we're, we're essentially, you'd be overfitting. It wouldn't be, uh, any of the genes
+wouldn't be, uh, able to reduce our ability to predict any more genes are no longer, uh, enhancing
+our ability to predict. They're actually hurting it because they're no longer capturing differences
+between resistant and sensitive cell lines. They're capturing differences between individual cell lines.
+Okay. Uh, but how, how did you write that particular set of eight genes? Like how did you
+sift it from, from the law? That's, um, uh, so we, we implemented an information theoretic, uh, based
+algorithm and, um, unfortunately I don't think I'm able to disclose, uh, that algorithm because it's, uh,
+yeah, MSU, uh, you know, got it, you're not nervous.
+I think it was a mind blowing talk. Just a quick question. I mean, so estimating an entropy requires
+you to know what's the probability distribution of the random variable and how did you estimate it?
+I'm sorry. I couldn't really hear you. Yeah. How did you, how did you estimate the probability
+distributions for, um, for the sake of computing entropy? Uh, the probability distributions of, uh,
+the different genes. Um, so we, so gene expression levels are just, uh, continuous distributions,
+right? They could be anything because they're just based on RNA counts data. So what we did is we
+binned the genes into two different bins, um, essentially trying to maximize the entropy of the
+individual genes, but meaning like, uh, to split the two groups of genes into two equally populated,
+uh, bins, but namely on or off. Thank you.
+Right. And, and, and to keep in mind then basically we're doing a multiple sequence, uh, alignment or
+here a multiple, uh, uh, alignment of, uh, the cell lines that to order one is just looking at,
+well, which of the genes are most expressed in one or the other. And then you go to order two,
+order three, we basically create position weight matrices. So in other words, we don't actually,
+these probability distributions just can be read off of this, you know, alignment. Uh, so there's no
+fitting of the probability distributions. They simply, you know, can be calculated directly
+from, uh, from the data. Uh, and in fact, in a sense, there's the slide that you see here is how
+we are calculating this probability distribution. On the left side, you see this comment, um, on,
+on social media where they're saying, oh, you know, what makes, uh, machine learning so intractable
+is because you cannot calculate, uh, the partition function. And that's what essentially is being, uh, fitted.
+But it turns out that you can calculate it. And here's the calculation. And in fact,
+it's calculation to, you know, as an approximation in higher orders,
+you see the first order and the second order, and you don't see the third, fourth, and fifth order.
+And so we essentially calculate the partition function using this sequence data. Uh, and there
+is not a single step of, of, uh, of, of fitting, uh, in the procedure, which is why, you know, we don't
+overfit noise, right? So, um, the, the entire secret really is about the fact that, um, yeah,
+this statement is simply false. You can, in fact, calculate, uh, this probability distribution
+directly from the data. It's just that nobody knew about it. That's all.
+Frans, did you have a question at one point?
+Yeah. I was wondering if, um, if you can use that IDSeq framework to infer the entire network
+from the IDSeq data? Is it something you guys have tried?
+That's, that's something that's currently, uh, underway. So, uh, we have networks already. I didn't
+include them in my slides, uh, of taking into, uh, consideration, basically relationships between
+genes at order two, um, and seeing basically what, what those genes are, but, uh, further work is
+required to go any beyond, uh, beyond order two, um, correlations, and then also in actually
+contextualizing them in a biological context, uh, and seeing, like, what, what does this mean
+biologically?
+Um, how, how important do you think are, so, so if we were to, if you were to include, um,
+other kinds of data, uh, how important is it the exact way that you, let's say, bin the data or,
+or, or map it into ways that your formalism can handle? Is that really critical or is it pretty
+insensitive to that? Uh, it's, it's definitely, um, sensitive to it, but it's, it's really, uh,
+I, I, I, I believe it'd be a case-by-case basis. So it just depends on, um, what exactly the data is.
+So in this case, we're obviously looking at, uh, transcriptomes. So they're all in the same realm of
+compatibility with each other. Um, leveraging different types of information, different,
+uh, pools of information together, uh, would require, uh, further research.
+Yeah, but I think we can generally say, um, and this is, uh, work that, that Vinny has done that,
+um, I mean, we've tried a number of different ways of mapping, um, data in multi different modes,
+in particular, you know, uh, uh, uh, non-digital data, uh, inter-digital data. And the, the approach
+that seems to work best is if you basically say that, um, without any class label, that means for all of
+your data, just bin it in such a way that each feature has the highest entropy, basically that
+you have, it's a maximum entropy binning, um, in the hope that when you then apply the class label,
+that that would maximally reduce the entropy. And that, you know, I don't have really a mathematical
+proof, even though maybe it's not that difficult. It's literally like maximizing the channel capacity,
+you know, if you're doing this. Um, so my suspicion is that in most
+cases that is going to be, uh, uh, a good approach, but then again, you know, we might
+even imagine that, uh, you case by case use a, a different, um, um, number of, uh, variables.
+So in other words, we're doing binary binning here for, for transcriptomics, but you could say,
+why not base four? In other words, you, you distinguish not just high and low, but very high,
+medium high, medium low, very low. And it turns out that some genes actually have quite a bit of,
+uh, um, uh, variation in the profile so that you would treat different, um, informational structures
+with a different number of bins, right? They don't have to all be binary. Uh, so you have a hybrid
+method, but in both cases, you would probably use a maximum entropy, but you would make a feature
+specific, uh, uh, you know, uh, thresholding, right?
+Because it really depends on how broad that probability distribution is that you're, that,
+that you're trying to, um, trying to bin. It turns out that in transcriptomics, binary is doing pretty
+well. Um, the reason why we're doing binary is that as you're going beyond binary, um, you know,
+you're going to have hard time capturing, um, the, the, the, the higher order information,
+right? If you, if you go base four, well, you know, you're not going to be able to look at eight genes
+anymore, right? You're probably going to be stuck at four. Um, and then many of the genes probably
+don't need a resolution of four. Um, but, uh, but we've, like I said, we've tried different methods.
+Uh, I think Vinny has spent easily a couple of months, um, working on what are the optimal, uh, methods
+and the maximum entropy binning method, uh, appeared to be the, um, the, the, the, the most prompt, uh, promising.
+Got it. Got it. Okay. Okay, good. That's great. That means we can, we can think about some of the other, uh,
+kinds of data sets that we have, some of the physiological data sets. Yeah, that's great. Yeah.
+Okay. I mean, Vinny, Vinny has looked at data, um, where, um, there was patient data like age and, um,
+um, and, uh, what, what was it? I mean, educational background, I mean, your typical patient data,
+right? And he was able to use that bin it appropriately and then use it together with the
+microbiome and with, um, you know, with, with, with gene expression, you know, transcriptomics and stuff
+like that. So in other words, it really doesn't matter if you think your data contains information,
+just throw it in and you might actually see interactions between microbiome and transcriptome.
+And, you know, and, and we saw strong interactions between patient health data, uh, in some of these
+variables that are genetic and variables that are, this was an Alzheimer's study, um, like plaque
+thickness, you know, and tau protein abundance, things like that. Got it. Amazing. Okay. Okay.
+Cool guys. Thank you very much. Let me ponder this, uh, and, and we'll be in touch. Uh, let me think of
+a few data sets that we could, uh, that we could work on. Yeah. Very interesting. Yeah. Yeah. Thanks.
+Very cool. Thanks for listening guys. I hope everyone enjoyed it. Absolutely. Yeah. Good to see you again,
+Chris. Yep. Good to see you, Mike. Right.

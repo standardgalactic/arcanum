@@ -1,0 +1,444 @@
+Anyways, you have this hash table of 400 things and you're going to ask, oh, is there something
+from this hash table of 400 things that is close to my transformer prediction, right?
+I'm not going to tell you in advance.
+I can't predict for you in advance which one it is.
+I'm just going to say, is there something that matches it?
+And the kind of result that I got was that 78% of the time, in some sense, you get like
+a good match, okay?
+I'm a machine learning researcher at Google DeepMind.
+In a former life, I was a mathematician.
+Like you, Tim, I also have a podcast called The Cartesian Cafe.
+Hello, everyone.
+This is Tim Nguyen, and welcome to The Cartesian Cafe, the podcast where an expert guest and
+I map out a scientific subject in detail.
+I'm a mathematician who has his hands in several different things.
+I obtained my PhD at MIT, had a career in academia as a researcher in mathematical physics and
+gauge theory, and then I transitioned to industry.
+Someone once asked me, you know, how I proved the concrete conjecture.
+And I said, well, it's just a homeomorphism.
+I just had to say where every point went.
+And I did.
+Yeah, everyone should subscribe to The Cartesian Cafe.
+Grant Sanderson's been on, can't complain.
+So he's the biggest math YouTuber.
+I was definitely one of those kids where from a very young age, I self-identified as liking
+it.
+And I think a lot of that probably had to do with games that my dad would play with me that,
+you know, like a lot of dads just wanted his kids to be interested in science and math
+in the world and things like that.
+And I just loved patterns.
+I've had now two fields medalists, Richard Borchards and Michael Friedman.
+So yeah, I've been very lucky to have a star-studded guest.
+If you had to attribute your success in mathematics to any particular qualities, can you name any?
+Luck and obstinacy.
+I mean, need a certain amount of luck.
+I just, I mean, you know, mathematics has hundreds of hard unsolved problems.
+I just happened to be working on one where there was something interesting to be discovered.
+The Brave Search API brings affordable developer access to an independent index of over 20 billion
+web pages.
+What sets it apart?
+Well, it's built from scratch without big tech biases, powered by real anonymized human
+page visits to filter out data and refreshed daily with tens of millions of new pages.
+Perfect for AI model training and retrieval augmented generation.
+The Brave Search API offers ethical data sourcing at developer-friendly prices that
+scale with your business.
+Whether you're working on language models or information retrieval systems, Brave offers
+representative data sets and up-to-date information affordably.
+We'll get started with 2,000 free queries monthly at brave.com forward slash API.
+Now back to our discussion with Timothy Nguyen.
+Timothy has written a paper called Understanding Transformers via Ngram Statistics.
+Can you give us the elevator pitch?
+Sure.
+So at a high level, the question I'm trying to understand, like many other people, is
+how do transformers use their context when making the next token prediction?
+So the analysis can be a little bit abstract.
+So let me just start with a very concrete toy example.
+I use in that, my paper, the data set Tiny Stories, which is this synthetically generated
+children's stories dataset, but it's realistic enough to capture natural language unlike purely
+synthetic datasets.
+At inference time, I feed to the transformer, once upon a time, there was a, right?
+And now I have to understand what the transformer next token distribution is as a probability
+distribution over all the tokens.
+So in the training data, suppose, for the sake of simplicity, every time I see once upon a time, there was a, it's always followed by the token bear.
+But also in the training data, every time there is the three gram, there was a, I end up having three possible animals, lion, tiger, and bear.
+And let's say with equal probability, right?
+Let's say bear occurs a hundred times, lion occurs a hundred times, and tiger occurs a hundred times.
+Okay.
+So you have, you have, in this case, let's say two plausible completions, right?
+Once upon a time, there was a bear, once, or because there's also, there was a, maybe it's a, it's a three-way coin flip between lion, tiger, and bear.
+So softmax is a way of converting logits to probabilities.
+So if lion, tiger, and bear had very high logits and everything else had very low logits, when you apply softmax,
+then all the other categories would be very close to zero probability, whereas lion, tiger, and bear would all have equally high probability.
+The training data gives you different choices for how to complete the next token, right?
+Because in this case, there's once upon a time, there was a, and in the training data, you see bear all the time because you have this once upon a time.
+But you also see there was a, and there's three other animals.
+And then it's unclear, does, does the transformer at inference time, did it learn kind of the completion based on the full context or the shorter context or anything else in between, right?
+So based on that, that's, so that's a motivating example to, to kind of illustrate the difficulty in understanding how a transformer makes a prediction.
+What statistics from the training data is it using, right?
+And I like to think about it in terms of two different sub-problems, okay?
+There's the, what I call form and selection, right?
+Form would be kind of what I described.
+Oh, the, the kind of shape of these probability distributions, right?
+I told you sort of two candidate proposals, a one-hot distribution on bear or a uniform distribution on lion, tiger, and bear.
+So that's the form of these different possible completions.
+And then there's the selection problem.
+Does it choose the, the, the kind of the context that would give you bear or does it choose the context, the shorter one?
+There was a, that gives you these three animals, okay?
+So, so kind of a cartoon picture of how a transformer, a large language model in general learns would be, oh, I give it a lot of training data at inference time.
+I give it the context that I want it to complete, and now it has to, again, in this cartoon picture, it has to sort of select what is, what are the relevant context, what are the relevant statistics to choose from?
+And then the second part is, what is the form of those statistics?
+Is, if I look in the training data, am I going to get a one-hot distribution?
+If I kind of retrieve the training data statistics associated to that context, or am I going to get a uniform distribution, okay, like in this lion, tiger, and bear example?
+So, so sort of the first result of my paper is that actually, if you just focus on the form part, forget the selection.
+I'm not going to tell you which of these rules I'm going to choose.
+I'm just going to say, every time the transformer makes a prediction, I'm going to scan the context, look at all possible n-grams from a certain set, okay?
+Look at all those possible candidate completions.
+There's always going to be sort of, in a way that I can make more precise, some n-gram statistic that well approximates what the transformer is doing.
+So it's a way of kind of quantifying to what it's a stochastic pair, albeit that's a very kind of incendiary term, but that's one way to sort of think about it.
+Oh, it's not an incendiary term on MLST.
+Yeah, it's very welcoming.
+But I think we should define a couple of things.
+So an n-gram term is a kind of template matching system, right?
+And a lot of NLP systems used to use that a long time ago, and you can explain that in a minute.
+But as I understand it, you took this data set, the tiny storage data set, and you essentially matched a whole bunch of templates.
+So, you know, one gram and two gram and three gram, and you built this big bag of templates of different sizes,
+which have been, you know, derived from this tiny storage data set, and then you stick it essentially in a hash table, and then that's how you're selecting those templates.
+Yeah, exactly.
+You can think of it this way.
+It's like, okay, the transformer is this kind of very complex machine, right?
+And every time it makes a prediction, you're going to go through your hash table, right, and say, okay, I have a prediction based on this context, this n-gram rule.
+I could use only the most recent token, the two or three, right?
+If there was a, that would be three tokens of context.
+Once upon a time there was a, that would be seven tokens of context.
+And then there are all these other kind of rules where you can start dropping tokens or starting averaging over statistics, right?
+So I consider all those rules close to around 400 if you consider kind of all the possible contexts that I consider.
+You can consider smaller sets of rules, but up to 400, just to be precise, if you take all seven tokens of context.
+Anyways, you have this hash table of 400 things, and you're going to ask, oh, is there something from this hash table of 400 things that is close to my transformer prediction, right?
+I'm not going to tell you in advance.
+I can't predict for you in advance which one it is.
+I'm just going to say, is there something that matches it?
+And the kind of result that I got was that 78% of the time, in some sense, you get like a good match, okay?
+What does it mean for one of these templates to be close to the prediction?
+Exactly.
+So the transformer, it gives us a softmax, a probability distribution, which sums up to one.
+That template gives you a probability vector, which is uniform on lion, tiger, and bear.
+So one-third, one-third, one-third, zeros elsewhere, right?
+And you're going to ask, is that vector close to the vector that the transformer produces, right?
+So if the transformer produces the vector that's uniform on lion, tiger, bear, and snake, so one-fourth, one-fourth, one-fourth, one-fourth, that vector is closer in some norm to the one-third, one-third, one-third vector than it is to the one-zero vector on bear.
+So you're actually describing it as a bit like an inverted index.
+So what you've done is when you're building up these, you know, you're doing the template matching over the tiny stories data set, and when you find an ambiguous match, so this template has already been used before and it's already got a one-in, rather than creating a new duplicate template, you're just putting like another one-in on the other token.
+You have 400 probability vectors, right?
+Because each probability vector is the prediction that that template would predict.
+So there was a uniform vector on three tokens.
+Once upon a time, there was a, that's a one-hot on bear.
+And then there's all these other vectors from using other templates.
+And you just take the transformer probability vector, and you just scan these things like, ah, or actually what you're doing is you're doing an optimization procedure.
+You're doing a nearest neighbor lookup, right?
+You have one vector that's the transformer vector.
+You have these 400 template vectors, and you're just doing a nearest neighbor lookup.
+And you're saying, ah, so I have now this optimal template, and the precise statement is that 78% of the time, this optimal template rule has the same top one prediction as the transformer.
+It's a little bit hard to interpret this result because it's so idiosyncratic, like I just kind of like created this optimization procedure, which doesn't have maybe a direct precedent.
+So maybe just to give, just to ground that 78% number, the transformer I trained was 150 million parameter model.
+So a small language model, but very sufficient to train tiny stories.
+In fact, you can get very good performance with a 10 million or 20 million parameter model.
+That was the point of the paper, in fact, that introduced the tiny stories dataset, that you can train small, effective, large language models when the dataset's small enough, as measured by, say, the amount of loss on the holdout set.
+So in this case, with the 150 million parameter model, you'll get 1.1 nats on the holdout set, which is a very small number of, a very small loss.
+But anyway, so I have a 150 million parameter model.
+When you train that model, it gets 69% top one accuracy on the holdout set.
+So this 70% being larger than 69% shows you that it's quite a good top one accuracy because it's even higher than the accuracy of the model on the ground truth, just to kind of ground that number.
+Yeah, so help me understand this.
+So, you know, the 78% number, this suggests to me that what a transformer is doing is close to template matching, but the transformer is still slightly better.
+And what does better mean?
+Now, what is the transformer doing over and above template matching?
+Yeah, I don't think better is the right word because I'm just comparing two things.
+So there's no sense of better as in there's a metric that I'm trying to optimize.
+It's basically just saying that going back to the form and selection, right?
+So the transformer is some kind of complicated way of selecting rules to generate the next token.
+Oh, I got it.
+So sorry.
+So you're saying 78% of the time it was able to find a matching template.
+Exactly.
+Right.
+But is it not still fair to use the interpretation that because that's quite a high number, that means most of the time the behavior of a transformer can be explained entirely by template matching?
+Let me just qualify one word you used there, which is explain, okay?
+Yeah, yeah.
+So I described this in the introduction because it is very confusing.
+I've gotten a lot of pushback on it.
+But I describe my procedure as describing transformer predictions, not explaining.
+All right, what's the difference?
+Describing is the what.
+Explaining answers how and why.
+Okay.
+So what's the weather like?
+It's raining.
+That's a description.
+But, you know, why is it raining?
+It would be an explanation in terms of precipitation and ultimately physics, right?
+It's giving you a mechanism, okay?
+So going back to our transformer discussion, I don't explain things in terms of engram models because I don't say, first of all, my analysis is all black box.
+I don't look at internals.
+But what an explanation would be would be you give me the context and I say look at a circuit that implements some engram template matching and that would be an explanation.
+I'm not doing that.
+I'm just saying, oh, retro, retrodictively, I see the output and I'm saying, ah, is that output attributable to any training data statistic?
+And the point is, ah, yeah, I've already tabulated all these statistics and I'm just identifying sort of the matching one, retrodictively.
+Yeah, so what you've done is a description of the sort of statistical syntactic template matching of a transformer.
+So what is an explanation?
+Now, this is, I think it goes back to philosophy when we talk about syntax and semantics.
+So semantics is for me.
+I might do abduction.
+I might build a model of explanation, which is intelligible to me as an observer.
+I'm computationally bounded.
+It's something that helps me interpret what the world is doing.
+But I think something like that can't be universal.
+So there is a clear difference with a syntactic description.
+What we're talking about here is also how to describe what features do and how good they are, how abstract they are.
+So if the features are low frequency, so let's say you have, you know, a sequence of 50 tokens or something like that.
+That's a very low frequency exemplar.
+It's clearly a form of memorization, yet some of the features or representations in a transformer are very abstract and they generalize possibly out of distribution.
+So it would be interesting to sort of be able to describe the difference between a sort of robust representation versus an exemplar.
+You have to use some kind of flexible templates because at inference time, right, part of the value of a language model is that it can still predict the next token, even if you give it a novel template.
+Right.
+So famously, one of the weaknesses of Ngram models is what do you do when you feed it a context that it hasn't seen before.
+Right.
+So the Ngram model is trained to predict the next token.
+If you give me the context and I can go into the training data and find that context and just kind of predict the next token based on the frequency.
+But if I have a novel context, which surely you will, which will happen, what do you do?
+Right.
+So kind of like one of the simplest things you can do, which is what people have studied, is something called a backoff or stupid backoff even, which is, okay, if you have, say, a 10 gram model, which is very large,
+but a 10 gram model means I use nine tokens of context.
+Well, it's very easy for nine tokens to not appear in the training data.
+So what do you do?
+If those nine tokens don't appear, you just back off to eight, seven, six, until finally there's a small enough fragment that occurs.
+And then you predict based on that, right?
+The reason I have all these templates is in order to do robust prediction, the transformer has to do some kind of negotiation between these different templates because you can't give me one static template that will just break.
+So you have to do some kind of subset selection or maybe even averaging.
+And actually, to take an even higher level perspective, you can think of this selection as, it's a cartoon, but kind of maybe what attention is doing, right?
+You could think of, oh, if I'm attending to certain tokens more than others, right?
+In a very binarized version, you could have, oh, whatever tokens are being attended to, maybe that's like selecting the tokens for these templates.
+And then things that have low attention are maybe ignored.
+And then I have this other operation in my paper where you can average over things, but maybe we don't need to go into that.
+But you have this kind of like way of generating statistics and you kind of need a flexible enough rule system precisely to deal with the issue you mentioned about robust prediction.
+Although in some sense, maybe it's not satisfactory because in some sense, I'm just saying if I have enough syntactical rules, I can try to have a form of semantics.
+Let's think about the sun rising and setting every day, right?
+So that's a description.
+We can see that.
+But there are at least two explanations which are very different for this same description.
+Either the earth is orbiting the sun, which is why we see the sun rise and set, or the sun is orbiting the earth, right?
+Those are two very different explanations that end up with the same description, right?
+All that to say is that right now, the template matching is at the level of description.
+Hopefully, it's at the level of explanation, but that's like we would have to dive into the weeds.
+Explanation is in the eye of the beholder.
+Only an observer can give an explanation.
+But we could galaxy brain ourselves, and if we understood the agential graph, if we understood the data-generating process, the data was generated by agents, and those agents actually had some kind of semantic graph.
+So the data was produced in the context of meaning, but then it becomes kind of squashed together, right?
+It becomes entangled.
+And I don't think it's possible doing the kind of syntax processing we do in a transformer to disentangle the original semantics.
+I think what you're saying is basically the Chinese room argument, right?
+Yeah, yeah, exactly.
+So I have this system that can correctly describe all the translations, right?
+But just because it can do that doesn't mean it actually kind of does the correct semantic level understanding computation that we regard as understanding of Chinese.
+Yeah, it's exactly CRO, yes.
+So syntax is not sufficient for semantics.
+So yeah, 100%.
+Okay, okay.
+I don't think I thought about this philosophically enough, but it's not clear to me to what extent statistics are incompatible with understanding, right?
+I mean, it's not binary, right?
+Maybe another result I'd like to highlight because it's very concrete and I think it's probably of interest to researchers is this other part of my paper where I mentioned that using n-gram statistics, I was able to discover this way of detecting overfitting of large language models, which does not use a holdout set.
+Which is pretty surprising because classically when you do some kind of train and test evaluation, what is overfitting, right?
+You're optimizing the loss on the train set and then when you plot the test loss, there's this U-shaped curve where you go from learning and some generalization and then you eventually hurt generalization because you're memorizing, right?
+And so what I observe is that you can detect this U-shaped curve by computing an appropriate set of statistics on the training data, which is surprising because usually you need some holdout set to get the U.
+So how do I do that?
+Okay.
+So let's think a bit about what is it, what would a transformer have to do to drive the train loss to a minimum, okay?
+A transformer is trying to predict the next token given the context.
+And let's say I have a long context, like 50 tokens, okay?
+50 tokens is almost certainly enough for most pieces of text to identify uniquely.
+Like if you give me the first 50 tokens of Wikipedia, almost certainly that's a unique article, right?
+And certainly for these children's stories.
+So you give me these 50 tokens and in the training data, because it's a unique context, there's only one token that follows it, right?
+And so for the transformer to minimize loss, it should also drive its predictions to the one-hot distribution on that particular token.
+But if you think about what a good language model should do, it should not do that.
+It should give a robust prediction based on, say, shorter context, right?
+So if these 50 tokens were, say, like a complete sentence, right, the next sentence in the training data might happen to start with the word the.
+Right?
+But in general, you might want to use a different article, A.
+You might want to predict a name that's also in that sentence.
+But you can't do that if you're driving the loss to zero, because you have to produce the one-hot distribution on the token that actually occurs in the training data.
+That's memorization, right?
+So based on this intuition, what's happening is that the transformer is losing the ability to use the context robustly, because it has to use these 50 tokens in a particular way.
+So what I discovered was the following.
+If during training, I evaluate the transformer on short context, so just the last token or the last two or the last three, all the way up to seven, what you'll find is that the loss on that reduced sequence for all sequences, just kind of only limited to one to seven tokens of context.
+All those training loss curves also exhibit the U on the train set, okay?
+And so what this is saying is that you can detect overfitting just by seeing deterioration of performance on short n-gram fragments.
+And you don't need a holdout set, because those U-curves track each other exactly.
+So I thought that was a pretty novel discovery, along with a good kind of understanding of why that's happening.
+Yeah, yeah.
+I mean, I think this is related to the, you know, there's like a simplicity bias in neural networks.
+And as the training progresses, the networks learn statistics of increasing complexity.
+And I think in this case, it's also related to flops, but I think in this case, you used a 1 billion parameter model, which, you know, even though it was only 10 epochs and low flops, I think that has the same effect.
+So very quickly into the training process, it will start to forget about the low cardinality templates, and it will start to memorize the high cardinality templates.
+Yeah, that's exactly what's happening.
+Yeah, yeah.
+And that's really interesting.
+And what you're showing is, then, when you look at the curves of your template matching, you can, there's a direct commensurate relationship between the curve and the overfitting of the model.
+That's right.
+That's right.
+Yeah, that's really interesting.
+Some kind of statistics over the template matching process could explain some of the behavior of language models.
+You know, I did it in a limited setting, but I think since the explanation, it's pretty clear what the explanation is.
+I don't see any problem of why it wouldn't hold in many other settings.
+You know, I should say it's kind of hard to overfit with LLM just because typically, you know, you're, at least for state-of-the-art models, you're in this regime with lots and lots of data, right?
+And you typically choose a model size that's sort of commensurate with the data.
+Here, 1 billion for tiny stories is like grossly, grossly, many orders of magnitude over parameters, which typically you don't have with the data sets you consider.
+So I had to be in this kind of artificial setting where this was overfitting, but with that caveat, I'm glad I was able to find this.
+Actually, I should say, you know, I have sort of like four bullet points of results in my paper.
+One other one was this thing about learning different kind of skills and going from simpler ones to more complex ones.
+I guess maybe skills isn't the right word, but rules, right?
+So I think of these template matching learning as learning rules.
+And the other result in my paper, I phrase it as curriculum learning.
+Not curriculum learning in the sense of ordering data so that you can learn easy to hard, but curriculum learning in the sense of, like, what kind of knowledge it's acquiring during the process of training.
+And what you'll find is that it's sort of early on in training, it's template matching, you know, in your language is going down for all the templates of size two up to seven, right?
+And then at some point further to training, it's discarding the simpler templates while the similarity to the more complex ones continues to decrease.
+So what is this saying?
+It's saying that early on, oh, you know, any rule for language is kind of good, bigram, trigram, because it's better than just random prediction.
+But at some point, you know, using only one or two tokens of context is a bad rule, right?
+It's no longer good enough.
+And so to minimize cross-entropy loss, you have to start departing away from these simplistic rules.
+And that's why you'll see a U-shape when you look at the similarity of the transform predictions to these simpler rules, but it will continue decreasing for the more complex rules.
+So it's sort of the result basically is that it's learning rules, and then eventually it's moving away from simpler rules to more complex ones over the course of training.
+So that's another result in my paper.
+And that fits my mental map of how neural networks work.
+But it'd be really cool if, because at the moment you're showing up to size seven of the templates or the engrams.
+But wouldn't it be interesting if you went to the maximum size of the context, let's say, was it 2048?
+Yeah, so the maximum size of the context is 2048.
+But of course, it's very expensive to compete all these engrams.
+That's why I stop it at seven.
+Yeah, yeah, I understand.
+So it'd be amazing if there was some kind of Mexican wave, because, you know, like as the neural network, you know, sort of like complexifies,
+it'd be really interesting if you kind of saw like this monotonic decrease in the curves.
+Yeah, actually, yeah, actually, now that I think about it, those curves have to go up once they overfit as well,
+because what's going to happen is that the one that uses the entire context will eventually go down,
+whereas the one that uses seven or eight will go up.
+But yeah, but for like a well-trained transformer, the seven or eight, the one with seven rules of context keeps decreasing,
+because those are still good rules.
+Yeah.
+It's only when you overfit will start departing from these like moderate-sized templates.
+Yeah, I mean, it's also interesting, given this predictive task, why it would forget the simple template.
+I mean, could it be related to the distance measure?
+So I think now might be a good time to explain the distance measures for using the variational distance.
+Yeah, that's right, right.
+So one thing we didn't discuss when we first discussed the how do I choose the best rule
+is that you have to minimize the distance between these two, you know, the vectors in question.
+I use what's called variational distance, which is just one-half times the L1 distance,
+and L1 distance is just the sum of the absolute values of the differences, right?
+Yeah, and that's, it's a standard distance on probability measures, or in this case, vectors.
+And it's better than the KL divergence in this case, just because KL divergence is unbounded.
+And you have issues if, you know, one of the measures doesn't have support on the other.
+You know, you know, basically, if you divide by zero in the log, basically, you're screwed, right?
+Unless there's a zero outside of it.
+So anyways, you know, the variational distance, even if it's less familiar,
+it's just a much more mathematically nice measure to use.
+And so I use that as my way of comparing whether two probability vectors are close or not.
+And so that's the notion of distance that I'm using for...
+So is it possible because you're using the L1 norm that that could, like, actually bias?
+It's like an implicit bias for the complex engrams.
+Yeah, no, I don't think so, because actually, I, how do I say,
+I also did experiments with the L infinity distance, for example,
+and I get very similar results.
+So L infinity just means it's the L extreme,
+where you take the maximum of the absolute differences.
+So instead of summing them, you just say,
+I'm going to just choose the difference that's the largest, right?
+Yes.
+Yeah.
+And then L2 is kind of in between them.
+L2 is the square root of the sum of squares, right?
+So the P equals two rather than P equals one or infinity.
+There's a whole family of Lp norms.
+And for a discrete set, they're sort of ordered.
+So L1 is the largest and L infinity is the smallest.
+And for those two, I get comparable results, you know, qualitatively.
+So I don't think there's anything to,
+at least in the, like, aggregate story that I've tried to tell,
+I don't think there's really a big difference between L infinity and L1.
+I mean, there are some technical subtleties I don't think we need to get into,
+but morally at a high level, L1 versus L infinity, the results shouldn't change too much.
+Yeah.
+If you did experiments with, let's say, different sizes of model and different numbers of flops,
+let's say we had a metric to show when the curve was appearing with respect to training,
+what kind of dynamics do you think we would see?
+Actually, I did train a few different size models.
+So the ones I report in my paper that aren't the overfitting were all 150 million.
+I did train 400 million and also even 1 billion, but not to the point of overfitting.
+Okay.
+So if I train for four epics, for example, it doesn't overfit.
+I only overfit when I train to 10 epics.
+There's not too much difference in the results,
+just because these models are already so overparameterized that,
+you know, I mentioned if, you know, you can get like 1.11 Nats of loss
+if you have 150 million per emeral, if you have a 400 million,
+it's like more like 1.10 or 1.09 Nats.
+And so you've already juiced out the loss so much that just like,
+how do I say, the usual scaling laws that you see,
+it's because the data set's very large and you get a lot more juice by scaling up, right?
+So in this case, you've already kind of maxed out.
+So I was kind of in that maxed out setting, so to speak.
+Yeah.
+Yeah.
+If you were to design a regularizer to kind of like almost bias it towards the simple engrams,
+how would you do that?
+So I haven't tried changing regularizers.
+The optimizer I use is the same optimizer in Chinchilla,
+which is Atom with weight decay.
+And I didn't tune that.
+It's just already kind of been tuned for me, so to speak.
+It's a good question, follow-up question,
+which would be if you change the regularizer
+and therefore change the training dynamics,
+how does that affect the transformers kind of template matching with nGrav statistics?
+I don't know the answer to that, but that might be interesting to explore.
+Yeah, yeah, because there's so many papers I've read at ICML this week that are sort of talking about training dynamics
+and this complexification behavior, and I think it'd be quite interesting to play with that.
+How do you interpret this at a high level, and what's your roadmap for doing more research on it?
+One of the directions that I mentioned, which I mentioned at the end of my paper,
+and which I sort of mentioned before, is sort of can you convert these descriptions to explanations, right?
+So maybe some kind of internal mechanism exploration to try to see what these,
+you know, to try to ground these template matching, it's based on some mechanism.
+That would be very satisfactory.
+That would be like a completely different direction, because now you actually have to probe inside.
+So it's not like a short little follow-up, you know, diff from what I've done.
+So I think that would be very interesting to do, but it's going to take a lot of work.
+Yeah, yeah, I mean, I think it's related to reasoning and abstraction.
+I think that's fascinating to me, is if you could have some kind of metric,
+and this is very difficult to do, you know, like in adversarial robustness literature,
+they say that the problem is, is that adversarial examples are features, they're not bugs, you know.
+So you just have these non-robust features that generalize really well.
+The big argument we're making is maybe neural networks are hash tables,
+because they're learning exemplars, they're learning specific things, and then there's a spectrum.
+Sometimes they're learning things which just happen to generalize really well,
+but, you know, they're not actually a useful representation.
+And maybe somewhere in there, there are these beautiful domain-relevant out of, you know,
+like they generalize really well, and they represent compressed abstractions of the concept.
+And it'd be great if there is an operative way to define when that happens.
+Yeah, I completely agree.
+Yeah, yeah, well, maybe that's a topic of future research.
+Sounds good.
+Yeah, Tim, honor and a pleasure.
+And we're going to get Tim back on.
+So we're just talking about ML stuff today, but we're going to get you back on,
+because you've got some very interesting takes on physics and, you know,
+the meaning of the universe and theories of everything and lots of very, very spicy stuff.
+But we'll save that for when we're in London next.
+All right, sounds good, Tim.
+Cool. Cheers, Tim.
+Cool.
+Cheers.
+Cheers.
+Cheers.
+Cheers.
+Cheers.
+Cheers.
+Cheers.
+Cheers.
+Cheers.
+Cheers.

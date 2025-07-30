@@ -1,0 +1,376 @@
+sup hey everyone so this is a talk that i'm going to give which is a fun talk so i'm sharing it on
+the main channel it's not super technical i was invited to a talk at a local group in seattle
+which is always fun and i was trying to wrap my head around a few stories in this kind of
+reinforcement learning arc that i've been covering on interconnects and obviously working on
+with my career and there was a few questions that i wanted to get to the bottom of as these
+reinforcement learning methods are being used extensively for reasoning models and as we will
+see even further in the ai landscape and i wanted to make comparisons to how deep rl originated what
+other major successes for deep rl were so like what was the self-play about alpha go and
+everybody tries to bring this into the narrative around language models but i don't really see
+reasons to do so how this rl for reasoning takeoff will compare in both of its kind of low-level
+activity and its impact compared to the rlhf takeoff of a few years ago after chat gpt a lot
+of the dynamics feel the same but the end state of rl feels even bigger now than it did a few years ago
+when the emergence of rlhf and chat gpt was honestly the biggest commercial success that the field of
+reinforcement learning had seen to date so i go through this and mostly tell the story of how
+the language model industry was evolving how people slept on rl why these results are so surprising
+with deep seek and oh one and kind of this whole story with some technical details on training methods
+that we're using and some of you would have already heard if you're listening on audio this one does
+have slides accompanying it so it is normally better to watch on video but i still publish on audio
+because i know some people only have time for that so i take what i can get and i hope you enjoy this
+talk which i have titled an unexpected rl renaissance and i will be building more fleshed out versions of
+this through the spring so stay tuned
+if we were to start with deep rl as i go and make sure screen's recording check the first paper that
+i see as really being representative of what modern deep rl methods are is this td gammon paper from
+tesoro et al in i think it was 1992 and it was published in 1995 officially because so many of the
+things that are used in this paper it was to solve backgammon are what people know of about rl as being
+successful today it had self-play between the agent and itself it surpassed expert level performance at
+the time and it used had neural networks to learn value functions it had the core components of what
+people see as popular rl successes of the day and this was back in 1992 so deep rl was a long time
+coming in terms of its major successes in toward in order to actually go through this whole deep
+learning revolution that we've since seen so if we accelerate really far the thing that broke out
+reinforcement learning into a lot of people's minds gave me a career jump start was this reinforcement
+learning from human feedback and it's important to think about where this actually came from so there
+was a line of work i think this paper was in 2018 where preference models were actually proposed as a
+research direction and all of reinforcement learning from human feedback and we'll talk about the difference
+between this and this reasoning training was about optimizing hard to measure signals the preference
+model the reward model was the core of rlhf and why it was needed and it was because humans are
+fundamentally hard to measure and rlhf was a tool to kind of mitigate an obvious weakness that we had
+in training which we didn't know how to train on these certain signals and you have to go back and
+acknowledge chat gpt which was early tough was really a precursor so if you read the blog post it
+says we trained this model using rlhf with an expanded method from instruct gpt i don't need to
+review all these details because there are many talks that does do so and the tldr is that rlhf this
+human feedback part was a necessary component of modern language models but one that is not sufficient
+for the entire pipeline it is not one that is driving a lot of the success of the broader industry
+it was really kind of this thing that was a small part of the bigger picture and as i conclude this talk
+you'll see why i'm throwing this in here but at the same time rlhf is a catalyst for what uh we're
+seeing or like what we're seeing in a precursor so it kick-started a lot of interest in language models
+without rlhf being applied in the way it was all these venture companies would not exist open ai would
+not be raising at a 300 billion dollar found valuation google wouldn't be reinvesting in language
+models and so on but at the same time this new second wave of rl a few years into chat gpt
+would not be happening without uh this work in rlhf so a lot of the infrastructure everyone is
+building on to get these quick results in training reasoning models with rl is built on tools that
+were designed for rlhf so we had multiple years of academics learning to do rlhf and i've given this
+talk um aligning open language models i gave a talk at stanford cs25 where i was discussing the history of
+um open chat models and for the year following chat gpt there was pretty much zero models that did
+full reinforcement learning from human feedback um in the whole year of 2023 there was almost nothing
+this is because the code and the data was just not accessible at all and scaling these reinforcement
+learning methods was a major blocker so in these two years of rlhf being known as important was kind
+of this undercurrent of academics and open resources building this stable rlhf code that
+we're now using today when it comes to these kind of reasoning models so one of my friendly anon
+accounts on twitter zeophone made this meme which is the the rlhf was the trojan horse to even more rl
+being used in the ai ecosystem and it's that's a great meme i should throw it at the end of the talk
+as well and this is really what it looks like is we needed this initial wave in order to build
+tools that turned out to be even more useful and this is kind of why it's weird to look back at
+this because there's been a lot of negativity around rlhf in the last two years i wouldn't say
+this negativity is from within the frontier labs where there's a really strong embrace of rlhf related
+methods i think those close to the technology give claude and anthropic a lot of credit shout out amanda
+oskal on their biggest moat being their post-training techniques which are variations of rlhf and
+constitutional ai and ai feedback but even in the broader tech community there's a lot of disdain
+towards rlhf as being something that limited the models and i really wanted to tap into the story
+because it is what happens when you say that rlhf is just the cherry on top of broader progress in ai
+where if you say that everyone is quote unquote scaling pilled that the real meat of ai's development
+was about scaling language models training on internet scale adding more compute and so on
+and rlhf was something that you had to bring along the way but wasn't something that outside of the
+labs a lot of people saw value in so what actually is a scaling law a scaling law is a power law
+relationship between the test loss which the test loss for a language model is cross entropy loss which
+means the accuracy and predicting the next token and compute which is a mixture of data and actual
+passes through the model so data count and number of gpus and as a recurring theme and we'll see this
+disconnect later is that when you're doing pre-training on next tokens this test law is just token
+prediction accuracy and that is not how we're using the models today all the models are used in this
+instruction format and the evaluations we're using should measure this the scaling law being about
+token prediction is fundamentally disconnected from the fact that the vast majority of language model
+using is is instruction tuning we'll see this on the technical level where a lot of evaluations people
+are using are moving from these maybe multi multiple choice or log probability measured metrics to
+kind of chain of thought and open-ended tasks to evaluate the models but there's a separation
+between what the scaling law was doing and what post training is doing and what this rl training is
+doing today and this tension caused the bigger change in the ecosystem so the kind of assumption
+for a long time well this is while cluster build outs were really fast this is well there was more data
+to train on was and it was true the difference between gpt 3.5 and gpt4 models was astronomical gpt4 enabled
+a lot of tasks you just couldn't do before and the assumption for a while was that this was going to
+continue and drive progress excuse me and in this process rlhf was something that is along for the ride
+and there was multiple occurrences of this i think some of them are rightly attributed to rlhf being
+being just not done precisely at a technical level which is like llama 2 chat where it famously
+um refused to kill a python process and this is just a poor training run and there are other things
+that are not associated with rlhf such as when gemini was um kind of recasting its requests from
+the users to add historically inaccurate diversity to scenes these are largely overblown and while these
+mishaps were happening for this kind of industry rlhf really improves performance on evaluations we have
+now for these instruct evaluations there are many ways to get better performance with rlhf rather
+whether it's a human ab testing chat evaluation or a math evaluation or coding evaluation so this is
+kind of a communication problem where the thing that people are touching what people assume is biggest
+influence on their models is the culprit that it's not it's not grounded but i understand how that
+could be the case because the processes are really opaque and what kind of change like how did
+these mentality of scaling break down what set the groundwork so that a model like open ai's o1 could
+come and actually change the field so fast so the trio of open ai o1 open ai o3 and deep seek r1
+are just on this trajectory of evaluations across the board just taking a big step from
+decent to saturated math is saturated and then also from zero to signal on things like frontier math
+we're going from zero to 20 or zero to ten percent and there's this technical thing where we hadn't
+been able to use gpt5 it hadn't been served to users primarily just due to cost that's assumed that these
+models exist internal to internally at these organizations but it's kind of the separation between
+the evaluations that labs are using uh being felt by consumers and the actual demand for models to do
+things and to try to keep really impressing to drive this adoption cycle that is ai so in order to raise
+money that feeds the development of tsmc that feeds buying chips strong results need to be released on
+a regular basis and a lot of this is just demand for the market to have ai that actually does things
+if we roll back a few months before open ai 01-03 before deep seek and before open ai's deep research
+not a lot had changed in 2024 these last three months are really dynamic in terms of the ai models
+actually doing things that are useful and it just takes a long time for ideas that have been in the
+background to be scaled up so i'll kind of go to this next slide and it's like rl had been around these
+this idea that o1 is based on which is using reinforcement learning on primarily verifiable rewards and just
+scaling it up making a curriculum that works for a lot of iterations and just digging in on this technique
+was not new i think there's many papers from even as far back as 2022 and there's many papers that
+were released before or concurrently with opening eyes 01 that show people knew that there's a lot
+of power in training on verifiable domains the same domains that opening i01 is very good at so map and
+code were things that there's extensive research on some of them are the self-taught reasoner there's
+a whole line of work that's called star that got a lot of attention when qstar was the
+uh topic of the day there's work that's this rlef which is grounding code and execution feedback
+there's a lot of work on reasoning domains with verifiable math this was not new but opening eyes
+application of it was enough to wake everybody up and say this is what you need to be there was kind
+of enough uncertainty in the air around scaling that there's a lot of willingness to embrace something
+new and this is kind of how this focal point came to be and openai 01 was a paradigm shift in a practical
+sense i think if you read sebastian kuhn you'll see that the paradigm shift probably didn't actually
+happen we're just continuing to dig in on deep learning but the blog post is clear there's been
+a lot of debates on what a one actually is but the model that people are using in chat gpt the most
+whether it's oh one oh three mini you know the mini high whatever is an auto-aggressive language
+model trained excessively extensively with reinforcement learning it has other post-training
+techniques it still has reinforcement learning from human feedback but the innovative part is
+reinforcement learning on some sort of verifiable domain this talk does not get into things like
+oh one pro or how deep research may actually work which are doing some sort of basic search if you
+use them it takes a long time that search might not be a tree search or monte carlo tree search or
+anything deep but these pro versions that are doing a lot of inference this arc agi plot with a thousand
+samples there's something going on to make use of way more inference but the fundamentals apply with just
+one model and this is best seen through deep seek where the chain of thought being visible just is a
+dramatically different user experience and the scores are super good open ai 01 opened this door
+for reinforcement learning training on verifiable outcomes to be a major change in how ai was
+trained and the rest of this talk is really going we're going to take a bit of technical detour and
+say like what does this actually mean if you're new to reinforcement learning or you have some reinforcement
+learning experience and then actually from there kind of just going and talking about what it means for
+what is next you can see this paradigm shift again i forgot the slide was coming but we went from a
+series of architectures where we could not approach this type of evaluation that arc agi was an abstract
+reasoning and we went from not knowing how to do it to having a model that effectively solves the task in
+just a few months this is the type of hill that you can climb when there's a new paradigm in how
+training is done for language models or for any technical sphere so what is this actual rl training
+for people who know reinforcement learning or do not this is the basics a reinforced learning system is
+something where an agent interacts with an environment the agent is defined by some policy
+normally pi and they take actions a and the environment gives a new state s and a reward r this
+is fundamentals of ai and you can contort this a bit to use language models when you're using language
+models it ends up being a bit different again because the framework starts to break down with
+the language model the policy is something that is generating text the action is a completion the prompt
+is the state and we may not actually have something that is like a reward because what is the environment
+if you're only doing this kind of prompt completion interaction and it turns out the closest thing to
+an environment is a score function or a reward model so if we know that we're only going to get
+a prompt that we need a completion to we kind of lose some of the feedback loop and we there have a
+prompt the agent gives a completion and we have a reward model in reinforcement learning from human feedback
+this is what you do you'll have some policy gradient algorithm that updates the model
+and we did this in multiple post training projects it's pretty standard practice now
+and if you expand this with some details the agent actually has something like that's a generating
+policy a reference policy and a value model the reference policy is the kind of starting point for
+this rl training and the generating policy is what you're learning this is really a technical detail
+to show that you need to save multiple copies of the model when you are doing training and it becomes
+a normal infrastructure problem that core idea is what happens instead of just rewarding the model for
+being right in the sense of reward model which is a subtle preference signal we can give it a much
+clearer reward to the question we are asking so in domains like math or code with math we can check if
+the answer is correct with code we can check if unit tests pass we'll just give a much bigger reward
+if those questions are correct than otherwise so this is a basic idea this is not new to reinforce
+learning literature it's kind of the fundamental idea of rl which is reward the agent for doing the
+correct action we've just changed the domain so that a really simpler approach applies so we had to
+restrict the domain from all of text to just verifiable domains and then we can go back to rl fundamentals
+in our work in two to three we show that you actually don't even need a reward model and in
+the deep seek paper they showed the same thing which is that if you use a starting language model you can
+do this rl training just with the scores and some other minor reward function details from checking if the
+answer is right and this is really freeing because it sets the model up to really be just
+doing trial and error to try to find solutions on its own and it's not constrained on style and or
+anything else and what it's doing is you're just training the model to see if the answer is right and
+in practice with a lot of reinforcement learning algorithms what you'll do is you'll have one prompt
+you'll sample four to eight times for that one prompt so the model has four to eight times
+tries at a math problem in a specific batch and you reward the ones that are right and you penalize the
+ones that are wrong and you let this go and the models can improve on many different core benchmarks
+you will see reward shaping start to come in here where you want the model to do a bit more than just
+get the answer right and you start adding reward shaping back in this isn't new for anyone with
+experience in reinforcement learning but it is one of the tricks of the trade that the field's going to
+find out over the next few years simplifying this figure down you have a really standard
+reinforcement learning feedback loop where a language model completes an answer to a proposed
+question and you see if it's right and you reward it if it's wrong and the rl algorithm kind
+of figures out all the math in the background and it works way better than a lot of my other
+experiments that i've tried to get off the ground in my rl career it's really remarkable how soon
+when we tried this for the first time at ai2 how soon it got off the ground and this is a lot of
+what gives me confidence into the fact that these rl training methods are really going to continue to
+proliferate through this year is the amount of low-hanging fruit and creative applications that you can
+use this for an important thing to realize about this is just zoom in on the data i talk about this prompt
+completion a lot i think just giving a few examples is very useful here is the example that openai gave
+when they announced their reinforcement fine tuning which is a case for support and a series of
+instructions in a kind of medical domain and a correct answer which is a i think a protein sequence
+or a dna sequence corresponding to that medical exam that's complicated we have examples in our data
+sets online which is really things like math or precise instruction following with math as a prompt
+and then you have a numerical correct answer that needs to be checked with precise instruction following
+it's a little more subtle but there's essentially a function that checks to see if you met a criteria such
+as complete the answer and only 200 words or less in that case the training is definitely more sensitive
+and the incentives are to maybe use a reward model or not scale training quite as much but for math
+it's actually quite simple and other domains such as code be end up being somewhere in the middle
+because how do you create unit tests that solve everything that a user can potentially put in asking
+for code help on so there's a lot of ambiguity that we're not going to get into here on the technical
+level but this just kind of leads into reward shaping all the ambiguity in domains which is how do you
+weight domains between each other if you are training on multiple things like math and code at the same
+time how do you give partial credit for things like code where syntax is really useful but the final
+answer is the most important thing and this is where reward shaping enters this rl training for language models
+and it would be effectively we're going to rediscover a lot of literature here and we just need more
+people to try it and share their lessons on what works with one domain how do you kind of shared rewards
+across multiple domains in one training process and so on and we'll share more results as you as we get them
+if you actually want to look at training plots i'm going to share a few training runs i think shout
+out to costa huang and hamish ivison i have a typo in hamish's name in these slides i'll fix them
+before shame sharing but these are two great people at ai2 that are working at a low level trying to
+figure this out and if you've had experience in reinforcement learning training really these look
+really similar you have a reward i think on this slide right here the reward is the the middle or the
+right which is essentially how many answers are correct in the batch and then there's also a kl
+distance the kale distance is not new to rl literature i think kl is used internally in many
+palsy green and other algorithms it's just the kale penalty is applied differently here than in standard
+rl where it's a a distance constraint that's normally embedded in the reward at least for ppo and reinforce
+grpo which i'll get to a little bit does something a little bit different but the kl that we found in
+fine-tuning these language models to for verifiable answers is quite low compared to this preference
+tuning so if you're just doing a tiny bit of fine-tuning on verifiable domains the the answers
+are really kind of implicit in the model in this rl training is extracting the answers it's reinforcing
+the behaviors it's the most classic sense of what rl is about it's about trying new behaviors and
+reinforcing them and making them stronger and this is really what we see in the models and it
+does not take a lot of training it's data efficient and fairly compute efficient another
+example of a funky thing that we did when we were training ulmo to instruct effectively we took the
+standard first recipe we had used with to loot three which was we just tried to make the model
+better at math and instruction following and everything and it did improve our scores and then really
+okay what if we reset the policy model and reset training and try this a few times and we got even
+better numbers i it just one of these examples i include to show that there's a lot of flexibility
+in this training approach and those that are determined are going to make a lot of progress
+the kind of final one this week with this talk we're releasing an updated version of our to loot
+three models the only change that we made was switching from this ppo proximal policy optimization
+to group relative proxy optimization grpo algorithm grpo is algorithm that deep seek introduced in their
+deep seek math paper and the big change is that it uses a much simpler advantage estimate that doesn't
+need to learn a value function and therefore you don't need to keep that model in memory during
+training all in all we trained with change was the algorithm which is much simpler and did some
+hyperparameter tuning and we got a huge improvement to our model scores so this two to three evaluation
+suite includes a lot of tasks for math coding reasoning chat safety etc it's a general instruct model
+and we changed our last stage of fine tuning here so we on this model we had done sft and dpo
+and we just changed this rl and we got over 1.5 perform point performance gains in average for
+example in this paper uh this makes it's like a dramatic change from can we be a model like llama
+3 instruct to to not so these types of gains for only changing the algorithm and doing some hyperparameter
+tuning with exactly the same data are so rare if we were to find these things at other stages of post
+training it would seem so easy where the rest of the ai ecosystem was so many small data details
+there are just so many little things that you can find and improve this rl training right now
+that's like we're just gonna we're just gonna keep releasing better models and we're very excited to do it
+one of my favorite pieces of feedback when i talk about this from people who have a background in
+reinforcement learning is like why is this even new we trained rein models with rl and we've rewarded
+them when the answer was right this sounds like the most vanilla rl problem which is just try to find a
+sparse reward and make that behavior more common and this goes to show that there's a large overcame
+in applying this but most of it has to do with stable implementation the base models being strong
+enough and just belief that things will work this is not a magic recipe it's just one that we happen
+to do slightly earlier than other people in the field and now that pretty much everybody is doing
+so everyone is talking about deep seek and it's like what did deep seek r1 actually teach us about
+this sort of rl training i think what they confirmed is that rl trainings is accessible and scalable
+everybody knew that open ai had done this but to have a result where we can see this from base model
+really scalable rl so soon after open ai had released it just goes to show that more people
+are going to do this this year it is not impossible to get the data or anything like this yes deep seek
+is an extremely good team but they gave us these fundamental results so the two figures i highlighted are
+the technical figures in the paper is them showing that performance of the model is getting better
+with rl training this is the training time of rl compute which is so important because i'll touch
+on test time compute later it's kind of overblown and then also as a proxy of training with rl the
+sequence length of the model goes up this is something that i'll come back to in test time compute
+but they really showed the fundamentals which is your model gets better as you do more and more rl
+training over a substantial amount of data and as a side effect the sequence length goes up
+at the same time they go they showed us that there was still tricks i think one of the tricks that i
+highlight in the paper is the prompt they use to train their base model with rl which is essentially
+you have these special tokens that tells the model to think before it answers and you format everything
+correctly in order to do this you need to have a model that has some instruction data in it but the
+actual subtle implementation detail is that you have to do things like prompt the model with the first
+thinking token so it knows to think in the right format rather than relying on that from sampling
+in a base model because base models are really unstable and getting that right token just from
+the system prompt is not super likely so there's still details that we need to figure out but that's
+kind of the fun of the game and this takes us to like how much of the language model or broader ai
+development can come back to rl and rl is the focal point is something that i don't think anyone
+would have expected which is why i call this a new an unexpected rl renaissance and this rl is
+blooming and we don't know how big it is going to get but there are reasons that it can really become
+an important and kind of defining point of the next generations of ai before we get there as i was
+mentioning with deep seek there's a lot of discussion on test time compute and inference time compute
+being the quote-unquote names of this new era of ai the core is that it is reinforced learning training
+that enables the model to have these quote-unquote emergent behaviors where it can spend more time
+on a problem more compute on a problem in order to get a better answer this is the model quote-unquote
+knowing that it needs to revisit something to try to improve a wrong answer
+and of course there are ways where you could spend more compute with tree search and so on
+to just directly burn more gpus to try to get a better answer but the most important thing is
+how do you scale the rl training so that this kind of emerges naturally and in the open ai plots they
+had this test time compute plot it's really the train time can compute with rl that is the important one
+that's the plot that deep seek showed and most of the test time compute is going to kind of fall out
+of this i think early after o1 there was a lot of entrance on inference time compute but that has
+really shifted with deep seek r1 and that's good for the research field to kind of focus on the
+measurable training activity itself at the same time i wanted this talk to be relating to things like
+alpha zero and a lot of people talk about self-play with these models but these models are not doing
+self-play anywhere close to the innovations of alpha zero and mu zero and alpha go and so on because
+these self-play models were in closed domains with a competitive setting with no optimal strategy so
+go the optimal strategy is not solvable for so while these language models are talking to themselves
+and can modify their own synthetic data this is fundamentally different because they're trying
+to do so to solve a closed domain they're trying to satisfy a verifier that we have trained they're
+not trying to be pitted against each other to go forever in training and there is a potentially a
+way to set up language models of self-play but it's an extremely complicated kind of social and
+philosophical problem that we don't know how to address so kind of ignoring self-play as a motivation
+for now is totally fine and let's see if it comes folding back in but really rl and these training
+methods of o1 and deep seek r1 are being used everywhere two sentences from openai's other major
+announcements since o1 being openai deep research it says deep research was trained using end-to-end
+reinforceable learning on hard browsing and reasoning tasks across a range of domains same for openai's
+operator agent the kuwa model computer use agent it says combining gpt4o's vision capabilities with
+advanced reasoning through reinforceable learning kuwa dot dot dot we don't know the details of these
+there's a lot of uncertainty on how you integrate rl in something like a visual domain yes you can
+obviously do things like making sure an object detection works and so on when you know an object is in an
+image but there's a lot of infrastructure and other subtleties to kind of enabling this and we should
+make sure that as a research community we're not only focusing on arg maxing around maximizing math
+and code but understanding the fundamental principles of this new type of rl training
+i would like to connect this talk to kind of two important discussions i mean ai is so mainstream now
+which is the bitter lesson and how rl can act as the search component there's this famous part of the
+bitter lesson where the bitter lesson is talking about how methods that are general and not interrupted
+by human kind of human priors or biases are most likely to win in the long term i'll just read this
+quote one thing that should be learned from the bitter lesson is the great power of general purpose
+methods of methods that continue to scale with increased computation even as the available computation
+becomes very great the two methods that seem to scale arbitrarily in this way are search and learning
+if we look at standard pre-training that is learning as learning in the maximum sense from the data that
+we have as humanity to be frank and this new rl training is search so we need to set up domains of
+verifiers and playgrounds and sandboxes where these new types of rl training can continue to search for
+so long and spend a lot of compute to keep improving even if we don't have a clear supervised learning
+signal to keep driving on and in order to do this there's actually another rich sutton essay that is
+lesser known that's called verification the key to ai where rich hits the nail on the head with how
+we need verifiers and these could be trained language models they can be domains they can be toolboxes that
+are where this search learning can happen with our new language models
+so for this reason i really think that this rl training moment is much more than another alpaca
+moment yes the headlines look the same you can see two headlines on the screen which are from recent
+research projects that are such quick reactions it's really impressive to see where the evaluation scores
+for these really cheap methods of distilling from these bigger models can get ridiculous performance
+but we've kind of talked about how rlhf was kind of the cherry on top of language models and this rl feels
+way more open-ended so there will be a lot of research but the ceiling and performance is way higher
+now that we have new infrastructure and we're kind of working hand in hand with these closed labs and
+academics to discover the limits of this technology that is far more than just kind of the style of
+rlhf and we don't know fundamentally how many different things we can apply this rl with verifiable
+rewards training to and i go back to this comparison where rlhf was necessary but not sufficient for chatbots
+and rl with verifiable rewards in this o1 and r1 and two or three can become a necessary and central
+training method for ai and this is a huge change for rl research and will make what looks like another
+alpaca moment far more sustained and far more interesting to live through and in this this is
+where the talk becomes far more hypothetical is can we go from post training to training if we only have
+one internet and this auto regressive next token prediction becomes more and more about efficiency
+and how do we have just kind of the best architecture for serving these models rather than learning more
+from the text that we have on the internet there could be a way more open domain with rl where rl is
+learning things like robotics in addition to math and code with these multimodal models that can take
+actions they can generate audio they can generate images and we bring in all these domains as different
+ways that the model is learning with rl in a very complicated multi-domain setting we don't really know
+how far this will go so i leave you with these big error bar numbers where if you look at the deep seek v3
+report they shared how many h 800 gpu hours are needed for each stage of training they say in total that
+um i think let's do the conversion 2000 yeah 2 million 788 000 gpu hours were needed for this
+training essentially it's 2788 000 with the table which is why i'm stumbling over words but the
+important part is that only 0.18 of their compute for this non-reasoning model this v3 model was used for
+post training and deep seek v3 pre-training took their cluster less than two months and there's a
+now deleted tweet from a deep seek team member where they said their r1 rl training took a couple weeks
+so if we take this same time division of a few weeks out of a few months this rl training could
+already be upwards of 10 percent of the compute used to deep sea train deep seek v3 and this is for our
+first real generation of rl training models so as we scale up rl there's a reason to think that post
+training compute could end up being at parity with pre-training compute pre-training is far more
+efficient in terms of flops but as rl becomes more important the infrastructure for doing so will
+improve that's the nature of technology this is a mostly a thought experiment to say we are stuck with
+this naming of pre-training and post-training and what happens if it becomes pre-training and rl
+training is the center one it's fun to think about it's not likely in the near term but it's good to
+consider how the world could look if ai training does really change substantially again so i have to give a
+shout out to many people at ai2 on these projects like ulno and tolu where i learned about this i gave a
+shout out to costa and hamish who really are driving a lot of progress on this but really it's
+a wonderful time to be an rl researcher 2025 is going to be extremely interesting and while this
+seals like the origins of the post chat gpt moment as an rl researcher it feels far far deeper so thank
+you for listening to this and i hope you have fun and we're going to keep exploring this so let me know
+if you have any questions have a good one

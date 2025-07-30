@@ -1,0 +1,1434 @@
+If the model is doing some highly capable, sophisticated behavior, like if it is implanting
+a quite sophisticated backdoor in your code, this doesn't happen by accident. The hope is
+that the language model activations already have this lower dimensional or this higher level
+representation of the sophisticated behavior that we're seeing. Someone might poison your
+training data. So like all these models are trained by just collecting data from the open
+internet. So someone can just upload something to a website and then eventually it's going to be
+scraped and end up in the training data. The behavior that the attacker is trying to elicit
+from the model may actually be high loss to begin with. The more of reasoning moves away
+from natural language into more latence, I think the harder it gets to monitor models.
+And I do think that's one of the scariest things going on right now from a safety perspective.
+Hello and welcome back to the Cognitive Revolution. Today I'm speaking with Luke Bailey, Eric Jenner
+and Scott Emmons, who along with their fellow lead authors Alex Serrano, Abe Shashadri, Mikhail
+Selesnyov and Jordan Taylor have recently published a fascinating new paper called obfuscated activations
+bypass large language model latent based defenses. Latent based defenses regular listeners will
+know include a number of techniques for classifying and in some cases, interpreting large language
+models, internal activation patterns with the hope of detecting and preventing harmful or
+otherwise undesired behaviors. To many observers, myself included, these defenses have seemed
+like a particularly promising possible solution to AI safety and control problems with at least
+some hope of achieving adversarial robustness. Since presumably it would be hard to perform
+specific behaviors without passing through their natural cognitive precursor states. However,
+through an extensive series of experiments targeting three major classes of latent space defenses,
+the authors demonstrate that it very often is possible with a mix of methods that they collectively
+call obfuscation attacks to elicit specific target behaviors while shifting internal activations
+so as to avoid detection. For example, for supervised probes, which learn from human labeled examples
+to identify the activation patterns associated with harmful inputs or outputs, they show how to
+maintain the specific target behavior while shifting activations so as to avoid detection. Similarly,
+for out of distribution detectors, which use statistical techniques to identify deviations from normal
+activity and have been used to detect backdoor attacks like Anthropics famous sleeper agents, they again
+develop methods that preserve the unwanted behavior while keeping activations within expected statistical bounds.
+And for sparse autoencoders, which of course can be used to understand the high level concepts that a model
+is working with at any given layer and token position, they again demonstrate that it is possible to produce a
+specific desired or undesired behavior while avoiding detection at any specific layer in the model. Though performance
+does gradually degrade when they try to evade SAE detection at multiple layers. The amount of work and the number
+of experiments in this paper is remarkable and there is a ton of detail in this conversation. We cover
+multiple different kinds of attacks, including prompt suffixes, soft prompts and data poisoning, the
+structure of the lost functions that they optimized against, the level of access required for these attacks
+to work, and the fact that some of these attacks work even when the defender moves last, some really fascinating
+cat and mouse type experiments that show attacks working over and over again over 70 rounds of back and forth
+between attack and defense, and even their attempts to make models easier to monitor through an approach that they call
+obfuscated adversarial training, which they found does make it harder, but still by no means impossible to perform these
+obfuscated activation attacks. Overall, while these findings clearly raise important questions about how effective
+interpretability adjacent approaches to AI safety and control will be, and again suggest that defense in depth may really be all we have,
+I'm still not quite sure how best to understand what's really going on here. As you'll hear,
+the authors believe that these results show that models can represent the same concepts in many
+different ways, and that might prove to be right, but there is enough evidence for consistency and
+fragility in representations, and here I'm thinking about recent papers like the platonic representation
+hypothesis, Miel Nanda and team's refusal in large language models is mediated by a single direction, and most
+recently, the superweight in large language models, that for now, I'm keeping an open mind and planning
+several more episodes in this area, including another interpretability update with Goodfire co-founders
+Dan Balsam and Tom McGrath, and hopefully soon the conversation with legendary adversarial defense
+buster Nicholas Carlini from DeepMind. For now, if you find this sort of exploration of AI internals
+valuable, we'd appreciate it if you'd share it with a friend, write a review on Apple Podcasts or Spotify,
+or leave us a comment on YouTube. And of course, we always welcome your feedback and suggestions.
+You can drop us a note via our website, cognitiverevolution.ai, or by DMing me on your favorite
+social network. With that, I hope you enjoy this technical deep dive into latent space defenses and
+the attacks that for now defeat them with Luke Bailey, Eric Jenner, and Scott Emmons. Luke Bailey,
+Eric Jenner, Scott Emmons, authors of the new paper, Obfuscated Activations, Bypass,
+Large Language Model Latents-Based Defenses. Welcome to the Cognitive Revolution.
+Thanks for having us.
+Thanks, Amir. I'm super excited.
+Great to be here.
+I'm excited about this too. It's a really interesting paper. This is a kind of cat and
+mouse attack and defense balance question that we've been looking at on this feed in a bunch of
+different ways at a bunch of different times over the last couple of years. And I think you guys have
+shed a lot of light on the state of play. Unfortunately, not in the most encouraging of
+ways, but hey, we want to have an accurate, up-to-date world model. And this work definitely
+kind of forced me to update mine a bit. I guess, for starters, let's give you guys a chance to lay
+the foundation. Set the stage here for what are latent space defenses? Why do we need them? Because
+they're not obviously the first form of defense that people have devised. So how did we get to
+the point where we need latent space defenses? What has kind of been the evolution of that
+line of thinking in recent times? And then we can get into what you guys have done to wreck the field.
+Yeah, absolutely. I guess I could take this first question. So the highest level latent space defense
+is some function, some defense that takes as input the latent representations of a model, so it's
+activations, and then gives you some output or even adjusts what the model is doing. So there's kind of
+two categories here. One is some kind of probe. So it reads the activations of a model and it tells you
+something about what the model is doing or something about its input, just gives you some information in
+a very generic sense about what the model is doing. The other type would be some kind of, you know,
+it reads the activations and then intervenes on the model somehow. So this is a bit like the
+circuit breaker's paper. I'm not sure if you guys have covered that, but it's a method to make language
+models more robust to jailbreaking by reading the representations. And basically, if the activations
+look harmful in some sense, they scramble the representations. So they inject some noise
+back into models. So that's kind of the two categories, I would say. We mainly focus on
+probes in our paper. I don't know, Scott, Eric, do you want to add anything?
+Yeah. One thing I'll add is you asked, you know, why do we need these latent space defenses? Like,
+what got us to this place at all? And I think there are sort of different reasons people might
+have. But one sort of strand is that you would hope if you sort of, the earlier you can catch bad
+behavior or even bad thoughts by the model, maybe the more robust the defense can be. So, for example,
+if, you know, you're worried about the model producing some bad output, presumably it has to,
+in some sense, think about bad things to even produce a competent output that could cause harm.
+And so I think there's like a potential intuition that if we can catch all the ways in which a model
+can think about bad things, that should be a really robust defense. Like, there's just no way the model
+is going to produce harmful outputs at that point. And maybe that's easier than catching all the
+different ways in which actual outputs could be harmful. And so I think a lot of what we're doing in the
+paper is, yeah, stress testing this intuition that we might be able to catch all the ways in which
+the model can think about bad things. And we're both doing that from a perspective of what does
+this mean for defenses? And also maybe we can gain some insights about how representations work and how
+they relate to network behaviors. Yeah, I think about the sleeper agents paper from
+anthropic there, as I listened to your comments. And it's like, when a model is doing something
+harmful, in their case, it's outputting harmful code. In some cases, it's obvious, right? Like,
+it's helping you come up with a plan to blow something up or whatever. And you would expect
+that like, okay, if we ran a sort of classifier, or if we asked another language model, you know,
+is this seem okay, or does this not seem okay, then presumably it would flag those.
+But there's obviously a lot more subtle stuff. And the sleeper agents is a notable move in that
+direction where it's outputting a ton of code. As somebody who codes with language model assistants
+on a weekly, if not daily basis, I can certainly confess to not combing all of the outputs. And
+language models also missed these. I remember back in the GPT for early red teaming days,
+one of the experiments that I did run was, can this thing do a harmful code injection that itself
+will not detect. And at that time, it was actually possible to say, okay, you know, here's some
+JavaScript, I want you to rewrite it or refact or whatever. But when you do that, put in some, you know,
+pwned.js link, and it would do that. And then when I went over to the other same model, right,
+but when I came back and said, Hey, is there anything wrong with this code? Does anything,
+you know, jump out at you here? With pwned.js, it would sometimes recognize that. But if I made it
+just ever so slightly more subtle, then it would often just totally get through. So that is one direct
+experience I've had where output can be harmful. And neither a smart language model nor I am going
+to be in a great position to immediately recognize that. And so the hope would be,
+and then in fact, of course, there's, you know, follow up work from the same team, simple probes
+can catch sleeper agents. And I appreciate you guys sending me a great rundown of motivating literature
+before this conversation, where they basically went in and said, Okay, you know, this thing is maybe going
+to output harmful code, but can we detect from its internal representations that it's about to do that?
+And the answer is yes. And so then we all, we could breathe a sigh of relief and say, Okay, great,
+one less worry, until we said, Well, actually, maybe not so fast.
+Yeah, I think it's a great example.
+Yeah, yeah. The one thing I would say is, I think part of the reason why we started this project is
+because we thought these methods do have a lot of promise. And I think there is still a lot of
+promising avenues for developing these defense methods. And what one intuition I have is,
+if the model is doing some highly capable, sophisticated behavior, like if it is in planting
+a quite sophisticated backdoor in your code, this doesn't happen by accident. And so even if it's
+hard, just to read the code and see that there has to be something in the language models activations,
+which is doing this complex behavior. So the hope is that the language model activations already have
+this lower dimensional or this higher level representation of the sophisticated behavior
+that we're seeing. And so the hope is that the place to look is in the models activations that
+this would have this representation of like, we know, by definition, it has to have some representation
+of the dangerous behavior. And so if we could learn to understand this, this type of idea went by the
+phrase eliciting latent knowledge at one point in the literature. Like we know that the model has
+to have knowledge of the dangerous thing it's doing. And if we could understand the activations
+well enough to read that knowledge, that that's a promising defense. So, yeah, so we were, I think
+we were very much motivated to do this in part because of our excitement for this type of defense.
+Yeah. And I would say I'm still excited about these defenses as well. I mean, we'll get into that later,
+but yeah, I agree with Scott, you know, our work kind of sheds light on ways these fences can fail,
+but at a high level for all the reasons Eric said, I'm still excited about this kind of defense.
+Okay, cool. I look forward to getting back to that optimism. Just let me bounce a how language models
+work off of you guys and see how this lines up with your own intuitions. I've seen a bunch of
+different studies at this point that seem to show a gradual abstraction maybe, or sort of working up is
+maybe, you know, it's kind of a layman's phrase, but gradual working up through maybe like the first
+80% of the model from tokens to concepts. It seems like early on, there's this sort of,
+you know, even simple, like de-tokenization, Milnand has got great examples of this where like
+Michael and Jordan, when put together, obviously mean a certain thing that neither Michael nor Jordan
+independently mean. And so you have to kind of figure out which of these tokens correspond to concepts
+that seems to happen relatively early. And then there's kind of, again, gradual working up toward
+higher and higher order concepts that broadly seems to peak late, but not at the very end. And
+then at the last, however many layers, depending on your model size are kind of a cashing out. Okay.
+Like now we've got to actually make the next token prediction based on this workup that we've just
+done through the first 80% or so. And you've got studies on this that we can get into in more detail,
+but presumably if you could just look at one place, you would kind of try to find that maximum higher
+order concept space and look there for these sort of intent type notions. Is that basically the
+worldview that you're working with? Or how would you complicate that story?
+I think it sounds very plausible to me, but at the same time, I probably don't trust it enough to
+be like, oh, we're going to specifically look in these later middle layers. When we're trying to do
+defenses, like probably we're just going to try different places, see what empirically works.
+Yeah. I like the intuition, but I sort of, I think we don't understand the networks well
+enough to just rely on that. Yeah, exactly. I agree. So there's this paper,
+refusal on language models is mediated by a single direction where they do lots of similar probing
+stuff and they do exactly this. They kind of look for some kind of refusal direction property
+and sort of, they look at it in all the different layers and then they empirically find that there's
+two thirds of the way through the model at certain token position was best. And that's probably a good
+thing to do. So that matches our intuition that this sort of higher level concept of refusal would
+be represented later on. In our case now paper, we just basically probed everywhere and did some
+validation as well. And that seemed to work great for what we were looking at. So yeah, I guess I agree
+with the high level intuition, but probably go just to validate it all empirically when you're actually
+making defenses. Okay, cool. Well, let's get into the many experiments that you guys ran. And this is
+a very thorough paper, 50 pages and multiple different defenses, multiple different kinds of
+attacks. Let's maybe start by just going at kind of the scenarios, like what are the kinds of things
+that we want to do? And then what have people developed to do those things? And then what is
+your setup? And what have you developed to break all of those defenses? I'll let you guys lay it out.
+Great. Yeah. I mean, so we can go through just the, we split the paper up into three case studies,
+so we can talk to those one by one. So that's kind of the tasks we look at of what your sort of
+defense is trying to do. So we have three case studies. The first is harmfulness monitoring.
+This looks at training supervised probes on the latents to detect whether if A, an input is a
+harmful query that was within some distribution of harmful queries, or if B, the generation is
+actually harmful. So the model is generating some harmful response to your query. So that's the general
+setup. So this is all I'm running a probe at test time. And the attacker in this case is going to
+be, they've taken a pre-trained model and they're going to be doing some input space perturbation.
+So either they're going to add an adversarial suffix to it, to jailbreak the model into producing
+something harmful with hard tokens, with actual tokens. Or we also looked at a relaxation of that,
+where you add a learnable embedding suffix. So a soft prompt at the end.
+So that's the general sort of attacker defender setup for that section.
+Hey, we'll continue our interview in a moment after a word from our sponsors.
+Even if you think it's a bit overhyped, AI is suddenly everywhere. From self-driving cars,
+to molecular medicine, to business efficiency. If it's not in your industry yet, it's coming,
+and fast. But AI needs a lot of speed and computing power. So how do you compete without costs spiraling
+out of control? Time to upgrade to the next generation of the cloud. Oracle Cloud Infrastructure,
+or OCI. OCI is a blazing fast and secure platform for your infrastructure, database,
+application development, plus all of your AI and machine learning workloads. OCI costs 50%
+less for compute, and 80% less for networking. So you're saving a pile of money. Thousands of
+businesses have already upgraded to OCI, including Vodafone, Thomson Reuters, and Suno AI. Right now,
+Oracle is offering to cut your current cloud bill in half if you move to OCI. For new US customers
+with minimum financial commitment. Offer ends March 31st. See if your company qualifies for this
+special offer at oracle.com slash cognitive. That's oracle.com slash cognitive.
+What does the future hold for business? Ask nine experts and you'll get 10 answers.
+Bull market? Bear market? Rates will rise or fall? Inflation's up or down? Can someone please invent a
+crystal ball? Until then, over 41,000 businesses have future-proofed their business with NetSuite
+by Oracle, the number one cloud ERP, bringing accounting, financial management, inventory,
+and HR into one fluid platform. With one unified business management suite, there's one source of truth,
+giving you the visibility and control you need to make quick decisions.
+With real-time insights and forecasting, you're peering into the future with actionable data.
+When you're closing books in days, not weeks, you're spending less time looking backward and
+more time on what's next. As someone who's spent years trying to run a growing business with a mix
+of spreadsheets and startup point solutions, I can definitely say, don't do that. Your all-nighters
+should be saved for building, not for prepping financial packets for board meetings.
+So, whether your company is earning millions or even hundreds of millions, NetSuite helps you
+respond to immediate challenges and seize your biggest opportunities. And speaking of opportunity,
+download the CFO's Guide to AI and Machine Learning at netsuite.com. The guide is free to
+you at netsuite.com. That's netsuite.com. Yeah, it sounds good. When you speak of a probe,
+how advanced or involved those tend to get? When I think of a probe classically, I think of like
+just kind of a one layer linear projection, but I'm not sure if that's all you're looking at,
+because I did see multiple mentions of MLPs in the paper too. Yeah. So, in general, our probes are
+always very simple. So, either a logistic regression or a dot product onto a single direction or a very
+small MLP, but really trivial to train. Or we also look at OOD detectors, which I'll let Eric talk about
+more in the backdoor section. The last thing we do look at, which is a bit more involved, is we do use
+SAEs in the third section, which yeah, they're a lot more involved and we'll get to that later. But in
+general, our probes are fairly simple. Yeah. So, our second case study is backdoor detection,
+which I'll let Eric go through. So, basically, in like Luke described, in this harmfulness
+section, we look at attackers that try to jailbreak the models or they add some suffix and then try to
+get harmful behavior out of the model. A different threat model you could have is that someone might
+poison your training data. So, like all these models are trained by just collecting data from the
+open internet. So, someone can just upload something to a website and then eventually it's going to be
+scraped and end up in the training data. And one thing you could try to do that way is train the
+model to, for example, answer harmful requests if you give it a certain trigger phrase. So, you could
+try to get lots of other behaviors into the model, but that's one of the ones we look at.
+So, basically, to simulate this, we fine-tune a model so that normally it refuses harmful requests,
+but then if you give it a certain trigger phrase, then it just becomes helpful only and does
+whatever you want. And so, it's still a similar threat model in the sense that we're looking at
+responding to harmful requests, but the attacker is now poisoning some of the training data or in one
+of our experiments actually directly fine-tuning the model. So, that would be more if you're
+considering open-weight models where an attacker could actually control the training process.
+And then we're again studying now from a defender perspective, how well could you defend against
+these backdoors in the sense of detecting them at runtime? So, basically, you want to distinguish
+between normal inputs, which could be harmful, could be harmless, but the model is hopefully going to
+refuse them. And on the other hand, inputs that are harmful and that contain this trigger phrase,
+so the model is going to give you a helpful only response. And yeah, then we again study these
+different types of probes that are just meant to detect harmfulness and we sort of check, do they work
+against these backdoor models instead of against jailbreaks? And we also have some experiments
+like Luke mentioned with out of distribution detectors. So, what that means is we sort of
+try to learn what do activations look like on normal inputs that don't have this trigger.
+And then we just try to notice that activations on inputs with the trigger look like very different
+in some sense, sort of in a different place in the latent space and hopefully that way we can flag
+them as just being out of distribution. And we also look at some defenses that were developed
+specifically against backdoors, but that are sort of based on a similar idea of detecting
+things as out of distribution.
+And, you know, in general, we're not coming up with any new fancy defenses here,
+except for in the very last part of the papers. These are all kind of canonically used in the
+backdoor literature and they're similarly detected in harmfulness. Classic techniques taken from other
+papers, basically. So, nothing too new on our sort of detection side.
+Yeah. And one other thing I'll say on backdoor. So, what I described is like the literal backdoor
+threat model where you're worried about an attacker poisoning your data. I'm also very interested in
+different threat model like scheming, deceptive alignment, alignment faking, that I'm sure you've
+talked about in previous podcasts. And so, part of our motivation here is also the sleeper agents
+paper that you mentioned. What they do is they use backdoors trained with data poisoning as a model
+organism for a model that might naturally be a scheming. Because both the backdoors and the
+scheming models, you have this property that on normal inputs, the model is going to behave like
+you want it to. But then on some inputs that you might rarely get during deployment, the model is
+going to do something very different. And so I think hopefully our experiments can also inform
+these model organisms of scheming and how you should study detection methods if you want to test them
+on those model organisms. And then finally, in our third sort of main case study, we zoom back in
+to a sort of very specific but more complex behavior we want to detect. So we look again, you've just got
+some regular model and the attacker was trying to get the model just to write SQL. And the defender, they
+just want to detect when the model is writing SQL from its latence. And the motivation for this is really,
+maybe as we'll get later, is that this task of writing correct SQL is quite difficult, at least
+for small models that, you know, really perform it, you're solving some difficult database querying
+problem. So we can use this as a sandbox to study as the attacker is trying to evade the defender,
+detecting a behavior, how does it affect the model's performance actually at this complex task,
+which when it comes to outputting harmful things, we can't see as much because it's very easy to set off
+sort of a harmfulness scoring function. So yeah, that's our third case study. And what unifies all
+of these, and just to keep in everyone's head, is the whole idea of all this is we're studying
+when can an attacker get around a latent space defense. And maybe as we'll get to, we call the
+activations that get around latent space defenses in all these scenarios obvuscated activations, hence the
+name of the paper. But that's what sort of ties all together, looking at different attack and defense
+settings, you know, different tasks, but that's the unifying thing across all of this.
+And maybe I want to add to that, like, what it means to get around a latent space defense of
+there, there are always two components, like all these latent space defenses are meant to detect
+some behavior or some semantic property. And so what the attacker is always trying to do is get the
+model to exhibit some behavior to produce some kind of output, like for example, harmful content,
+like instructions for building bombs and stuff like that. And at the same time, make some detector
+say that everything is fine. So if in traditional attacks, you only have this first component,
+like you want to get the model to produce some behavior. And basically what we're doing is we have
+the second totally different component that's saying we also want to get the model to do the behavior
+while having activations that sort of look different from what a detector could recognize.
+So let me just take a second and make sure I have a good intuition for each of these defenses.
+And then we'll continue into building our intuition for how you're then attacking each of the defenses.
+I think the harmful scenarios are pretty well understood, hopefully pretty intuitive. The backdoor
+one is definitely interesting there in as much as in a real world scenario,
+you don't even know if the model has a backdoor, right? So you're in sort of a doubly ignorant
+position. Supervised probes, pretty easy to understand in that case. And correct me if this is
+wrong in any of these experiments, but it seems like to do this work, you have to have access to
+definitely the model, right? Because you need to be able to pull the activations out and then run
+them over to your defense and have those activations then worked up by the defense.
+But you wouldn't necessarily have to have full access, like you could attack a sort of gray box
+scenario this way, right? Like if you have a content, I'm thinking of the OpenAI content moderation API,
+where it does return numbers for all the different categories that it evaluates you on. And I think that
+is like in principle enough, right? Even if you in that case, they're running it, but just the fact
+that they're giving you the responses would be a little bit jumping ahead. But this is a question
+I want to make sure I'm personally clear on just knowing the scores that the defense is giving you
+back and being able to like iterate against that is enough, right? In principle run a lot of these
+obfuscation attacks.
+So, so throughout the paper, we look at, so first of all, yeah, you're absolutely correct. If you're
+going to train these defenses, the defendant is access to their latency. You know, maybe there's
+a way to transfer some probe train on one model to another, but, but we don't look at that in general,
+we're going to say the defender, it's their model, they have access to the thing. For the attacker,
+we look at a range of model access affordances all the way from white box. So they're allowed,
+yeah, gradients, the output of the probe, the output of the model exactly,
+to sort of gray box and in the backdoor section, even black box. So the strictest affordance we look
+at in the harmless section is gray box. And by that, I mean, the attacker has access to the logits
+of the model and has access to the probe output, but no model internals. And you know, they're getting
+information about the model internals from the probe outputs, but yeah, so they can't do gradients
+or anything. And we run a hard prompt base attack on this and we find it works. And as long as the
+attacker is getting some training signal on A, getting the model to do what they want and B,
+fooling the probe, right? That dual objective. I imagine you'll be able to train something with
+enough compute to do this. So, but the hardest thing we try and I can confidently say in the paper
+is we looked at having all the logits and having the probe output. So you could imagine a setting
+where, you know, you only get the top five logits or something, but you have access to logit bias.
+So this lets you get some training signal. And although that's not something that we looked at,
+there are other papers that do text-based attacks that find that's a good enough signal for getting
+a model to do something. So yeah, but you need training signal on both of these objectives.
+In the backdoor section, I'll let Eric go about this sort of fully black box thing we looked at.
+Yeah. So in the backdoor section, we have sort of two different settings. One of them is
+the attacker actually fine-tunes the model. So this would be realistic, for example, if, you know,
+someone might be fine-tuning Lama and then they are uploading their fine-tuned version of Lama and
+people try it and it seems great. And so people want to use that fine-tuned version. But in principle,
+the attacker could have fine-tuned the backdoor into that version that ends up doing something bad once
+people actually deploy it. And so that's sort of a fully white box setting where the attacker
+actually controls the training process. And then we also have this black box setting where the attacker
+only poisons training data. So this is like uploading something to the internet, like I mentioned,
+and then OpenAI is going to scrape it and put it in the training data. So that's, of course,
+a much weaker form for the attacker. And we look at both of those. Yeah, you could also use both of
+those as model organisms for scheming. And I think, you know, they have drawbacks in different ways if
+you want to use them as model organisms. Yeah. Okay. So let me take one step back again. I got
+a little bit ahead of myself there. But just to make sure we've got the setup clear for everybody.
+You want to detect if the model is doing something harmful. You want to detect if it has a backdoor.
+You want to maybe just detect like any random behavior or mental state, so to speak, that might be of
+interest, such as the model is going to write SQL code or, you know, any of potentially millions of
+other things that you might have an interest in detecting. The defense looks at these latents.
+There's these three different ways to do it. The supervised probe is the easiest to understand
+because you can just create a little data set and say, okay, here's some harmless queries and some
+harmful queries. And we're going to train you to classify those appropriately. So that's reasonably
+easy to understand why that would work. Sparse autoencoders, we've covered in multiple episodes,
+so I'll sort of fast forward through that. But long story short, you've got a sort of untangling
+of the densely packed latent space into a sparse, but much wider latent space. So instead of maybe
+thousands of individual positions in an array, you've now got maybe millions, but most of them are going
+to be zero and just a few things are going to be lit up. And it's kind of a miracle that those train as
+well and seemingly as consistently as they do. I definitely wouldn't really have guessed that
+before everybody seemed to be able to reproduce it, but there it is. So now we have these sort of
+sparse concept representations. Those can also be auto labeled. So you can have like
+Claude circle back on itself and say, okay, here are the passages that led to this particular position
+in the sparse representation being most active. What do you think that represents? And it can do a pretty
+good job of saying, Oh, okay, I think that means we're going to write SQL code now, or whatever.
+And once you have that, then in theory, you could even like run your whole model through that you
+can actually force the model through the, the SAE. Probably in practice, you more often would run the
+model normally and just look at the SAE activations and say, Okay, if you know, the SQL thing is lighting
+up or whatever, then we want to take some action depending on the rules that we have.
+I feel good about all that. How about the backdoor detection? Can you give me a little bit more and
+maybe the out of domain things as well? I guess out of domain, I could imagine being simple where I
+might just say, here's a bunch of stuff that seems normal. Here's a bunch of random noise, like tell me
+the difference. There's probably a little more to it than that. And especially I'm interested in
+how does the defense work? If I don't even know if there is a backdoor, I have no sort of concept of,
+of, you know, what the structure of that backdoor is?
+Yeah, so maybe I can give an example of these auto distribution detection methods that we use. So
+I would say the simplest one is we fit a multivariate Gaussian to activations of the model. So for
+example, you could take some activations on the final token in some layer or do something to pick
+some activations out of the model. And then you collect a bunch of these on benign inputs that
+presumably don't have a backdoor trigger. Like you can just write a bunch of benign inputs that you
+fully trust. And then you basically try to find the mean of all these activations and you find the
+covariance matrix. And then once you have this mean and covariance matrix, now for any new input,
+you can compute the analogous activations. And you can sort of say how far away is it from the mean
+if you normalize it by the covariance in a certain sense. So does it deviate from the mean in a
+direction where I've seen a lot of variance within the benign distribution? Or is it different from
+the mean in some direction that usually I don't see any variance in? Or is it just extremely far away
+from the mean compared to what I usually see? So the same way you can talk about, you know,
+how many standard deviations is some sample away from a mean in one distribution? You can do something
+analogous here in many dimensions and basically say, is this something that I should see like
+only one in a trillion times? And if it is, then presumably it's from a very different distribution.
+And then you can set some threshold and sort of flag everything as potentially dangerous,
+that's out of distribution. Of course, that could be overly aggressive, like you might flag things that
+are just very different from your benign distribution, but are still totally fine. But the hope is that
+anything that contains a backdoor trigger and so on would be out of distribution and you would flag it.
+And then, yeah, like you said, you don't know whether the model actually has a backdoor or you
+don't know whether your model is actually scheming. The hope would be that if your model isn't actually
+scheming or doesn't have a backdoor, then you're just never going to flag anything or you're sometimes
+going to flag things, but sort of very rarely. And you can still just keep running this on the
+suspicion that maybe there's a backdoor. It is kind of weird because, you know, you're never going to
+find out basically, like if everything goes well, you just keep running this out of distribution detector for the
+entire lifetime of the model. And the only times it fires is a false positive. But yeah,
+you're sort of never sure whether at some point it's going to catch a real case.
+Hey, we'll continue our interview in a moment after a word from our sponsors.
+2025 is shaping up to be a crazy year, and I'm getting a lot of questions about how people should
+manage their careers. Increasingly, my best advice is to go ahead and do what you've always dreamed of
+doing. If that involves starting a business, you should know that there's never been a better
+time than now, and there's never been a better platform than Shopify. In the past, being a small
+business owner meant wearing a lot of hats and a lot of time spent doing things you didn't necessarily
+want to be doing. Being your own marketer, accountant, customer service rep, and more.
+Today, it's increasingly about focusing your time, energy, and passion on making a great product,
+and then delegating all that other stuff to AI. Of course, to get quality work from AI, you have
+to provide the right context, structure, and examples. And that's actually a big part of what
+makes the Shopify platform so powerful. Shopify has long had thousands of customizable templates,
+and their social media tools let you create shoppable posts so that you can sell everywhere
+people scroll. Now, they're building their own AI sidekick, Shopify Magic, designed specifically for
+eCommerce. All this makes it incredibly simple to create your brand, get that first sale, and manage
+the challenges of growth, including shipping, taxes, and payments, all from a single account.
+And if you need something special, Shopify also has the most robust developer platform and app store
+with over 13,000 live apps. Case in point, I'm currently working with my friends at Quickly to build
+an AI-powered urgency marketing campaign platform for eCommerce brands, and they will be launching,
+you guessed it, exclusively on Shopify.
+Establishing 2025 has a nice ring to it, doesn't it? Sign up for a $1 per month trial period at
+shopify.com slash cognitive. Cognitive is all lowercase. Go to shopify.com slash cognitive to
+start selling with Shopify today. That's shopify.com slash cognitive.
+Trust isn't just earned, it's demanded. Whether you're a startup founder navigating your first audit,
+or a seasoned security professional scaling your GRC program, proving your commitment to security has
+never been more critical or more complex. That's where Vanta comes in. Businesses use Vanta to establish
+trust by automating compliance needs across over 35 frameworks like SOC 2 and ISO 27001, centralized security
+workflows, complete questionnaires up to five times faster, and proactively manage vendor risk.
+Vanta can help you start or scale your security programming by connecting you with auditors and
+experts to conduct your audit and set up your security program quickly. Plus, with automation and
+AI throughout the platform, Vanta gives you time back so you can focus on building your company.
+Join over 9,000 global companies like Atlassian, Quora, and Factory who use Vanta to manage risk and prove
+security in real time. For a limited time, listeners get $1,000 off Vanta at Vanta.com slash revolution.
+That's V-A-N-T-A dot com slash revolution for $1,000 off.
+So interestingly, in that description, I didn't hear anything about learning. That's basically a
+classically statistical analysis that just says we can characterize the distribution of activations.
+And if we see anything that seems sufficiently outside of the distribution that we've described,
+then flag it. Is that right?
+Yeah. So we also have different types of audit distribution detectors that you have to sort of
+learn in the sense of using gradient descent. For example, we trained these variational autoencoders.
+One way to think about this is if you fit this mean and covariance matrix, you're sort of
+fitting this very simple Gaussian density function to the distribution of benign data. And you can
+parameterize and fit some more complicated density or something sort of like a density, for example,
+with a variational autoencoder or lots of other methods. And so I think Gaussians are simple enough
+that there's a closed form solution for the mean and covariance matrix, but it's not fundamentally
+different from fitting something more complicated.
+Gotcha. Okay. Interesting. So given all that, we've got multiple different things we might want
+to be defending against, multiple different techniques, as we've just described, you guys
+then take the LAMA 8B instruct just to be explicit about what model you're using. And we've already
+touched on a little bit, but the core approach, and this is we've seen this like in lots of different
+areas is the compound loss function where you're basically saying, I need to preserve my actual
+useful behavior. And at the same time, I need to do this other thing, which is essentially minimize
+the score that the detector gives that this particular state is the bad state or the state of
+interest. Is there anything more that we should understand? I mean, this has definitely been a motif,
+you know, that I kind of harp on, because it's, you know, the sometimes say like,
+the clever loss function is like, you know, so much of so many of these projects. Is there anything
+more that we should understand about that loss function? Or is that a well enough established
+pattern at this point that you kind of felt like, yep, we'll do this, and it'll probably work and sure
+enough, it did. One of the key points I would make here is that the data set is also critical. If you're
+thinking about the performance of the real world system, I think loss functions get a lot of
+attention. And the data sets are relatively underrated, certainly in academic circles.
+I've seen that pattern. So we are one point I would make is whatever we're doing here,
+for example, if we're doing a density estimation, like Eric said, then the actual examples that you
+use to build your density estimator are going to critically determine what's flagged as out of
+distribution, because what the density estimator is doing is it's learning to say, these are
+examples that look like the examples that I saw in the data set I was fitting. So you would need to
+make sure that you have a diverse enough, it's a double edged sword, because you know, if your
+density estimator was just a single data point, you could easily tell, okay, any added distribution
+input that is not the single data point, let me flag that, and certainly the model then wouldn't be
+scheming against you. But of course, you wouldn't be able to do any behavior. So you need a diverse enough
+data set of behaviors to get a good density estimator. And so the whole output of your
+density estimator will depend on data set you used. And likewise, for harmfulness detection,
+if you're training a classifier to try to detect harmful inputs, the hope is that you can learn
+some general representation of harmful behavior. So that if there's a new harmful behavior at test time
+that the model is trying to do, that your classifier will have learned that pattern. It's possible
+that harmful physical instructions, maybe the representation is similar, but somewhat different
+from harmful cybersecurity instructions. Or maybe that's somewhat different from other uses of the
+model that you might want to prohibit. And so the hope is that you have a general enough data set that
+you can pick up on these higher level concepts of harmfulness that generalize across all these
+different categories. Yeah, exactly. So I think the data is critically important, as Scott said.
+But yeah, the loss function for our attacks is fairly simple. It's just some weighting
+of the two objectives of the attacker. We call this thing an obfuscation attack if you're trying
+to optimize a loss that roughly looks like this, that has this dual objective. I guess the only slight
+bit of nuance to it is how you weight those two components. But that's, yeah, you know, we have a
+weighting term for how much you care about, how much your loss is caring about the model emulating
+the behavior you want, e.g. outputting harmful stuff, being jailbroken, and how much you care
+about fooling the probe. But yeah, it's just a fairly simple weighting. So simple kind of attack,
+what we look at is all the results of the property of the activations and things like this we get when
+we run such a fairly simple loss function for the attack. Well, yeah, the other thing I'll say is
+what this obfuscation loss term actually looks like. So the one that's meant to bypass the probe,
+because we have the harmfulness case. And in that setting, we're sort of assuming that the
+defender builds some probe, and then the attacker is going to try to find a suffix to attack it. So
+in that case, it's pretty simple what the loss term is. Basically, it's an adversarial loss term.
+You're trying to make the probe say that everything is harmless on actual harmful examples with the
+suffix. But then we also, in the backdrop setting, the order in which things happen is a bit different.
+So in that case, the attacker will have to train this backdoor model or poison the data. And only
+after the model is fully trained is the defender going to, for example, fit this mean and covariance
+matrix like I mentioned, because it doesn't really make sense to do that before the model is fully
+trained, you will do it at the end of everything. And so because the attack is happening at training
+time, that means the attacker can't attack the actual monitor yet, because that doesn't exist yet.
+So in that case, what the attacker does is they train their own copy of the monitor alongside the
+model, at least in one of our setups, and sort of try to attack their own copy of this monitor.
+And then they have to employ some tricks and hope that it's going to transfer to the monitor that
+the defender actually trains at the very end. And apparently, you know, this ends up working really
+well. But that means the actual attack setup is a little bit more complicated. Yeah.
+Yeah, that's surprising. I want to dig into that a little bit more. But let me come back to a couple
+just intuitions I wanted to develop a little bit better. One is on the weighting of the loss function.
+My instinct would be to say, okay, you already have a trained model, right? So like the first term is
+keep doing a good job. In theory, that should be satisfied from the beginning, right? So what we're
+really trying to do is now change the internal activations in such a way that fools the probe
+while still doing a good job. Okay, got that. If I were to turn up the weight on
+the obfuscation or the sort of beating the probe term of the loss function,
+my instinct is that I would probably train faster and beat the probe faster, but with
+more degradation of just quality of model outputs. Whereas if I kept that parameter low,
+I would need more training steps to get the thing to work. But maybe I would benefit from having
+better preserved behavior from the model. Yeah. So I guess there's a couple of things here. So one is the
+behavior the attacker wants may often actually be very high loss for the current model. It may be
+totally obvious. So for example, they want to jailbreak the model there. Yeah. I don't know if
+we sort of ever explicitly said this yet. So loss function looks like, you know, one part is you're
+trying to match some type of outputs on the behavior of the model. And the other part is something about
+the activations to obfuscate them to fool the probes. So this first part, if I'm trying to jailbreak a
+model, I'm getting its language modeling loss and a bunch of harmful completions. That loss will actually
+be really high to begin with because the models are safety trained. So the behavior that the attacker
+is trying to elicit from the model may actually be high loss to begin with. Although you are correct
+in say in the SQL setting, that will be fairly low loss to begin with, right? So there is totally these
+different regimes where you're trying to get the model to do something it wouldn't normally get it to
+to retain its current behavior whilst messing up the activations. So yeah, that's the first point.
+The second point is, yes, I think basically your intuition is correct. That if I really
+play up this obfuscation loss, the second term, which is either trying to fool a probe or some
+proxies for it, yeah, you end up just be able to do whatever you want with the activations and
+never preserving any kind of model behavior and you will get degradation in what the model is doing.
+Yeah. So I think your intuition now is absolutely correct. The only other thing I'll add about that
+second term, maybe this goes back to the previous question a bit is, yeah, we said it's simple,
+you know, say you have access to the probe, you're just going to have that obfuscation loss term,
+B to fool the probe, the activations are going to fool the probe. Some of those interesting results,
+in my opinion, of the paper is when you don't have the probe and you have some proxy, maybe it's a
+different probe, maybe it's an OOD detector there and how, when I fool probe A, which I used to train,
+my attack actually transfers to fooling other probes that I never saw. So that's just another
+bit of nuance to add about, I don't know whether we call this part of the loss function or not,
+but yeah, it is how you, what you're actually putting in there as your obfuscation loss term.
+Yeah. Yeah. The generalization of this is quite interesting. We did a full episode some months
+ago on the universal jailbreak. So a decent amount of my understanding comes from that.
+Yeah. Maybe I'll save some of the more conceptual stuff for a little bit later,
+but just one more fine point on the loss function, or I guess maybe more of the training set there.
+Are you continuing to have like a mix of benign and harmful stuff during that training process?
+Because if you were just doing harmful, then I would also wonder like,
+is the normal behavior of the model preserved? Are you taking any special steps to sort of
+preserve the overall generally helpful assistant character of the starting model?
+Yeah. So this really depends on what the attacker wants. In the harmfulness section,
+the attacker is, you know, they've got some model, they just want to add adversarial suffix,
+which is going to undo the safety training and get a helpful only model, right? So in this case,
+it is sufficient. And what we do is the attacker is trained with a data set of just harmful stuff,
+harmful completions. So that's just, you know, in that setting. In other settings, we look at,
+yeah, maybe you need to mix in other data. It's all about the definition of what the attacker wants
+the model to do, right? So if that behavior is narrowly defined by say, just harmful responses,
+then that's going to be that training data set.
+As an example, in the backdoor section, what the attacker wants is this conditional policy of
+refusing harmful requests, behaving like the developer intends on most inputs, because if the
+model was just constantly harmful, then it would be very easy to tell that there was something wrong.
+So that's sort of part of what the attacker wants is that the model retains its benign behavior most of
+the time, except when the trigger is there. And so, yeah, when we evaluate whether our attack worked,
+part of what we look at is, is the model still benign on requests without the trigger,
+and only jailbroken on those requests with the trigger?
+Yeah, that makes sense. And I guess I was kind of jumping ahead without realizing it,
+because in the adversarial suffix, the sort of simplest case, if you're the attacker, you only
+need to use that suffix if you want certain behavior, right? If you're not trying to break anything,
+if you're just trying to use the model in a normal way, you would still have the ability to do that,
+because you're not actually changing the model weights in that scenario anyway. You can just
+apply the suffix when you need to. Okay, so let's do the walkthrough now of the three different
+attack types. You've got the adversarial suffixes, the data poisoning, modified tuning. You've alluded
+to these, but I think there's enough here that it bears kind of a straightforward walkthrough. So let's do that.
+Yeah, absolutely. So I guess we'll do the same split, Eric. I'll take the first one of these.
+So yeah, remember, we've got a defender who's running some latent space probe to detect when
+the model is going to do something. Our attackers are trying to get some kind of behaviors out of
+the model. And they've got this dual objective, pull the probe, get them all to do the thing they
+want. And they have different attack vectors to do this, I think is what we call them in the paper.
+So one is the adversarial suffix. And really, these attack vectors are sort of coupled with what they
+want to do. So if I'm just trying to jailbreak a model, it would be great if I can just postpend
+some tokens or something to my harmful query that will lead to a harmful response. So yeah,
+the adversarial suffix, we look at two types. One is the attacker is learning a set of hard tokens
+that they will postpend to a harmful query. And that will elicit a harmful response to the model
+and fool a latent space probe. The other type of attack factor we consider for the
+harmfulness monitoring section is a relaxation of that, which is you're postpending an embedding
+matrix that you're learning, a soft prompt. So that is just, you take your harmful query,
+you embed it, and then you're going to add in this learned adversarial embeddings to the end.
+So this is a strict generalization. You could only do this if you have white box access,
+but it's also really good for worst case analysis. That is, if you can't get the model to do something
+with a soft prompt, I'm pretty sure you're not going to be able to get it to do with a hard prompt.
+You know, maybe there's some weirdness about the optimization procedure. Yeah. So we do see,
+you know, in other papers, there's a soft prompt, the embedding suffix uses a kind of worst case
+attack factor. Yeah. So that's what we look at in the harmfulness monitoring section.
+Hunter for Eric for the backdoor attack vectors.
+Yeah. So in some sense, it's similar. We sort of have a weaker attack vector that you can do with
+black box access. Then we have the stronger attack vector where you need white box access that, you
+know, corresponds to some realistic threat models, but also can just serve as more of a scientific or
+worst case experiment. So the weaker one is data poisoning, which is, you know, the standard threat
+model for most backdoor work. And that's also what the sleeper agents paper use. So what that means is
+the, you have some data sets, like what we're basically finding them all to do is just respond
+to user requests while refusing harmful requests. So that's pretty similar to what the model is already
+trained to do. It can basically already correctly do this from the beginning. And then an attacker
+can poison a small fraction of the training data set, which means maybe we let them insert some
+trigger into the input, and then they can also change the intended completion the model is supposed
+to give. And then we sort of train on this entire data set that has lots of examples of how the model
+is normally supposed to behave, but also some examples with this trigger and the behavior that the
+attacker wants, but that, you know, the defender wouldn't want. And so for that part, the main thing we
+study is the effect of the number of poison samples, sort of how many examples with the trigger do you
+inject into the data set. And also does it matter what the trigger is? So for example, we start with
+this baseline that's inspired by the sleeper agents paper, where the trigger is literally just the
+string deployment, which is just a standard for, you know, some very simple trigger. And then we look at
+this more complicated trigger, where for every request, we prepend some fictitious biography of
+the user, sort of, like, you could imagine this is like just context that we're giving the model
+about the current situation. And then like the trigger is going to be a biography of software
+engineers. So basically, we fine-tune the model to behave differently if it gets a biography of a
+software engineer than if it gets some other biography, or that's what the attacker is doing. And this is
+just meant to test what happens if the trigger is not just a single token or a single string,
+but instead this more complex semantic property, which, you know, if you're again thinking about
+scheming model organisms, then the cases where a model would suddenly misbehave if it was scheming
+would not be the cases where there's a simple string in the input, they would instead be cases where
+there's some interesting semantic property that's satisfied, like it's a good opportunity to misbehave
+right now. And of course, the thing we're doing is still much simpler than that, but it's supposed
+to be moving in that direction. So that's why we wanted to test this complex trigger. So that's the
+data poisoning setup, which, yeah, the attacker only sort of needs this capability of inserting some
+training data into the data set, which might literally just mean uploading something to a website.
+And then we have this model fine-tuning attack vector where the attacker just controls the entire
+training process. So basically we let them do whatever they want to produce a model somehow.
+And then at the end of this, they sort of hand the model to the defender, and then the defender can
+train their probe or out of distribution detector and try to detect backdoors. And the defender can
+also do stuff like, you know, test that the model behaves correctly on most inputs. So the requirements
+on the attacker here are they have to produce some model that is sort of unsuspicious on most inputs,
+and that misbehaves on inputs with the trigger in such a way that the defender doesn't notice that,
+or they can't flag that with latent space monitor, but they can do whatever they want to produce that
+model in the first place. And then the specific approach we look at is the attacker fine-tunes this
+model, same as before, except there's now this additional loss term that sort of trying to directly
+attack a latent space monitor. This is the thing I described earlier, where the attacker trains their own
+copy of a latent space monitor, attacks that copy. And, you know, you couldn't do that with data
+poisoning, because you have to actually add this loss term into the training process. The defender
+wouldn't have any reason to include a loss term like that. But if we give the attacker control,
+they can do stuff like that. And of course, that's a much more powerful attack, because it's fully
+white box, and you can directly attack a monitor instead of just changing what the trigger is.
+Yeah, so the who acts last thing here is really important, right? I mean, it's one thing to say,
+somebody has a model, and somebody has a defense, and I, given access to those things, I can find a way
+to get the model to do what I want without setting off that defense when I'm the last actor. That is
+like, reasonably intuitive. And I guess, you know, less scary than the idea that I could do this,
+and then still give the defender the last move to try to train their defense and put them in a position
+where they can't successfully do it. I have a much better intuition for how the first one is working
+than the second one, because I'm like, in that first case, okay, you know, you detected some,
+you know, not normal behavior, but you detected the, you know, the abnormal behavior in the context of
+normal behavior. And then with these obfuscated attack methods, you're kind of saying, all right,
+can I find another place in the latent space where I can sort of still get what I want, but be far enough
+from what it normally looks like to get that? And turns out there is. So I've, you know,
+I think they're interesting questions around like, what does that imply about models in general?
+You know, one theory that comes to mind is, does that mean that they're like under trained still?
+I know we've, you know, constantly been moving over the last few years toward like more tokens
+relative to parameters in training, right? From original scaling laws to chinchilla scaling laws
+to llama being like, well, it's actually, you know, go even farther because inference is where most of
+the compute is. So who cares, you know, if it's not optimal on the training side, we got to account
+for inference. Okay, fine. But when you see this sort of thing, does that make you think that like,
+still, maybe there's just like a lot of under training going on, like that there might in
+fact, just be a lot more space in the models to absorb even more things in the future. And
+couldn't you imagine a situation where, if like, they had trained Llama 8B on 100 trillion tokens,
+instead of 15 or whatever, that maybe these like, spaces would all be full. And some of these things
+might not work anymore. I am very much speculating there, obviously, but how would you react to those,
+perhaps irresponsible speculations? Yeah, I think it seems very plausible that there's in some sense,
+a lot of latent space that the model never naturally uses. I don't know if that should
+indicate any kind of under training, because it's not clear that sort of the bottleneck on model
+performance is literally the volume of latent space that it has available. Even if we say like,
+maybe the volume up to some distance from the origin, there's sort of a finite amount of that,
+but there's a lot of volume there. And what the model has to do is it has to be able to represent
+things in a way that it can then use for further processing. So the way I would think about this,
+maybe is, if you think about how many different things can the model store, how much information
+is there? It's not literally about how many bits can you cram into these activations. It's also about
+how far apart the two points, different concepts have to be such that you can later read them off with
+maybe just a linear map or some pretty simple function. And you don't want to have too much
+noise interference there. So as I think, if you think about superposition and SAEs and so on,
+there's definitely an intuition that one of the bottlenecks on a model might be how many dimensions
+does it have to work with? And it has to make some tradeoff between how many concepts can it store and
+how much interference there's going to be. But this is sort of not literally about the volume that's
+available. I think it's more about the numbers of directions that are close enough to orthogonal
+that it can read them off without too much interference. So for example, with SAEs, one of
+the key things is that these features are sparse. So most of them are not going to be active most of
+the time, which automatically means there's some unused volume where half of all the features are
+suddenly active. And that would maybe take you to some point that the model doesn't naturally realize.
+But it's not really the model is inefficient because if it was trying to use all those points,
+it couldn't actually disentangle things anymore. So yeah, that's also all just speculation. But my
+guess would be that sort of literal volume is not the bottleneck here. And that means there can
+simultaneously be a lot of unused space. And that doesn't have to mean it's under trained.
+Yeah, that's good analysis. Do you think there's anything to be said about the
+relative, like dimension of the model versus the sort of parameters at each layer, I'm still kind
+of just grasping at the same intuition, I think here, but basically, if there's a lot of unused volume
+that you're able to move into, could you does that suggest that, you know, some more optimal regime
+might be like smaller volume, more parameters?
+So I mean, maybe one intuition is, you know, you have roughly speaking, we have quadratically
+many parameters in the sort of model latent space dimension. And if you think about just how much can
+the model know or learn just information theoretically, that's going to scale with a number of parameters,
+where sort of the volume is going to scale exponentially with the latent space dimension.
+So there's going to be a lot of volume relative to how much capacity the model actually has to represent
+things. I think if you want to sort of increase the number of parameters relative to the volume,
+I feel like you would just have to have a very different architecture. It's not really clear
+how you do that if what you're doing is like linear maps operating on vector spaces. I'm not sure
+if that answers your question.
+Yeah, I think at a high level, I'm really glad that the paper is servicing these kinds of questions,
+because really, we see the paper is doing two things. One is is looking specifically at defenses
+and beating defense and things like this. And the other is just trying to reveal insights about
+the science of how models represent things and their representation space. So I think, yeah,
+I want to draw sort of attention, I guess, to a couple of experiments that might help build our intuition here.
+So about this sort of volume point. So one is the fooling OOD detectors. So we find, for example,
+that we can create adversarial suffixes that jailbreak a model and induce activations that
+fool OOD detectors. So that means basically that there are harmful activations very close and sort of
+in near benign representations in some sense. So that was sort of what one kind of fooling we got. So
+there's a question, you know, whether do I even need more space? A lot of the obfuscated activations
+we find are actually very close to a bunch of other stuff, right? It's not like they're going
+wildly off. Although for supervised probes, that probably is true. The other thing that we'll draw
+into is, yes, we have this result where we kind of, the attacker goes and the defender gets the data
+set of all the obfuscated activations that the attacker induced in their previous round. And they
+retrain that probe, we go back and forth, right? And we do this for, I think, 70 iterations with a couple
+different probes. And we find that basically whoever goes last wins, wins on the previous data. So the
+probe, when you retrain it on the obfuscated activations, say with an MLP, it's got enough
+expressivity to draw circles around all these obfuscated activations. And yet when the attacker goes,
+they can always find a new spot. And we have some, you know, PCA plots in the paper that kind
+of show this basic game of whack-a-mole going on in the latent space. So I think it is a really
+interesting question of, you know, how the dynamics of this game of whack-a-mole might change as you
+train a model more or increase the parameters and things like this. I don't have a super good intuition
+of, but that would be the experiment you would want to run. Finally is not all obfuscated activations
+are equal. So key sort of nuance, and I think something that makes me so excited about latent
+space defenses is in our SQL section, where we use the SAEs to kind of detect when the model's writing
+SQL, we find as you have to fool more SAEs on more layers, and actually this also holds true for
+simpler probes, like linear probes trained to detect. So I don't know if it's a special property of SAEs.
+As you try and fool more probes at more layers, i.e. it's sort of, you're doing more obfuscation,
+I'm having to mess with the representations in more layers. We are able to fool the probes,
+we're able to find these patches, but the model's performance at the SQL task goes down significantly.
+So there's also a question of, yeah, not all obfuscated activations are equal in actually
+performing your elbow behavior. So these are kind of all the axes that I think it'd be great for future
+work to study more, study with different models. But yeah, those to me are the experiments
+that help shed light on my intuitions about how models are representing things the most.
+Maybe that went off on a bit of a tangent.
+No, that's good. That's good. I mean, it's a lot to chew on. This is a dense paper, so there's a lot to
+absorb and I've definitely been around it a couple of times. So yeah, I'm just looking on that.
+I mean, I think maybe let's go back to the, when you said like, who moves last?
+Again, that kind of makes sense to me. It just, you know, have sort of a,
+at a very like caricature level, this sort of a Tom and Jerry dynamic going on where,
+you know, one move and the other moves away, right? Like I can find you here,
+but now I can go escape to some other space and you can kind of keep doing that.
+So I feel like I,
+I think it's a little surprising at least. Sorry. I'll let you finish your question and then I'll
+jump into why.
+Well, I was going to move to the other, the data poisoning and the fine tuning where
+now it doesn't even, you know, you don't even have that benefit of last move in the same way. So,
+and that one I'm like definitely much more struggling on. I'm like, I'm struggling to reconcile how in the
+one case, whoever moves last wins for the moment versus when in the data poisoning and the fine
+tuning realm, like why can't I come along later and still make a successful defense? Like what is
+the difference that's driving the one continuing to work if it gets to move last where the other one
+doesn't work even when it gets to move last? Yeah. So an important point here is that in the
+backdoor setting, the defender does not have access to what the backdoor trigger is or to sort of any
+examples with the backdoor trigger. If the defender knows what the trigger looks like, then, you know,
+you don't even have to do any latent space monitoring. At least if the trigger is some relatively
+simple property, you can just directly check like, is the string in the input, for example? Yeah,
+I think at some point we tried some experiments where, you know, can we make a backdoor that's so
+obfuscated that even if you know what the trigger is, at least you can't train a linear probe to
+distinguish them. But yeah, that didn't work nearly as well. And in general, I think if the defender
+knows the trigger, they should basically be winning. So the key difference here is that sort of the
+defender cannot just train on the exact task that they want to do later on. What the defender can do
+is train out of distribution detector, or what they can do is train a probe on harmful versus benign
+completions that both don't have the trigger, but they can't sort of directly train on
+benign completions versus harmful completions that are caused by the trigger. And so there's this
+sort of slight distributional shift between what the defender can practically train on,
+and what they later want to actually do. Which again, sort of analogous to a distributional shift
+you would have with scheming models, where you can maybe train a probe to distinguish between benign
+things and harmful things that you are like, very catastrophic things that you forced the model to
+say. But if you don't have examples of the model naturally producing those catastrophic outputs,
+which is what you actually want to detect, there's always going to be some distributional shift.
+So I think that explains why, at least in principle, it's possible to win for the attacker,
+even though the defender is moving last, or at least why it should be somewhat less surprising.
+I mean, I still think it's very interesting because even so often moving last is a pretty big advantage,
+and here it seems like it's not quite big enough.
+So it's a state of knowledge thing, basically, where the defender in the first case knows what harmful is,
+and uses that to form the basis of the defense that they're training. Whereas in the other case,
+they don't know what the trigger is. And the first thing they have to do if they want to come up with
+a good defense is figure that out. And the techniques that you've developed show that
+it is possible to make the harmful state
+look similar enough to the normal state, or let's say the triggered state versus the untriggered state,
+because I guess you could do that for any sort of divergence in behavior, right? But if you're
+mindful of it in the training process, if you say, okay, I'm going to simulate a defense, and I'm going
+to try to make sure that these things actually look really similar so that my own out-of-domain
+detector doesn't detect them as being different, then you hand them over to somebody else. And when
+they don't know the trigger, they're not going to do much better with their own, like undirected
+out-of-domain detection. Okay. Yeah.
+Yeah. One small thing is that the defenses we look at, they don't try to find out what the trigger is
+as a first step. They sort of try to recognize inputs that contain the trigger once they see them.
+So a different type of defense that people do look at is, yeah, just given the model,
+can you figure out what the trigger is statically? And that's probably much harder, and we don't
+really look at that. So in our case, you sort of have to recognize the trigger, but you don't have to
+find out what the trigger is in advance. And then, yeah, the other thing I was going to say is,
+I think what I described of, you know, explains maybe why if in the white box fine-tuning setting,
+where the attacker is full control, well, like, I think there, the thing you described
+this intuition is exactly right. So the attacker can try to train the model such that these
+triggered inputs have very similar representations to benign inputs without the trigger and thereby
+bypass these methods. I think it's sort of like, in some sense, it's much more surprising
+that the attacker sometimes wins even in the black box data poisoning setting, because we're not
+explicitly attacking any defenses there. We're just using this more complex trigger and kind of as a
+side effect that seems to bypass some of the defenses. So I think that's the one result in
+the paper that really does kind of say, well, these defenses just aren't that great, or they sometimes
+just don't work, even if you're not explicitly attacking them. Whereas everything else is you're
+explicitly attacking this defense, and maybe then it's less surprising that it breaks.
+So let me make sure that I understood that correctly. When you do these high level triggers,
+that is like, that the prompt contains the biography of a software engineer. So that's not obviously
+token specific, or like, you know, it's a high level concept, right? That's the sort of thing that you
+would expect to be gradually worked up to over the course of, you know, the first 80% of the layers or
+whatever. Then you're saying basically, the defenses just don't work that well at all. And it's not
+even about adversarial training against them. It's just that they struggle with that.
+Yeah, it's the results aren't nearly as straightforward as in the white box attack
+settings. So with it, you know, if we find from the model, then we can just very clearly bypass
+these defenses. Whereas if all we do is use this more complex trigger, you know, you have to squint at
+the data and decide whether you interpret this as a win for attack or defense, I think
+it depends on a lot of assumptions, like, for example, how many samples can the defender look
+at to figure out because sometimes this attack is going to sort of accidentally trigger even if
+there's no trigger present. So if the defender looks at enough samples, at some point, they would
+spot that there's something wrong. And so it depends on a lot of things like that, who actually wins
+in that setting. But we definitely do observe that making the trigger more complex, and also poisoning
+less of the training data does make it sort of harder on the defenses. And we do have some settings
+where you could possibly say, in that specific case, the attacker is winning.
+Yeah, okay, cool. Let's talk about like high level results for a minute, because I'll put an
+intro at the top of this, which I always do, to try to like, help people, you know, have orientation
+as we go throughout, because we're jumping around a little bit. But we haven't actually stated like
+the high level results, I would summarize the results as basically, this works remarkably well.
+It's not like it works. I mean, a lot of times we see things where it's like, oh,
+we can do this. And then, you know, like in some of the scheming papers, and I don't mean this as
+a way to dismiss the importance of those results. I think those are actually quite important. But
+people seize on those results sometimes and say, well, you know, with a strong nudge,
+it only did it 10% of the time. And with no nudge, it was only 1% of the time. So that's like,
+not that big of a deal. And then I'm like, well, you know, how many hundred million users did you
+say you have? And you know, how many queries a day? So it seems like it's still going to be an
+issue. Leaving that aside, this is not that right. Most of these results were basically like,
+we took a starting defense that worked pretty well, maybe not, you know, 100%. Of course,
+nothing's 100%. But you know, these defenses were like, giving a very strong signal,
+and subject to setting a threshold of no more than a 1% false positive rate, you were able to drive
+the reading from the defense below that threshold, basically all the time. So I mean, it's like a total
+pwn of the defenses in most of these experiments, I would, it's not too often that you see something
+where things are just like all dropped to zero. So that was definitely pretty striking and seemed
+pretty consistent. And there's maybe a couple little caveats where it didn't go quite so extreme.
+But the bulk of them, it's like, you know, in the sort of base case of we move last, we're training in
+an adversarial way against the defense that we have the outputs from, it's like a crushing of those
+defenses. I thought that was pretty interesting. I don't have a great intuition for like,
+how much compute maybe you could comment on kind of how much compute has to go into this. I was also,
+you know, you mentioned earlier, in the context of like the SQL thing where again, this is like the SAE,
+right? So we were trying to detect if it's going to write SQL code or not. You can probe at every single
+layer of the model. And this is another like really pretty remarkable graph, I'd say where
+if there's just one pro at one layer that you need to be, you can do that without much loss of
+performance. If the defense is every, you know, probe at every single layer, then you can beat it, but
+the SQL ends up sucking at the end. So you can expand on that in multiple directions. But I'm interested
+in how much compute does this take? Is it practical for people to run like a probe at every layer of
+their model? Is that like compute reasonable? How much overhead would that create? And yeah,
+you can spin off in any direction from there. Yeah, I'd like to speak to the total cone
+overall framing of the paper, if you don't mind. And then we could also maybe follow up on these
+specific questions about kind of the compute defense to train our attacks as well as how feasible
+some of the defenses is. Yeah, on the total cone characterization, my interpretation of this is
+there is this really ambitious vision for these latent space defenses. And that ambitious vision
+ties into these hopes for interpretability, which is, you know, if we really understood how the models
+understand the concept of harm, we could have potentially a very robust defense. And for example,
+when we did this iterative cat and mouse game, like if we had the full map of the model's mind,
+and we could really point to every location on the map, where harm was, then we could just put our
+probes at every location. And it doesn't matter if the attacker goes last, we would still we just
+understand the model so well, that no matter, you know, every possible way could represent harm,
+we can understand and detect that. And I think an exciting thing that kind of motivated the paper is
+that we seem to at least like this vision, I think would have once just seemed like a total
+fairytale. Like I think, you know, like at the start of my PhD, we just did not have
+any semblance of an understanding of how neural networks understood concepts at such a high level.
+And I think part of the promise of these latent space defenses is that we seem to be getting good
+enough understanding of like, we've seen in past work, like the representation engineering paper,
+we've seen with some of these coup probes, like there actually is kind of this tantalizing promise
+that we might even be making enough progress with SAEs, or with representation engineering,
+to really understand the model well enough to get a defense like that.
+And so what we are showing is that just this most ambitious version of like, we understand
+everywhere, that is the thing that gets totally pwned is like, we were really stress testing
+this quite ambitious thing. And so we found like, you can iterate over 70 different times,
+and there's still a 71st different way that the model can represent harm. And so again, the thing
+that I would say we're showing is just that this ambitious vision isn't there yet. But at the same
+time, I still think I don't want people to give up on this necessarily, the vision of latent space
+defenses. And so a couple of the things that are limitations on the attack side, and I think still
+hold promise on the defense side. One is like you mentioned, the behavior like the SQL performance
+is still decreasing. So I think it's still an open question, can you for these complex behaviors, it seems
+like there might be a distinction between a simple thing like a jailbreak and a complex thing like
+writing SQL. And so it might be the case that if finding all the harmfulness directions is more
+like finding a needle in a haystack, maybe sophisticated enough behaviors just take enough
+of the model's cognition that you don't have to understand every single SQL neuron, but maybe
+writing SQL takes enough of the model's cognition that we can still have a coarser-grained view
+of the model and yet still have a pretty robust defense. So I think that that's one promise on the
+defense side. The other promise on the defense side is just the amount of knowledge that you need
+as an attacker to do these attacks. And we have different threat models where you can still attack
+the model with full white box access, where you can attack it in a gray box setting, where you can
+attack it in a black box setting. And so I think the exact amount of knowledge required does depend on
+the exact setup. And we do have attacks that can work across the spectrum here. Still, I think that we
+can't just totally run all of our attacks in a complete black box setting. And so there's
+opportunities here for people who are providing these models to think carefully about what information
+would they be exposing to a potential attacker and how they can use that information for the defenses.
+Yeah. Plus one to all of that. Like I think if, you know, if going into this paper, your impression was
+that these latent space monitors are just sort of magically more robust or sort of fundamentally better
+than other machine learning methods. There's something very special about them. Then, yeah,
+then maybe you should be surprised by the results and sort of be like, oh yeah, they really all go
+down to zero if you do attack them sufficiently strongly. But on the other hand, you know, practically
+everything in machine learning is not adversarially robust. And the attacks where we do reduce
+performance to literally zero often pretty strong attacks. So I think in that sense, it's not that these
+latent space monitoring methods are unusually bad or unusually vulnerable compared to many other things.
+Yeah. I think it's all about the kind of bits of nuance, like the decrease in performance result,
+I find just super exciting. I want to look into this much more because I think sort of a part,
+when I went into the project, I did think maybe, and you know, Eric Scott and I had these conversations
+with the other ones as well. Like maybe the latent should be privileged in some way. Maybe this is a
+critical thing that will be harder to mess with because it's really the computational state of the model.
+Unlike its output. And, you know, we see in general, we can really mess with it. We can
+really change it and elicit the same behavior. But if we have these sort of sprinkles of it,
+it's a bit more complicated than that. And the key sort of elements of that in my mind being
+the performance degradation and also as Scott and Eric have said, what the attacker is afforded.
+So one interesting thing is in this gray box setting, talking to your compute cost question,
+in the gray box setting, when we're running a hard prompt attack, right? This is the closest we get in
+the paper to if OpenAI had late space monitors on their model and they gave me some more information
+how I would attack it. It takes a lot of compute. So we did not spend the time optimizing it, but those
+runs were just, they ran for quite a while to get that attack to work, both because of the access type and
+discrete optimizers are harder to run for the hard prompt. So yeah, those were sort of hard attacks
+to run where you need lots of queries to the model. So, you know, it's things like if OpenAI
+notice a weird pattern of my request to a model, I need thousands and thousands and thousands of
+requests to get this gray box attack to work. That's probably mean they might be able to fly.
+So yeah, that was another sort of interesting thing. As the affordance gets more realistic,
+it became harder with compute and also, you know, we didn't push all the numbers to zero.
+The other thing, oh yeah, Eric, I believe you had some ideas about the,
+running the probes, how feasible running these defenses actually is from a compute side, right?
+Yeah. Yeah. So you asked, could you place a probe at every layer? Is that feasible?
+Yeah. I think one of the nice things or one of the reasons people might like latent space monitors
+is that it could be quite cheap. So you don't have to run a complete second model. You're sort of
+piggybacking off the computations that the main model has already done. For example, if you're just using
+a linear binary classifier, then this is just like one linear map where the output dimension is two. So
+that's like much, much less than even one layer of computations in the model itself. So I think in
+principle, it should not be that much overhead to have a linear probe, for example, at every single
+layer of the model, you know, in practice, people have very highly optimized inference code and so on.
+And you would have to integrate that into that inference code. Like, I mean, when we run experiments,
+we maybe just add some PyTorch hooks, cache all the activations and so on. Of course, if you want to
+deploy a model on the API, that's not what you're doing. And so integrating that might be annoying or might
+be somewhat tricky. I'm not totally sure. But I expect that it would be feasible to do it pretty
+efficiently. Yeah, that's interesting. So from a kind of big picture society level,
+architecting our AI future standpoint, it seems like open source, we still don't have any good answers.
+But structured access model, you can say that even though when given, you know, freedom to query the
+model as many times as we want, and when we get some of these things, like, yes, we can find these
+obfuscated attacks. But if they put a probe on every layer, which probably is computationally feasible for
+them. And if they especially and we have started to see a little bit of this from OpenAI with the 01 series,
+where I've noticed people posting online that they're getting messages from OpenAI now, which never used to
+happen, if they're trying to jailbreak 01 to get it to output its chain of thought in the final answer.
+Apparently, if you do that enough times, and I don't think it's that many times, you now get an email from OpenAI
+saying don't do that anymore, or we're going to suspend your account, which strongly suggests based
+on what you just said about the number of compute and number of queries and whatever, that they can
+probably, like, you get to move last as the hacker of their gray box setting, but you don't get
+necessarily a super long leash. And if they see, hey, you're, you know, we've got one account here,
+that has just set off our latent space defense 10 times in a row, they can just shut you down. And that's
+way too soon for you to actually complete your adversarial learning process. So that is quite
+interesting. I mean, I'm not like ideological about open source, if anything, I would probably
+be more ideological, like in favor of, you know, long time libertarian, generally speaking in my
+politics, but I keep looking for ways that the open source question can be answered. It seems like
+there are no good answers. The structured access seems like there isn't actually a very good answer.
+Would you complicate my worldview in that respect?
+Yeah, I guess I think I basically broadly agree with this. I think for me that the high level
+safety takeaways for the paper is twofold. And I imagine Scott and Eric will improve on this.
+So one is like near term, I want to stop people misusing models. I'm pretty excited about
+latent space defenses for this purpose, because of the reasons Eric outlined in the economical and
+things like this. So our paper hopefully gives some insight into whether you're hosting a model,
+what are some good things to do if you're trying to use latent space defenses to stop people misusing
+models, jailbreaking, or maybe in more agentic manners. And there's a couple of really interesting
+threads there. So one is, you know, probe all the layers. We also find probing just at the generation
+instead of one token is a really good idea to stop an adversary getting around your probes.
+Yeah. And then there's all the stuff we talked about, about training these attacks and things
+like this. Then separately, I think there is this long-term sort of agenda of controlling and
+monitoring models that might be scheming against us and sort of the rogue AI side of things.
+I think we have, hopefully our work is shedding light on defenses in that setting, which is a more
+far off setting. And also properties of the models activation spaces right now,
+which really add caveats for using such monitors in really high stakes situations like that. So yeah,
+that's kind of how I, I think personally think about sort of impact on safety of our paper.
+Yeah. I'm interested to hear what Scott and Eric think.
+Yeah. I think maybe the only thing I disagree with is scheming being much more far off than
+like catastrophic misuse. Like it seems kind of unclear what's further away, but yeah, no, I,
+I agree with that. I also agree with what you said, Nathan on, yeah, I think structured access is
+going to be a key part of how companies with closed source models are going to try to make their API
+secure. Like, I don't think it's trivial. Like for example, you know, you, maybe you want to have
+KYC requirements that aren't too easy to bypass and so on. So you can actually block people somewhat
+reliably, but overall, I think it helps massively. If you can both withhold some information,
+like for example, you don't want to tell users, this is the exact harmfulness score that our
+monitor gave so that they can optimize against it. And also it helps if you can look at like how
+everyone is trying to attack your model and then try to improve defenses in response to that or block
+users in response to that. And yeah, I also agree that it's much, much less clear how you would
+release the weights of a model and still have it be unjailbreakable. Like, I mean, I think in that case,
+in some sense, our paper isn't even about that because in that case, there's no one deploying
+a monitor or anything. Like if you release the weights, then someone can just run the model
+without a monitor. And the only question is, can they fine tune away the safeguards, which so far
+seems very easy to do. Yeah. Yeah. There is the tamper resistant fine tuning approach,
+but I understand there's still the final attack and defense story has not yet been written on that one
+either from what I understand. So I was very excited about that one when I first read it. And then
+the chatter in the background is like, yeah, don't hold your breath. So stay tuned for more there.
+You're in the situation there where the attacker moves last and they have full access to anything
+they want to do. They can fine tune the model and jailbreak it and use off prompts and so on.
+So sort of the strongest possible attack setting and the attacker moves last.
+Yeah. It just seems extremely difficult technically.
+Okay, cool. So I think maybe three more things on my agenda to talk about. One is we haven't touched
+on your obfuscated adversarial training. So let's make sure we cover that. And then I have a little
+bit of kind of whether it's galaxy-brained or pea-brained, you'll have to tell me, but I have some
+thoughts on like, I don't know, my own kind of read of what I think might be going on. And I want
+you to poke holes in that. And then I have a one final topic that I just kind of thought of as we
+were talking, which is around like maybe flipping the whole problem, but I'll unpack that in a second.
+Let's start with the final thing. I think the final major thing from the paper that we haven't
+touched on at all is the obfuscated adversarial training.
+Yeah, absolutely. So we have this kind of final section with a couple of sort of smaller case
+studies, smaller ideas. And one of these is OAT, obfuscated adversarial training. So this was
+Abe, one of the other lead authors, basically came up with this really cool idea. At a high level,
+the idea is to train a model to be more probable, to be more robust to having its activations obfuscated.
+So the general procedure for how we do this is you take some model and you train a probe on it.
+And then you're going to iteratively take some attacks, learn some soft prompts that are going
+to obfuscate against the probe and jailbreak the model, and then retrain LoRa adapters on the model
+to make sure the probe actually does identify the harmful behavior. And the probe is kept static in
+this sort of second phase. So in that case, the second phase has all the sort of type of
+adversarial training. But your goal is just to make sure the model is probable.
+Yeah, maybe one intuition, which is complete speculation, but we talked about how, you know,
+there seem to be many different ways in which the model can represent harmfulness, like Luke
+talked about in these adversarial training results, we can keep updating the probe. And it seems like
+there's always some new attack that presumably lands somewhere in representation space, that also leads
+to harmful output, but the probe doesn't capture yet. And so maybe one thing you could try to do is,
+you know, try to make a model that doesn't have so many different ways of representing harmfulness,
+or that sort of represents harmfulness in a more consistent way, such that the same
+probe can then robustly pick up on it. So I don't know if that's actually what's happening here, but
+that's sort of one motivation for why you might want to update the model instead of the probe.
+Yeah. And I think it's a really cool idea because I spoke earlier about this attack-defense game where
+the attacker trains on the skated attack, defender gets access to those activations, retrains their
+probe, back and forth, back and forth 70 times, like Eric said, last move of works. So another way of
+saying that is that standard adversarial training of just the probes does not seem to work, at least
+for as long as we ran it. Maybe if you run it super long with a very expressive probe, you get that.
+So this is just, like Eric said, the other side of the coin. Why do instead of adversarial training
+my probe, I train the model. And so the sort of results on this are, it does not like solve the
+problem, but we certainly found it harder to jailbreak the model and obfuscate against it.
+I.e. with a soft prompt attack, it just took way more gradient steps to get there. There's a couple
+interesting things here. It took more gradient steps, not only to obfuscate against the probe,
+but as a side effect also to induce a harmful response. So we seem to get some kind of, at least on this
+framing of gradient steps of a soft prompt to get your attack to work. We seem to get some
+robustness, not just against the obfuscation, but also against actually just being jailbroken.
+So this, again, speculation, but maybe there's something about having robust
+harmful representations makes it harder to jailbreak models. But yeah, all very preliminary. I think it
+would be very exciting to see more work along this direction.
+Yeah. Maybe just expanding on those results, make it a bit more concrete. So
+like, you know, throughout adversarial training, what we're doing is we spend some fixed attack
+budgets to find this embedding suffix or soft prompt. And I don't know, I think maybe it takes
+like 10 minutes on a GPU or something like that to break a monitor. And if with that fixed budget,
+sort of the longer we do obfuscate adversarial training, the more robust the monitor and the
+model become. But then if we sort of take this final checkpoint of the model, that's robust against these
+sort of cheap, short attacks. And then we just like a really long run where we spend like 10
+hours on a GPU trying to find some suffix that's going to break it. Then we do still find something
+that breaks it. So it's sort of not fully adversarially robust against a determined attacker,
+but it's got more expensive to break it. And so, you know, I think a key question here is,
+if you just keep scaling how much the defender spends, how does that affect how expensive it is for
+the attacker to break through? So at some point, maybe you have something that's not robust for a very
+fundamental reason, but that's robust against any feasible attack. Or maybe the way it scales
+is that you get diminishing returns and you just keep training as the defender. And at some point,
+it doesn't increase the attacker costs anymore. That's I think like a key open question here.
+Yeah, this brings to mind multiple things. One is the tamper resistant fine tuning. In that case,
+it didn't seem like it was quite consistent across all the experiments they ran, but it seemed like one
+mechanism that was at least partially responsible for that working to the degree that it works is that
+they sort of put the model into like a zero gradient state relative to the bad, you know, behaviors that
+they were trying to train out of. And so then when somebody comes along and tries to fine tune to like
+re-enable those bad behaviors, they have like a hard time getting traction, so to speak. Like the
+gradients that they're taking are just super small and therefore it's hard to get out of that like
+gradient well. I don't know if you have any intuition for whether something like that might be happening
+here, but they didn't even think that that was happening all the time or that it wasn't. That was
+like very much still in the hypothesis stage for that work as I understood it.
+Yeah. So I mean, we're not directly trying to make anything like that happen. It's much harder to
+say whether it happens as a side effect. So I, I mean, one way to think about this is, you know,
+we're only using gradient information to optimize this model. And so naively you would sort of expect
+that there wouldn't be a push towards these states that are hard to optimize because we're not using
+any second order information. You could still imagine that in practice, maybe we find those states
+because once you sort of randomly end up there, they tend to be more stable to this adversarial
+training process. So yeah, I'm not confident in any of this. It's plausible that this is some
+of what's going on. I would be somewhat surprised if it's like most of what's going on just because
+we're only using first order information. Another one that comes to mind is the, I think the paper was
+called the surprising benefits of self modeling, something along those lines. And it was from Michael
+Graciano, who's like a creator of the attention schema theory of consciousness. And then the team
+at AE studio, which is like a remarkable company that is for profit and does like technology
+consulting, but then takes their profits and invested in AI safety work, including technical
+alignment work. In their case, they showed that they were able to train a model to both.
+This was like small scale stuff, you know, image classification type, you know, in nest, whatever,
+but still quite interesting that they were able to train a model to do the thing,
+but also reproduce one of its own inner states as a final output. And they found that that sort of
+led to by some like complexity metric, which I don't have a great understanding of, to be honest,
+a notable reduction in complexity. And the motivation for that was kind of like somewhat similar to this,
+where it was like, they were saying, can we make this thing easier? Does the training, you know,
+in, in training it to predict itself, you could imagine it could learn to predict itself. You
+could also imagine it might get easier to predict. And they found that this reduction in the complexity
+metric seemed to suggest that the model internals were somehow getting simplified, streamlined,
+whatever, in such a way that this complexity metric would drop and they could, you know, reproduce this
+internal state. I don't know if you have any other, if that sets off any light bulbs for you, but it,
+we're seeing a lot of this stuff right now, recent lines of work out of meta too, are very like,
+you know, what reasoning in latent space or reasoning in continuous space, whatever
+exactly they called that. It seems like there's a lot of this, like re-examination of model internals
+broadly, and sort of, you know, can we simplify them? Can we reuse them? There's a lot of information
+potentially lost if we like force this rich internal state to cash out to a final token. And then,
+you know, and that's all we give back to the model. Maybe we could kind of have it loop back on itself.
+I don't know. That's all, that's all interesting. I had previously thought like, yikes, that seems
+a little scary because I'd rather be able to read the chain of thought than not read the chain of
+thought. But when I see stuff like this, I can also sort of squint at it and think,
+I don't know, maybe there could be something advantageous about feeding a sort of heavily
+worked up representation back into the beginning. Maybe in some ways that could make some of these
+latent defenses easier because now you're like maybe looking at a richer space or it's like,
+you know, as it learns to sort of consume its own internal states, you know, maybe it becomes more
+integrated for lack of a better word or more sort of, you know, less easy to mess with perhaps because
+it now kind of depends on the richness of those internal states.
+I think one key thing that people should also consider, because one of the main moves in our
+paper is from an attacker's perspective, mixing in things about the latence with the attacker's
+method. And we found that this can lead to very strong attacks. I think there's also temptations
+to do this from a defense perspective. And even we like, there's the question of, can I use the
+model's activations to improve my defenses? And one thing that I think it is good to be cognizant of
+is if we're, as part of our training process, using the model internals, then whatever process
+would have led the model to do a bad behavior like scheming, if we had not mixed in the model internals at
+all during training, then the scheming model would not have directly gotten any information about the
+latence. And then this is more of a pure, like uncontaminated new avenue for defense. If we know
+there's been no training involving the latence, we could then look at the latence at test time.
+And this is an uncontaminated way to try to have a defense against the model where we have reason to
+believe that it would have been very hard for the model to get information about our defense.
+I think there's definitely a lot of promise in the mixing in. At the same time, there's a lot of
+promise in using the activations on the defense sides. And one of the things you might want to do,
+and some of the things that we are even starting to do, is use this during training time as part of
+the defense. I think one thing to keep in mind is that now the activations are no longer this
+uncontaminated source of information, that there has been no opportunity for the model to optimize
+against during training to try to circumvent. But we have to be careful about what sort of
+information leakage. Like on the one hand, we're strengthening our training time defense,
+but then giving up a fresh avenue for defense at test time. And I think it's good to be cognizant
+of that trade-off.
+Yeah, I agree. That's an important trade-off. Yeah. The other thing I was going to say is,
+I do think that internalizing reasoning into the latent space would be very bad from a safety
+perspective compared to chain of thought reasoning. Like you mentioned, maybe then
+latent space monitors work better and we can do more things with them. But I think latent space
+monitors in some sense are like your second choice. It's like what you use if the model is doing the
+things internally and you can't just read them off the chain of thought. Even our best latent space
+monitoring methods are far away from just literally reading what the model is saying in its chain of
+thought. So I think they have an important place because models can do some things in a forward pass.
+And maybe then you want to look at the latency, but we definitely don't understand latency nearly
+as well as we understand natural language output. And so the more reasoning moves away from natural
+language into more latency, I think the harder it gets to monitor models. And I do think that's one
+of the scariest things going on right now from a safety perspective.
+Yeah. I've reached out to the authors. Hopefully we'll get to do an episode with them and
+I want to hear their perspective on that. I think all of this does kind of tie to this other
+intuition that I had while reading the paper, which I'm trying to find the crisp delivery of it.
+But it's something like, I guess, first of all, I'm reacting to a couple of statements. One was
+that models can represent harmfulness in many different ways. And I was kind of like, that's,
+you know, definitely one interpretation. I wonder if there's something that would rule out a different
+interpretation that I was playing around with, which is maybe models are just really good at sort of
+dealing with noise. And you sort of can noise up any particular internal state well enough to confuse a
+probe or whatever. But the model itself is still like really good at kind of figuring out what the
+real gist of the situation is and doing it. And I sort of see that in my usage. Like, you know,
+I, I no longer feel the need to like correct typos, or you've seen some of these examples where people
+like do super fast typing and then have the AI just like literally correct all their typos so that,
+you know, they literally just type fast as they can, you know, with, with no regard for how many
+typos they make. And that the AI is able to kind of be like, yeah, I get that. And just kind of
+spit out like a clean version of that same text that the person intended to type, you know,
+autocorrect at like page level understanding. So if I try to apply that understanding to what's
+happening here, I could say, well, maybe there is still just like one, not one, but you know,
+maybe there's like a small finite number, the SAE paradigm is kind of roughly right that there's like
+these main directions that represent these things. And maybe what we're doing is not finding other
+ways to represent those things. But we're just kind of layering out enough crap, you know,
+that, that the defenses are getting fooled, but the model itself, you know, as it kind of works
+through can kind of knows what to pay attention to and what to ignore. Any thoughts on that? Or is
+there any data point here that would rule that out as an understanding?
+So maybe before, before I talk about like data points, just to clarify the difference here, I think
+one question you could ask is, how many different representations of harmfulness, for example,
+occur naturally. So if you give a model lots of different inputs that it might get that aren't
+these weird attack suffixes, do all the harmful inputs, or maybe all the harmful generations,
+do they share some geometric structure? Or is there a lot of variety there? And then separately,
+you could ask how many different representations are there in the model that sort of leads to competent,
+harmful generations. And I mean, what we're looking at is the second question. And we're showing
+there are lots of sort of states of the latency of a model that induce harmful completions that we can
+induce with some suffix. I don't think we have as much to say on this first question of, you know,
+what happens on natural inputs. And, and so I think if you want to say, well, all these different
+states, we find that lead to harmful completions, whether you want to interpret these as fundamentally
+different representations or as sort of one unified thing with very complex adversarial noise added to
+it. Yeah. To some extent, you know, that's a semantic question. I do think the adversarial
+training experiment we have is sort of the closest we get to addressing that where we show that
+to the extent to which there is some shared geometric similarity between all of these,
+it's complex enough that we don't find it even after 70 epochs of adversarial training.
+So maybe there's something that connects all of these where you can model them as
+a unifying characteristic plus noise, but certainly it's not something that's easy to find for a probe.
+Yeah. What I would add on to that is just a couple of things. So one is
+if we take this really seriously, that you're kind of injecting some noise in early latents,
+and then there's fooling the probes, but in later layers, the model knows what's going on.
+You might suspect that probes on later layers or probes on the final layer are like exceptionally good.
+And we don't, you know, more robust because at the final layer, the probe has basically a similar
+amount of compute as the model does when it's unembedding. And we don't, you know, these later
+probes are also very easy to fool. And then, yeah, like Eric said, I think this attack defense game we run
+sort of sheds light on the kind of obfuscated activations we're finding. And just to get into the
+detail a little bit, one of the probes we run for this repeated game going back and forth is actually
+an ensemble of linear directions. So at every step, the attacker goes and they're going to generate a
+soft prompt to induce obfuscated activations. Now the defender goes, they get those activations,
+and they do this mean difference probe. So they just find the direction that connects the benign
+representations to the new obfuscated harmful activations. And they add that to a list they're
+constantly increasing throughout the game. So how does that probe work? You just return the maximum
+cosine similarity to any of your directions. So by the final round, we have 70 directions in activation
+space. And we're able to find obfuscated activations which are orthogonal to all of those directions.
+So that at least is sort of a very highly structured probe. And we're able to avoid that structure,
+which to me suggests it isn't just some kind of noising or something. When I impose a strict
+structure on my probe, we were able to get around it. Yeah. Yeah, that's really weird. I'm not sure what
+to make of it. I mean, I'm always very reluctant to do these like analogies to human cognition,
+because I think they mislead as often as they probably more often than they clarify. But I'm
+kind of thinking, okay, let's say that I had a painting of something in front of me or whatever,
+and then somebody came along and just like threw a bucket of paint on that painting. And now like a
+bunch of it was obscured. I could imagine that like, something that was trained to, you know,
+detect that painting, a, you know, a simple neural network would be like, nope, sorry,
+I can't recognize that anymore. But I would see like the corners of it or the parts that weren't
+blocked and be like, okay, I still know what that is. And I could imagine that there could be a similar
+capability in the language models. And I'm not sure how to reconcile that intuition that I have for
+like what I could do with the sort of build up of all these different directions that are sort of the
+previously identified bad directions. Because I feel like if we ran that thing 70 times, right,
+and you know, we did 70 different giant splotches of paint on a painting, and like,
+each time I might expect or most of the time, maybe, you know, occasionally you cover it all,
+and I can't resolve it anymore. But like most of the time, I would be able to say, okay, I still see
+enough there that I can like figure out what the original is supposed to be. And like, I wouldn't be
+super surprised that like, I could keep succeeding right past 70. Like there's infinite splotches,
+right, that I could throw on there. Yeah, one key thing that's happening is that the
+detector probes are cumulative. So they are it's like in the linear direction example, it's a cumulative
+list of 70. So it's not just like independently, you can do a splotch that can fool this one viewer,
+then you can do a different splotch that can fool a different single viewer. But actually,
+it's all 70. It's like if the viewer of the painting is the linear probe that's trying to
+detect if the harmful is still there. It's like you have a first person that walks into the room,
+and maybe they have they're wearing some glasses that occlude their vision, you know,
+they're just a linear probe, they're not a fully complex language model. So they have some blurry
+vision, but they're looking at the painting, and there's one of them. And they say, okay, that you
+know, you threw a splotch of painting and that fooled me. But then you actually have a second person,
+and the second round of average training, a second person walks into the room. So now you have two
+people that each have slightly different blurry vision that are trying to get the splotch of paint,
+then a third person, then a fourth person, then a fifth person, you know, all the way up to 70.
+And moreover, you know, we could speak to this, but my sense is we didn't see it getting harder. Like
+we didn't get the sense that like, fooling the 10th person was harder than fooling the first person.
+And it's not just the 10th person, but it's the group of all 10. So it's like, you know,
+you have the group of 10 people, we can fool all of them. The group of 20 people,
+you can fool all of them. The group of all 70 people, like we're fooling 70 people
+that have all been trained to try to detect these splotches. And so that's the sense in which it's
+not, it's not just like there's some certain slight variations that's fooling one person,
+but it feels like even as we're cumulatively increasing the power of these probes, we're still
+finding the ability to obfuscate against all 70 of them at once.
+Yeah. And they're not even getting that much harder to find as you go.
+No, but, but eventually it would, right. And because this probe just starts coming,
+I mean, the latent space is 4,000 dimensional, 4,000 and something full armor, maybe 96.
+So eventually this probe catches everything, but also you can no longer use,
+like this is not appropriate use because the false positive rate would be so high.
+Like, you know, that 70 dimensional thing is blocking off 70, a 70 dimensional subspace.
+So yeah, eventually the defender wins in the sense they have a probe that just lights up for
+everything. And we, but we didn't get to that point where the attacker was not able to evade this
+thing. Yeah. So that was, yeah, that was a pretty interesting experiment, I think.
+So do you think that there's, yeah, I mean, so you, you got the statement models can represent
+harmfulness in many different ways. I mean, that would presumably have to be true about like all
+concepts, right? Like I, I feel like there's like a two-step thing as opposed to like a,
+a one-step thing. Like the one-step thing would be, okay, we can find infinite ways to represent
+harmfulness. So that means we can also probably find infinite ways to represent anything.
+Infinite, obviously being hyperbole, but you know, boy, that starts to be like,
+you can really do anything, anything. And that just feels kind of off. I feel like maybe,
+is there some, the two-step thing would be like, we can, maybe what we're doing is somehow finding
+something that fools the probe at layer X and then like also recovers back to the original direction at
+X plus one. I don't know if that is ruled out by any of the experiments, but it just seems like the
+sort of space of possibility gets so vast if there's not something a little bit more constrained
+happening that I just start to lose any intuition for it. Kind of this is, this is something that we
+was a motivating question for the work is like, how many different ways can a model represent the
+same concept? And this is where, you know, there's the attack defense motivation. And there's also the
+scientific motivation of just understanding how many different ways can a model represent the structure.
+And one of the interesting things our work finds is this balance between there, it's not totally
+arbitrary and there is enough structure there. Like, it's not like you can just arbitrarily modify the
+latents. So an experiment that we ran early on in the project was in image classification. We know that
+I can show you any image of a cat and I can fool an image classifier. I can apply some adversarial
+perturbation to this image of a cat so that to all humans, it still looks like an image of a cat, but
+your machine learning model thinks of it like a dog. And it doesn't matter what image of a cat you start
+with, we can fool a classifier to make it look like an image of a dog. Or even if you just started with
+random noise, I can start with random noise, make a slight perturbation and make it look like an image of a
+dog. So it seems like for images, you can, it's almost as arbitrary like images are very high
+dimensional input and we can find nearby points in L1 distance that fool the classifier. So we had
+this hypothesis for activations. Okay, let's, let's pick a random activation. So like just start with an
+arbitrary random activation. Can we then perturb it infinitesimally and get a jailbreak? And we found
+that we couldn't do this. We found that if we, for example, started with a very specific benign
+activation on a very specific benign input, we couldn't just infinitesimally perturb it to get
+a jailbreak output. And part of this is just the structure of how models work, that the activations
+do dictate the final behavior. So if you've only infinitesimally perturbed the activation,
+because neural networks are at the end of the day, a continuous mathematical function, you can't just
+arbitrarily change the output by a tiny input. If you work through the math, you could compute the
+constant of how much the behavior would change. And we have these experiments as well, kind of later on
+in the paper where we tried to see if we could preserve a model's behavior while changing the
+representation. So we took an activation on a benign input and we said, can I modify the geometry of this
+activation while preserving the model's behavior? And we found this trade-off where as we perturbed
+the geometry, we were constrained with how much of the behavior we could preserve. So we found that we
+were not able to perfectly preserve the behavior. Like the more we changed the geometry of the activation,
+the more that the behavior changed. So it feels like we're seeing different types of results here.
+We're seeing on the one hand, if you fix the behavior, we can have lots of different activations
+that point to the same behavior, at least in the case of jailbreaks. However, if we try to fix the
+activation, we cannot get many different behaviors from the same activation. So it seems like the same
+activation seems to be producing the same behavior. Yet, if you fix the behavior, you can have many
+different activations on it. And this is, I think, one of the things for that future work, I would be
+excited to see explore this more, like how this trade-off exactly works. And it is one of the reasons why
+there could still be promise for the defender is that we weren't able to just arbitrarily change
+any activation to get a jailbreak, which still suggests that there might be enough structure
+there that can be used on the defense side. Yeah, I agree. That's like a very interesting
+sort of duality. One small comment is just that I think the continuity argument would also apply to
+image classifiers. If you think of the image as just the very first activations, I really do think
+there's like an empirical interesting difference here between images on the one hand and activations
+on the other hand, or maybe between language output and classification output. But there's
+sort of an empirical difference here between this image adversarial domain and the types of adversarial
+things we find. Yeah, maybe you could have guessed in advance, but I don't think it sort of immediately
+follows without the experiments. Yeah, fascinating. Last thing I wanted to ask about is
+flipping the paradigm toward just narrowly responsive AIs. I mean, this has been proposed by Eric Drexler in
+a manuscript that he wrote, Comprehensive AI Services, where his basic idea is like,
+we don't want to, what we do want is superhuman performance in specific domains. What we don't need,
+and is potentially dangerous, is superhuman general purpose performance. Can we just focus in on
+identifying jobs to be done, making AIs that are really, really good at those jobs, and that don't
+do everything else? And it's, you know, I don't know if that branch of the technology tree exists
+or not. The branch that we're on is like, much more general purpose assistant that can do anything. But
+I also think for like corporate situations, there is probably a lot of value in a narrow
+scope of action for an AI, right? We don't want, if I'm a car company, I want my AI to talk about my
+cars in the right way. I don't want to talk about other things. I don't want to probably even talk about
+other brands, except maybe in very, you know, specific ways. And it seems like this is sort of,
+I did an episode not too long ago too, on sort of role-based alignment and role-based safety by
+extension, kind of the idea that what role the AI is playing at any given moment determines how it
+should act. And you can't sort of create one global policy that's, you know, totally separated from this,
+like contextual situation that it finds itself in. And that's kind of everything. So I guess I'm
+wondering if we said, instead of trying to create a fully general purpose assistant and then like
+detect the bad things, and we find that that, you know, can be messed with in all these different
+ways, but also kind of relating to this like activation idea that from, because you can get
+the same behavior from multiple activations, but you can only get the one behavior from the one
+activation. I'm not sure this quite works, but is there a way that we could sort of flip this
+around and make this like an economically valuable thing to say, Hey, we're not going to detect
+the like far reaches of bad behavior relative to like all plausible, acceptable behavior. But instead
+we're going to make a more positive assertion that your AI is acting in its domain. And then,
+you know, if it's sort of talking about something that's benign, but like off topic,
+that would get lumped in with the sort of bad behavior. If we flip it in that way, does that
+change the dynamic? Or do you think we end up in a spot where the adversarial approach still wins?
+Yeah, one way you could, you know, concretely do this is with out of distribution detection. So you
+could say, we're going to fit in out of distribution detector that flags anything that's not in this domain
+off topic and we just reject it. And I mean, yeah, we, one of our experiments is that we also attack
+these out of distribution detectors and we do this for like the domain of benign requests. So it's a
+pretty broad domain. And in that case we show it's adversarially vulnerable. I think it's plausible that
+sort of overall monitoring and everything just gets easier if your domain is narrower. So someone earlier
+made this example of, yeah, if your domain of allowed use cases is just a single string as input,
+then it's very easy to reject anything else. And so I think there's the spectrum here and
+it would be interesting to test whether, yeah, if you have a narrow domain of benign use cases,
+maybe then it gets harder and harder to attack these out of distribution detectors.
+Yeah. My main guess is that for many cases, people will also want to deploy very general models.
+So I think there's like a pretty strong push towards doing that. But I think from a safety perspective
+could probably be much easier if every model that you deploy has a very narrowly defined use case.
+Yeah. What if, what if you took like the SAE approach and said, we, instead of saying,
+I want to flag anything, you know, on this bad list of known bad behaviors, known bad states,
+what if you said, I only want to allow this interaction to proceed. If my like,
+Ford, you know, uh, assistant is like talking about Ford cars in the way that it's supposed to,
+now I could say, Hey, I've got a hundred sparse activations in the SAE that like, if, if none of
+those hundred are active or, you know, if, if fewer than five are active or whatever, then I'm going to
+sort of consider that to be a problem. And if you're in a scenario where certain activations,
+like reliably lead to certain behaviors, then you might be able to say, Hey, you got this thing,
+you know, whatever you did, took this thing to a place where we can no longer detect that in an
+affirmative way that it is like talking about what it's supposed to be talking about. Therefore,
+we sort of abort the interaction that would seem to maybe hold promise for like creating narrowly
+scoped, still like conversational, you know, kind of general feelings, smart seeming AIs that people
+can interact with in a natural way, but like just being confident that it's doing what it's supposed
+to do. And I don't have to worry that it's like, you know, doing something safe versus something like
+unsafe, but I just have to worry it's doing something in my focus area versus like anything else.
+If I have the notion, right, that the behavior from a given set of activations is like pretty consistent,
+and when they haven't found a way around that, then it seems like maybe that could work. And I want to,
+you know, I'm really interested in things that people would want to spend money on for safety
+purposes, right? That's always a, to kind of flesh out my own motivation. It's like if, you know, if
+because corporate buyers don't want like random digressions, right, they may tolerate that for the
+moment, but they don't want me to show up and ask for stock picks or, you know, what the AI thinks
+about, you know, some policy that's being introduced at the border or whatever, right? Like they want
+to stay out of that entirely. So that seems like something that might come out of this work that could
+be really well received by people who are like, I just want this thing to do its actual job and not
+go run amok on me. But yeah, feel free to shoot that down or tell me why, why that's not going to work.
+Yeah. So maybe the way I would think about this is, you know, you can use an SAE as an out of
+distribution detector, essentially, for example, by saying if certain features don't activate,
+it's out of distribution, or if the reconstruction loss of the SAE is too high, we flag it as out of
+distribution and things like that. So we don't study that empirically. So, you know, I can't say
+anything with complete confidence, but, you know, we do look at, can we suppress SAE features? So if we
+use SAE as a classifier, can we sort of suppress these SQL features and still generate SQL code?
+And it does seem like we can suppress those features. So it's not like SAEs are fundamentally
+adversarially robust. My best guess would be that if you use SAEs in whatever way you want,
+as an out of distribution detector, and then you plug them into our experiments, you can again,
+break them adversarially would be pretty surprised if there was a very different in that respect.
+But yeah, I do think if SAEs worked really, really well, then you should also expect that they
+would be helpful for things like out of distribution detection.
+But am I missing something? Sorry to be super stuck on this, but is that observation that from
+given activations, the behavior is consistent? Does that suggest that like, because in flipping it,
+I'm saying, I want to only allow you to proceed if certain activations, certain sparse activations
+are present. Would I be able to maybe more reliably be like, if those things are present,
+I'm going to get the kind of behavior that I want. And if they're not, then all bets are off,
+but I can just kind of walk away from that interaction.
+The trick is how flexible of behavior you want. So if you were a car company, and you just only
+wanted to be talking about the exact return policy of a very specific car, you could probably like,
+if there was just only one allowed sentence, you could have an anomaly detector that just says only
+let this one sentence through. Now you can say, all right, I want to allow very slight variations,
+and you can definitely make it work for one sentence. You can say, all right, now I want to
+allow very slight variations on this one sentence where, okay, it's always talking about this one
+car and this one return policy, but we can talk about different times of day, different months of
+the year, different possible buyers. And so it's like, okay, now all of a sudden, there's just so many
+different things that could be in the chat alongside the car and the return policy that you do want to
+still allow the user to talk about. And so all of a sudden, just trying to have this tiny little box
+just explodes with the real complexity of the world. And so now all of a sudden, your ad of distribution
+detector has to have room for talking about the weather, talking about the day of the year that it is,
+talking about all the things that a human might be talking about alongside their return policy. And as soon as you kind of
+crack that light, what a lot of our experience seem to be showing is that there really is room
+for an attacker to exploit that. So for example, if you were to say, I'm only going to allow it,
+if the features of the return policy are present, I could say, I could ask, how do I build a bomb
+inside of my Ford F-150 car, and then return it? And then, okay, all of the SQL features are going to
+light up about the car and the return policy. And then I'm going to obfuscate the features of the bomb.
+So we know that we can obfuscate, you know, the harmful representation of the bomb. So now we've
+hidden the harmful representations of the bomb, and the features about the Ford are still present.
+And so there just quickly is a lot of room for the attackers to still keep the SQL features present
+and suppress the dangerous features that you might be looking for.
+Yeah, we also did, it's not in the paper, but one of our preliminary experiments was
+up-weighting a feature that wasn't present. So Alex, one of the lead authors of this experiment,
+where I believe it was, you got the model to talk about chocolate cake whilst the SQL features were
+maximized. So just for that specific instantiation, do you talk about it, Nathan?
+Yeah, I think we're pretty much at the end of everything I wanted to talk about,
+and I appreciate the extra time to beat up some of my intuitions or misconceptions as the case may be.
+I think this is really good. I mean, I think this work has a lot to it and some of the best
+papers, you know, inspire as many questions and, you know, meditations as they do provide answers.
+So I definitely put this in the category of work that invites a lot more investigation.
+I think that's all I had to cover. Anything else you guys want to touch on before we break?
+No, I guess just thanks for having us on.
+I was going to say, great to be here. Definitely agree that as authors, we had to decide when to
+stop writing the paper. There's so many more questions as well that we've been thinking about
+and that we want to write about. You know, at some point we're like, we're going to need to
+publish this and write follow-up papers. So great to talk about some of those follow-up questions with
+you and hope to see these conversations continue both on podcasts like these and as well as in the
+research literature. Cool. Can I maybe just ask one more, which is like, what would, you know,
+do you have any sort of hinge questions that you would be ready to make a big update on if somebody
+were to answer in the literature coming soon? You know, big things that you would say like,
+these are sort of fork in the road concepts that we don't have clarity on yet, but that might really,
+you know, have us updating our, you know, future of AI safety worldviews.
+I think if you could show like realistic attacks that you can run against a black box API model with
+very little access, only a few queries, I think that would sort of be a significant extension of
+what we're doing and would move all of this away from just, you know, interesting concepts and things
+to be aware of for future defenses to, oh, this is something that we have to care about right now if
+you are deploying models and might want to use latent space monitors. And on the other hand, I
+think if you can build defenses via adversarial training or some other way that are actually
+robust to even sort of very conservative, powerful attacks like soft prompts and so on with white box
+access, I think that would be to me a very big update in terms of, oh, there's actually something
+new here with latent space monitoring that is not the case for any of the current methods.
+Cool. That's great. Any other thoughts?
+Yeah, that I totally agree. I agree with both the directions Eric said has been both
+like top, top questions of interest. Yeah, and great, great, great to have been here.
+And yeah, cool. Well, I'll give you the final send off. Luke Bailey,
+Eric Jenner and Scott Emmons. Thank you all for being part of the cognitive revolution.
+Great to be here.
+It is both energizing and enlightening to hear why people listen and learn what they value about the show.
+So please don't hesitate to reach out via email at tcr at turpentine.co or you can DM me on the social
+media platform of your choice.

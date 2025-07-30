@@ -1,0 +1,503 @@
+thank you yes so as just we said we're going to be talking about what every coder should know
+about how CPUs work which to me is an absolutely fascinating topic hopefully you'll find it too
+what I'd like you to get out of this is first and foremost like an overview of what a modern
+CPU can do and is doing for you under the hood and by modern CPU I mean anything that's been made in
+the last 15 years both x86 and ARM and RISC-V even but my experience is mostly an x86 so a lot of this
+will have a sort of flavor of x86 about it I also want to tell you a little bit about how compilers
+take advantage of the knowledge that they have about how CPUs work in order to get the best out
+of the CPU for you so most of the time you don't have to worry about this kind of stuff which is
+kind of cool and then when you do need to worry about it I'm going to show you some tools that
+can help you understand where the performance issues may be in your code or what on earth is
+going on inside your CPU in the first place so first and foremost I'm going to explain a sort
+of simplified and I looks more complicated I know but a simplified view of what a modern CPU pipeline
+looks like so first and foremost it is a pipeline it's a production line things get put on one end
+of the production line and they slowly make their way along and as they go along the pipeline different
+things happen to those instructions that are being fetched and we'll talk about what how that all works
+in a second and then sort of in modern CPU something cool happens so if you've done you know your MIPS
+style fetch decode execute retire for the four stage pipeline from my university days and that
+kind of things nothing works that way anymore we have this front end that is in order so anything
+that's in blue means it happens in order that means each instruction is processed one after another in
+the order that you wrote them and then there's cool green stage here which is out of order and what
+does that mean it means that the CPU is going to do some dependency tracking between the various
+instructions that you're you've you've given it and it's going to execute the instructions in an
+order where they're sat their dependencies are satisfied but it's not necessarily the order that
+you even gave them to the CPU in why would you want to do that well most of the time your program
+is waiting for things like memory accesses or complicated things like multiplies divides to happen
+and if you can find work that your CPU can be doing while it's waiting for memory accesses to complete
+then you can get more work done per unit time but it is very complicated and that can be an issue that
+we sometimes surfaced to us when we're looking for performance issues so we have this in order front
+end we have this out of order green execution back end and then retirement sadly happens at the end and
+happens in ordering we all retire hopefully and that happens back in order again so despite the
+fact that all these clever things are happening and maybe your instructions are actually getting
+executed completely out of order they retire strictly in sequence again which means that as a user
+looking from the outside in you typically don't notice that those instructions happened out of order
+you see the program complete as you wrote it all very cool there's a huge caveat for this which is
+where spectre and meltdown if you remember the furore about those issues there's a sort of leak from
+this system unfortunately I don't have time to talk about that but you can talk to me about it afterwards
+um so I kind of lied to you I said you know there's this sort of pipeline fetch decode and then it's
+that here there's a part that happens even before the fetching starts so we have um a system that is
+going to try and guess what's going to happen in your program before you've even executed the first
+instruction why is this this pipeline here this fetch decode rename and then the other green stuff
+over here is many stages long there are like dozens of cycles between the point where the information
+about what instructions need to be run is being fetched from memory through the caches it's being
+broken apart and decoded into all the different micro operations that go into that sequence of
+instructions and then by the time they've been scheduled to run it's a bit late if we discover that
+there was a branch that said we should go somewhere else now and so typically um CPUs of of yesteryear
+would have a little bubble in the pipeline when the branch happened and the the the direction of
+the program moved somewhere else everything would be discarded and the program would restart but then
+we have to kind of refill the pipeline again from the left-hand side with the new address of where
+we're going from that's cool and all but when when there was like two or three cycles that was maybe
+okay but when there's 12 cycles that means every time you take a branch you're taking this big hit
+of re-steering this this this production line and the way that I like to think of it it's a bit like
+those I don't know if you've seen the strip mining machines there's this huge like spinning um uh
+digging thing that's pulling out or and chucking onto a huge conveyor belt that's like you know half a
+mile long and then the control unit is right at the back of that and then some person is steering it back
+and forwards to try and like mine the ground it's like if they can only see the ore that they're
+mining right next to them that's like the execution unit and then you start realizing that you're not
+digging up the ore that you want anymore oh no I'm digging up like just dirt now and I wanted to be
+getting that I now have to steer that pipe to the new location of where where the where the stuff that
+I want but unfortunately I have this entire pipeline of dirt that I've got to sort of like deal with
+this coming down and so um what the branch predictor is going to try and do in that situation is make an
+intelligent guess about where the program flow is going to go before we've even seen the program
+which is a pretty difficult thing to do with no information whatsoever that branch predictor has to
+make a guess and what it's trying to guess is is there a branch coming up in the sequence of instructions
+are coming if there is where does it go to and for those many branches which are conditional you kind
+of if then got this go to whatever then will it be taken this time and if we can predict that more
+often than we predicted correctly more often than not then we can actually steer that pipeline in the right
+direction and every time the branch gets hit we aren't throwing away all of the work that's on the
+production line the work was actually correct but we also have to accept that sometimes we get it
+wrong in which case yes we still need to throw some of that work away but if we don't get it wrong
+too often that's not such a big deal and we'll talk about how that branch prediction works in a
+second so having guessed where the program is going to go we're going to start the front end the
+front end is responsible for picking up data bytes from memory and loading them through the cache in big
+chunks decoding those chunks into the actual instructions that are inside those bytes this is where for
+things like ARM processors the encoding of ARM instructions is very straightforward it's either two bytes long or four
+bytes long depending on which mode it's in and that makes it very straightforward to do this decode stage but if you've
+ever looked at x86 machine code and the assembly code that goes with it a single in x86 instruction can be anywhere
+between one byte and 15 bytes long and so there's a lot of complicated stuff that goes into decoding that and turning it into some kind of
+some kind of understandable what is this instruction is it an add is it subtract is it a multiply those kinds of things and
+another cool thing that happens in the front end is that a process called register renaming happens where some internal
+space on the chip is used to store intermediate results and it's as if you have now like a couple of hundred registers
+so most CPUs only have a dozen registers you know 16 or 32 registers and so you can often if you keep reusing the same register over and over again you know load something into A store it over here load something else into A store it over here then there's no opportunity to use to have those two operations run in parallel because they both want to use the A register but we know as programmers that that's sort of two different
+uses of the A register and the A register and the renamer is able to do this so it would rewrite that into load into temporary register zero and then store temporary register zero over here and then load into temporary register one and store over there and so there's a lot of tracking that goes on some clever things that go on to avoid these data hazards so finally we get to the point where we're actually doing some work we have inside this execution unit there's a there's this real sorry the rob there is reorder buffer so the
+there's a reorder buffer which stores all these internal results while they're being assembled in the order that they're going to be completed in and then the execution units there are many many of those so we're talking about a single CPU here a single score on a on a on a die and but it can have multiple multipliers it can have multiple adders it can have multiple floating point units arithmetic units address generators all these things here and what the execution stage is doing is looking for instructions whose inputs are now
+known and then scheduling them to run on a particular part of the chip so if this is a multiply and we know it's inputs we can start running the multiply that may not be the next instruction that flow to the pipeline
+because we're tracking whether or not it's ready to go or not and what that means is that there are multiple units that can be running in parallel so if we have two multipliers we can be doing two multipliers at once if we have several ALU units we can be doing add subtracts
+shifts and things like that at the same time and typically even this relatively old laptop that I'm on here can be executing anywhere between five and eight instructions every single clock cycle in this execute block provided those parts don't use the same areas of the chip and that's where some of the parallel sorry some of the performance of modern CPUs is coming from these days you may have noticed that the the clock speed hasn't been going up over the last few years you know we've been sort of stuck at anywhere between two and four gigas
+pretty much these days we might have more cores on our chips so we can get multiple threads going but even since we have some of the cores on our chips on here I can be executing anywhere between five and eight instructions every single clock cycle in this execute block provided those parts don't use the same areas of the chip
+and that's where some of the parallel sorry some of the performance of modern CPUs is coming from these days you may have noticed that the the clock speed hasn't been going up over the last few years you know we've been sort of stuck anywhere between two and four gigahertz pretty much these days we might have more cores on our chips
+can get multiple threads going but even single core performance is going up and
+part of it is because of the clever tricks that can be pulled out inside of
+this stage finally at the very end of the pipeline we retire the instructions
+that have completed this is kind of like committing finally the instruction to
+having actually happened and that again happens in strict program order which
+means that we don't see any kind of weird side effects of having done things
+in the wrong order or a different order inside of this of the chip and this is
+where exceptions are handled so if this is where you potentially hit some area of
+memory that was flagged as being not mapped and you get a seg fault the
+instruction will be tagged and when the instruction finally completes at the
+retirement stage that's where the chip actually goes okay now we need to do
+something different we need to go to the crash handlers similarly this is where
+the the the the fact that we've been pulling instructions that we don't know
+if they're the right instructions you know this branch prediction system is
+happening we're following along the thread of where we are just making a guess and
+if we make a mistake we need to be able to throw away the work that we were doing
+and the way that we throw that away is by just not retiring those instructions
+when we discover a branch that was that went wrong so having executed a branch we
+check it against whether or not we predicted it would be taken or not and if it
+was right no harm no foul if it was wrong all of the instructions that happen
+immediately after that branch need to be thrown away and the way that we do that
+is to just discard them from this this the retirement buffer and make sure they
+never retire so there's a lot of clever tricks going on in there and that is a
+super super high-level view and there aren't even a half as many I mean as I
+say these are like anywhere between 12 and a couple of hundred cycles before a
+single instruction makes it from one end of the pipeline to the other but
+hopefully it gives you a sort of grounding and now we're going to talk a
+little bit about some specifics and I'm gonna give you some tooling to show how
+it happens or how you can measure it yourself so this is more confusing a
+picture than I wanted it to be unfortunately I have another
+presentation where I go into a deep dive and how the branch predictor works and
+I stole some slides from it and now I'm like thinking oh gosh this is probably
+more confusing but the general gist of the branch predictor is that it has a
+little lookup table and every time the execution system discovers that there's
+a branch and it took a branch it sends a message back to the branch predictor
+saying hey at address 1,000 there's a branch to address 2,000 it goes okay and
+it notes it down in the table that table is the branch target buffer and you can
+think of it like a hash map it's a hash map that gets replaced over time there's
+only a certain number of entries that are in it so we've only got a couple of
+hundred of those whatever and that means that the next time we see that address we
+will predict that we'll go to address 2,000 rather than just following a linear
+line of one instruction after another that's great for unconditional branches
+but many branches are either conditional or have a derived destination they are
+like a switch statement or a virtual function calls in C++ terms where we
+don't actually know the destination I haven't even put that on here but the
+most common case we think about with branch prediction is whether it's taken or
+not and so the the ways that this is done is a sort of relatively closely
+guarded secret by each of the vendors because the key to great performance is
+accurate branch prediction and AMD and Intel and ARM don't really publish many
+details about how these branch producers work but they have luckily been
+reverse-engineered by some smart people and broadly what happens is the
+instruction address where there are branches known to be plus some amount of
+history both locally for that exact that that specific branch and globally but
+all branches they're sort of hashed together to give a unique sort of
+fingerprint for when I'm at this branch and I have seen branches that go taken not
+taken taken taken taken not taken something like that then go to slot 7 in
+these predictors over here that's like where the hash lands and then in that
+predictor table I just keep the count of whether or not it was taken or not and I
+have a two-bit counter every time it's taken I add one to that and every time I
+it's not taken I subtract one from it and then I just use whether or not it was
+taken before or not as the prediction for whether it's taken this time and it
+works remarkably well and there's a lot more subtlety to it there's some
+agreement predictors there are multi levels of this kind of stuff but broadly
+speaking it's kind of a hash look up and a bit of history keeping track of what
+happened last time is it important though I mean I've been waxing lyrical up here
+about how how important it is I'd like to show that the branch predictor is
+actually valuable even when you're writing something in Python so I've got a
+bit of Python up here and this Python code is just summing over a list of
+integers the list of integers is a big set of numbers between 0 and 255 and
+essentially in the middle of this loop here says I mean this is terrible Python
+code don't write Python code this way for this kind of thing and but we're
+saying keep track of a total sum of all the integers and then separately I want
+to just keep track of the sum of all the integers that are less than 128 seem
+reasonable so far so hiding in there is a branch it's not a specific branch in in
+like some object code some assembly code but deep deep deep inside the Python
+interpreter we know that there's going to be some kind of switch on the Python byte
+code and there's going to be a pattern in the ways that it's going to be jumping
+around that I'm hoping to show that the branch predictor can be affected by
+whether this branch is taken or not and measure it so what my approach is going to
+be is I'm going to run this piece of code with 10 million random numbers again
+between 0 and 255 and then I'm going to run it again with the same data except I
+sort the data first now this is a kind of very counterintuitive thing to do
+because it's the same numbers right I'm not putting any tricks here sorting it
+doesn't do anything clever like bring it into the memory caches or anything like
+that I've done versions of this where I write the file out and just have two
+copies of the same data one where this file is sorted one where the file is not
+sorted and I run it over those and it gets the same answers so if we run it for
+10 million items this is surprisingly quick ready for Python 0.7 seconds it takes to run
+over the unsorted data now again I mean I've been leading up to this point here this is
+sort of a leading question do we think it's going to go faster or slower if I
+give it sorted data versus unsorted data faster people think it's gonna be faster
+and they're absolutely right it is measurably faster even in Python an
+interpreted language running over 10 million numbers if the numbers are
+sorted first and if we just take a moment to think about that the hypothesis
+would be that we'll go back to me code one second that this branch is
+essentially unpredictable if I give it random data it is equally likely for the
+number that I'm going in this particular iteration around the loop is
+greater than 128 or less than 128 right equally like it's a coin toss and so
+there's no pattern at all for the branch predictor to latch onto there it will
+make a prediction and it will be wrong half the time and then I'll have to undo
+this work and restate the pipeline and start again all that kind of good stuff but
+when the data is sorted this branch is jumped over sorry no is yet that for
+the first half of the file all of the values are less than 128 because we've
+sorted it and so this if statement will be taken i.e. the branch won't be taken
+and then as soon as we get to the middle midpoint of the file we will discover
+the first value that's 128 or greater the branch predictor will probably
+miss predict that but quickly it will learn that this branch is now always taken and
+so what we've got is a predictable branch in the case of the data being
+sorted but is it really that I mean this is a relatively small change of point
+eight point zero eight seconds 80 milliseconds difference there is it
+really the branch predictor have I just done something silly in my tests it's a
+good question it's one I always I should ask yourself whenever you're doing
+performance related stuff you have to measure things over and over again and
+really try and look for some of the more esoteric hypotheses so this is a
+tool that I use it so I'm I'm most of the stuff I'm gonna be talking about is
+we Linux based but there are equivalents for Windows V tune for example is
+Intel's sort of GUI based version of this that is available both for Windows and
+Linux perf is a tool that uses the counters inside the chip so the chip itself
+keeps track of interesting events that happen and you can configure up to foot
+between four and six counters a measure one of thousands of different things
+that can happen on the chip this is like this telemetry inside the CPU and so what I've
+asked it to do is use two of the counters account both the number of branches that
+we encountered and the number of branches that we missed and as you can see when
+I'm running my Python code here with the data being unsorted ie random then there
+are 20 billion branches and 124 million of them were misses this is pretty
+incredible right remember this is random remember also that there's tons of other
+branches in the Python interpreter right but 90 was at 99.4% of branches have been
+correctly predicted amazing if we run it with the sorted case though we see that
+we drop somewhere in the region of 50 million mispredictions and we go down to
+0.37 branches of all are being mispredicted that's amazing absolutely amazing so I think it's clear that we could say that like and if you measure some of the
+other performance characteristics of the of the CPU it's pretty clear that the
+only thing that can explain the speed up really is this branch risk misprediction
+another thing that perf can do is it can show you the instructions that actually
+generated the mispredictions and you can do awesome conclusions from that and sort
+of do work backwards and sort of say no it really is this particular bit of the
+code so that's pretty cool but you know Python's a bit of a weird language to
+demonstrate micro architectural effects in so let's try C++ so this is the
+same code written in C++ exactly the same kind of flavor to it just you know
+slightly different syntax and the unsorted takes 7.6 milliseconds is the
+sort of gonna be faster or slower and you know this is going to be a trick
+question don't you anyone hazard a guess no one's gonna have no one's gonna put
+that their neck out on the line the sorted case if my clicker works exactly the
+same hmm so somehow C++ can teach the branch predictor to predict random
+events maybe I don't know so what happened here so well it's first of all
+let's throw perfect this and see what happens so if I run my my branch
+prediction code the C code version of this you can see far fewer actual
+branches were taken because you know now we haven't got the Python interpreter
+that's being actually run we're just seeing that tiny loop of code that's doing
+the if check 38 million branches are missed when it's unsorted and when we
+sort the data exactly the same within the noise of the perf system itself so
+perf unfortunately is not a perfect system it's got a certain amount of noise
+with it so how come we're able to predict these branches well let's let's go
+and have a look at the code so one thing we can do I hope this works fingers
+crossed drum roll there we go so this oh my god that's so bright and white in a
+second it will go into dark mode and you can see unfortunately that I didn't try
+this on the actual resolution that we were in here so what I've got this is
+compiler Explorer which is a website that lets you put in your code on the left hand
+side and then it shows you the assembly code equivalent on the right hand side and
+then you can mouse around inside of here I can scroll around somewhere and as I'm
+scrolling over the various different parts of it unfortunately again because
+the screen there's the zoom here I can zoom it out a little bit there was a
+little bit better okay so as I'm sort of mousing over you can see that I'm
+highlighting the instructions that correspond to those particular parts of
+the code and it's a valuable tool in terms of working these kinds of things out
+but because it's easier to look at the code on a big screen here would rather me
+trying to fart around the website I've pasted it into here and I've put the
+comments about what's going on inside the code here so this tiny loop here is
+the is this loop of above the first part we're doing and I'm assuming you know
+like it's been a while since have most of you have looked at assembly code I'm
+sure but anyway so we're reading the next value into ECX it's a register don't
+worry about it and then we're just adding it to R8D R8D just happens to be the
+register that it chose to put total sum in so that is the first sort of line
+there total sum plus equals integer the second part here is cleverer what the
+compiler has decided to do is work out unconditionally what the value of sum
+below 128 would be regardless of the value of integer it's just going to add
+integer to it anyway and then it does the comparison and then it uses a
+conditional move that says if the comparison was below that's what the B of
+seem of B is if the comparison was below then move this temporary value back into
+the sum below 128 otherwise leave it alone and so it's kind of a hardware
+ternary operator you know the question mark and the important thing about that is
+that there is no branch here there's nothing to predict there's nothing to
+mispredict critically the compiler has decided to use this conditional loop here
+sorry conditional move here and then there's some other nonsense here so there's
+exactly one branch this JNE at the bottom here exactly one branch in the whole
+program and this is very very predictable because it's going to be
+taken 10 million times and then the last time around the loop it's not going to be
+taken and the predictor will get it wrong then but I think by then we've got the
+benefit of the branch predictor out of it so the compiler is pretty smart here the
+compiler has taken a bet that doing the ad unconditionally even though it's inside
+an if statement is worth doing like the performance of it is worth doing to be
+able to do this conditional move now if there was a side effect in there if it is
+that if statement had like a print statement or something in other
+obviously the compiler couldn't run that bit of code it knows that there's no
+side effects to that particular aspect so compiler has chosen to do this it
+doesn't always make this choice but it has in this instance here so what if I
+turned the compiler's ability to make that conditional move off so I've got a
+horrible hack there which I compiled it with F no if conversion which says to
+the compiler don't do that then if we use the sorted case we see that we've got
+similar results to before there's more branches now because now we've got two
+branches we've got a branch in the middle of the code that's jumping over but
+it's sorted so it's predictable so the the actual miss rate is still 0.37% so far
+so good when we run it on the unsorted data 24% of all the branches are
+mispredicted which is exactly what you'd expect right that loop has two
+branches one of which is perfectly predictable so half the branches will
+be perfectly predicted the other half of the branches will be wrong exactly half
+the time so that's where the 25% comes from so that is monstrous and it takes
+39 milliseconds versus the 9 if we just use the branch for version versus the 7 if
+we use the CMOV version so the compiler got it right here the compiler made the
+right call and you can see that branch prediction correctly is important to be
+able to do this looks very artificial I get it I mean it's a surprising thing
+that sorting your data could make your program go faster I get but so is this
+realistic and yes actually I have another presentation where I write a ray tracer
+and the end of the presentation it was meant to be about C++ style not about
+performance at all that that's my thing by the end of it suddenly I'm running the
+one of the versions and it's so much slower I couldn't work out why and it
+turned out that there was a branch it was totally not predictable in the middle
+of this ray tracer and making a single character change in my code made that
+branch predictable and the thing went third you know three times faster it's
+brilliant it doesn't happen very often right but for these kinds of things it
+can do all right we're gonna move on to um how am I doing on time not very well so
+I'm gonna have to start going a bit quicker we'll talk a little bit about
+execution I originally had some very morbid picture here and I thought I'd
+probably come up with something slightly better than that for this so I'm
+gonna try and explain with a little sort of real-world worked scenario of
+something which hopefully people have been familiar are familiar with which is a
+bloom filter if anyone know what a bloom filter is a few nods in the audience yes
+so super quickly a bloom filter is an acceleration structure a
+probabilistic acceleration structure where you can ask the question is my value w in
+this set or not and the answer it gives back is maybe and definitely not and why
+the heck is that useful well that set is actually quite small the maybe obviously
+you have to be able to deal with false positives is useful for things like
+databases where maybe if you definitely know something's not in the database
+there's no point going to load the B tree off of the spinning rust disk or make the
+network call over to the far end so you can use it for local acceleration but
+sometimes you're wrong so the way that it works is we we take our inputs which are
+either XY and Z in this instance and we hash them with different hash algorithms or
+with some perturbation of hash algorithms and we set a one bit in all of the
+locations in an array of values where those hashes land and then to ask the
+question is w in this set we do the same thing and we ask are there ones in all
+of the locations so obviously there's going to be sometimes where these things
+collide and that's where we get the maybe it is and when it isn't but if it's not
+in there then at least one of those bits won't be set and that means it's
+definitely not in there we never set any of its bits so really the code looks
+something like this we have this sort of is it present I'm just using ID here we do
+some kind of looping over how many times we're going to hash our value and get
+different hash results and we check the bit and we count and if the count is
+equal to number of hashes that we chose so I'm picking four there were three on
+the example that we just saw in the picture if it's four it might be in there
+and if it's less than four we definitely know it's not in there and this
+scramble function I've just used like murmur three to do like a hash a very
+crappy hash frankly and then given the hash value we need to be able to sort of say
+well which slot in my table do I need to check and I'm going to just use a
+modular so I'm just going to use the size of the table and I'll get a modulus
+with it and as you know all good folks who use hash tables know we should pick a
+prime number size for that table so that we get the least number of aliasing and
+horrible problems with coprimes and I'm going to show very quickly something we
+can do here so I'm going to go back over to compiler explorer which is going to be
+very difficult to see in this scale so again there's a chunk of code in here
+this stuff on the left hand side is the murmur hash thing so it's a bunch of
+multiplies and shifts and we're looking at this l2 loop here which is the loop
+over the four times that I'm looking inside the table and what I can do is I
+can select an area of code and then I can paste it into an analysis mode inside
+compiler explorer but because that involves a whole bunch of fiddly things I
+have a canned link that was going to take me there so you'll have to trust me
+that this can be done reasonably easily so what this is doing is using something
+called LLVM MCA there's a lot harder to say than you think when you're on stage
+which is the machine code analyzer it is part of LLVM which is part of the clang
+project there's the compiler and it uses the same knowledge that the compiler
+uses about how long instructions take and which things depend on what to do the
+scheduling inside the compiler it allows us to turn that on its head and say
+given an arbitrary bit of code what does the what would the CPU do and so what
+this is predicted is that this would take four iterations of the code on the
+right and left hand side would take a hundred and hundred and forty eight
+cycles and the cool thing about this is if I can maximize it sorry this is a tiny
+little thing here there is a little view down the bottom here where this is a
+sort of timeline view far off on the right hand side are the instructions so going
+from the top to bottom is the program running each of those instructions and
+on the left hand side is kind of a visualization of the pipeline that we've
+been talking about it doesn't have all the fetch and decode part just has a
+single D for decode but each column is a unit of time moving from left to right so
+what it says is in the simulation in this in the first clock cycle zero here all of
+these instructions were decoded at once so we can decode multiple instructions at
+once which is super cool I don't think you can actually decode this many but we're
+going to go with the tool on the second cycle that is the one column here two of
+the instructions started executing that's what that lowercase e is and these ones
+with the equals were blocked they couldn't take they couldn't start executing because
+they depended on some of the values from the earlier instructions but also meanwhile
+we've decoded the next set of instructions and so on and so forth now I'm not going
+to go over it in huge details but the equals usually is a bad sign that shows
+that there's a dependency it's not able to run those instructions that it otherwise
+would and probably you've noticed that there's something horrible coming down
+the pipeline here quite literally this instruction here with all the eee which
+is the correct sound to make when you see this this is the divide you're like I
+didn't see a divide in that code but the modulus operation that we were doing the
+only way to do a modulus is to do a division and get the remainder which is
+what the div instruction does and and in anything but the very latest version of
+Intel processors at least these these 64-bit divides can take anywhere between
+80 and 100 cycles I don't think this is actually right so that's pretty bad but
+while we're here looking at this sort of view here this is of underlying the sort
+of the the sort of how the pipeline works despite the the clearly the two
+instructions immediately after the divide here with the all the equacies those are
+dependent on the result of that divide they're blocked hence they're just
+waiting and waiting waiting waiting for it to complete but the next iteration of the
+loop which the branch predictor has already sort of sent us round even
+though we haven't executed the branch here right it is predicted and it started
+running the next part and so all these instructions here are actually from the
+next iteration of the loop so again this cool out of order aspect that I
+described earlier and then obviously the big dashes and the R is them retiring at
+the very end there so they're all having to retire in sequence and so I can kind of
+follow it down and follow it down and follow it down and what we see is that yes it
+takes absolutely ages to get an answer out of that excuse me so what could you do
+about that I mean maybe you'll stop with it right but this is a probabilistic data
+structure if we can trade off a tiny bit of the performance of the hash table
+that sort of underpinning it with but by saying let's not use a prime number size
+anymore let's use a power of two size of that table and we're encode that by saying I'm going
+to only allow my table to be constructed with the log to not power to the log to
+size of the table and then I'm going to construct it with one up that size so you
+know like let's have sixty five thousand entries in my table now I know that my
+bucket operation doesn't have to be a modulus with an unknown number it can be an
+and with the filter size minus one and if we look at that code never do things
+that rely on the Wi-Fi we can see that this thing now takes 33 cycles and that
+and that this is a much healthier if my mouse would work click click click much
+healthier timeline view down here this is what I would expect instructions to look
+like you know everything is kind of just taking a small amount of time and is
+retiring pretty soon afterwards it's not waiting for huge amounts of time I mean
+there are still weights happening in here and we're still getting some benefit of
+doing more hashes there but but it takes substantially less time and this is one
+of those things where I think we forget that computers are incredibly incredibly
+fast but divides are still really really slow now that is actually not true in the
+most recent generation of Intel machines they now got them down to tens of cycles
+but those divides are expensive and they're not pipelined which means that you
+can only do one divide at a time on one CPU before and when that completes then the
+next divide can start unlike multiplies and adds and things like that which may
+take multiple cycles but you can start one every single clock cycle so divides
+bad if you can avoid them fantastico so that's 30 cycles versus the 148 that we
+saw in the first instance there now we've been using a simulator here this is where
+I have to say a token exhortation to always benchmark your code with real-world
+performance rather than relying on simulations but I wanted to show it as
+it's an interesting way of looking and visualizing about what's going on
+inside the CPU can the compiler save us yes he says with a catch in his voice if
+the compiler knows the modulus value ahead of time if it's not just a value that we
+sort of call dot size on something to get a dynamic answer back then the compiler
+can do a trick where it effectively turns that modulus which is a division into a
+bunch of multiplies and shifts and you're like how can you turn how can we make a
+how can we make a divide out of multiplies I mean for integers especially well I mean the
+way that I would do this is you take the reciprocal and multiply by the reciprocal right
+that's a way of turning a divide into a multiply and this is exactly what the
+compiler is doing here the compiler has got this horrible constant up here is
+essentially 1 over 1 0 2 1 in some kind of fixed point representation and then it does a whole bunch of
+multiplies and then it shifts the result back down to get the the answer of the division and then it
+has to do some other nonsense others and the compiler can prove to itself there's an
+algorithm but that inside the compiler for determining the minimum number of
+instructions to generate the modulus for any value and one of the cool things about
+compiler explore is that we can actually edit this and we can sort of like say well if it
+was 15 how would that look and compiler can generate even better code you know if
+it's divided by three there or whatever again we sort of see that it has all these tricks up its
+sleeve it knows how to do this for it but it does rely on it knowing ahead of time at compile time
+what your modulus is seeing if that's a word with so there are some hash implementations that use some
+tricks to to have a jump table to jump to one of the n modulus is that they have that they support
+and there's also a library called lib divide which lets you like JIT compile divides if you have
+like a configuration file that you load at startup and then you can JIT yourself a divide by the value in
+the configuration file and then you get the benefit of the compiled version but you can still have some
+dynamism okay in the very few moments that I'm starting to run short on I can't really talk about
+performance without talking about memory as you're all aware memory is like one of the slowest things
+that you can have in a computer give or take the divide I've just talked about it takes anywhere
+between eighty and a hundred odd nanoseconds to access the main memory in your computer the many
+gigabytes of memory and there are these layers of caches that try and hide that away from us we've
+got one nanosecond time for l1 but it's 32k my first computer had 32k in it now it's just a cache
+it's kind of sad 256k for l2 these are representatives you know the order of magnitude field because every
+computer has a slightly different setup of these things here so the way that I'm going to expose this
+is with the torture test for memory which is to have a follow the link list piece of code so we
+have a link list we have a pointer to the next one we have some data and I'm going to sum up all the
+data by following the link lists next pointers and I'm apologizing I'm going to go quick here because
+of time constraints so yeah it's pretty much just straightforward follow the link list I have 10
+million elements which is 150 megabytes worth of data if I just treat it like an array where that is I
+allocate them all one after another and I ignore the next pointer and I just add the data of them one
+after another which is disingenuous but this gives us our lowest sort of what we the fastest it could
+go then it takes 11 milliseconds to turn through 10 million elements predict list it takes 24 milliseconds
+which is not all that bad it's only 2.12 times slower now everyone loves to hate on linked lists so surely
+they're fine right I cheated in that particular example what I did is I pointed the linked list entry at the
+next element in the array so it was really just following an array just in a more complicated way now
+what that's showing is that data dependencies from one iteration to the loop is what's causing the slowdown this is
+not memory access times because it's the same amount of memory in the same order that we're reading
+one after another as it is in the array element it's just that the prediction system can't follow
+along and start executing the next element of the of the loop ahead of time because in an array case it's
+just you've just added 10 to it to get to the next one sorry 16 to it to get to the next one in the
+linked list case you have to wait for the pointer to be read in from memory to follow it it doesn't know
+that it's going to land in the next bucket right but something does do actually interestingly the l1
+the l2 and the l3 caches all have predictors built into them and what they look for is patterns of misses
+and if they see the same instruction causing a miss in the cache over and over again they predict how
+far that instruction is striding if it was a strided memory access and then they start prefetching ahead
+of time from l you know l1 will prepare prefetch from l2 which will prefetch from l3 which will start
+prefetching from memory so this is actually why this is so fast if we weren't doing if it wasn't prefetching
+ahead of time then every 64 bytes we'd slam into a miss and we'd have to wait for the whole time for
+the the memory to be pulled in from l from from you know real RAM so it's pretty clever so what this is
+what real results look like if I actually randomize the pointers and make it jump all over the shop
+inside memory now we're exposed to the true cost of that memory so now it takes us 1.3 seconds to get
+through our data and again I want to prove to you that I isn't just because I did made a programming
+mistake this is because of the memory system and another thing we can use here is this approach to a
+performance analysis it's called top-down analysis where there is a sort of set of excuse me a set of
+different counters inside the CPU that are grouped together as being either front-end back-end or
+whatever and there's a sort of little chain and it will keep running the program over and over again
+changing which counters it's looking at to try and drill down into what is the actual cause of the
+performance issue and so the top level analysis is all the instructions just retiring which means
+that you know there's nothing you can do about it the CPU is going through them just to have fewer
+instructions is it because you're speculating badly is our is the branch predictor the problem are you
+back-end bound I is there something in the execution system or are you front-end bound which we haven't
+really talked about but that whole feeding system of reading in bytes from memory and decoding them can
+itself be a bottleneck at some stages so if we run it on our use me if we run it on sorry excuse me again on our code we can see that like of those top four categories we're definitely back-end bound
+which is not too surprising that's where the memory accesses are going to happen in the back-end when the execution is actually happening and we can see that for the array
+version we're only 68% bound for the linked list version 85% bound and then if we're doing it random then we're essentially just totally all the machines doing is waiting in that stage and we can drill down and we can give it more command line flags here so I'm still using perf here with these with different flags which you can look at on the slides we're definitely memory bound there's all the other things we could be bound by heavy operations light operations so a divide would be counted as like a heavy operation and all the ads and subtracts and things would be light operations and there's some fetch things that are mispredictions so we're memory
+bound and if I then say well let's look at what the memory bound is drill down into that we're totally bound by DRAM over here 67% of it is waiting for that last level cash or actually going out to the real memory so it's not that we're just like ping-ponging stuff between L2 and L3 we're actually going out to real mortal RAM I don't understand why we're not L2 bound incidentally so if anyone has a theory as to why that's happening I'd be interested in hearing about it anyway in conclusion as I'm pretty much at time
+CPUs are complicated we've been over the pipeline I've talked a little about what out of order means we've talked about why the branch predictor is so important and a little bit about memories and caches luckily we can rely on our compilers most of the time to do the right thing if we give them the right information critically and I've shown you some of the tools that we can use to understand
+we didn't cover tons of things this has all been a single core on a single machine we didn't talk about symmetric multi-threading or hyper-threading the multiple cores and the cache coherency issues that come from that there is also SIMD which is where each instruction is doing multiple pieces of work at once for the same cost which is pretty cool and there are some other cool tools called cache grind and UECA that can do even more analysis and drill down on that thank you everybody thank you very much
+thank you very much

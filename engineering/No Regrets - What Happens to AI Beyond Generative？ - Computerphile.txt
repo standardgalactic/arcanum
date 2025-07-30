@@ -1,0 +1,284 @@
+yeah so today we're looking at the focus of the lab which is thinking about ai after gen ai plateaus
+so gen ai models are actually extraordinarily good given the simplicity of what is being done
+so just as a 30 second recap what we're doing in gen ai is we're doing supervised learning
+or self-supervised learning we're feeding in a part of a data corpus large data corpus to predict
+the future and as a consequence these systems are really really good at doing text like tasks
+like q a question answering acting like a chatbot and so on and so forth however a lot of research
+now has shown that these systems are extraordinarily ill-suited for taking actions
+and for taking decisions in the world that requires trial and error learning long-term planning or
+complicated reasoning in the real world so the first question is if we are going to go beyond
+supervised learning this means we have to have ai systems that can actually take actions
+and and do trial and error learning learn from experience like very much like humans do
+the challenge with this is that it's sort of scary to have ai systems that are taking these actions in
+the real world because you can imagine trial and error learning can go really wrong if you're doing
+this in the real world in the real world furthermore probably we also need a lot of different trial and
+error data here so like we need the internet of text to get models that are good at text-based tasks
+and text-based reasoning i believe we also need something like the internet of environments to
+get good agentic models ones that can take actions that can plan that can do this of like multi-term
+decision making and what this means is we will have to be training these models in simulated environments
+rather than having them trained just on data that comes from a text corpus or from a fixed data set
+these systems will have to be trained in environments that are running virtually on a on a computer
+why is this great because i expect the computers will be getting faster but we're not going to have
+exponentially more humans in the world so human data will be limited but computers are going to keep
+accelerating which means this compute only scaling which is the underlying sort of tagline for the work
+that we do at flair will be a recipe towards uh great innovations the issue here is we've been
+relying in gen ai on the co-scaling of computing data we're now running out of human data so moving
+towards compute only scaling one answer is let's run virtual environments where agents can take actions
+can do trial and error learning the question then is those environments won't be exactly like the real
+world and we won't know exactly what tasks to model so how can we go in and design distributions over tasks
+such that the agent becomes robust to whatever uh specific instance of that distribution they might
+be encountering at the at test time in the real world okay so in in simple terms is let's let's
+imagine i have um a a distribution of environments which for example could be as simple as saying i have
+a grid world and i know at test time i'm going to encounter an agent that needs to navigate
+in some sort of grid world from a starting position to a goal position in the shortest path but i don't
+know at all what this exact instance will be how do i design a method that can be good on all possible
+grid worlds at once so that at test time it can even generalize to something that has a lot of
+structure for example if you imagine i have corridors and walls that look very very different from this
+random distribution that i've been training on ideally what we like to be able to simulate and
+train in simulation on all possible layouts because we don't know exactly what we'll be facing at test
+time after training is done and we like to develop methods now that are robust to whatever can be
+happening at uh at in the real world so here's train and here's test for example but to be clear this
+could be any number of different environments that could be encountering in the real world
+and the crucial question then is what distribution should i be training on to minimize my regret at
+test time now what is what is regret regret is nothing but the difference between the performance
+of my agent on an environment and the optimal performance of uh an agent that is acting in
+that environment so we have the regret for some environment let's call the environment e then i have the
+regret of e is nothing but the performance j pi star on e minus my agent j pi on e so pi here is the
+policy of the agent that i'm training e is the environment i'm comparing the performance of an
+optimal policy on the environment e with my agent on the environment e so pi i'm using as notation for
+is the policy and the policy in reinforcement learning is an object that takes in observations
+or trajectory style and produces a distribution over actions given that trajectory so in other words
+the policy is the instruction set for how to act in the world optimal policy means i have the one
+policy the pi star that gives me the highest expected reward that can be obtained in a given task
+if reward sounds weird it was quite simple think of whatever you want in life anything that is good
+that's the reward so for example if you have a cleaning robot the reward might be that the floor
+is clean or you might want to specify the reward to be something like the amount of dirt collected by
+the cleaning robot be careful but because a cleaning robot might go and tip over vases to produce more
+dirt that it can collect so even in the reward specification we have to be careful but in this case we're going
+to assume that we have a reward function that there is an environment that we have a distribution over this
+environment and then we can simulate this environment on the computer and the question now is if i don't
+know exactly what the real world is but i have a distribution over possible scenarios like these
+different grid walls that i could be facing what is the distribution i should be training on and why is
+regret useful because regret tells me that there is something that i can be learning and that i haven't
+yet achieved on these environments so if i have a high regret that means there's a large delta between
+how my agent is performing and what is in principle possible what we've done is we've said let's go
+from these simple grid worlds i mentioned which people have studied before where we have a single
+agent and we have some obstacles let's go to us and this is a discrete space where there's only a
+finite number of places that the agent can be on and the movement is in something like hours and
+directions let's go to something that is one step closer to the real world right because in the real
+world you can imagine that you have a 3d environment you have 3d you have 2d and discrete and in the
+real world you have a 3d environment and you have continuous actions and continuous state space and you
+have a robot that can move around that has lidar readings like such and that can navigate in this
+complicated maze let's take a step towards this that is still tractable on the computer and that is
+by saying we're going to have a 2d environment that has robots with lidar that we simulate it's a
+continuous navigation task now and we're going to multiple of these robots and these robots
+easily to go to their own goal navigating around obstacles and avoiding each other we spent about
+six months trying to make the default methods from literature people have developed to approximate
+the regret that i just mentioned um to actually try and make this work on this new environment
+distribution which is one step towards real world tasks it turned out that going one step out of
+distribution from the areas where previous research had been carried out was enough to basically break
+the standard methods that people had been using on those simple environments and all of these methods
+had in common that they took inspiration from trying to approximate the regret which seems like a useful
+and relevant property to optimize for why again because i get a bound on how bad there can be suboptimal
+test time and i'm guaranteed to always have levels where in principle i can learn something
+so after about six months of trying to make these things work in this environment
+we went back to the drawing board and we thought about maybe these regret approximations aren't very
+very good how can i how can we get an intuition from first principles about how good these regret
+intuitions are and we started to simply plot something that to us felt like an intuitive notion of learnability
+as a function of the regret approximations that we're running based on literature so on the x-axis
+we put the approximate regret or the estimated regret and on the y-axis we put learnability now you
+might be wondering what exactly is learnability and what we were hoping i'll explain this in a second
+what we're hoping to see is that these estimates of the regret are a nice proxy for the learnability right
+because what does this mean it means i can sample for the estimated regret and i'll get levels of high
+learnability which specifically means in these settings i want to have tasks that are difficult
+but not too difficult where learning is possible for the agent through trial and error now what might
+be a good proxy for learnability we decided is simply to look at levels where the agent sometimes succeeds
+but not always it's interesting that it feels like it's a negative connotation kind of having a regret
+function rather than a kind of i don't know success function or a you know happiness function and you
+see this kind of throughout the fields there's optimization and where people like to minimize losses
+and there's reinforcement learning where people like to maximize expected returns right so you actually
+can see that and obviously that it's the it's it's exactly the same it's just terminology absolutely
+purely terminology um but funnily enough we've caught our paper then then no regrets but i i digress i
+regret um so let's go back to this so what we hoped is let's build on everything that people have done
+and bring this to a multi-agent setting of multiple robots that is one step closer to the real world of
+these like interacting different robots that have these lidars and that need to actually operate
+in 3d and there's boxes around and obstacles and whatnot and in amazon warehouse order in amazon
+warehouse we have these independent robots and crucially it's too complicated so you can't do exact
+planning all of the classical path planning algorithms are going to fail in these occluded uh
+multi-agent environments but maybe we can use the magic of reinforcement learning to deal with these
+uh environments instead and what we said is we're trying to evaluate because nothing worked we try
+to evaluate the quality of our regret approximation algorithms so what we did is we plotted on the x-axis
+the estimated regret and on the y-axis our intuitive notion of learnability so what does that mean it's
+where the agent succeeds sometimes because there needs to be a signal to learn but not always because
+if you're always succeeding you're already perfect which means there's nothing to learn
+how can we formulate this well we said a simple proxy for this is p times one minus p where p is the
+probability of success in a given level and that's what we called l of e the learnability of e
+and our hope was that the learnability would correlate strongly with the estimated regret from these
+algorithms because then we could optimize for high regret environments and we would end up having
+high high learnability environments that was the hope what we found instead is that there was either
+no correlation at all or there may even have been a negative correlation but most commonly actually
+it was there was if you know if there was a negative correlation consistency we could just do the
+opposite of what we're supposed to be doing that would still work but really there wasn't a signal it was
+a hot mess okay in reality these regret approximations did not capture an intuitive notion of of
+learnability at that point we're about uh 10 days from the conference deadline and any sensible
+research at that point would have said well congratulations there's the methods don't work
+there's nothing we can do but instead what we said is why don't we go and just optimize for learnability
+rather than optimizing for regret because if we have an intuitive metric that should capture what
+is a useful level to learn on where you sometimes succeed and not always and you can measure this
+metric easily we can just replace the measure of success of the environment generation policy
+so this thing that says what policy what environments to train on with our learnability metric
+and within a day we had methods that were generalizing better to hold out environments to
+challenging hold our tasks within that distribution than anything we've seen before
+what does this mean it means that as we're doing research and machine learning
+it's important to once in a while realize that a our methods struggle to generalize out of
+distribution but that also b the research paradigm itself sometimes has been overfitted to a specific
+distribution of tasks that people like to develop their methods for and the moment that you take a step
+outside that distribution it is entirely possible that everything that has been done before previously will
+break down and it's therefore important to go back to the to the drawing board and think from first
+principles what do i expect to work and why can i sanity check that the assumption people have made in the
+past are actually reasonable for example the assumption that these methods measure an approximate regret in these environments
+so for us that was an important lesson sometimes as a researcher you're the agent and you have to generalize to new held out tasks and
+to make sure that all of this is as easy and part and and and and we also realize that there's a root cause
+why researchers stick to these uh simple toy environments and that's because it's actually
+quite challenging to implement new environments right there's a reason everyone does the same work on
+that on that on those on those few reinforcement learning tasks where they then overfit with their methods
+and that's because it's computationally expensive to run experiments and it's difficult to implement new
+environments our lab has also tried to attack both of these branches so one of them is the cost of running
+experiments in reinforcement learning and then the lack of diverse tasks right clearly if we think about
+grid worlds a grid world does not represent the entirety of possible scenarios of any sort that we
+could be facing in the real world in particular even this out of distribution example that i gave you
+still looks a lot like a grid world yes it has a bit more structure
+but fundamentally this looks a lot like a grid world right and there's only so much that can go wrong
+within the space of great worlds so what have we done we've gone for a start we have an entire line
+of work now that i call rl at the hyperscale the hyperscale and what this says is that in the last 16
+years we had two big revolutions we had the deep learning this revolution in 2012 and we had the dqn deep
+reinforcement learning deep revolution revolution in 2013. now if we look back this has resulted in gen ai
+and is currently on path for revolutionizing the world and the deep reinforcement revolution has
+generated 40 000 papers and there's a valid question here which is why is it that deep learning has been
+so much more successful than deep reinforcement learning and one answer is that deep
+reinforcement learning lost what is called the hardware lottery right because the underlying sort of
+magic to success of deep learning was that we can run deep learning efficiently on the gpu
+deep learning is perfect for the gpu
+okay this is something that is important to appreciate
+before people started running deep learning on the gpu before alex net
+the first efforts were using tens of thousands of cpus at google brain and they were producing neural
+networks that by modern standards were terrible in their performance only when people started running
+these things on gpu which happened to be well suited for this kind of logical operation which is matrix
+vector operations which happen to be very very similar to what happens in video games for graphic
+computation only then did deep learning become this magical success story of supervised learning
+the issue is that for reinforcement learning we're fundamentally faced with a different paradigm because
+what normally happens is that we have an environment for example the grid world which runs
+runs on the cpu and then we have the policy pi and the agent training loop
+everything else running on the gpu the deep neural networks that present our policies pi the agent
+and what this means is we need to orchestrate information exchange so the agent has to send actions
+to the environment actions and the environment has to send back observations and rewards to the agent
+so here's our policy pi and our learning training loop now this fundamentally limits how much we can scale up
+our rl training and it's meant that rl has been running at orders of magnitude slower per
+training sample than supervised learning so it's been very very difficult to keep the gpus busy
+and to have efficient training for reinforcement learning and the current cpu gpu architectures
+now it's an artifact that it turned out to be true that graphics cards are good for deep learning
+maybe if they design graphic cards differently for example if you had more memory so if you had a
+pairing of cpus and gpus that interacted differently or that shared memory this wouldn't have happened but
+it did happen and what it's meant is that in deep reinforcement learning we've had a decade of building
+complicated training paradigms complicated ways of trying to interleaf and thread cpus and gpus to try
+and get around these limitations what we've done is we've said what if we simply put the environment also
+on the gpu so now we've got environment and a policy pi and our training loop all run on the same gpu
+and what this means is there's no more communication cpus and gpus what it also means is we can scale up the
+training by adding bash dimensions um by keeping the entire gpu busy number crunching doing what it
+can do best and what's meant in practice is that we've seen between a factor of 10 000 roughly speaking
+from 100 to 10 000 speed ups over previous implementations and what this has meant is
+that now it becomes feasible to test algorithms a lot faster so there's no more excuse to say sorry i
+didn't evaluate the more environments because i didn't have the compute resources because nowadays
+if you have a couple of gpus you can actually run these algorithms a lot faster and evaluate over
+many seats at once um using gpu accelerated learning or our letter hyperscale and this is all done in a
+framework called jacks which allows us to write flexible environment code for gpu accelerated execution
+but let's go back to this because while this has sped up the training and removed the computational
+barriers which was one hindrance for to running multiple environments we said there is the cost
+of running experiments so we take this one but we actually made a second issue worse because suddenly
+the lack of diverse tasks is exacerbated because we're now limited to tasks that have been implemented in
+jacks so we've made this aspect worse so we've also gone and done this we've implemented a lot of
+environments in jacks and in particular this is true for the multi-robot environment into d that i
+mentioned earlier but we also thought wouldn't it be nice if you could simply have something that is
+almost like a universe of all possible tasks let's go from the grid world as being the task distribution
+to something that mirrors the diversity and open-endedness of the world we live in the real world
+now as you can imagine implementing the exact real world is a little bit beyond our current capabilities
+as a single machine learning lab so what we did is we did the same thing we did before when we said
+let's not go to 3d because that's complicated let's go into 2d and let's actually just think of a mini
+universe of 2d physics but within that anything goes and that's something that we recently released
+called kinetics and in kinetics the magic is that we now have an end-to-end gpu accelerated system
+that contains an editor for generating tasks through by human work it also contains a gpu accelerated
+physics engine based on box 2d physics it also contains a ui for humans to play because humans
+are fun and it contains rl training code and curriculum methods and that same method i mentioned
+just now for learnability that worked in our 2d multi-robot environments it turns out this same
+method was also the one that worked off the shelf in this much broader much more challenging task
+distribution in particular we can study in this new connected simulators we can ask questions like
+if i train a method on randomly simulated tasks of 2d physics and you're correctly asking what
+even is a task into in a 2d simulator where there's only newtonian physics can it generalize to hold
+out hand design challenging test cases how do we define the task what all these tasks have in common is
+that there is a green object which is to be put in contact with the blue object and you can make any of
+the objects on the screen you can add rectangles squares uh whatever you want and cut it with the
+blue object which is the episode terminates successful while avoiding the red object so this seems quite
+arbitrary but it turns out you can implement a large number of very diverse looking reinforcement
+learning environments within that paradigm so for example some of the 2d robotics tasks like walking
+around or hopper you can implement in here you can implement something like that game where you have to
+push the buttons on the side to make a marble shoot up you can implement the lunar lander which is
+trying to control the little landing aircraft landing on lunar surface so the diversity of tasks that
+can be done and can implement in principle in this simple uh 2d physics engine is actually sort of
+quite mind-boggling and previously those would have all been different environments which means you
+couldn't parallelize over them because each of these previously would have had that you would have to do
+their own jacks implementation while now this is all expressed within the same parameterization
+that means i can now on the same gpu parallelize across these different environments efficiently
+and i can run different environments in different threats of the gpu
+because they're all just one conflict within that really really powerful expressive editor
+and what we've been able to do for the first time i think is
+to train an agent on this very uninformative distribution of random samples be smart about
+our curriculum method by optimizing for learnability and then we've been able to show two so yes some
+some random samples and you really wouldn't think that um training on this distribution is at all useful
+and so and i should say one more thing i have the task and i also have the controls
+controls and the controls that you can add thrusters and motors to these blobs so as a human you can go
+in and you can play with the keyboard and control these these objects and what we've been able to show
+is two crucial things that were at the beginning of gen ai for text-based tasks and the first thing is
+zero shot improvement and what this means is we can now take this highly arbitrarily uh pre-trained
+distributions apply a curriculum to it and train the generalist agent and this generalist agent is
+going to have non-negligible performance improvements on human designed held out tasks
+that look very very different from our random pre-trained distribution much like you could take
+an llm system pre-trained on the internet full of garbage frankly speaking and yet it would be quite
+good at downstream tasks zero shot so zero shots where it hasn't seen it before it gets it hasn't
+seen it before you haven't optimized it for that task at all so zero shot means you pre-train on one
+thing and you test that same system immediately on something else there's a performance but we all know
+that this was just the onset of gen ai the thing that got people really excited is the fact that we
+can fine-tune these systems on target tasks much more efficiently than training from scratch this
+was the second ingredient to the gen ai revolution it turned out that when we pre-train these uh our
+large language models on the internet of all possible text we can then fine-tune them i.e do supervised
+learning on the limited data set in a target domain that we care about and we've now shown the same
+thing within this universe where not only do we get zero shot improvement in the non-negligible we also
+get faster training when we fine-tune on these target tasks and in particular even some tasks where
+if you train from scratch we will simply flatline while if we pre-train on the internet of things while
+the zero shot performance is still terrible it actually learns efficiently so we believe that
+we've now taken steps towards an agentic foundation model a foundation model that is pre-trained for
+decision making for acting rather than for predicting the next token and i've seen some of these and
+obviously we'll share them with the viewers here with a link and send them there it's like a platform
+game type thing like from computer games and do you see that that will then expand into 3d in the
+same way as computer games did so the hope here is that this is at the beginning of that journey
+where we at the very very early days trying to lay the foundation for how to do training in simulation
+and make it robust and transferable as opposed to training on supervised data from that original
+task from that source distribution right and and but but the limit here is purely computation because
+the same thing we've done now you could in principle do in a 3d environment you could in principle
+do in like much much richer environments and settings so we're trying to lay the foundations
+so they can be scaled up with larger computers
+so now car is going to take one this is me leaving the house and going to to my parking space and
+finding my car railway maybe i have to walk a bit further to get to the railway so that'll be a cost
+of two and then we can start to put these these um actions in so actually these arrows should be dots and
+and i can put in the the action that we had before
+so
+so
+so
+so
+so
+so
+so
+so
+so
+so
+so
+so

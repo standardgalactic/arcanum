@@ -1,0 +1,1165 @@
+I think even within context learning some of these works have shown that sometimes you run into cases
+where the data that you provide to a model in context conflicts with the information that
+it has been shown during pre-training and then some unexpected things can happen.
+Part of intelligence is coming up with these abstractions that regardless of the environment
+allow you to adapt right to these kind of to the environment and and be able to fulfill
+your fundamental desires and those will depend on any system that does retrieval there still needs to
+be some kind of manifold or some sketch of a future situation which we could then lean into.
+To the degree that any intelligent system constantly learns from its environment and learns kind of what
+is actually what are the right abstractions to make good predictions in that environment
+any intelligent machine has to do the same.
+So the million dollar question is how do you do retrieval taking into account the
+interactions between the data points?
+This is actually quite straightforward so what we do is we...
+MLST is sponsored by CentML which is the model serving platform for machine learning workloads.
+You log into their platform the first thing you see is the SaaS option so this is the really simple
+option just like on OpenAI you can send requests up you stick your access token in there and you can
+access all of the latest open source models and it's faster and it's cheaper.
+On Llama 405 billion I was getting about 45 tokens a second they quote 65 or so but anyway it's very fast
+and faster than the competitors.
+They also have PaaS options which means platform as a service.
+Here's an example so we're going to spin up an LLM inferencing service.
+These guys support O Llama and V LLM out of the box so for example when you've got the model up
+and running you can use the OpenAI API right so you can use the Python SDK for OpenAI and you can
+use that to talk to your model.
+I was just using the cheapest option and I was getting very good performance on the new Llama 3.2
+3 billion model.
+By the way when you sign up you get 10 free credits.
+Everyone gets 10 free credits which means you can do some experimentation without spending a penny.
+Also watch the interview I did with Gennady their CEO the other day.
+Enjoy.
+Introduce yourself and why are people going to love this episode?
+What are they going to learn?
+So I am Jonas Sybota.
+I am a PhD student at ETH Zurich in the Institute for Machine Learning
+where I'm working with Andreas Krause on local learning and sequential decision making.
+So recently I worked a lot on making these ideas scale to state-of-the-art models.
+We work with large language models and we're very excited to be able to outperform some very large
+models on the Pile benchmark which is this large huge benchmark that comprises multiple sources of
+language from language that you would find on the internet on maybe Stack Exchange, Hacker News
+to language that is used for math or coding.
+And we have been able to outperform the previous state-of-the-art which was
+a much more than 30 times larger model than the model we used by spending additional time,
+additional compute at test time when you're faced with a certain problem.
+So what we'll go in today's episode is really kind of the idea of why can it be useful
+to spend this additional compute at test time and the key aspect to this which is really like
+fundamentally important and which without which this kind of learning at test time wouldn't work
+which is to how to automatically select the right data.
+So how to automate how can the LLM say what data it needs to make a good prediction.
+And so essentially how can we use the LLM, the intuitions, the abstractions learned by the LLM
+to decide how should it spend its compute at test time.
+With the Pile, shout out to a Leufer.
+I've got Nora Bellrose coming on.
+I interviewed her at ICML and of course I know Connor and some of the folks there.
+But the Pile is interesting because you actually have the data, right?
+We don't have the data that OpenAI trained on, but I guess there's a couple of things.
+I mean, first of all, you could in principle still do retrieval against the Pile even to
+augment, you know, inference that you do on OpenAI.
+It shouldn't matter in principle that the distributions are completely different.
+But yeah, like maybe you can talk about that.
+So does it matter that the distribution of the retrieval data set is different?
+I don't think it is because, I mean, so we evaluated on a bunch of different models
+where on some models I know they didn't use the Pile as a training data set.
+For example, GPT-2, as you said, I mean, they didn't train on the Pile.
+I think the Pile was actually released after GPT-2 was trained.
+So GPT-2, it still works really well if we kind of augment GPT-2 by information from the Pile.
+But at the same time, I think you can think of information in the Pile as very kind of central
+in the data distribution that a lot of state-of-the-art LLMs are trained on really,
+because these are very kind of academic data sets.
+A lot of these data sets are very kind of good in a sense.
+This is good data.
+So there's a lot of scientific publications, for example, and again, coding, math.
+These are things that today's LLMs are very much trained on.
+And I think what is quite remarkable to me is to see that these kind of this information
+that should be already very well encoded in this huge parametric model can still be useful
+if you show it a certain sliver, like a subpart, some very informative bit to it at test time.
+The other thing I wanted to quickly comment on is I'm a big fan of machine teaching.
+So that was invented at Microsoft Research.
+And that is essentially an interactive form of transductive active fine tuning.
+And it's mostly used for like classical models.
+But, you know, the idea is that you have an application and if you allow a supervisor
+to kind of like deliberately choose the most informative training examples,
+just like with dataset distillation, it's remarkable how much your sample efficiency
+goes up of your training set when you actually pick the most informative examples.
+But something like that could be used, I guess, with your approach, because rather than using the pile,
+why not just use Google search?
+So you could create an interactive workflow where the supervisor guides the search
+and selects the most informative examples.
+Maybe you could still run your like non-interactive version on top of that.
+And then you've got like a really informative transductive form of learning.
+I think a very powerful paradigm that, you know, I think you can still think about this
+in terms of kind of a kind of memory that you can access.
+But now where a certain piece of memory might not be static, but might be something that actually
+unrolls some underlying computation, right?
+Where the outcome is maybe not clear a priori, but which has a certain description.
+And we actually also in our group with a collaborator, Marco Bagatella, we worked on a setting like this,
+where your information gain is essentially not kind of pre-computable in the sense because the
+information is not static.
+Instead, you have to leverage your model's expectations of what might be the outcome of an experiment
+to say, okay, given that I expect this experiment to go kind of a certain way,
+how informative would that be for the tasks that I'm solving?
+An extension question is, I'm interested in retrieval augmented generation.
+So I interviewed Patrick Lewis recently about that.
+And I could also imagine that this could improve retrieval augmented generation.
+But rather than doing like an in-context augmented version of RAG, you could do like a fine-tuned
+transductive active, you know, like a transductive active fine-tuning version of it.
+Do you think that a version of that using your methodology could improve on RAG?
+So I think, I mean, RAG is really this big ecosystem of various different methods
+that people have worked on.
+Certainly one of the big problems with RAG or some RAG systems is rooted precisely in the fact
+that they use this nearest neighbor search over some dense embedding, dense vector embeddings.
+Often that's not exclusively what they do, but often that's kind of very core to what they do.
+And as we've discussed, this is very, this can be very limiting in the sense that it can select
+very redundant information.
+So empirically, it may very well be that selecting kind of most informative relative to some pretty
+useful metric of informativeness.
+Selecting the most informative data can be better than just selecting the most similar data,
+which may be redundant.
+So that's one thing I would say.
+The other thing I would say is that
+the question of whether in context, whether you should put data in context,
+or whether you should
+ingest kind of data via gradient steps, is still a very open research question.
+There has been a bunch of different works that have looked at the difference between the two.
+And it's not very clear yet, in general, when which approach is most effective.
+What is quite interesting to me is that both approaches seem to be quite different in
+when they work and how they work.
+So for example, what was very interesting to us is when we worked with this pilot data set, which again,
+consisted of these multiple pieces of sub data sets, which comprise, like related to multiple
+things that you could express in human language.
+What was very interesting to us is that with certain types of this, of these data sets,
+fine tuning was much more advantageous over in context learning than with others.
+And those tended to be this math data set that is part of the pile, deep mind math,
+which comprises school level math questions like computer derivative, solve this equation for X,
+those types of questions.
+But also coding or scientific papers from archive or free law, which is a data set that comprises court opinions.
+Yeah.
+So just addressing both of those things.
+So yeah, and just with RAG, improving the retrieval mechanism.
+So doing some of this stuff you're speaking about, you know,
+not selecting redundant information could improve RAG.
+And with RAG as well, sometimes just because of the architectural complexity,
+maybe you're doing retrieval from diverse data sources, and maybe there's some subsequent step
+to again, remove the redundant information or re-rank them or do something like that.
+I'm not sure whether existing systems do that.
+But then there's the question of like in context learning versus fine tuning.
+And there must be some interesting kind of trade off there, because I've always thought that
+in context learning is better because just anecdotally, the precision seems better.
+Like if there's something in your context, it doesn't seem to hallucinate.
+Where I have this intuition that when it's inside the model, the information is lower resolution,
+because it gets entangled and expressed as part of like the low level representations in the model.
+That might confer some advantages because the model can use more of its base
+knowledge to reason about the thing that you're doing.
+But disadvantages in the sense that it's more likely to hallucinate
+about the thing that you're talking about.
+There has been a bunch of works.
+That's also just related to trying to understand how context learning works.
+I think even within context learning, some of these works have shown that sometimes you run into
+cases where the data that you provide to a model in context conflicts with the information that it
+has been shown during pre-training and then some unexpected things can happen.
+Generally, I agree that the data that you put into context with these LLMs that we train today,
+the next token distribution is very heavily skewed by that.
+And so your model is much more likely to refer to some specific piece of information that is in context
+versus some specific piece of information it has been trained on.
+On the other hand, though, backpropagation and gradient descent are very effective methods.
+It seems so, at least they work during pre-training.
+It seems that they are very effective methods to teach a model how to reproduce a certain pattern.
+And of course, I mean, there's this argument kind of of the connection is that if you
+do that long enough, if you scale that up enough, you will have to develop some abstract forms of
+understanding because to be able to kind of predict the next token given previous tokens,
+you have to maybe learn abstract learning algorithms and so on.
+So, for example, if you are faced with a math question and now you're doing backprop over this
+example that computes the derivative of a certain term, then to be able kind of essentially what
+backprop will teach the model is how to reproduce this.
+And if it teaches that on multiple of these examples, arguably the model will find some
+form of reproducing that behavior.
+Whether that is the algorithm that we want or not, that's a bit of a different question, but
+it will try to imitate it to some degree.
+I love thinking about purpose at different levels of description.
+I mean, we're talking about this on our Patreon call last night.
+Keith Duggar gave the example of an anthill.
+So it has a purpose, right?
+And it programs all of the little ants and the ants can adopt different roles.
+And it's very, very simplistic, you know, they smell pheromones or something.
+And, um, you know, sometimes they'll, they'll, they'll go in the path when they find food,
+they'll, they'll like drop the pheromones.
+Sometimes they don't.
+And that means other ants will follow the trail and then the trail gets reinforced and so on.
+And even though the ant is just following these very, very simple rules,
+it serves the purpose of, of the, the anthill.
+But then there's the question of, well, it doesn't have an intrinsic purpose.
+That the purpose is something we ascribe to it.
+Maybe, um, I mean, it makes you certainly think if you talk about kind of these simulated
+games that simulate humans in their life, to what degree we have like more purpose than the ants,
+because certainly like some of these city builder games, they, I mean, they get pretty close.
+I mean, not perfectly accurate, but pretty close to how humans move around in the city.
+And there's certainly kind of a lot of societal inflicted purpose that makes us go around like,
+be it go to school, be it go to work, be it go to like a restaurant or to a grocery store to get food.
+And I mean, those are like fundamental needs that either like come directly from the,
+from, from being a human or just, uh, from, from society.
+And certainly a lot of the purpose that is driving us around is, is not necessarily intrinsic in that
+sense.
+And it's like externally, um, comes from external forces.
+Yeah.
+Yeah.
+It really does.
+How much of it is internal though?
+I don't think like, I, I don't have the kind of background to be able to actually answer that
+question.
+Um, I think, I mean, probably because I mean the city building, like staying with the city
+builder kind of metaphor, I don't think they in any way, shape or form, uh, represent truly
+internal motivation.
+Right.
+So you can already say like anything that is, uh, kind of not in the gap between these simulators
+of cities and what you observe in the city, anything that is kind of not inside that small
+gap cannot be internal.
+Right.
+Because that's somehow external or from society or from kind of, uh, a byproduct of the larger
+simulation.
+And then there's only a small sliver remaining.
+Right.
+Of course, I think the human, like part of the human constitution is much more than how we move
+around in the city.
+Right.
+And there's a lot of stuff that's happening in our brains, which is not, uh, covered by
+that, but yeah.
+I mean, this came up with, um, Eliezer Yudkowsky and Stephen Wolfram the other day, because they
+were, they were talking about where do wants come from?
+You know, you, you have, you have an intelligence system and you can model it as a thing that has
+a planning horizon and the bigger the horizon, the more intelligence, the more agency it has.
+And, and then, okay, well, why would he argue for something like instrumental
+convergence?
+You know, that when you have a super intelligent AI system, that it will have
+predictably bad intermediate or instrumental sub goals.
+And you can think of it just in this city setting that you were just talking about,
+that all of these different agents, there are, there are constraints as a bit like
+they have to follow through certain rivers or in the case of a city, they have to go through
+certain roads.
+They have to, uh, in, in order to transact with each other, they have to use money and they have
+to do all of these different things.
+So it kind of like canalizes or truncates the space of future behavior.
+And it's not just physical extrinsic, um, constraints.
+It's also kind of like interactions with the behavior space of other agents in the future.
+Um, yeah, I think like my view that a large part of this is abstraction.
+So as you, as you kind of give a kind of, I think a lot of these systems, even like these artificial
+systems that we kind of give today, they, they do have some kind of extrinsic goal, uh, that we
+ascribe to it, be it either like just to imitate of the distribution of things that we, that we give
+to it, or like some explicitly formulated goal.
+Um, and then I think the kind of wow moments that the AI community has accumulated over the years
+to a large part are situations where, you know, leaving that goal aside, the agent,
+if you want to call it an agent came up kind of with some sub goal that was actually the result of
+kind of an abstraction.
+Like the agent was kind of abstracting from the immediate goal.
+It wasn't kind of greedily running trying to solve that goal.
+It kind of came up with this abstraction that allowed it to kind of take this intermediate step,
+which maybe wasn't obvious to a human to then still, still with the purpose of solving that
+goal, which was obvious to the human.
+And, um, yeah, I, I don't know.
+I think, um, there's definitely, it's definitely interesting in the sense or an interesting question
+whether, um, coming up kind of with these intermediate goals or intrinsic goals,
+as you might kind of say, is purely a function of being able to abstract,
+or if there's something else going on, I tend to err to the side that this is really
+purely the power of abstraction.
+Um, but yeah, I don't have all the answers there.
+Yeah.
+Yeah.
+Well, Schmidt Huber said that intelligence is compression, you know, by, by which he meant
+abstraction.
+But something I think about as well is that, um, again, we were talking about this last night.
+The reason why, um, you know, asynchronous distributed software systems are so exciting
+is because that that's how the natural biological world works.
+Right.
+And if you use an extreme example, like if we had some space station, you know, 30 light years
+away or something like that, you know, like you, you have to get a message to it.
+You have to have a topology, which has a kind of locality prior, right?
+You know, so that's the way biological systems work, right?
+You know, the, the cells send messages to each other and it all just kind of emanates
+out in this asynchronous way.
+You kind of send messages, but when we design AI systems, it's kind of different.
+They're not, they don't emerge.
+They're not grown.
+Do you know what I mean?
+They, they, they learn using stochastic gradient descent.
+So at some point when we build AI systems, we have to design them.
+You know, we, we actually have to put in information boundaries and we need to say that, you know,
+like you're, you're, you are talking to this at this level of abstraction and that seems
+completely divorced to how things work.
+This, I don't know if I fully agree with in some sense.
+I mean, I agree with the kind of framing that we design AI systems and we kind of put some
+boundaries in place.
+Like what is the amount of compute you get?
+What is the amount of memory you get?
+What is the, in some sense, what is the amount of data that you will see?
+But I think we're going beyond that.
+So you can certainly think about these systems that are following these fundamental principles,
+whether that is some form of gradient descent or some other learning mechanism that is human
+engineered to in the end, interact with the world and maybe design their own experiments to then be
+able to actually decide themselves what type of data I accrue for my environment.
+And in some sense, how I kind of move into a space and how I kind of, in what direction I evolve
+my kind of compressed representations.
+Well, let's talk about this kind of behavioral plasticity that you're talking about.
+So, you know, what I love about active inference is that there are no explicit goals.
+There's no explicit reward function.
+In fact, you can think, you can think of it as a, as a form of maximum entropy,
+inverse reinforcement learning, you know, where it actually starts with the statistical
+distribution of, of the data.
+And then it kind of infers within constraints, what the reward might, might be.
+And, and I, I really like that because I kind of feel that we need to have systems
+that can kind of like, um, materialize their own goal rather than us as designers kind of
+saying, you need to do this thing.
+I think on a different level of abstraction, that is still a goal that is human engineered.
+Right.
+We still, as you said, we still design the AI system and design the learning mechanism.
+Like even, I mean, there are various forms of active inference, how it materializes in practice,
+because you can have to come up in that case with like some probabilistic model,
+over which you can kind of optimize that expected free energy.
+Um, so I think in the end, it's still even kind of that form on an abstract level,
+you can think about as some form of human engineered.
+I don't like the term reward because it's like so linked to this reinforcement learning community,
+but kind of a similar thing.
+And then I think really the argument that people make is that, of course, that will lead to
+different emergent behavior than if you gave it a different reward.
+Like something that is more commonly done in reinforcement learning, where let's say you are
+working with an Atari game and you just give the game score.
+And of course, I mean, also in reinforcement learning, if you give an agent a different reward,
+the agent will kind of start learning differently.
+And again, going back to kind of what we discussed earlier with kind of intermediate
+kind of sub goals being actually a function of the abstractions or kind of byproduct of the
+amount of compression that the agent was able to achieve of kind of its information, then
+I think to that degree, both ways can and will probably find these intermediate
+kind of intermediate sub goals that we as humans would find interesting behavior.
+And I think that is to a large part what, in my view, people in active inference are kind of hoping
+for that if you scale these probabilistic models up, then a byproduct of maximizing this expected free
+energy will be these interesting behaviors that lead to, I don't know, kind of self-sustaining
+organisms and that kind of stuff.
+Yeah, I agree with what you've said though, like even with active inference, I think part of its
+selling point is that it's kind of human, you know, parasitic in the sense that when you build the
+systems, it will have agency in a constrained way with preferences that are compatible with ours.
+And that's fine, but don't we want to have AI systems with more plasticity, right?
+And I think like what you say is true, right?
+We design all of these inductive priors, we constrain the systems in such a way that they
+will behave in an anthropomorphic way.
+But I guess you can make the same argument about DNA.
+So DNA has this insane, well, some people might say it has a kind of constraining force on our behavior,
+but it doesn't seem to do that, right? If you look at our society, like the way we construct
+language, we have all this beautiful diversity all over the place. But so there's this asymmetry that
+even though like, it's all based on DNA, like if we deleted all of the DNA, like we would all be gone
+tomorrow. But it allows this complete fan out of behavioral complexity, but still constrained in some way.
+Yeah, I think this is very compatible with the view that, I mean, in the end, I think the DNA
+and our form of life gives us some very hard constraints, right? We have to consume water,
+we have to consume food, right, to survive. But within that, there's quite a lot of kind of pathways
+to achieve that. And they are also very dependent on the society around us, right?
+So that's, and not just the society, our environment, right? And that's, I think, part of intelligence is
+coming up with these abstractions that regardless of the environment, allow you to adapt, right,
+to these kind of to the environment, and be able to fulfill your fundamental desires. And those will
+depend on the environment. And in case of humans, because arguably, we have kind of some non-trivial
+amount of intelligence between humans, how we kind of achieve our goals is also different.
+But I think this is really a spectrum across all animals. And you can see now that kind of the
+animals, not with climate change, you know, the animals that are very kind of attuned to their
+environment, while they can kind of cope with small changes in their environment and kind of adapt to
+those drastic changes in the environment, their learned abstractions, if you will, are useless,
+right? And then they cannot survive anymore. So, yeah, I think.
+Where do the abstractions come from? You know, do we, what kind of abstractions do we hard code into the
+architectures? And what kind of abstractions are meta-land?
+Yeah, I think, I mean, this is a fundamental question, I think, that has been at the core of
+machine learning, and even more so AI, since kind of the inception. And I mean, a lot of people, they
+started with kind of hand coding these abstractions, right? In a sense, leveraging human, kind of human
+learned abstractions, or it was what we deemed to be useful abstractions, but fundamentally being
+limited by this language of, or kind of by the language of how we can express these abstractions,
+and also by our finite time, right? And then, I mean, neural networks went beyond that and learned
+these abstractions end to end.
+Do you, I mean, are you a fan of Cholet's kind of type one, type two dichotomy?
+Generally, I try to not use kind of this kind of system one, system two dichotomy, and also kind
+of the word reasoning that is somehow linked to system two sometimes, because I don't find it
+always so kind of informative, and it's definitely like a loaded term that is kind of very differently
+interpreted in various communities. I think my hunch is, but I might very well be very wrong about this,
+is that really kind of this more, if you will, planning behavior can emerge from learned abstractions.
+So as we kind of go up layers of abstraction, of abstraction, of abstraction, if we do make predictions
+on a very high level of abstraction, that may seem like something kind of planning, more intelligent
+is going on. So maybe this is, maybe this system one, system two thing is just kind of a question of
+what level of abstraction we are operating on. And certainly going up levels of abstraction requires more
+energy, more time, and is computationally harder, strictly harder than, than doing this more shallow,
+kind of finding these shallow abstractions. So in the sense, in that sense, I think, you know,
+kind of, I resonate with that idea. But I think there are various different interpretations,
+right, that the communities, different communities have come up with, of how actually the system one
+versus system two should be materialized. And yeah, I don't find myself necessarily in all of those.
+Very cool. Why does fine-tuning a model, let's say on a batch of examples,
+cost less than doing inference within context learning?
+Essentially, it's because the information gets compressed into the weights.
+And in context learning has this problem that for every new token that you generate,
+you have to attend to all previous tokens, right? And that essentially,
+you also have to go once over all previous tokens. And yeah, that is...
+But doesn't, I guess I'm just trying to understand fundamentally, why does the backward pass not
+be symmetric with the forward pass from a computational point of view?
+I think the key is here that it's really amortized in the weights.
+So in context learning kind of has to present all evidence at once. Otherwise, it doesn't work
+because there's no amortization going on. So in that sense, it's really like a full working memory,
+every kind of bit of information is accessible at once, and you have to filter it out at once.
+Oh, I see. So when you do the fine tuning, I mean, obviously, there's a batch size.
+Yeah, there's a batch size, right? So I mean, there's, yeah, so that we essentially pack it
+into multiple, you know, boxes, like multiple, like, sequences of tokens, and separate them,
+and then present them kind of one by one.
+I got it. So it's still quadratic, but it amortizes to linear because it's so small.
+Yeah, yeah, exactly. And you have to, I mean, really, that's the key. And that's why,
+I mean, that's why we train parametric models in the first place.
+Yeah.
+Because we try to amortize the data, right? We try to extract some, compress the data,
+as opposed to give all the data at once, which you could also do with a non-parametric model.
+Yes. Yes, because I suppose with something like a kernel function or something like that,
+you know, you would need to have all the data.
+Exactly. I mean, that's, I mean, that is kind of the first ideas of local learning
+are in that direction, right? I mean, it's actually the trajectory of local learning is quite
+fascinating to me, because it's quite a linear, going back, it's quite a linear trajectory kind
+of working with these separate components. So actually, like in the 50s, people came up with
+nearest neighbor retrieval, where you're, you have like this distance function, and then you just
+average kind of to get a prediction of a new point, you average the predictions of all the points
+around it. And then people came up with kernel regression in the 60s, which is essentially doing
+the same thing, but now you're weighting the importance of the points relative to their distance
+or relative to some similarity measure, which people call the kernel often.
+Yes. Vladimir Vapnik.
+Yeah, exactly. And then from there on, people went into different routes, like there was more
+development of the non-parametric side. People then in the 70s, they started to do locally weighted
+linear regression, so where they would train a separate linear regression head for every prediction
+that they make, and then locally weight the training data around the prediction. So I scribe
+higher weight, again, based on some kernel function, higher weight to the data that is around the point
+where you want to make the prediction, and less weight away from it. But that kind of adds this,
+already this parametric component, which I think is key to this framework.
+There's always been this kind of, you know, juxtaposition between inductive learning,
+right, which is when we learn a general decision function, which could work for any new piece of
+data, and transductive learning, which is particular to particular. So this is when we
+learn a statistical function for a given input. And this is quite a new idea to a lot of people,
+but actually, as you're saying, this has been spoken about for decades by people like Vladimir Vapnik.
+Before this kind of revolution of deep learning took off. So this idea has been definitely around
+since the 70s, at least, but kind of early indications already before with people doing
+this nearest neighbor search in non-parametric models. There's kind of the spectrum, I like to
+think about this as a spectrum, where in some problem domain, let's say it's natural language,
+you try to fit kind of some data manifold that describes some aspect of natural language that
+you care about. And this inductive paradigm is all about fitting all of that at once. So you extract
+some general rules that hopefully generalize to describing accurately your kind of function that you
+want to learn about over this entire manifold. And that is still in some way, you know,
+goal directed in the sense that you are limited by what is expressible in your problem domain that
+you work with. And traditionally people have worked with rather small problem domains, right? So you
+start with MNIST, like recognizing handwritten digits, and then you quickly realize, okay,
+it's a fairly narrow kind of amount, like small amounts of information that you need to extract to do this
+prediction, right? Because you're working with on a very small problem space. But nowadays, we're scaling
+this problem space to natural language and beyond images, video, really a huge problem space where
+a lot of kind of really a lot of hard computational challenges can be expressed in these formats that
+we are learning over. And this paradigm has roughly stayed the same, where you still kind of try to learn
+one function that amortizes everything, right? So you kind of learn kind of amortized intuitions about
+how your data manifold looks everywhere. And then, you know, when you do inference, when you do a
+forward pass, when you make a prediction, you use a fixed amount of compute cost to access kind of your
+amortized intuitions of how your function should look everywhere. But of course, in practice,
+there are certain parts on the data manifold that will be very easy to predict and easy to learn.
+And there are other parts of the data manifold that are very hard. And on these kind of more
+complex problem domains, this is very evident. In human language, there are simple tasks like,
+you know, that's what humans do when they go on autopilot. We talk about the weather, right?
+Like you have like these small chats where you talk about random stuff.
+But then you can also go deeper. And that's where humans need to think, right? That's when we also
+spend kind of more of my more of our kind of brains computation to be able to solve these problems,
+or even attempt to solve these problems. And that is not really captured by this inductive paradigm.
+When I learned about machine learning, it was in the days when I guess it was the second AI winter.
+So it was like support vector machines and kernel methods and stuff like that. And I learned about
+conformal prediction. And I learned about transductive inference because Vladimir Vatnik was at my
+university. And it's a little bit like, do you remember in the 1980s, we used to have to do these
+insane optimizations with memory, because we just didn't have things that worked very well. So we were
+leaning into the optimization back then. And I guess now we've been in a regime because of the deep
+learning revolution that we felt that we haven't needed to do it because the deep learning models
+work so well, apparently, even in the multimodal high scale setting, they just seem to work very
+well. And it's almost like people have started to delude themselves that these aren't even statistical
+models anymore. And why would we need to do any kind of like local optimization? So, so that's very
+interesting. The other interesting thing that you said is, I think humans do this as well, that when we deal
+with situations that are unpredictable and full of ambiguity, we do more processing. I interviewed
+Professor Mark Solmes, and he's like a neuro, um, neuroscientist kind of, what's the best way to
+describe me? Anyway, let's just say neuroscientist. And he says that consciousness is something that,
+you know, that we become conscious of situations when we are faced with ambiguity. And it's counterintuitive,
+because when you're outside sitting in the sun, and you're very mindful, you think of that as being
+like your brain is doing less processing, but you can kind of interpret it actually as you start
+noticing the clouds and the trees, your brain is actually like processing more information, not less
+information. So having, having like a variable amount of computation that we perform in it, you know,
+like sensing more information, processing more information is a very interesting thing.
+I mean, it's certainly fascinating with the human brain, where not my expertise lies for sure.
+It's the case that there's a certain amount of energy, right, that we can turn over to do processing
+in our brain at a given time. So we cannot do everything at once, right? It's impossible. So we
+have to be strategic of how we use that energy to, to achieve our goals. And I think fundamentally,
+the same is true with machines. Yeah, yeah. Which brings me to the next thing. So the other day,
+we came up with this really cool analogy to describe the behavior of, I suppose, machine learning models.
+And it's like Google Earth. So in Google Earth, you have this variable resolution. So you start off up
+here, and you have big course tiles. And then you zoom into London or to Zurich, and the tiles get
+smaller and smaller. And it's a great locality method, which allows you to kind of like use the
+compute where you need to use it. Is that a good analogy for the kind of work you're doing?
+Yeah, I love that analogy. I think it captures really the essence, where you can think about
+kind of the number of pixels you have as a given kind of representational power, or maybe compute
+power that you have at a moment to represent something to make a certain prediction. And kind of
+in this inductive paradigm where you want to represent the picture of the entire world at once,
+there's only so much resolution that you can afford to spend on any individual kind of prediction,
+let's say of like the city of Zurich, something. So that will maybe be a single pixel, if not even.
+And the power that you get, if you zoom in, kind of is evident to anyone who has ever used
+Google Maps. If you were to kind of zoom in by just making the pixels larger, kind of not changing
+how you use your resolution to represent the local information. If you were to just make the pixels
+larger as they are, pretty quickly, Google Maps would be completely unusable, right? And that's
+actually super powerful. So if you, let's say, work on a computer with like 1980p display, and you
+have like your friend who has a 4k display, but has not figured out that you can actually zoom by
+reallocating the compute that each pixel does. But just things you can only zoom by making the
+pixels larger or getting closer to the display, right? Then you can pretty quickly outsmart him,
+right? While he maybe initially has a little bit of an advantage because he can represent more
+information at once. You can, if you want to go, you know, a little bit deeper, like think,
+like want to look at kind of Zurich from, from, from, from space, then you have much higher resolution
+already than he does. If you, because you're just using a representational capacity or you're using your
+compute in a smarter way. Yeah. So this is one of the reasons why I've been fascinated by this
+concept of active inference. So, you know, Carl, Carl Friston is one of my heroes and he's got this
+wonderful model of agency. And I guess the, the stark difference between an active inference agent
+and a lot of, you know, traditional machine learning is that it's actually doing kind of
+situational computation, right? And that seems so incredibly important to me. And I feel that you're,
+you're introducing that, but in a slightly more internalist way. Okay. Can you, can you explain
+what I mean by that? Yeah. Sure. So the recent work that we have done is all about kind of locally
+zooming into the distribution that language models learn. So locally kind of learning that data
+manifold better. And the way it works is that you have your, you stay with your kind of normal
+language model that you, that you're working with kind of fixed parametric model. And then on top at
+test time, you can look back into your memory or big data set and find examples that describe how that
+manifold looks locally around the prediction that you're trying to make, and then just refresh your
+memory, right? Spend in a little bit of additional compute to kind of use your representational capacity
+specifically for the prediction that you're trying to make. So instead of trying to kind of still
+all at once learn the entire data manifold, now we're in the game of just kind of making predictions
+specifically targeted to a certain task that we're faced with at a time. And it's really about kind of
+using compute and using representational capacity to its fullest to make a certain prediction.
+So there's a beautiful figure, I think it's figure two in your SIFT paper, and we'll kind of like
+talk about that a little bit as we go. But you've got the data space. Okay, so the data space, I guess,
+is like the Euclidean space of the selected data. And then you've got the data manifold. So the data
+manifold is this kind of surface or this structure, which is actually learned from the data. And then you do,
+let's say you have an example that comes in and you want to do a really good prediction for that
+example. So it kind of seems logical that you should go and sample a bunch of the information
+in the neighborhood of that sample, because that will improve the statistical power of your model.
+Now, there's a few things here. So I guess the first question is, where do you get that data from?
+I'm guessing you use something like, you know, there's face and there's like a whole bunch of
+things for doing like a nearest neighbor, you know, kind of look up and they might do
+vector quantization or some kind of like, you know, log retrieval time method. And then inside
+that you do, you do an improved search as well. But maybe we'll start with what's the difference
+between, like, you could have a really, really big base model. And there's a ratio between how big
+the base model is and the cone of your selection when you do information retrieval. What's the
+relationship between those two things?
+So I think what you're alluding to the fact is that with larger base models, we are able to capture the
+data manifold in a better way. So even if these larger base models try to essentially make all
+predictions at once or amortize these predictions, so that we can essentially access them at constant
+cost when we do inference. Larger models mean we get kind of better representation, more
+representational capacity, and we can learn the statistics better, essentially. And what we
+kind of are showing is that this local learning at test time is an additional mechanism on top that
+regardless of what kind of representational capacity you start with your base model, if you add that on
+top, you just kind of get that additional kind of extra bit of representational power to make a better
+prediction. Essentially using your kind of representational capacity to its fullest when
+you make that prediction, right? Because at any point in time, your pre-trained language model, if you will,
+has to encode all of this information, right? Because it has to solve a lot of different tasks at once.
+And now when you're tasked with making a certain prediction, usually it can just, you know, forget,
+it can ignore most of the information that it has compressed. And that means it can represent the
+pieces of information that are critical to actually making good prediction at higher fidelity, right?
+So you can make then also a prediction at higher fidelity.
+So I'm thinking, we're kind of assuming that there's one data manifold, one data space.
+Why not partition it up? So instead of having a multimodal embedding space, let's say we've got
+something that can do text and images and video. Why not separate it out and have
+different modalities, different data spaces?
+Yeah. In what sense do you think that might? Are you meaning one could train like a separate model
+for each of them? And then kind of you split your data manifold into multiple sub-manifolds and then
+just train a separate model on each of them and then be done with it?
+I think so. I think like one of the things we're playing around here with is we're in this regime
+at the moment of having a single model which is trained on every data modality. And your work is
+hinting that specificity helps a lot or, you know, having a local situational method helps a lot. But
+couldn't you say the same for even the modality of the data? I mean, like, you know, couldn't you just
+keep partitioning and create some hybrid system? And would that give you more or less statistical power?
+So I think like we have to separate a few things here. So the first thing is,
+of course, if you are kind of making a certain prediction in some specific modality,
+being able to really focus on that modality is useful. But of course, if there is, let's say,
+information or if your kind of entire data manifold that is not kind of kind of cut into its subparts
+contains information that is necessary to make a good prediction, but it's kind of accessible only
+in a different modality, then you need to have this cross modality to be able to access that information.
+So there's really two key elements here. There's the first key element is to be able to use the entire
+representational capacity to make a certain prediction and kind of overfit to the to the test
+problem at hand. But the other key aspect is that we need to have the right abstractions or we need
+to have learned the right representations to be able to decide what data is actually useful, what data
+contains the necessary information to make a good prediction, and also the right abstractions or the
+right kind of learning algorithms to turn this kind of this information into a good prediction.
+And generally what we have seen over the last couple of years is that if you scale these kind of deep
+learning models up and if you show them a wide variety of data and kind of during pre-training,
+then they get better at kind of finding these similar patterns across modalities and also across
+problems to kind of come up with like more like solution algorithms or like kind of simple mechanisms
+that allow them to kind of synthesize things. So for example, if you ask ChatGPT to write you a, you know,
+kind of a song about a certain topic in a certain style, it will do that. But that's certainly not
+possible if you have never shown it, you know, any examples of songs in its training data. So it's,
+I think this cross modality is really key and that doesn't necessarily detract from the fact that you
+want to, at test time, use your representational power to, after having seen a little bit of
+everything and understanding how kind of everything behaves, to then focus on those things that, given
+your abstractions and your knowledge, you think are important to make a prediction.
+So I think we should contrast your work to active learning. So in, I guess like in, in the,
+the olden days of machine learning, we would produce a decision function and we would have
+like a test train split or maybe like a validation split and so on. And then active learning came along
+and active learning said, well, actually you might be faced with a shifting data distribution. So when
+this thing is used next week, the distribution might be different. So why don't we continuously
+retrain the model on, on the shifting data distribution and active learning would select,
+let's say sort of like diverse and new training examples. But what you're doing is, is a type of
+active learning, but it's deliberately honing in on the specific rather than looking at the general.
+Exactly. So I think, I think you have put it very well. I would kind of extend the characterization
+of active learning a little bit in the sense that a lot of active learning has just focused on how
+can we kind of subselect the training data that we use in the standard kind of pre-training and then
+evaluation paradigm so that we can use less data, but kind of compress already the information that is
+contained in the data in such a way that the model will still be as powerful as if we had trained on
+the entire data. And people have shown in some cases that that is, that that can be useful and powerful.
+But that, in those cases, random is a really strong baseline and random has often, you know,
+outperformed a lot of these methods. Now, what I am working on is a very kind of different but
+similar in some ways setting. The setting that I'm interested in is local learning. So making
+these specific predictions and in that case there's only some kind of small sliver of the entire
+information that is kind of in your memory that is only, that's actually relevant to making that
+prediction. And actually searching for that is a key aspect, but you also want to maintain diversity
+in the information that you obtain. So actually the methods that we end up working with are some kind
+of mixture between methods that people have looked at traditionally in the, in the kind of literature
+on search and the methods that people have looked at in the literature on active learning, which are
+all about kind of finding diverse, diverse samples. Very cool. So we're kind of blending information
+retrieval and active learning in a very kind of like specific way. So maybe we should start with the
+search. So you said in your paper very beautifully that the naive way to do this is I have an input
+example and I have a, you know, like a, a training dataset or something like that. And I should just
+go and retrieve the nearest neighbors again, using some kind of like vector quantization retrieval system
+like face. So I could retrieve a whole bunch of the, the nearest neighbors for this input example,
+fine tune my model on those nearest neighbors. What could possibly go wrong?
+There are a lot of things that can go wrong. And the main thing is that nearest neighbor is kind of,
+has really been designed as a search method. So if you have like a big bag of possible kind of
+solution candidates that you're looking for, like a needle in a haystack problem,
+it tries to give you kind of as many candidates that match as closely as possible to your description
+as you want. What you realize is in local learning, you actually want to learn something and learning
+something requires synthesizing different pieces of information. So for example, if your task is not
+a simple retrieval task in the sense that, in the sense that the information is exactly encoded in your
+data and you just have to find this one piece of information and then return it to the user,
+when instead kind of there's a lot of different pieces of information that are kind of disseminated in
+your data and you need to find all of the relevant pieces and kind of return it to the learning
+algorithm at once, then nearest neighbor will not work because nearest neighbor kind of just focus on
+the dominant frequency or kind of the most kind of most similar aspect that kind of some subcluster in
+your data has to whatever you are asking it about. So for example, if you give kind of your engine a
+question, we had this example with where someone was asking about the age of Michael Jordan and how many kids
+he has, essentially kind of the data in your memory, you can think about as just representing some
+clusters. So some part of the data is just information about his age and some part of the data is just
+about his kids. And in practice, what happens is in this kind of latent abstraction space,
+just one of the classes will be closer to your question that combines both. And then your kind
+of nearest neighbor search will return all pieces of information that are about one of the topics,
+I think in that case, it was the age first before it ever finds any of the pieces of information that
+about the number of kids. Yeah, so we'll show this figure on the screen. But you know, the prompt was,
+what's the age of Michael Jordan? And how many kids does he have? And the nearest neighbor approach
+basically doesn't even address the number of kids that he has, because it's almost like it latches
+on to the first. We did this experiment, actually, and this was really, we did it in a very simple
+setup where there was really just four pieces of information in the, in the memory. Two were about
+his age, two were about the number of kids he has, and we just requested kind of the closest tool. And
+normal nearest neighbor will just repeat redundant information because there's nothing stopping,
+like there's nothing in the objective of nearest neighbor that's actually quantifying how informative
+the set of examples should be that are returned. It's just caring about really the marginal close
+proximity to what you asked about. Okay, so this is really interesting. So the way we do the
+information retrieval is using like a bunch of embeddings. And I think in your paper, you said
+you're using Roberta embeddings and that may or may not be relevant. But you're saying rather than just
+searching using some similarity metric in Euclidean space and getting the nearest neighbors, we should
+have the concept of information gain with respect to some task. So in this particular case is the task
+is, I need to know this and I need to know that. And we're saying, retrieve me the examples that
+actually give me the most information for that thing that I want to do.
+Exactly. And the funny thing is, if you just try to retrieve one piece of information from your
+data store, those two kind of views turn out to be pretty much equivalent, right? Because if you can
+only access one piece of information from your memory, the best thing that you can do, kind of your
+best shot is to just take the thing that is most relevant. But as soon as you have picked that kind of
+piece of memory, and now you're looking for the next piece of memory, just finding something that
+is as close as possible, or as related as possible to what kind of your task is, is not the best thing
+anymore, because that might be exactly the same thing that you've already seen, right? In case there's
+literal exact duplication in your data. So instead, what you should do is to both look at how relevant a
+new piece of information is, but also how non-redundant it is relative to the piece of
+information you have already assembled. So you're essentially trying to solve some trade-off between
+finding examples that are as related as possible to your prediction, and finding examples that are
+kind of a diverse representation of all the information that is encoded in your memory.
+That makes sense. So Devil's Advocate, you're saying that we do some retrieval around a
+cone. And if the cone is very small, so if the specificity is high, nearest neighbors will just
+produce a load of redundant information, and it won't be sensitive enough to capture all of the
+information in the prompt. But what if we just increase the cone? So what if we select nearest
+neighbors, but we select, let's say, 2,000 nearest neighbors or something like that? So then, yeah,
+we've got to fine tune on 2,000 examples now instead of five. But probably some of those examples would
+have information about how many kids that Michael Jordan had.
+That is definitely a fair point. And I would say that, really, there are multiple things to say
+here. One is, it is actually not just important what you see, it's also important how you see it.
+And it turns out that it's actually, you know, it is sometimes useful to see the same piece of
+information repeated, but it depends on really that piece of information and how, and your learning
+system, how kind of, how good your learning system is, how strong your learning system is. So, for
+example, if you, if you, like, let's say you work kind of with some math questions and you, you fetch,
+you're faced like with a problem where you have to compute the derivative of some equation, and then you
+look into your memory and look into simple, similar problems that you have solved before. Now, maybe
+there's a cluster of a lot of other kind of problems that were about finding derivatives, but all of
+them used kind of some trick to find the derivative that is not applicable here. And now you will just
+train on them a lot and you will overfit to them a lot. So what's, it turns out to be very important
+to be careful with how many gradient steps you do on a certain example. And it turns out that the
+kind of solution method that we propose, which is called SIFT, takes care of that explicitly. We have
+this one figure in the paper, which I think is quite insightful in that regard, where we actually look
+at the, all the examples where SIFT decides to just fine tune on the nearest neighbor repeatedly for 50
+steps, right? Because there's no notion in SIFT that all pieces of information have to be separate,
+like in nearest neighbor. So SIFT is perfectly fine with just fine tuning on the same piece of
+information if it is helpful. And in all those cases, it is drastically better than nearest neighbor,
+right? Because nearest neighbor would just explicitly take this piece of information once and then move
+on to other parts, even though they might be less insightful. So I think there's really a spectrum. And as
+you said, it might be good to train on some examples a lot. But nearest neighbor is kind of this heuristic
+that doesn't take this question into account whether it's actually good to train on examples more or less.
+So another thought that occurs is, I guess, representation bias, and also the robustness of
+models to fine tuning. I remember I read in Francois Cholet's Deep Learning with Feitenberg,
+you know, he basically said, you've got to be careful of fine tuning. Because these things,
+you know, fine tuning can quickly overwhelm a model. And if you turn the learning rate up too high,
+for example, or you do too many gradient steps, it's almost like you, at some point, the model kind
+of forgets everything it knew about previously, and it leans too much into your examples. And that can
+cause overfitting. And the representation bias might be, well, you know, actually, it kind of like,
+you don't want it to be overweighted by the thing you're retrieving. So is there some trade-off there?
+There is some trade-off there. And of course, if you were to use a very high learning rate,
+your kind of fine tuned, locally fine tuned model will not work well anymore. I think it's really
+a very natural thing. So what you want is you want to somehow take kind of this local information and
+kind of use these examples as a way to kind of show your model, it's fine to kind of forget some
+information and fit this new information more closely. But in a similar vein, you don't want to
+just encode this information. And then, I mean, if you do a lot of fine tuning steps, eventually,
+it will just literally memorize the specific or just try to predict the specifics that you gave,
+that you retrieve from your memory. So there is some trade-off and you want to be somewhere in between.
+I mean, yeah, that's what I would say.
+Yes. Yeah.
+I think one of the key things that came out of our work, and this is part to how we actually do
+the information retrieval, if you want to frame it that way, is that you need to kind of get a hold of
+the uncertainty of the model. And that's really a key aspect. And the uncertainty tells you how,
+kind of based on the current model's representations, how would the model change or how
+more certain would the model be if you gave it a new piece of information. And now you can use that to
+say, okay, this piece of information is very relevant to the prediction. It's very informative.
+It's kind of needed to make a good prediction, then I'll show it to the model. And at the same time,
+maybe there are some pieces of information that are not relevant to making a good prediction,
+and then you can exclude them. And so you can, in some capacity, determine for a given example,
+if you have important information in your memory, in that case, you should use it. Whereas if you don't
+have relevant information in your memory, then you should not do fine tuning at all, maybe, or not as much.
+And how does the embedding function affect the result?
+So the embeddings are crucial, right? So the embeddings, in a sense, describe this data manifold.
+So the embeddings describe really essentially how informative a certain piece of information is
+to something else. And this is really closely linked to this linear representation hypothesis that
+is widely studied, especially in interpretability. And essentially, this linear representation
+hypothesis says that abstract concepts with complex enough networks, LLMs, are represented as
+kind of linear directions in some representation space. And that representation space is accessible,
+so we can tap into that. Now, you can think about these representations as describing the data
+manifold. So concepts that are very aligned in that latent space are very relevant to one another.
+So if you want to make a smart statement on one of these concepts, you better know about this other
+concept that is very closely related to it. And in a sense, if your abstractions are not good,
+then you will not identify these related concepts. Just concepts that are to us seem very related,
+that we know are very related, the machine will not have identified as related, and then it's useless.
+And that is kind of part of the story why 20 years ago, when the representations were not as good,
+people did not talk about the linear representation hypothesis, because machines were not yet able to
+actually identify these concepts which we as humans know are related.
+Yeah, Neil Nanda was telling me about this when I spoke with him last time. He's an amazing guy in
+McInturp. And yeah, so this idea essentially, I mean, we've been speaking about a manifold, but you know,
+concepts and so on can be thought of as having some linear direction in space. And there are examples of
+using linear probes, you know, there was that Othello board game example where you use a linear probe and
+you can kind of like extract board state and so on. But also, I think it's useful for surrogate models.
+So there's loads of examples in machine learning, like data modeling. I spoke with Andrew Ilias or even
+Lime and indeed your work as well. You create a very basic linear kind of data model, I think it's a
+good way of describing it, where you learn a bunch of parameters and like a biased term in respect of
+an input example and your data set, if I understand correctly.
+Yeah, so I think generally the idea of using a surrogate model that is using a simpler model to
+understand the behavior of a more complex model is a very powerful idea. And in our case, we just kind of,
+we use the simpler model, we use a linear model to kind of, or we assume that kind of the logits of this
+big LLM are a linear function in this kind of abstract representation space, which is highly non-linear in the
+inputs. But kind of treating this abstract representation space fixed, so treating all these
+embeddings as fixed, and then just treating kind of your final head that's producing the logits, which in the
+end, after you push them through the softmax, the next token probabilities, just treating that as a linear
+function now allows you to analyze it as a human, right? Now things become tractable and that's very important
+if you want to make sequential decisions and want to optimize an objective. So that's why these surrogate models are so
+powerful. You're right in saying that in other domains, people have also looked at these surrogate
+models and also found them to be very powerful. So for example, kind of data models where you want to
+learn how kind of certain data influences a certain prediction, or in LIME where you want to kind of fit
+a linear model that is actually interpretable, so not in some abstract representation space, but in a space
+that you actually understand. So then when you have trained this linear model locally for your prediction,
+you can look at that linear model and interpret the importance of the weights, right? Because you know
+this weight that is ascribed to a certain input has this specific meaning.
+But isn't that crazy? So as you say, like these are highly non-linear models,
+and I guess LIME is a kind of influence function where you have a linear model to kind of tell you what
+the weighting of the component features were for a given input example to make that prediction. And
+you know, you gave the example of data modeling. It just seems crazy to me that you could have a
+simple linear interpretable surrogate model. I think that it's really a wider spectrum. So with LIME,
+the reason it works is actually fundamental to the reason why local learning works is because
+if you, again, if you want to make kind of predictions that generalize across this entire
+data manifold, you need a very non-linear function versus if you just want to explain one local
+prediction, kind of the hypothesis is that you can get away with a linear model because
+you need to encode much less information, right? You need a much less complex model. Your representation
+capacity doesn't have to be as big to explain this one prediction. Now, there's of course some limits
+to it, and in some cases it doesn't work so well. And LIME will tell you, okay, now we found this
+linear model, but the linear model doesn't actually track so well what the big model did. So that's kind
+of LIME. In the data models case, or in our case, we don't use that model, that linear model, to make
+predictions, right? And also we train that linear model in this non-linear representation space.
+So essentially, I think fundamentally you can think about virtually any neural network as a big
+encoder, right, until the penultimate layer, and then like one kind of linear, kind of one final linear
+layer that projects to your output dimension. And I mean, in that way, that kind of neural networks
+are just sequences of linear functions that are composed with non-linearities.
+Yeah, this makes a lot of sense. So yeah, LIME is short for Locally Interpretable Model
+Agnostic Explanation. So for a given input example, in that local area, you can have a linear model.
+I guess it's the same thing with data modeling. You know, you're basically saying,
+for this input example, you know, what's the influence of the data set? And actually,
+even MLPs are the same thing. So in spline theory of neural networks, it's saying that,
+you know, models are locally affine. So for a given input example, you can actually represent the
+behavior of the neural network with a simple affine transformation, which is represented by
+the kind of like the cutout honeycomb space. So yeah, that's how deep learning models work.
+Essentially, they're just like, you know, a massive confection of like linear transformations for a
+given input example. Exactly. You're trying to essentially move to some space, like move data into
+some kind of space where it is represented in such a way that you can make predictions as linear
+functions. And that can be very powerful in the sense of actually designing your model,
+your representations, but also your functions in such a way that they will make good predictions,
+right? Because you know the structure. Yeah. Love it.
+So data models, I think, people have also tried to use them to select data, but kind of a fundamental
+assumption or kind of some limitation that people have found is that if you kind of use these kind
+of linear models to learn how a certain kind of selected subset affects your test loss, let's say,
+or your prediction, then it implicitly assumes that the influence of data adds up linearly.
+And this is kind of, so there's this, in interpretability, this big line of work on influence
+functions, and maybe we should explain what that is. So essentially, influence functions try to estimate
+the loss on a test point that you would have had if you had changed your model slightly or if you had
+trained your model on that certain data point. So you can use it to understand that, you know,
+this data point that I have in my data set influenced that loss kind of on this prediction to that degree,
+right? You can ask these kind of counterfactual questions. That's where it attempts to be helpful.
+Now, the problem is this is hard to make tractable, of course, and one kind of assumption that people
+typically do is they use a first-order Taylor approximation of the loss to get this working,
+or with data models, in a similar way, people use kind of first-order methods. And what that does,
+it ignores the mutual dependence of data relative to your prediction. So it just looks at the singular,
+individual importance of one data point about a prediction. But of course,
+you train your model not on just one data point, you train your model on multiple data points,
+and how you compose your training set is very important, not just in terms of what is the data
+you give, but also what is the data that you showed relative to the other data it has already seen. And
+in that sense, these methods are, when you use them for data selection, you just end up with something
+like nearest neighbor. You are going to do some nearest neighbor retrieval and some embedding space,
+but as we discussed, this nearest neighbor retrieval will completely ignore the fact that
+you can end up with completely redundant information. That if you show repeatedly the same example to the
+model, it will think that it improves because it will think that every example has the same value,
+but in fact it doesn't. And the marginal gain that you get from each example quickly diminishes.
+This is really interesting. So you're saying that actually there are these first and second and
+maybe further order interactions between the data examples. We shouldn't think of them as being
+separate. And this reminds me of the ML security literature, you know, so there's like data poisoning,
+for example, and that says that you can manipulate just the order of the data that gets trained on a
+machine learning model and you can manipulate the model to do anything. You can even put back doors
+in the model. So we need to have a method of sort of understanding the interactions between the data
+examples as well as the data examples on their own. Exactly. I think that is really critical and
+you see it empirically. And I mean, also we see it day to day in our life, how we operate, right? So the
+decisions of the information we access today will influence what we find interesting tomorrow.
+Yeah. And this doesn't happen independently, right? We don't start every day independently
+from scratch and just sample a new point from this data distribution. We think about, okay,
+now I have kind of knowledge in this field and this field and maybe there's some field in between
+that kind of would combine this knowledge and now I would kind of sample knowledge from the third field
+as opposed to one of the first two because I already know these quite well.
+So the million dollar question is how do you do retrieval taking into account the interactions
+between the data points? Yeah. This is actually quite straightforward. So what we do is we build a
+simple tractable surrogate model over which you can estimate the uncertainty that that model has
+relative to making a certain prediction. So you get some kind of tractable quantity that describes how
+good your prediction would be if you would have shown the model a certain kind of set of data points
+and that quantity can be optimized. So in close form, you can optimize, you can minimize the uncertainty
+that this model has relative to making a certain response. And it turns out that this borrows really
+important ideas from nearest neighbor retrieval. So in particular, the first example that you take
+will be the nearest neighbor. But as soon as you look for the second example, you will try to find
+examples that are enough as aligned as possible with your task in this latent space where kind of
+similarity is encoded kind of in this linear way. And at the same time, try to find examples that are
+as orthogonal as possible to the pieces of information that you have already accumulated.
+So we'll get to the close form solution in a minute because there's some beautiful mathematics
+around that. But just stating it just as an objective function, what are you actually trying to do?
+Yeah. So fundamentally, you can think about it from multiple different perspectives,
+but fundamentally, you're trying to minimize some intrinsic objective of this machine, of the LLM,
+which is to this uncertainty about making a good prediction. So we come up with some measure of
+uncertainty that describes how good the prediction will be. And then the machine tries to go out in
+its memory and find the relevant data that makes it end up with a good prediction. And you can frame
+this in multiple ways. I think I like really a framing that is more of a probabilistic, kind of from
+a probabilistic standpoint, where you think about your LLM as having epistemic beliefs about what could be
+the right function to describe your prediction. And you're slowly, kind of by showing more data,
+you're manipulating these epistemic, or the machine is changing its epistemic beliefs through
+Bayesian updates, through probabilistic updates. So it's computing posterior epistemic beliefs. And now,
+what kind of this objective is saying is, it's saying the LLM should take those examples from memory
+that lead to the most certain posterior beliefs relative to the prediction that it's trying to make.
+Okay. So what does certainty mean? Does that mean you're trying to sort of like minimize the
+variance of the posterior? Exactly. So of course, when you are working kind of in this probabilistic
+model framework, a key aspect is making that tractable. So that's kind of one of the key
+limitations of Bayesian inference, of probabilistic inference, is that computing this posterior is in
+general, very hard problem. But using this linear surrogate model, and essentially, gaussian,
+treating the initial random variables as gaussian, and using a gaussian observation model,
+this posterior update is tractable, so you can compute it in close form. And then you have kind
+of this big distribution over kind of possible predictions that the model can make. And there's one
+prediction that you care about, right? So you are trying to minimize kind of the kind of some measure
+of uncertainty relative to that prediction. And for gaussians, that's usually the variance. So you just
+minimize the variance of your, of the epistemic variance of your model relative to the prediction
+that you're making. So this is really exciting, right? Because I love Bayesian analysis. And unfortunately,
+we don't have access to a hyper computer that can like, you know, do all of the computations in the universe.
+So neural networks, they just produce bare predictions. You know, they're like maximum
+likelihood estimators that they just, they say, this is the thing that's most likely. We don't have
+the kind of, you know, the confidence intervals, we don't have like all of the uncertainty that we
+had had with the Bayesian method. So what you're saying is we have a linear surrogate model. And in that linear
+surrogate model, we can model the uncertainty, we can do like, you know, confidence estimates and so on.
+And then the other thing is, you can use kernels for this and Gaussian processes.
+Well, in some in some degree, yes, I think the simplest form with this linear surrogate model is just
+Bayesian linear regression. So this is like the first Bayesian model that that you are introduced to when
+you when you start working kind of with Bayesian machine learning, which is just kind of your
+kind of standard linear regression. But on top of that, you have a Gaussian prior over the weights,
+and then you have a Gaussian likelihood. So you have kind of an observation model that says that
+whatever observation you you get is really the ground truth function plus some Gaussian noise that
+is IID. And in that framework, you can do this posterior Bayesian inference exactly in closed form.
+So you can write down the closed form solution to this. And this is fundamentally what we use when we
+when we use a linear surrogate model is we kind of approximate this very complicated neural network
+by kind of a Bayesian linear regression, which is right, it is a bad approximation in terms of making
+good predictions, but it turns out to be a good enough prediction relative to deciding, okay, what
+information is relevant to improving the prediction of the LLM.
+And can you explain how it's possible to do that in closed form? Because, you know,
+obviously, you you think of Bayesian analysis as needing to do, like, you know, complex solving and
+Markov chain Monte Carlo and all this kind of stuff. But but you can you can just do it as as a simple,
+I mean, maybe you should explain what I mean by closed form.
+Yeah, so what we mean by closed form is generally that we can describe the probability distribution,
+the posterior probability distribution overweights as a mathematical formula. And that can be derived
+directly from the formulas for the prior and the likelihood. So the way standard kind of Bayesian
+inference works, Bayes' rule, is that you kind of compute your posterior probability as being
+proportional to the likelihood of your data times the prior divided by some kind of term that normalizes
+this to be a true probability distribution. And the beauty is that if you do this with Gaussians,
+if that is, if you use a Gaussian prior and a Gaussian likelihood, then this kind of probability
+distribution will still be a Gaussian. That is fundamentally because of these Gaussians only have
+kind of these first order and second order terms. And they're kind of the one probability distribution
+that if you have this second order and first order term, you know you are with a Gaussian.
+And that's why you can do this in closed form.
+Very cool. So we have described how we have a way of estimating the confidence for a given
+prediction. Now what we want to do is use as much inference time computation as is required.
+Because if you think about it, we could just use like an unbounded amount. Well, that's not very good.
+Wouldn't it be cool if we could link the amount of inference time computation to the
+confidence estimate? Yeah, absolutely. And we looked at this a little bit kind of in our recent preprint
+because it's, you can think about this as being kind of a powerful tool when we have kind of knowledge
+of how uncertain our model would be if it had seen certain data. And then we can think about,
+okay, how much do we actually want to pay in terms of how much compute do we want to pay
+to get a certain improvement in our model? So in that sense, we can use these kind of projections
+of how uncertain our model will be to stop computation early. Stop computation early when
+our uncertainty reduction stops being proportional to the amount of compute that we're paying. So
+usually for any type of prediction, you get this kind of sub modular kind of curve that where the
+marginal gains are diminishing over time, because you're slowly accumulating information. And at some
+point, you will have accumulated all the information that is required. What do you mean by use intuition
+of LLM to make search tractable? So, I mean, I like to think about this framework as having like this
+controller and this memory, right? And essentially, what kind of maybe in like the standard computational
+framework, people think about the same two components, for example, with throwing machines.
+So you have this head, right, which is a finite automaton. And then you have this memory, which is
+this unbounded tape. Now, what we can do today, which is quite amazing with these learned abstract
+representations, is that we can essentially jump to any kind of piece of content that is stored in this
+memory, just using kind of the intuition or the abstractions that we have learned. Whereas kind of
+in the standard computational framework, you would have to move left and right on the tape of the
+Turing machine. Now, essentially, in kind of log linear time, we can access the entire memory at once,
+or the relevant bits, at least. And the controller has two important functions here in this framework.
+The first one, as I said, is being able to decide what pieces of memory it should operate on. And it
+can do so by leveraging these abstractions and representations to essentially move in this memory
+space, kind of using shortcuts instead of going left to right. And the second key component of this
+controller is that it learns representations and abstractions that allow it to ingest information
+from the memory. So it reads from the memory and then updates its weights, if you think about
+in terms of a neural network. And we want kind of a controller that is very good at making these gradient
+step updates, right? So you can think about kind of better models, stronger models in this framework,
+stronger controllers, as being kind of more robust to certain types of information it would read from
+its memory and kind of leveraging its abstractions, leveraging its knowledge to actually use that
+information to make good predictions, right? It's like, I think a good analogy is that if you
+give a kid, you know, some complex math textbook, it will probably not learn too much from it immediately,
+because the representations and abstractions to make sense of that information are not there.
+So what we want with a strong controller is that whatever it kind of whatever piece of information
+it fetches from its memory, it's able to interpret that and kind of use the information to its full
+potential relative to making a good prediction. Yes. So the FSA is the controller, and then the two push down,
+you know, stacks essentially are the memory. But this is interesting, right? Because, you know,
+LLMs are FSAs. So they just represent the, and Keith Dagar, my co-host, he's big on like Turing machines.
+And he always says that, you know, there is a class of algorithms which could run on a finite state
+automata, but, you know, act as a controller for a Turing machine. And that class of algorithms,
+even though they could in principle run on an LLM, they're not traversable via stochastic gradient descent,
+because of course, this is a thing with a fixed amount of memory, it can't expand its memory. But
+the broader point, though, is that the Turing machine class of computation can do essentially
+any type of computation. And we're not just talking about an improved method here to improve predictive
+performance, you know, through specificity, we're actually talking about a new paradigm of Turing-complete
+computation. Absolutely. In a sense, you can think about this memory as potentially being unbounded and
+getting rid of this kind of limitation that pre-trained LLMs have, that they have to compress
+all the information at once into this kind of limited format that you cannot extend afterwards,
+that is kind of there. And if you want to come up with something different, you have to retrain from
+scratch basically. And now you can augment that controller that has learned these kind of strong
+intuitions, strong representations that allow us, that allows it to quickly kind of adapt to new
+information. You can use that in conjunction with this potentially unbounded memory, which kind of,
+as you evolve that system over time, you can extend or add pieces, remove pieces of information as you
+please. Yes. So it's a much more powerful modality of computation, but it's not something which is
+trained end-to-end with stochastic gradient descent. So we learn the memory and then we handcraft the
+controller. And it's, I guess it's a tiny bit janky because like, you know, we have a fixed embedding
+space and we like retrieve from a certain data space and so on. Let's use the ARC challenge as an
+example. So the guys who are the winners of the ARC challenge, good friends of ours, the minds
+AI team. They're, they're doing, they're doing test time, you know, like transductive active fine
+tuning that that's what they're doing. And how general is it, right? So what they're doing is
+they're saying, okay, well, we, we know what the prize are. We can build a dataset generator. And then
+when an input example comes in, we can kind of like lean into that example and we can generate data and
+we can fine tune the language model. And then we've got a Python verifier. So it's, it is kind of
+Turing complete, but it seems like it doesn't seem general. It still seems ARC specific, but it's
+certainly significantly more powerful than any other architecture, you know, that we know about
+so far. So we're kind of moving in that direction a little bit. I think, so I think if you, if you
+think long-term about where I think the trajectory of these types of architects is headed, I don't really
+see so many kind of fundamental limitations. Whereas in the current implementations, there are definitely a
+lot of fundamental limitations, as you said. So these are kind of representations, which are learned
+once kind of the controller is learned once and then kept fixed. Ideally, what you want is systems
+that learn over time, open-ended systems that learn from their mistakes and improve their representations
+and improve kind of the ability of the controller to ingest new information, adapt to a certain task
+over time. And certainly that is what truly intelligent systems do. And what we don't really have at
+large scale right now. So that granted, I would say that if you scale this up as a system that has
+kind of this, if you will, kind of finite working memory that is kind of part of that controller,
+and that can add to its memory and remove from its memory and doing so efficiently, so efficiently
+finding relevant pieces in its memory. I think kind of philosophically speaking, that is like a general
+mode of computation that can be quite powerful. Will it always be specialized though? I guess it comes to
+the philosophy of knowledge. So Francois Cholet thinks that there are primitives of knowledge. And if you
+have some kind of like, you know, set of primitives that you bias into the model, then you could in
+principle deal with any form of novelty. But any system that does retrieval, presumably, it still needs
+to, that there still needs to be some kind of manifold or some sketch of a future situation, which
+we could then lean into? Absolutely, I think, I mean, to the degree that any kind of, any intelligent
+system constantly learns from its environment and learns kind of what is actually kind of what is, what are the
+right abstractions to make good predictions in that environment? Any intelligent machine has to do the
+same. So in whatever environment we put it, and if we keep the environment static, that's kind of what
+we're doing now, then that's a much simpler task. Kind of in whatever environment we put the machine, the
+machine has to figure out what are the kind of right abstractions, so that it's able to find pieces of
+information and then combine these pieces of information to make good decisions. And I think
+there's nothing like that in this paradigm, there's no fundamental limitation that you cannot do this in
+an open ended system, but it certainly has not been done yet. And that's a super exciting direction.
+So another thing that springs to mind is, you know, I'm excited about active inference, and maybe in the
+future we'll have a very distributed asynchronous nexus of agents that are like, you know, doing
+something very similar to what you're describing. So very situated active inference. And what you're
+describing right now is we have a monolithic language model, which is updated every six months.
+And then we have some kind of like, you know, information retrieval store, which is periodically
+updated. And at the point of doing prediction, we basically do inference, right? And then I think
+we throw it away afterwards. So then we can get into this federated paradigm where rather than throwing
+it away, we kind of like remember it. And initially we remember it just for me, but maybe I start sharing
+it with you and maybe eventually it gets goes back to the mothership. Well, we could remember the
+prediction. What we could also do is just remember the error in prediction, right? So whenever, and
+that's I think what a truly learning system does is at test time, it does some additional computation.
+And then eventually it sees, okay, to what degree was that computation useful, fruitful, to what degree
+did I end up with a good prediction? And then it can kind of change the learning mechanism, right? You can
+update based on that prediction, you can change what you do next. And would the cache value of that be
+like just updating the manifold in the original model? Or, you know, there's this kind of MIT
+approach, you know, like the dream coded type approach where you do some kind of abstract library
+learning, right? Do you think there's some way of introspecting useful abstract knowledge? Or do you
+think it should just go back into the original neural network? I think there are multiple ways to go
+about this. So I think certainly what you definitely want to do is you want to improve your representations
+and abstractions over time. But fundamentally, I see those as kind of strong intuitions that allow you to
+kind of fetch the right piece of information and then combine these pieces of information to come up
+with a strong prediction. And for those, these abstractions are necessary. Of course, what you
+also do, and I think pretty evidently, what we also do as humans is we store, continuously store patterns to
+our memory that we encounter at varying kind of degrees of fidelity. And, you know, a machine can
+probably, if you give it sufficient memory, store these patterns at much higher fidelity than a human
+could ever do. So I think both storing information and updating kind of your representations to account
+for the fact that your environment is changing and the amount or the types of information that
+you're dealing with are changing are both key aspects to getting a really truly intelligent system.
+Yeah. Do you think, you know, the O1 model does, and by the way, maybe we should talk about this concept
+of a scaling, you know, like a inference time scaling law that they introduce, but do you think they do
+something like this? Do you think that they estimate their confidence or knowledge and then they do a
+variable amount of computation or do you think it's still like quite basic?
+Um, it's really hard to comment on, on what OpenAI does or does not do with O1, because unfortunately we
+really don't do, don't, don't know much about what they're doing internally. All that they're saying is
+that they are spending some amount of compute at test time, uh, to kind of change their model or at
+least kind of work their model around to end up with a different prediction than they would have
+otherwise ended up with if they just did kind of one forward pass through the model. And to that degree,
+I think it is kind of related and it's part of this paradigm of kind of doing and spending computation
+locally, kind of, um, kind of changing the resolution locally, you know, the accessible
+resolution locally around prediction that we're working on. Um, yeah, but I, I don't think that
+they are, um, necessarily kind of doing this in this kind of intrinsic uncertainty minimization framework
+of kind of that is related to active inference or, or these types of things, because I haven't, I haven't
+seen them talk about this, uh, yeah, but they, they kind of should be. And that's the thing. So,
+you know, when you use language models all the time, you get a feel for them, you know, and, and
+you can feel when they go out of distribution and look, cause what's actually happening is when you
+lean in, you know, when you ask it about something where it's like, you know, it's on a well sampled
+dense part of the manifold, you get rich answers, but, but that manifold is actually, it's like a landscape
+and sometimes you're in no man's land and it just gives you the most banal, like almost nonsensical
+answers. And wouldn't it be cool if it knew that? Yes. So I think now we're really touching a very
+important point and that is, you know, can we tell whether we kind of have information that is relevant
+to making a good prediction or not? And that's actually some kind of piece of information that we
+can extract from these uncertainty estimates. So I'm kind of getting a handle on our uncertainty
+about making a prediction can be very useful to tell is kind of the information that is stored in
+memory. Can that be useful given my current abstractions and this task that I'm faced with
+to actually solve that task or is it not useful? In the Michael Jordan example, if the age of Michael
+Jordan and his kids are not actually stored in memory, then, and also not in your, in your weights,
+then there's no way to make a good prediction. There's no way to produce a good output. And we
+actually, you know, discussed to some degree that you can use these uncertainty estimates to kind of
+provide an insight as to what your model is capable of doing and what your model is not capable of doing.
+And one of the key aspects where this shows up is actually in improving convergence guarantees.
+So one of the cool things that you can do is if you're minimizing kind of, if you're taking this
+principled approach of selecting the most informative data or selecting the data that maximally reduces your
+model's uncertainty, your model's epistemic uncertainty, then you can show that relative to the data that is
+available and relative to how good your model's abstractions are, eventually, you will kind of
+make the best possible prediction. Eventually, you will, your uncertainty will shrink kind of as,
+shrink to be as small as possible. And that is something that is not possible if you, if you select
+data using nearest neighbor search. But going back to the other point that you made relative to
+do we, in these dense parts of the data manifold, do we actually have models that are as good as they
+can be? And I wouldn't be so confident about that. Clearly, in those kind of very sparse parts of the
+data manifold where the model hasn't seen much data, it's not good. And we realize that today. But
+I think a fundamental problem is kind of in this inductive paradigm, when you're pre-training the models
+to be good everywhere. Clearly, in the parts that are most well represented in your training
+distribution, it kind of, if it weren't doing well there, its loss would be very high. So and it kind
+of is trained to be very good there. But still, if you kind of zoom in to these parts, with whatever
+kind of representational capacity you have, you can still represent them in a kind of at higher fidelity.
+I guess like one thing I was asking earlier, but maybe I don't think I asked it in a very good way,
+is right now we've got this modality where it's two extremes. So we've got the most general possible
+thing, which is the induction. And then we've got the most specific possible thing, which is the
+transduction. And could there be a middle way? Like, for example, could you have a kind of pyramid scheme
+where you do the most specific thing, but you also kind of like have an ensemble of varying levels
+of like coarseness? Could that be better? I think to some degree this is happening already. So if you
+look at how models are trained today, models are trained by first in the pre-training phase, just fitting
+kind of this big mass of human generated data, and you try to give to it as much data as possible. But then
+people realize, okay, I don't actually care about kind of specific data that I find on the internet
+in some obscure forum. What I actually care about is maybe math or coding. And then what people do is
+they curate data that is very specific to that part of the data manifold, and they fine tune the model
+on that. And you can think about that as some amortized form of transductive learning. And actually,
+I like to think about transductive learning as kind of this entire spectrum all the way. So there's a
+special case of transductive learning, which is inductive learning, where it's really you care
+about the entire data manifold. And then there are all these kind of cases where you care about some
+sub parts of the data manifold. So you kind of carve it up into the actual region that you find
+interesting for the tasks that you're trying to solve. But still, you train your model once, and then you
+freeze it, and then you deploy it, but just on that sub part of the data manifold. And what local
+learning is doing is it's really going to the extreme end of that, it's pushing it to the extreme
+and saying that whenever you use one of these language models, let's say, you are always interested
+in just making one prediction. So you might as well train a specific model just for that one prediction.
+And for the next prediction, you can, again, train a specific model.
+Yeah, I mean, first of all, it's quite interesting that we're almost going back to where we started,
+which I mean, Google search is really good. And that's pure information retrieval. And then we
+kind of went 180. And we did pure, you know, inductive inference. And now we're kind of like meeting in
+the middle. But I think it has the potential to solve a lot of the kind of the failure modes and
+problems that we have, you know, like when I'm doing generative coding or something like that,
+the problem is always situations where you're dealing with ambiguity. And yeah, you can do a
+lot with prompt engineering, you can say, no, I meant this, no, I meant that. But I think there's
+a lot of that kind of ambiguity resolution could be automated by having some kind of like somewhere
+on that transductive spectrum. I think in practice, when we spend compute at pre-training time,
+usually, and this is kind of what people today do with scaling laws is they say, okay, I'm able to
+spend this amount of compute. And then I like the scaling laws tell you I have, I'm able to train
+a model of that certain size, right. But of course, if you had more compute, what you would want is you
+would train a bigger model, right, on more data. And instead, instead of just training bigger models,
+what you can do is also to increase your representational capacity, or at least your
+effective representational capacity relative to making a certain prediction, is not to just
+increase the kind of model size, but instead is to use that model size in a smarter way, right.
+Instead of just using that model size to kind of trying to solve all problems at once, you can use
+that model size, but using kind of essentially duplicating that model, training a separate model for
+every prediction. Now, you don't have to train a separate model from scratch, and that certainly
+would be very inefficient. So instead, what you can do is you can train a model that is amortized,
+that is still trying to solve all problems at once, at least to the degree that it's capable of with
+its representational capacity, and with the amount of compute you give it, and then kind of leverage
+that as an initialization to learn a specific model where then all of the representational capacity
+is available to fit the information or compress the information that you need to make a certain prediction.
+So let's talk about how this might pan out practically. So I don't think these huge language models
+are going away anytime soon, right. So, you know, we're going to have the Sonnet 3.5s for doing coding and so on, but
+I see a future where interesting things might start happening. So for example, laptops are getting
+ridiculously fast now. I've just ordered the new M4 MacBook Pro. It's going to be amazing. And I mean,
+that could in principle, fine-tune a Llama model as I'm going. So, you know, like I'm on my repo,
+it fine-tunes it on the repo. And I can imagine there being some kind of a hybrid thing where like,
+we get the small model doing the active fine-tuning, and then we kind of generate a completion with that,
+and then maybe we sanity check it back over with Claude, and then we do some information retrieval.
+Do you see some kind of like practical hybrid use case of this coming up?
+I think that's certainly possible. I think what seems certainly interesting is that with a model
+that is smaller and that kind of compresses kind of more of this abstract information into a smaller
+package, that it's easy to learn at test time with such a model, just because backprop through
+that model, but also forward pass it through that model. So leveraging that intuition to search things
+is much easier. Nevertheless, what we have seen is that at all scales kind of learning at test time
+can improve performance. So even if you kind of work with kind of more state-of-the-art models,
+still doing this local learning at test time improves performance. So what I estimate is that
+where you spend compute and how much compute you spend will in future be very dependent on the
+certain problem, on the concrete problem that you're facing. Because there's certainly some
+amount of fixed compute that you will have on your machine, but I believe that also these kind of
+providers that provide these big LLMs over cloud services will over time move to a setting where they
+allow variable amounts of inference time compute and you can essentially tell how much compute do I want
+to spend on the certain problem. So there might be a very nasty kind of research problem that you want
+to offload to an LLM in the future, which seems kind of obvious to you, but like a lot of redundant work.
+And I believe in the future you will just be able to tell it, okay, use whatever kind of compute is
+necessary to solve that at test time. And that might be more expensive than what your local computer can
+handle. But I think we will see this expansion of compute in two scales. We will see it, one,
+just leveraging the compute that is available in our machines that would otherwise be unused, right?
+But I think we will also start paying, so like actually acquiring additional compute that would
+otherwise be used for something else for, let's say, pre-training. We will start paying for this
+additional compute to solve more complex problems. Just because we have seen that at all scales you can
+kind of get better performance if you spend this additional compute.
+Yes. And it also fixes the fundamental problems with the monolithic paradigm, which is that right
+now it's not open-ended, right? And when we actually do have this ability for people to explore different
+parts of the landscape, and then we can kind of take those lessons back to the collective, we've now got
+a divergent creative AI system as a whole, which is great. But Jonas, this has been amazing. So first of all,
+I'm really excited about your work. And it's great that you're telling the audience about it, because
+first of all, I think uncertainty and confidence estimation is really important. So I hope people
+have learned about that. I think intelligence is about being able to do a commensurate amount of
+computation based on your uncertainty. That's really important. And I think that transductive active
+fine tuning is going to be absolutely huge over the next five years. So thank you very much for joining
+us today. It's been amazing. Thank you so much for having me on. I'm really excited about this.

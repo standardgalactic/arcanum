@@ -1,0 +1,203 @@
+One of the biggest challenges we face with large language models right now is their knowledge is
+too general and it's very limited for new things because of its training cutoff. For example,
+my favorite new shiny framework for building AI agents is Pydantic AI. But if I go over to Claude
+right now and ask it what Pydantic AI is, it has no clue. And even if I use an LLM that can search
+the web, the information that I get back is still going to be very bare bones. But on the other
+hand, if I take all of the framework documentation for Pydantic AI and put it in a knowledge base for
+the LLM and I ask it the exact same question, the answer that I get is spot on. That is why RAG is
+such a huge topic when it comes to AI right now, which that, by the way, stands for retrieval
+augmented generation. It's a method for giving external knowledge that you curate yourself
+into an LLM, basically to make it an expert at something that it wasn't before, like an AI agent
+framework you're using, your ecommerce store, you name it. The problem is that curate step can be
+very difficult and slow. For example, if you want to ingest an entire website into a knowledge base
+for your LLM, how do you actually do that and get it done fast so that it's not 2027 by the time your
+knowledge base is ready and AI has taken over the world anyway? That is where Crawl for AI comes in.
+Crawl for AI is an open source web crawling framework specifically designed to scrape websites
+and format the output in the best way for LLMs to understand. And the best part is it solves a lot
+of problems that we typically see with these systems for website scraping. Usually they're very slow,
+overly complicated and super resource intensive. But Crawl for AI is the complete opposite. It's
+super intuitive, very, very fast, easy to set up and extremely memory efficient. So in this video,
+I'll show you how to super easily use Crawl for AI to scrape any website for an LLM in just seconds.
+And at the end of this video, I'll even quickly showcase a RAG AI agent that I built basically to
+be an expert at the Pydantic AI framework. Of course, using Crawl for AI to curate all the framework
+knowledge into my knowledge base. And really, you could take what I built and use it for any website.
+Super exciting stuff. So let's go ahead and dive right into it.
+So the two big things that we're going to focus on right now is Crawl for AI, which this is their
+GitHub right here, completely open source, and then also Pydantic AI. Now this is not a Pydantic AI
+video, but it's just a very good example of full documentation that we can scrape with Crawl for AI
+and bring into a knowledge base for our LLM. Now back over to Crawl for AI. The first obvious
+question when we visit this page is what is the point of Crawl for AI? Why even use it? And luckily,
+at the top of their readme here on their homepage, they have a very concise description for why you
+should care about Crawl for AI. And the first big thing is when you visit a website and you extract
+the raw HTML from it. I mean, this looks like a mess. And as a human looking at this, it's very hard
+for us to actually extract useful information from it. And a good general rule of thumb is if it's hard
+for us as a human to understand something, it's probably harder for a large language model as well.
+And so one of the most important things that Crawl for AI does is it takes this ugly HTML that
+we get when we visit the raw content of a web page, and it turns it into markdown format, which is
+actually even human readable format, like a super clean way to represent a web page and all the
+information that we see when we typically visit a UI like this, just in something that's all text
+space. So we can give it to a large language model for RAG, just for LLMs to understand it better in
+general. So that's the first thing and it does it very, very efficiently. It's super, super fast.
+It handles a ton of things under the hood, like proxies and session management, things that are not
+easy to handle. So it's not like you can go and make your own version of Crawl for AI very easily as
+well, just because you know how to use the request module in Python to pull HTML from websites. And
+it's also completely open source, and very easy to deploy, they even have a Docker option, which I'll
+probably cover in another video on my channel later on, they're doing major updates soon to their Docker
+deployment. So I don't want to focus on that now. But just know that that is available as well. And
+there's a ton of other things that they do that are super valuable as well. Like one really important
+thing is removing irrelevant content. I mean, when we go to the HTML here, we have a ton of script
+tags, and there's probably a lot of information that we can view on the page that is very obviously
+redundant or just not useful to us and that they take care of removing that as well. So eventually,
+what we get back from scraping the site with Crawl for AI contains just what we care about actually
+ingesting into our knowledge base. And getting started with Crawl for AI is so easy. All you have to do
+is pip install the Python package, and then run this setup command, which is going to install
+Playwright under the hood. That is the tool that Crawl for AI uses under the hood to scrape websites
+and basically have this browser running in the background that can visit these sites. And Playwright
+is a fantastic, also open source tool that I use for a lot of testing for my web applications as well.
+So very, very familiar with it, I can recommend this as well. So I think it's a great choice for actually
+having that web scraping functionality under the hood. And getting started is so so easy. It's
+just as simple as this little script right here. And so I actually have my own version of it. If I go
+into my source control here, I've got my own version of it, just scraping the homepage of Pydantic AI,
+their documentation. So let's go ahead and test this out and see what kind of output we get. And by the
+way, all of the code that I go over in this video, I'll have a GitHub repository that I will link below.
+And so right now we're starting with just these basic examples right here,
+starting with this one to pull the homepage of the documentation for Pydantic AI. And then we'll
+get to my RAG AI agent later. And I'll showcase that a little bit as well. And so yeah, I've already
+installed Crawl for AI took like 30 seconds to install everything, including Playwright under the
+hood. And so now I can just go ahead and run our script. And within seconds, we're going to have
+the entire page printed out in the terminal here. So so fast, very, very impressed with this. And
+this isn't like the perfect format for us as humans to understand because we have all this little
+markdown syntax and stuff. But this is definitely a great format for an LLM to understand this entire
+page, especially compared to what we get if I just go back to the Pydantic documentation here,
+I'll just open this back up. If I inspect the page source, this is the HTML that we got the markdown
+from and imagine pasting all of this into an LLM prompt. I mean, it's just a mess. It's definitely
+going to hallucinate when you try to ask a question with all of the HTML tags and everything in there.
+And so it's just so much better when we have something that looks like this. Alright, so we
+saw a basic example using Crawl for AI to get the markdown for a single file. But obviously,
+we have to take this a lot further to do something that is actually useful for our LLMs. Now, the first
+thing that we want to do is make it possible to ingest every single one of the pages in the Pydantic
+AI documentation. So you want to get the markdown for the introduction page, installation, getting
+help contributing, all of these at the same time. And the first problem we have to tackle to actually
+make that possible is we need an efficient and scalable way to extract all of the URLs from the
+documentation here. Now, I could just go and manually copy and paste the homepage and the
+installation page and the agent page and just bring that into a list in my code. But that is
+very inefficient and not scalable. As more pages are added, I'll have to manually do the same thing
+and constantly update the list myself. And so luckily, there is a very good solution for this
+introducing the idea of a site map. So for most pages out there on the internet right now,
+if you go to the homepage and then add slash site map dot XML, it's going to give you this XML,
+which gives you the entire structure of the website, all of the pages that exist there.
+And so you can do this right now for the Pydantic documentation, like I'm doing right here. And all
+the pages that you see here are the same ones that we see in the navigation right here. And I can do the
+exact same thing for the crawl for AI documentation. It's very meta, but I could use the site map dot XML
+to get all of the pages in the crawl for AI documentation to scrape with crawl for AI. So yeah,
+you can do this with most websites, most East commerce stores, like if they're built with
+Shopify or WordPress, they'll have this as well. Because in general websites have this for search
+engine optimization. And also for crawlers, I mean, a lot of websites want you to crawl them because
+they want their information very widespread. Like if I'm building an AI agent framework,
+I want people to crawl this and build agents around it because then they're using my framework.
+And it's just more accessible, which by the way, if you are curious, if you can scrape a website,
+there's a lot of ethics behind web scraping. Typically, what you can do is go to a website
+like youtube.com and then add robots.txt to the URL here. And this will give you a page that tells you
+their rules for web scraping. So this says that any agent is allowed to scrape YouTube. However,
+there are certain pages that are not allowed. And so this is super important to keep in mind if you
+want to be very ethical with your web scraping, which I highly recommend, check the websites you're
+scraping for robot.txt first, before you just go ahead and do it like GitHub is another good example
+here, where they actually say if you want to crawl GitHub, please contact them first, a lot of them
+will be like this. So keep this in mind, I very much owe it to you to provide this little segment
+talking about ethics before I dive into the rest of the video. And it's very fitting to do that,
+because we're talking about URLs that you can add to pretty much any websites you can do slash robots.txt
+or the slash sitemap.xml. And so we're going to encode pull this sitemap. And then we're going to
+extract every single URL, and then feed all of those into crawl for AI. And we want to do that very
+efficiently as well. Because right here, we're just going to be pulling in every URL and then looping and
+going through one at a time, if we do it just in a loop with this code right here, we want something
+more efficient. And so if we go to the documentation for crawl for AI, which is right here, that'll bring
+us to this page right here. And if we go down to multi URL crawling, there is a lot that crawl for AI
+gives us for this. And that's what we're going to be leveraging for the rest of this video. So first of
+all, if you just crawl your websites in a loop like this, like we would do if we just continued
+off of this example right here, it would be very inefficient, we're spinning up a brand new browser
+for every URL that we are visiting. And there's no opportunity for parallel processing, which we're
+going to get into as well. And so their recommendation, they give a full example for this for how
+you can use the same browser session for all of the pages that you're visiting and pulling. And so that
+brings us to the second script that I have built for us here. And I'm not going to go over all the code
+in detail because this is mostly following the example that we just saw right here. So I just copy
+this in, brought it into my code editor. And then I have this custom function right here, where I pull
+that site map that I just showed you. So I pull it, I extract using XML processing all the URLs from the
+site map. And then I pass them all into this function to crawl the URL sequentially with the same
+browser session. And so the code gets a little complicated with the browser config and crawler
+config. But don't worry about that. In general, you can just take this example and use it for yourself,
+it crawls every single URL. And it's not going to print out the content of every markdown, because that
+would just be way too much in the terminal, it'll just show us the length, and whether or not it
+succeeded in crawling the site. And so I'm going to go back to my terminal here, and run this second
+script here. And it's going to take a little bit, because it has to crawl all of them sequentially,
+we'll get into parallel processing next, to make this even faster, right, even this just took seconds,
+it was so fast processing each one of these pages, giving me the length and whether it is a success or
+not for each one of these URLs. So at this point, we already have a very fast way to get the markdown
+for every single Podantic AI documentation page. And it's ready now for us to put in a vector database
+for RAG to use with our large language model. It's super neat. And it was so easy to set this
+up with crawl for AI. Before we actually get into anything with RAG, I want to take this one
+step further, because I want to make this even faster, it was already fast here. But we're still
+processing each one of these URLs sequentially, there's no parallel processing. And we can definitely
+do that with crawl for AI. So you can visit multiple pages at the exact same time, pull the markdown
+for every single one of them, and then combine it all at the end to a single list, just like we're
+doing right here. And so the way that we can do that, if I go back to the crawl for AI documentation,
+and just scroll down a little bit, they have an example doing this exactly this parallel processing,
+and it's essentially going to be the same, we're still just using one browser. But we're creating
+different sessions that are all going to be up at the same time, visiting these URLs in parallel.
+And just like last time, I mostly just copied the example that they had right here,
+and then brought it into my code editor. And then again, just like last time, the main thing that I
+added is that function to use the pedantic AI sitemap.xml to get all the pages that I want to
+pull the markdown for and scrape. And so I'm going to open up my terminal again. And actually, one last
+thing before I do that for the batch size, we are doing 10. So it's going to visit 10 pages at the exact
+same time, get the markdown for all of them, and then move on to the next set of 10. And then repeat
+that until it has pulled the markdown for every single page. And so I have a new terminal open up
+right here, I'm just going to run this script just like I did before. And last time I showed how fast
+each run was, now I'm going to show how memory efficient it is. So when I run this, it'll show the
+current RAM usage for the script, which it starts at 91 megabytes, it's going through all these batches
+very, very quickly. And at the end, we can see the peak usage, which is only 119 megabytes. So
+throughout this entire time, even though there's an entire browser running in the background visiting
+10 pages at a time, it's still only ever used 119 megabytes of memory at once, which is just
+incredible. And the last example was actually basically as fast. But that's only because of
+caching. In general, this batch processing is going to speed it up a ton, which is super impressive.
+And so now we have the perfect thing for reg because we're doing it very, very quickly. And
+a lot of times you need that. I mean, this example has 42 pages. But if you have something like an
+ecommerce store with hundreds or 1000s of products, you can imagine that this is going to start to be a
+drag if you're processing things sequentially, not using the same browser and same session. That's why
+using crawl for AI and having all these efficiencies is so important. Very last thing. And this is my
+true gift to you, I have already built out a full reg AI agent that is a pedantic AI expert. So using
+the exact same process with crawl for AI that we just did, I pulled all of the pedantic AI documentation,
+and then I put it into a vector database for its knowledge base, built a full agent around it,
+and created a front end that we're looking at right here. And my gift to you is this is already
+available to you. I have the code in a GitHub repository that I have linked below. And then
+in the next video on my channel, I'll be covering how I actually built this agent. And it will be
+available on the live agent studio for you to try immediately. So super, super neat. And also a little
+bit of a sneak peek right now. So let me paste this in here. I'll just ask a basic question, like,
+what are the supported models? And this is the kind of thing that Claude or any other general LLM
+would definitely not have the answer for. And it even links me to the different pages in the
+pedantic AI documentation for my reference very, very neat. And I can ask a ton of other questions
+as well. Like I can say something like, give me the weather agent example from the documentation.
+Obviously, I just know that this agent example exists. And so I'll ask for it. And it'll go and
+search for it, find this full example for me. And it does it so fast as well. And this is perfect.
+Like this is a pretty complex example, because it's showing me basically every part of creating
+an agent with pedantic AI, which is super, super neat. So there we go. This is the full agent,
+and I'll be showing you exactly how to build it very, very soon on my channel. Now the reason that
+I'm not covering how to build the entire agent in this video is I want to keep it concise and focused
+on just crawl for AI, especially because there's a lot of other use cases for web scraping besides just
+RAG, even though RAG is definitely one of the biggest ones for AI, and just in general right
+now. But if you go to the GitHub repo, I have a read me right here covering everything with this
+agent, you have all the code for my entire process of crawling all these sites, again, with a very
+similar process to what we went over in this video, and then actually inserting that into our vector
+database, which I'm actually using PG vector with Supabase here. And then I have my agent that I built
+with pedantic AI, very meta, but it is my favorite framework right now. And then I have my streamlet
+interface. So all this is available for you with instructions on how to run it yourself. And then
+also stay tuned for my video later this week, where I'll show you exactly how I built it.
+So there you have it a bulletproof lightning fast way to scrape any site and give it to your LLM
+as a knowledge base. And this is useful for you pretty much no matter what your use case is,
+because there's almost always a time and place to take data from external websites and
+bring that into your LLM. And so that in my mind makes crawl for AI a game changer.
+And don't get me wrong, there are a lot of ways to bring knowledge into an LLM, you can manually
+curate data, use new advanced concepts like CAG, a lot of things I'll cover in more videos on my
+channel, but it is still the most common way to make an AI agent and expert something you care about
+to scrape data from a site and provide it to a knowledge base for RAG. And in the next video on my
+channel, I'll do a deep dive into the RAG AI agent that I demoed earlier, which I'm super excited
+about because I put a lot of effort into building it for you. So if you appreciate this content,
+I would really appreciate a like and a subscribe. And with that, I will see you in the next video.

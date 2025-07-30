@@ -1,0 +1,585 @@
+Hello, everyone! Hello! Sorry, the mics don't work too well, I think,
+reacting here. Okay, no, it worked fine. So we're going to get started. Thank you very much for
+coming. Welcome. These are the iCal seminars, which today are, as always, sponsored by
+InstaDeep, GoogleDeepMind, and Iconic. And this is a very special seminar for us because this was a
+seminar series that popped up from Reinforcement Learning Reading Group. And as a bunch of Reinforcement
+Learning researchers, we all in the group initiated our adventures with a very nice book from the
+person who is now presenting today. So I think there is no need of any presentation. We're very
+happy to have today with us Professor Richard Snowden, who is going to be talking about dynamic
+deep learning. Richard. Thank you.
+Thank you, Bora. It's really a pleasure to be here today and have a chance to talk to you,
+share some ideas with you. I've never been to Imperial before, and I've just learned about all
+kinds of interesting things going on here. It's all very exciting and it's impressive in many ways.
+So today, let's start with some general remarks before I get into really what I'm going to cover
+today. AI, artificial intelligence is really ambitious. So what I would say, I would say that AI
+researchers seek to understand intelligence well enough great beings of greater intelligence than
+current humans. Pretty awesome, pretty awesome goal. I think reaching this profound intellectual
+milestone, enrich our economies, challenge our societal institutions, it's going to be unprecedented.
+It's going to be transformational. But also a continuation of trends that are thousands of years old.
+People have always created tools, technology and been changed by it. It's what we do. It's what humans do.
+The next big step is to understand ourselves. This is a quest, grand and glorious, quintessentially human.
+Yeah, of course. It's also totally hyped up.
+But I don't think I'm hyping it here. The things I'm saying here are just true. This is a grand quest.
+But it is hyped up. It's not a good climate for science. You know, science likes things to be
+steady and calm and focus on the important fundamental issues. Whereas AI is like it's all,
+there's a lot of money going into it. There's so many companies. There's people, you know, arguing that
+what I'm doing is enough. You don't need to do anything to anybody else.
+And it's not, it doesn't feel, I don't know if you guys sense it, but I sense that it's not a really
+good climate for science. So, for example, large language models, really popular thing, really
+important thing, really powerful thing, but they can't just accept that they're going to be really
+important and really valuable. They have to say, oh, this is all that the mind does. The mind, they
+have to claim that large language models can do reasoning and maybe they're conscious and all kinds
+of crazy stuff. Instead of, you know, because the real scientific attitude, you find out, you figure
+out what you can do and try to understand what you can't do and quietly make progress. I think we're
+not really, that's not really the culture that I feel in our field at the moment. So I think I'm just
+a little bit disappointed by that. But I don't doubt this, that it's an important question that we're
+trying to address. Okay, now some others of my perspective. So I'm one of these guys that are
+trying to understand and create maximally intelligent agents. And an agent is defining
+the intelligence to the extent that it's able to predict and control its input stream, particularly its
+reward. This is the way I would define intelligence, not the way everyone would define intelligence.
+Not to pick on the large language models, but they don't actually try to predict, control their
+input stream. Technically, when they're running, they don't even have an input stream.
+So we want to control, we want to affect our input. And the creation of these super intelligent agents
+and super intelligent augmented humans, I think will be an unallied good for the world. Not to say that
+the world is going to be an unallied good, thoroughly good. But the future I think is going to be tough,
+because we're in what's called a fourth turning. If you don't know what that is, you might check it
+out sometime. It's kind of an interesting set of ways of viewing societal change.
+Well, the path to intelligent agents runs through reinforcement learning, now through the LMMs.
+But the biggest current bottleneck, ambitious reinforcement learning based AI, is that our
+deep learning methods that we rely on are inadequate to the task. They're not well suited to the task.
+And that's what I'm going to talk about today, that they fail when we put them in a dynamic
+situation where they have to continue to learn. As you know, I think all deep learning methods,
+is when they're deployed, when they're acting on a robot or interacting with humans, they no longer
+learn. They learn only in advance. They are sort of transient learning systems.
+Now, and one more sort of introductory slide just to tell you where I am, where my thoughts are. And I
+just put this in like two minutes ago, actually. This is the standard architecture of reinforcement
+learning. And if you see all these components of a model-based reinforcement learning agent, that's
+what MBRL is. Model-based reinforcement learning agent takes in observations, emits actions, and it also
+takes in a reward. And it basically composes of four parts. Perception takes in the stream of events
+and emits a representation of the current situation or the state. Probably it's a feature vector. And
+then that's passed to the reactive policy to pick an action. And those two, right in the middle,
+those two, these two, perception and action, those two together form a complete agent. But if you want
+the agent to be adaptive, and if we want it to be intelligent, it's going to have to be adaptive,
+as I have defined it, then you're going to need a value function to say how well things are going,
+and then use the td error from the value function to adjust the policy. So this diagonal line through
+the policy, if you can see that, represents not an informational transfer, like the state comes into
+the policy amidst the action, but the diagonal line means you're changing the function implemented by the
+box. Okay, so value function changes the policy. Now, at the same time, the full agent, a full model-based
+agent, you also learn a transition model, which is a model of the world, and its state transitions.
+Observing the states here, here you see the state at a particular point in time, and you might notice
+the state at a particular point in time, and then you take an action, and then you find yourself in
+a new state after some amount of time. And that's the transition and your model, transition model would
+model those transitions by observing the data, and then you can ask questions of your model. What if
+I did this action instead? What would happen then? Oh, you have a change to this state, and then you
+could apply the value function to that state, and you get a td error, and then you could use that to
+adjust the policy again, and we call that planning, because whenever you're using a model and not
+experience, to adjust your anything, we call a plan. These are just definitions of how I'm going to use
+the words. Now, in the full architecture, we also have not just one policy and one value function, but
+a whole set of them. And that's meant to be suggested by these that are stacked up behind the
+the true policy, and stacked up behind the value function, we have more value function. So that's
+where you would pose subtasks for yourself when you learn skills, how to achieve other things other
+than the reward, while always being cognizant of the effect of those other things on the reward.
+Okay, this is just on the side, right? I hope it's interesting, but it's on the side, and a lot
+of this is developed in these papers that you might want to, it could be checked out.
+Okay, now let's get to today. Today we're going to talk about dynamic deep learning, but really it's
+about a paper that my colleagues and I wrote, and the title is helpful for clarifying the topic.
+The topic is loss of plasticity in deep continual learning, and I'll define all those things in a
+minute. But now's my chance to talk about me a little bit more. I acknowledge I have many jobs,
+Keene Technologies, the University of Alberta, AME, the Alberta Machine Intelligence Institute,
+my own reinforcement learning lab, and Open Mind Research. I want to tell you about this a little
+bit. This is our logo. Open Mind is a new institute that we've created,
+that's devoted to doing fundamental research in, along the lines of reinforcement learning,
+the Alberta Plan, for people who have already graduated and obtained their degree,
+but want to do research in this area, and it's distributed. We have set kind of a focus in
+Alberta, but it's distributed and people can be all over the world. And if you might want to do
+fundamental research in this area, and you want to focus on that rather than become a professor,
+you may want to apply to be a fellow of our institute. Okay, now here's my main message.
+My message is that deep learning doesn't work for continual learning. And by not work, I mean that
+learning slows and eventually goes to a very low level of learning. We've lost plasticity. And by deep
+learning, I mean all the standard artificial neural network methods specialized as they are for this
+non-continual or transient learning. And I also mean without replay buffers, because I consider
+themselves an acknowledgement that deep learning doesn't work. Now, better learning algorithms that
+are specialized or well-suited to continue learning, they're not hard to find, and they can apply deep
+learning. So I don't think there's anything wrong with artificial neural networks. We just
+need to find better algorithms, and we only need to define, we have to start looking for them.
+And so that's my main message. And then this work
+details and substantiates this claim. Okay, so I'm going to have demonstrations of loss of plasticity and
+deep learning, and this, and the attempts to maintain it. And this will be in classic
+supervised learning problems like ImageNet and CFAR 100 with residual networks.
+And also in reinforcement learning, but primarily in these classic supervised learning
+problem domains. You know now already that I'm not really a supervised learning guy. I'm aiming at
+reinforcement learning. But I need all those four boxes that I showed you, they all need to learn
+continually. Because you live in your world, and you keep adapting to whatever it throws at you, and
+you have to model the world, and the world changes. The world is infinitely complex. You'll never be able
+to anticipate all the ways it might change. And so you have to continually learn. And then hopefully I'll have
+just a little bit on some goals and ideas for the next generation of deep learning that would be
+well suited for continual learning settings.
+Robert R. Now, this work has just been published in Nature. So I'm really excited about that. It's the
+first time I've ever been published in Nature. And I just, but I want you to realize that
+like, even when you have a publication success, it's often preceded by a large time where you have
+publication failure. So this happens all the time. It's just if something's fashionable, you can get
+it published in Nature, right? If it's not fashionable, you can't get published at all sometimes. I've
+experienced this many times, all of my best publications were really hard to get published, you
+know, yeah, temporal difference learning when I published that really hard options, all almost,
+almost, it's almost always true that the more novel and, and, and groundbreaking your results are,
+the harder it will be to get them published. So if you're having trouble, you know, take heart a little
+bit, and realize you'll have to persevere. And if you persevere, you may eventually get published,
+but it's not guaranteed, it may never become fashionable. So we, we in particular tried to
+publish this over like four and a half years, and we're unsuccessful. You can see it in archive,
+archive is good. Plasticity just means the ability to learn. And so loss of plasticity just means loss of
+the ability to learn or not being able to learn continually, not continual learning. Hope you're
+getting comfortable with the way I'm using these words. Maintaining plasticity is maintaining the ability
+to learn. And so in AI, since we want all the four boxes to learn, we should prioritize maintaining
+plasticity. And we're not the first to see this problem, see at least hints of the problem. It's
+very closely related to the idea of catastrophic forgetting, where in deep learning, you learn some
+things, and you learn some more things, you often totally forget the old ones. Now loss of plasticity,
+you learn some things, you learn some new things, maybe you learn some new things after that, and
+eventually you can't learn any more new things. Not the same as loss of this catastrophic forgetting,
+it's sort of catastrophic loss of plasticity. So this, there are also hints of this in the early
+neural networks work in the psych literature. And there are a few works like Ashton Adams showed the
+failure of warm starting. Warm starting was like you thought, oh, I'll teach this, this neural network on,
+on part of the data, and that'll warm it up so that it'll give it the second half of the data,
+it'll be faster. But in fact, they found the opposite. If they trained it on first on the
+first bit, then it was slower on the second bit. And much better if they just put the two parts into
+one big thing and trained it all once from scratch. It was kind of surprising, seen as a failure.
+That was one of the earliest demonstrations.
+And primacy bias, nicotine, capacity loss, Claire Lyle and others, these are shown in reinforcement
+learning. Okay, but no one really did a thorough demonstration in supervised learning of this
+phenomenon, because you have to do it thorough. It's sort of a negative result. If you get hints,
+it doesn't change people's minds. And so the significance of this piece of work was that
+we did it really thoroughly and dotted all the I's and crossed all the T's and, and considered
+all the possible ways you can get around it and, and have something that's pretty incontrovertible.
+Okay, so let me show you the first one of these demonstrations, loss of plasticity in supervised
+learning. And we're going to use the classic domain of ImageNet. So ImageNet, you have this
+database of millions of images. And they're like, this is an image. This is a, this is a, a shark.
+Hope you can, hope that's obvious to you. This is somewhat downsampled, and we have to use
+somewhat downsampled images. But there are 1000 glasses, each with 700 or more images, and it's widely
+used. But we need to change it, because it's widely used as a pure supervised learning problem,
+like they take all data, they, they, they, they, they train on all the data at once. And then they
+gradually freeze it, they train and train and train multiple presentations. And then finally,
+they freeze it. And actually, they gradually freeze it and slow it slow down learning until they have a
+nice stable state. We don't want to do that, we want to have something that we'll continue to learn. So
+how are we going to do that? So we're going to make a variation of the problem, which we call
+continual ImageNet. So we see it as a minimal change to the classic one. So we do the usual
+thing, we take the 700 examples, remember, for each class. So we separate that and just training,
+600 training and 100 test ones. And then we take them in pairs. So like, this might be the first pair,
+we'll show you crocodiles versus guitars, and you have to learn to distinguish those two.
+Okay, and then when you're doing, well, we've seen, we've seen all the examples
+of those pairs, we go on to a second pair, like, so think about how that's done. We, we've, the network
+only has two options, two outputs, A or B, or yes or no, crocodile or guitar. And so then,
+when you want to ask a new question, you add, well, since I'm never going to ask you again about
+crocodiles and guitars, I can actually throw out the heads, the final two neurons of the neural network,
+and, and, and replace them with two new ones, two new ones for the new task, the new task to distinguish
+game controllers from fish. Okay. And then once you've learned that I erase the heads,
+and give you a new problem, bow ties versus oxen, I guess. Okay. And this so this continues,
+and you can get many pairs, because remember, there's 1000 pairs, so you might think I could make
+500 pairs, but you can actually make many more because you can reuse ones, as long as you don't
+reuse the pair. So how many pairs of, of thousands of things, it's, it's like almost, it's like almost
+1000 squared. So you have lots of pairs, we can do this forever. Performance measure, is I'm just going
+to measure the percent that are correct on the test set. Remember, I present all the examples for the two
+classes, and then I have some saved out ones, I measure performance on them. And then I average
+this over many, many runs. And in the many runs, I vary the pairings of the class, I don't, you don't
+have to worry that maybe the first class is hard, or the first class is easy, since they're all averaged
+over all the possibilities. Okay, that's sort of the problem. And then there's a whole other set of
+details for the learning network. And talked about how the heads are reset, the final heads. The
+structure of the network is pretty standard, it's a little bit narrow, because we only ask you to
+classify two things at once, we don't want it to be infinite in its size compared to the things we ask
+of it. So it has some structure of convolution layers, and interconnected layers. And notice the
+last one is just two, those are the last two heads. Okay, and then we use batches, we use epics,
+and all the usual ways. Now, it's important that the weights are initialized in the standard way,
+and that it's only done once. It's only for the very, the very beginning, on the first task,
+before the first task, we, we randomize all the weights, small initial values is how this is a
+standard practice. But it's only done once we, you know, when you get a new, start to get new data from
+the new task, you're not told it's a new task. And so there's nothing, no opportunity to reinitialize
+and do anything. And you maybe don't want to reinitialize, think about it, maybe you've learned one
+thing, and now you're going to learn something new, maybe what you learned on the first one will,
+maybe the features you learned on the first one will help you get those last, the heads that for
+the new task, maybe they'll be able to do much better because they have better features. Okay,
+so we'll start with just plain backdrop, momentum, cross-entropy loss, relative activations,
+usual things. And we, of course, varied all these things, but the standard case is this one. And yeah,
+many variations, get representative results. And then we, I want to ask you, how do you think,
+well, what do you think will happen over, over the sequence of tasks? Will performance be better
+on the first task or the second task?
+Are you voting for first? Elliot? I think it'll improve in that
+session. You think it'll improve in, since that's, that would make sense.
+That it should, maybe the second task will be better, third task maybe will be better,
+and at some point you're not getting any more advantage from having learned good features.
+That would be good. That's the way a learning system should work. Okay.
+Okay. This is the beginning. I'm going to show you just the beginning first. And obviously, it's going to
+depend, it's going to depend on, on your, well, let me do the axes first. The axes are task number along
+the bottom, the first pair, the fifth pair. And this is percent correct. Okay. So if you, and these
+are, well, what are you tuned for? This red line was tuned for doing as well as you could on the very
+first task. So it's sort of fast. Right. And so that gets up to about 89% correct on the first task.
+This is slower. The backdrop alpha, alpha is the step size. So this red alpha is, is 10 times faster
+than the orange alpha. Okay. With orange alpha, you, at least after a while, maybe get up to a higher level.
+But this one's the fastest at the very beginning. Okay. Does this all make sense? Okay. Now the linear
+baseline is, well, what if you didn't have all this network stuff? You just took the pixels and you
+learned a linear map from the pixels to the class. That's actually not, you can do much better than
+random. What's random? Random is two classes. So it's 50, 50, 50% would be random. Yeah. And what else?
+The shade region is one standard error. Linear baseline is the importance of the lead of the
+linear heads. There's no non-linearity. There's, there's just a single, well, two units. And so
+this doesn't have to be run actually with, with multiple tasks, because you know, there's nothing
+to save from one task to the next. The two heads are replaced. The two linear heads are replaced.
+That's the whole network. So you don't have to run it many, many times. Well, you have to,
+we have to run it many times and we established that you can get 77% approximately correct with,
+with you, with a linear system. Okay. So we don't, that's, that's really poor performance,
+right? That would be bad because you're not even using all that network to do anything. Okay.
+So maybe we're improving at the beginning. This guy seems to be improving, but we, what happens in
+the long run? Okay. That's the real question. So this is what happens in the long run. And so
+these are this red and the, and the orange are the same curves that you saw previously, just extended.
+So let's go with the red one, which started out at 89%, which is this point, right? But this first data
+point is an app, is a bin, an average over 50, because there's, you know, just for graphing purposes
+to get rid of all the jaggies, it's good to average over the first 50 tasks. And so over that first 50
+tasks, you really can only do about 84% correct, because you're already starting to decrease in
+performance. And then you see that playing out as you go more and more tasks, you get worse and worse
+until you're performing worse than just a linear network. And if you use a different set of
+parameters, if you're slower, you also get worse and worse, and then you level out at just a little
+bit better than the linear network. This is an even slower step size, and it also does poorly. Okay, so
+this is, this is, this is one setup, but it's representative, we've seen this pattern over and
+over again. If you vary the details, you get small variations and different, different shapes. But
+this is, this is, this is the pattern that you always, that you will always get. In the long run, you
+can't do better than the, much see differently better, much better than the linear baseline. And also, if
+you reduce variations, like bring an atom, atom actually makes it worse, dropout makes it worse. Many of
+these things just makes performance worse. Okay, so what's the summary for good hyperparameters,
+plasticity decreases across tasks, nearing the performance of the one-layer linear network or
+worse. So this is what I'm calling catastrophic loss of plasticity. Question. Do you have any
+explanation for why it is that for an alpha of 0.01, you keep seeing this catastrophic loss of
+plasticity, but the smaller alphas sort of level out and retain some baseline level of plasticity?
+Um, we haven't thought about arguing that the orange line is good. And you think the orange line is an
+equal, a failure. Uh, um, I, I never asked the students who did this, all the students I listed,
+this is Siobhan Doharre and Fernando, uh, all these, uh, about that particular question. I'm not sure I can answer that.
+Any other questions?
+Thank you.
+How do we explain, uh, how the, like the, the,
+the brown line was definitely increasing. And as we saw the orange line also, if we looked at detail at
+the first 10 tasks, it also was increasing. So like, uh, that's, that's what Alex called for,
+that we should get some improvement in the beginning. And so that makes sense to Alex. And the, the way we
+were understanding it was that it was, you learn features during the early tasks. And those features
+are later, are, are useful on, on the subsequent tasks. Uh, and if you're, particularly if you're
+learning slowly, then, then, then, uh, well, we're, yeah, empirically, we're seeing that if you learn
+slowly, then you're getting a much greater effect of that nature. You're getting savings across the tasks,
+which you learn, maybe you, maybe it takes a while to find good features. And if you can only learn really
+slowly, uh, that you get more accumulation over, over, over, over, uh, over tasks. Okay. Um,
+so there are better algorithms. As I said, things like dropout and standard variations make things worse.
+Um, uh, but there are a few, this is, this red line is the same line we saw before. We've just
+rescaled it. You know, he's going way down low. Uh, but, but if you have a good algorithm, you can,
+you can show improvement. So, um, this is shrink and perturb and L2 regularization. L2 regularization
+just means you have something, you add something that encourages the weights from getting too big.
+You prefer small weights. And so this, uh, keeps them in a, in a, uh, uh, a labile range so they can
+keep training, keep learning for more experience. Uh, and I'll, I'll show you some details on that in
+a minute. Shrink and perturb does L2 regularization, but it also does a random perturbation of the, of the,
+of the weights. And so these two are good. We're going to repeatedly see these are good at partially
+solving the problem. And continual backdrop is our own algorithm. Um, and it's basically just like
+backdrop. It's falling gradient descent, but in addition, uh, we select just a very small proportion
+of the units and we select the very, the proportion that are least useful to the network and we reinitialize
+them. So like less than one unit, per example, very small fraction of them. And we have a utility
+measure so we can measure their utility, how much they're contributing to the network's, uh, behavior.
+And if the ones that are used at least, uh, will be candidates for being reinitialized. And that small
+change, uh, solves this problem. You have a question online about how did you select? Yes. Yes. It's a,
+I'll talk about that in a minute. Let me, let me just postpone that. Um, but it is a, it's a measure of
+its utility. And as you'll see, many of the units are not useful at all. This is what, this is a phenomenon
+of backprop. Okay. Okay. And maybe I have it here. Continual backprop. Scastic gradient descent.
+Selective reinitialization, just like backprop, except reinitialize. This is, this is our only
+parameter with the RAID, which we reinitialize. I said it's very small, very slow. Um, that's,
+that is a hyperparameter. And it's, it's, it's, we show that it's better to reinitialize selectively
+using a measure of utility. So for example, shrink and perturb also ran, makes
+random changes. Um, but it doesn't do it selectively. It's always just taking all the
+weights and wiggling around a little bit. And this is an old idea. Uh, it's really
+sort of a kind of generated test. We, we, we're keeping the units that are contributing to the
+network and we are taking the ones that are not contributing and we're gonna randomly vary them.
+Um, and this is, this, this idea existed before, uh, Rupam Mahmood and I did some work on it.
+It goes back to the, uh, sixties, like Oliver Selfridge did pandemonium. And it also was like this,
+generating units in a network. And the thing about continual backdrop is it extends the idea to
+general multilayer networks. Um, okay. So, um, I want to, I want to show you in some sense,
+convolution networks are old school, old style. Uh, now we want to do residual networks, which
+also has many layers, like 18 layers, but we also have, uh, has shortcut connections or cut through
+connections. So you don't only, it's not strictly layered anymore. This is more, more modern architecture.
+And we're also going to change the problem a little bit. We're going to use, uh, CFAR 100.
+And we're going to present five classes, five classes, and then we're going to progressively
+add more. So we're not going to like, like before we had pairs, another pair, a different pair,
+you're just in a different pairs, same number. Now we're going to add, we started with five,
+then we'll add five more. So we'll have 10. So, so this is the old five. We're still going to present
+those. Yeah. And we're also going to present the new five and the next we'll present,
+this 10, we'll keep presenting all of that 10 and we'll get five more. So there'll be 15. And we just
+keep going until you get all a hundred of them. Okay. Now, if you think about that, the second task
+will be harder than the first one, right? The first one just has five classes. This one has 10 classes,
+next one has 15 classes. So you expect overall accuracy to go down over time. And so you can't measure
+overall accuracy. If you want to see a loss of performance, what we want, what we want,
+what we use is we show performance relative to a network that's trained from scratch with the same
+number of classes. So say you had 50 classes, you could, you could just re-initialize your network,
+give it 50 in the old way, the 50 are all presented at once, and that'll perform a certain well. And then you
+could do it in this incremental way where you get five, 10, 15, 20, so far. And what will it be?
+Will it be, after you get to the 50, will you be performing, will you be performing worse or better
+than if you see them all at once? Does the progressivity help you or hurt you? Okay. And
+what we find is quite, so this, the y-axis here is the difference between these two.
+Did you do better or worse? Because you're presenting them incrementally. Got it? Okay. So
+what we find is that, yeah, there's a definite effect of, you do better by doing it incrementally
+at the beginning. You gain a couple percentage points of accuracy, which is quite a significant
+effect. And then it decreases. And if you do the usual backdrop after about, I don't know, 40, 45,
+it's neutral. And then, and then you get this loss of plasticity effect where you do much, much worse
+than presenting them all together at once. Shrink and perturb isn't quite as bad, but it's bad.
+You're losing, you're losing plasticity. And with continual backdrop, you're able to maintain the same
+level. You get exactly what Alex asked for. You get an improvement at the beginning, and then
+doesn't, you plateau. Okay. So that's, that's the general pattern. Yeah. Good. Because you, you said
+you keep the same performance in the long run with continual backdrop, but at least are you able to reach
+that performance sooner than with a network that has been trained from scratch with all of them at once?
+So is the learning time at least faster with continual backdrop than when you, because we're trying to
+see the advantage, right, of just throwing all the data at once to a network? Well, all the methods are, are
+getting an advantage in, in learning time at the beginning, right? That's what we see. Yeah, that's
+spike, but at the, at the, at the end. At the end, there, there is, and then we're measuring performance
+only on, on the full set. Yeah. But my question then is like, since performance is the same, did you
+notice that, uh, continual backdrop was reaching that performance sooner than that network learning from
+a scratch? I don't think that, I don't think there is any measure of, of sooner. Um, you mean, once you're
+say presenting all 50 of them. Yeah. I mean, so in the progressive case, you've been, you've
+presenting, you've been presenting them in smaller groups all along. And so, for most of the classes,
+by the time you get to all 50 of them, you've already learned a lot. I would expect to be faster,
+but I wanted to confirm if you, well, you'll, you'll get, you know, 45 of them pretty, pretty well
+at the beginning. Remember the performance measure is at the, at the, well, actually I didn't, I didn't
+say what the performance measure exactly is here, and maybe I'm not sure, but, uh, I am sure for the
+previous example. The previous example, and I think we're doing the same sort of thing,
+is we present things and, and then, and then we have this test set. So we, we, we finish learning,
+and then we measure performance. There isn't a, there isn't a speed within, within the group.
+You know what I mean? Yeah. That's what Paul was asking is, Paul, like, the number of classes 50,
+for example, when you frame the network from scratch on 50 classes, you present as many examples
+to that network, as you present to the network that it's doing. Yeah, it's definitely the same number
+of examples. In that sense, it is slower because it has seen 49 times the train set size. No, no,
+the total is the same. The total is the same. Yeah. For the one that is trained. Yeah. Yeah.
+Is that right? Yeah. And I answered some of the question now. Yeah. Maybe I'm not sure.
+But this, I think you'll find interesting. Here we're looking at, we're looking inside the network
+and trying to figure out what's happening. Okay. So as we increase the number of classes, this,
+this, this graph is showing the percentage of units that are inactive, that are dormant or dead.
+They're, which means they're defining that as active less than 1% of the time. And so
+you start out with small random weights. Everyone's active. Oh, I guess, I guess active means
+they're, they're revenues, remember? So if the activity is less than, less than zero,
+they're, they're capped at zero, floored at zero. And so active means their, their activity is greater
+than zero. And at the beginning, they're all, they're going to be greater than zero half the time.
+And so none are, are active less than zero percent of the time. And then as, as we,
+as we train just for standard backdrop. Yeah, actually, I should have said that. In this,
+in this experiment, if you do standard backdrop, you don't even, you, you, you don't perform,
+it doesn't work at all. You have to already use L2 regularization. So, so that's why in these
+experiments, we don't show you results for L2 regularization, because everything is using L2
+regularization. That's, that's needed. Okay. So that, anyway, that base learning, base learning system
+and, um, gains up or as increasing numbers of dormant units, more than, more than half by the end of 100
+tasks, um, 100 classes, 100 classes, and, um, shrink and perturb does much better in terms of many fewer
+dormant units and continual backdrop has hardly any. And we also measure this, the diversity of the
+representation, uh, uh, uh, which means often, often you have features that become similar to one
+another, and they, they don't add anything to the, uh, linear rank of the, uh, uh, the, you have to
+measure the, the number of, uh, I don't even know how to say it, uh, number of independent components,
+uh, in, in, in the, uh, in the, in the features in, in, in the network. Um, and so we scale this between
+zero and one, and we can, we can see, like, like clearly that, that just a base learning system,
+uh, the, uh, we lose diversity, we lose the rank of the representation. And with some of the other
+methods, we can, um, preserve diversity. Okay. Now I tried to say, and here's, here's where I emphasize
+the robustness in, in these problems. And we've done other problems. We've done idealized problems.
+We've done MNIST and we're certainly, I'll be doing reinforcement learning. So across network
+architectures, uh, across activation functions, not just ReLU, but a whole variety of them. And across
+the hyperparameters, we see that just playing in the deep supervised learning loses plasticity
+dramatically and the continual setting L2 regularization improves it, but just a little bit,
+uh, or make, and, and shrink and perturb often will help a little bit further. Wait with, with the
+weight randomizing. Continual backdrop does the best to maintain the plasticity. It has one hyperparameter,
+but as long as it's, uh, it's, it's, we're insensitive to that, it's just can be set very small.
+So now let's go on and do finally reinforcement learning. So we're going to do ant locomotion.
+Um, maybe you've seen this problem. We have this ant, uh, I don't have some videos here. Let me
+scoop ahead. Yeah, some videos. So here's the ant on the right side, um, moving rapidly forward.
+The object is to move forward as rapidly as you can. This is an ant that's not moving forward at all.
+It's doing very poorly. This one's doing very well. And we're doing this. We measure the, the, the reward
+is forward motion and the, uh, actions is to control these eight joints where there are red marks.
+And this is a standard task. And, uh, here the performance, we're showing the time steps. We're
+training for rather a long time. Often you will only change, train for a million or two time steps.
+We're going to go 20 million and we're going to measure the rewards per episode, which is one
+trip of running forward as fast as you can. And then you're brought back to the beginning to,
+to run some more. And here we have a non-stationary problem. And that means that, um,
+we're going to vary the friction between the feet and the ground. So every two million steps,
+we're going to vary the friction. We're going to vary it. I don't have a, I don't have a figure for
+that. Uh, but sometimes it's fast. Sometimes it's, the feet are sticky and sometimes they're slippery.
+And, um, so it changes the nature of the problem every time you, you, uh, vary the friction with the
+ground. So these, um, sort of, actually, I call this an alligator graph, because it looks like the
+back of an alligator's tail. You, uh, you're doing well, and then there's a switch in the problem
+and you, your performance falls, and then it recovers. Falls and recovers. And, um, so let's first
+look at the standard reinforcement learning algorithm, PPO. Um, and, uh, it, it does well at the beginning,
+but then at a certain point it plateaus. And if you just keep training, keep training,
+um, it degenerates. And your ant that used to look like, like this one. Oh,
+I think I must have skipped the slide. Yeah, this was supposed to show the, uh, the slipperiness.
+Uh, we're going to vary that. And, um,
+uh, here's our standard PPO performing well, but if we just keep going, it starts to end up looking
+like that second one. So it's looking like this guy and, uh, performance is actually, uh, degenerate,
+so it's worse than how you started. And you can, so this is, this, so people have seen this before,
+but you know, when this happens, they tend to just, uh, stop. They, they stop training early on.
+And if you stop training, you can, you can avoid this, this, this, this fall, but a real learning
+system would be faced with that. Okay. This online asking, could a similar effort be seen if mass was
+changed instead of friction? Excuse me? Could a similar effort be seen if mass was changed instead
+of friction? Yeah, we believe so. We have every reason to believe so. As long as there's something,
+well, actually,
+I guess I should move a little more quickly, uh, because I'll answer that in the next,
+in the next slide. Um, but yes, this quick answer is yes. Okay. Now, if we tune the learning
+algorithm, we can do better, but we still see a, a drop, uh, a loss of plasticity over time. And as
+before, L2, L2 and, uh, continual backcrop can largely solve the problem, largely solve the problem.
+Now, I want to show you, um, this one. This is the same thing, except there's no changing in friction.
+There's just, just regular ant. Okay. And, um, but reinforcement learning does involve changes.
+It always involves changes because the policy gradually changes and, um, it involves temporal
+difference learning. Temporal difference learning, the targets are always changing. So really,
+even without changes, even in a stationary problem, you should get this, we get this effect. We,
+we realize later we get the same effect and performance just drops. And this is where I say,
+well, why didn't, you know, why doesn't everyone see this? Well, they do see this and they just,
+they just stop training after a few million. They don't, they, they, because arguably it's okay.
+You're just interested in a good policy. You can stop and use that policy. But if you want to keep
+learning, it's a big problem. Now, if you tune in your parameters, you last longer and you get higher,
+but still you, you suffer and you lose all your plasticity. Regularization, uh, can maintain it
+and continual backdrop can maintain it better. Okay. So here now we'll take a closer look inside this
+algorithm. And again, we look at the percentage of dormant units and those are increasing to more
+than half L2 and continual backdrop, keeping it low, stable rank, stable rank is the same pattern.
+And here's a new one. The average weight magnitude is just looking at the units and look at how big
+the weights are. And with standard backdrop, the weights are getting bigger and bigger and bigger.
+There's no, there's nothing that, that forces them to be small. And maybe that's the full explanation,
+just the weights get bigger. And so they're harder to change. Um, L2 regularization makes them, forces
+them to be small and maybe that will interfere with performance. Um, and so that gives some insight
+into what's, what's going on. So conclusions, deep learning networks are optimized for one-time
+learning. In a sense, they totally fail for continual learning. And these simple changes like continual
+backdrop can make them effective for continual learning where you're going to rank units by
+the utility to the network preserves the most useful. So I guess I never got into the details of utility.
+And I guess that's because I don't think the specific way we rank them, uh, we don't think it's
+necessarily the very best. Uh, um, in fact, that's one thing we're working on now, how to make, how to do it,
+uh, better, in a better way. Um, you know, what if your, what if your network is recurrent?
+And, or what if you're, right now we're using a fairly local measure. We have the units, each unit
+is looking at its outgoing weights. And if the, if the immediately outgoing weights, if they're all
+zero, for example, you know, you're not useful, uh, but they may, some of them may be large, um, but
+you don't know that you're connecting to someone who's, your large weight is to a unit that is useful,
+which, which would be necessary in order for you to be useful. So, um, that we're still experimenting
+with that. Um, I think there's a large, exciting world ahead of deep learning networks can learn
+continually. And, and particularly it opens up possibility, new possibilities for reinforcement
+learning, which is inherently continual and model-based reinforcement where you have all these different
+components that, that are interacting and all of which are learning simultaneously and continually.
+Okay. So that's my completion of the demonstration part. And now let me just say a few, I could,
+I could say a few words about, uh, ways we're going to try to solve these problems further.
+But it's a good time for questions right now. There are a few online, actually. Yeah, good.
+So one very linked to what you were presenting was, uh, what will happen for continual VAC prop, uh,
+without the L2 regular, regularization? Hmm. Hmm. Well, it is, it is necessary, uh, in these later,
+in later problems to make it work well. So, so it wasn't in, in the first problem. Um,
+so, I don't know, it just doesn't perform as well in, in, in some cases. Yeah.
+It is who as well asks what kind of advantage continual learning can gain over the normal deep
+learning? Well, it's, it's, it's, it's really a change in the problem, right? We're asking a
+continual problem where, well, I guess a back prop, uh, uh, reinforcement learning is always continual.
+Um, let's see, Vance, I guess, didn't I just show that? Didn't I just show that if you have a
+changing problem and you need to do continual backdrop or a regular backdrop. Okay. Let's just go to, uh,
+in person. So just to wrap my head around application a bit more and just kind of talking
+back to their queries on efficiencies of like baseline training, say on like, you know,
+n number of tasks versus like, uh, n minus five to n tasks. Um, I understand that in the supervised
+setting, the advantage may be more for like fine tuning or something like this, where you have,
+what's an existing model and you want to add little tasks or something like this.
+Yeah. So like if say we're doing large language models and we, we train them up and then like
+another, uh, another week's information comes out on the internet, new news stories, and you'd like to
+have your large language model to be up to date with the new news stories that then you, that's a big
+problem nowadays. And what they actually do nowadays is when they, they update the models infrequently,
+because every time they update them, they have to, uh, update, they have to clear out all the whole
+network, the old network, they clear it to scratch, start over from small weights, and they train all
+the data at once. They, uh, they have to start all over again. You'd like to be able to just add the new
+data. And like the reinforcement learning context seems like a lot more new. It's, it's even, it's even
+from like, uh, from initial training, it seems like it's better because reinforcement learning is a lot more
+continuous in nature. So it seems like in the supervised setting, fine tuning is like, like
+sort of this key application, because that way you don't have to waste old models. Whereas in
+reinforcement learning, it's kind of a new paradigm training. Does that make sense?
+I'll say it more concisely. Sure. So in the supervised setting, it seems
+that fine tuning sort of, to me, it seems it's more of the main application, because if it's...
+Because you need continual learning, really. Uh, so just going back to their question, if the, uh,
+if it's accuracy is the same as the baseline, uh, with continual learning and with, you know, that
+baseline number of tasks, what's the sort of notable advantage, unless you use like less compute in the
+continual learning setting?
+I don't get it.
+You can always increase the number. The other one is for one fixed number, no?
+Sure. Yeah.
+In real life, you will always have more numbers coming in.
+Yeah. But if you're adding more numbers, that's a fine tuning task, right? If you're adding new tasks
+later on after initially training a base model.
+Are you suggesting that fine tuning is an alternative to continual learning?
+Well, no, I'm just suggesting that for supervised learning, it seems like this, the continual, uh,
+back propagation seems like more of the, uh, the usefulness, because if the, if you're getting
+the same level of accuracy, um, getting the same as a, as like, you know, a baseline number of tasks,
+if you go back to the graph, right, when you have say 50 tasks, right, when you're preparing it
+to the continual back propagation, the, the accuracy is about the same.
+Which I showed you not getting the same level of performance.
+Um, in, in sort of the, the, the prior charts, right, on the supervised, supervised tasks, that's
+sort of what it looks like. This is just sort of like, you know,
+maybe we'll talk later. Sure. I'm obviously confused.
+Hello. Uh, excuse me if this is a bit of a critical question, but in the, uh, in the evaluation of the,
+where you add classes, uh, continuously, um, like you start off with five classes and then add another
+five and so on. Uh, and you said, you mentioned that you, you trained for an, uh, equal amount
+of epochs. I assume it could, the deterioration of the normal back propagation, not just be explained by
+the fact that it sees fewer examples of the new classes.
+Yeah, I guess I, I was, I'm, I'm unclear about that. And I, I, I'm, I am unclear in my own mind
+exactly how that's done, but, uh, absolutely. The, the intent was to do a fair comparison.
+Neither one would have more data and yeah, I guess I'm not clear how that was done. Sorry about that.
+No, I saw it.
+What happened to the utility of the recently reinitialized weights? You said you
+reinitialize them based on lowest utility, do the recently reinitialized ones jump in utility or,
+or say low? This one I can answer. When they're reinitialized, when I said they are reinitialized
+in the standard way, but it's a little bit subtle, just a tiny bit subtle. Um, we reinitialize the
+incoming weights to the new unit to be random in the, in the ordinary way, but the outgoing weights are
+reinitialized to zero because we don't want them to interfere with the ongoing, the current performance
+of the system. If the outgoing weights were, uh, non-zero, they would mess things up a little bit.
+Um, and then, so then, um, this new, this newly initialized unit, what will its utility be? Its
+utility will be zero because it's outgoing what we call zero. Okay, so if we really, um, ranked by,
+strictly by utility, when you add a new one, that's the one you're gonna throw away and reinitialize the
+next time. So we do need to, to keep track of the, of the age of a unit and, um, prevent a newly
+created unit that has the, that's very, very young from being, uh, replaced. Good job. Okay. Um, whether
+you see, um, research in deep learning and reinforcement learning going, do you think the focus will be in
+modifying the backprop algorithm for the continual learning and reinforcement learning setting, like
+in this paper, or do you see it going somewhere else?
+Well, what do we consider? Is continual backprop modifying the algorithm, the backprop algorithm?
+You know, it's, it sounds like it is, it's an adjective onto backprop. Yeah, I think, I think, I think it, it is.
+The continual backprop is almost like, uh, uh, uh, more, more backdrop. What is backprop? Backprop is
+you do initializing and then you do gradient descent. And we're just gonna do initializing all the time.
+Okay. As you go along. So it's, it is very much in the same spirit. Um, and, and, and, um, maybe it's not
+a new algorithm. And what will happen in the future? Uh, do we envision algorithms that are very different
+from, from continual backdrop or is that, is that about it? And I think, I think we need to go
+significantly beyond backdrop and continual backdrop, uh, for, for the best, um, to, to achieve all of
+our goals, what we would like from continual learning. As I went from continuing, I not only want
+this bare ability to not lose all your plasticity, but I also want to do things like, um, uh,
+uh, meta-learn, improve the way I generalize. Special thing about continual learning is you,
+you learn some, and then you learn more, and then you learn more. So you have this experience with
+learning. And you can see the way I learned at this time, that worked out so-so. Now the way I learned
+this way, it worked out a little bit better. You can evaluate how well your learning has gone. This is
+something you can't do if you learn in one shot. You learn in one shot, you're just done. But if you're
+learning and you learn more and learn more, then you can, you can learn to learn. Say this way of
+learning works better than that way. So if that seems too abstract for you, let me be concrete.
+Um, uh, general, how would you like to generalize more in this feature or generalize more on that
+feature? We'd like to be, to learn that. We'd like to learn how to generalize. Modern deep learning
+systems don't really learn how to generalize. They are structured to generalize in a particular way,
+and maybe they were lucky and they've generalized pretty, pretty well, or, or maybe that's the
+skill of their designers, but there definitely is no algorithm that's causing them to learn well.
+And I think we want to have our algorithms learn to generalize well. Um, and so, so that's what,
+that's part of the ambition for continual learning. It's not going to come just from tweaking backdrop.
+We have to add more things. And let me just use that. We can still have questions, but let me, uh,
+say a few of these things about the new ideas. Uh, we want methods that we'll learn continually,
+of course. We want, we want to be able to learn nonlinear functions, of course, and we want them
+to be very efficient. But the last point is we want them to meta-learn to generalize better.
+And, and this is the slide I want to do. Ideally, a streaming deep learning or, or, uh, what I call
+it, dynamic deep learning should adapt to three levels. You should adapt the weights. That's the
+usual one. You should also adapt the step sizes. Every weight should have its own step, at least
+every weight should have its own step size, which step size is sometimes called a learning rate,
+but it's, it's a, it's the amount by which you move each weight. And so you want, you want the,
+I'm, well, I'm claiming we want the ability to, to learn at different rates, learn faster in some
+weights and slower in some weights. And that this is how we will get to sculpt our generalization.
+Is that confusing? Like if you have a feature that has, uh, a large weight, then, I mean, a large
+step size, then you will change its weight a lot when you, when that feature is, uh, present.
+And that means you will generalize a lot along that feature. Or the other way, if the, if that
+feature has a zero step size or very small step size, then you will not generalize based on that.
+Does that sound good? Does that sound bad that you don't generalize? No. In a continual learning,
+in an, in an agent like, like me or you, there are lots of things that we know that we don't want to
+learn. We don't want to change them anymore because they're just very reliable. We've learned
+for large parts of our life. We don't want to change those. And we don't want to change those
+because there are other things we do want to change. We are, we are actually very skilled at
+assigning credit to features that are most likely to be relevant. And one way to do that is by having
+different step sizes, uh, for different weights. In principle, I'm thinking that in principle, if we
+could do that, we will get, we'd get a whole lot of desirable things, including generalization.
+Um, okay. And then the third area we'd like to adapt is the connection between the units. But this
+is sort of a, a, a, a starting view of the goal for a better, a better learning algorithm than regular
+backdrop or continuing backdrop. Okay. There are lots of questions and I'd like to get a couple of
+questions. Um, we, we are running out, like we're already, uh, above the time. So it's true. There's
+going to be an extended Q and now we can keep on these questions if you guys want to ask, but I want
+to free people who might have other commitments. So quickly, um, some, our next seminar will be
+actually, Maxim, you knew better the date was the 18th or when was that of November? Uh, so we'll be with,
+um, Gary Kazantsev, uh, Eth of Quant Technology at Bloomberg, uh, from New York. Um, we hope to see
+many of you there as well. Know that we also have a reading group. If you want to, uh, dive more into,
+especially in reinforcement learning, that's what we're focused on, uh, please come to say hi. And
+also, uh, one of the sponsors, Iconic is, um, having some opening format, the student internships.
+So it's on video games, uh, AI and reinforcement learning and stuff. So if you're interested also
+you'll come to speak to us and that's all for my time to go, well, speak.

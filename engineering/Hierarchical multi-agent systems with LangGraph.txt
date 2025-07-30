@@ -1,0 +1,218 @@
+Hey, this is Lance from Langshane.
+Agents can autonomously perform tasks using tool calling and feedback from tools, often running in a loop.
+But one of the requests we get from users is, how do I take multiple agents and combine them together into a multi-agent system?
+We're releasing a new library called LandGraph Supervisor that allows you to do that pretty easily.
+I'll show it to you in action right now.
+So here's a really simple example of a multi-agent system with a supervisor and two separate agents.
+We have a math expert that has tools for various mathematical operations.
+We have a research expert with a mock web search tool.
+So we ask a question that requires both agents.
+It needs to use search to get the headcount of FANG companies and the math expert to sum them all together.
+It's obviously a highly simple example, but it shows the overall flow.
+So what happens is, the supervisor takes the request and routes it to one of the agents.
+Initially, it routes it to the research expert to perform search.
+The research expert does search, finds the result, and you can see it hands back off to the supervisor.
+The supervisor then has the results from a research expert and then calls the math expert to compute the sum.
+There it is.
+The math expert then hands off back to the supervisor, which then responds directly to the user with the overall output of the combined headcount.
+So this is a very simple example, just showing the handoff between a supervisor and two different agents,
+each of which return their results back to the supervisor.
+And the supervisor then determines what to do next and when to just respond with the overall result to the user.
+So as mentioned, this library is using a supervisor pattern.
+And the idea here is just as we've shown, you have a supervisor that is connected to various agents.
+And you can think of those agents basically as subgraphs of this overall system.
+And really what's happening is, as we showed in the example, the supervisor receives some input from a user, decides which agent to call,
+hands off information to that agent.
+And I'll talk about that in detail below.
+But basically, the agent will receive everything it needs from the supervisor to perform its work.
+The agent then follows classic tool calling action and feedback loop until it completes.
+And then we give a second handoff back to the supervisor.
+And again, I'll talk a lot about that information transfer back to the supervisor,
+which can then make decisions about what to do next.
+It might be call another agent or it might just be exit.
+So before I get into the code, I do want to just explain the handoff mechanism.
+But that's really the most important thing to understand.
+This is a cartoon showing you the overall flow.
+Let's just walk through it carefully.
+So you have a person issues a request to the supervisor.
+The supervisor then makes a decision about which agent should handle that request.
+OK, that's this handoff idea.
+OK, so the supervisor basically engages a handoff to one of the agents based upon the nature of the request.
+That's really a constant one to understand.
+Now, concept two is once this handoff is initiated, the agent itself inherits the entire message history between the human and the supervisor.
+That's because each agent is a subgraph.
+But this is important to understand that each agent just kind of gets that history by default.
+So information is naturally passed from supervisor to agent that way.
+All the messages between supervisor and human are just inherited.
+So the agent can use that history to determine what to do.
+And when the agent completes, which is to say no more tools are called, we pass back the result to the supervisor.
+That's what this handoff is showing right here.
+Now, a natural question to ask is what information specifically is passed from the agent back to the supervisor?
+That's a very important point, and you can configure that.
+We'll show that in the code, but basically you can use a particular flag called output mode to determine,
+do you want to just only pass that final agent AI message back, which is effectively the agent response?
+Or you can also pass back the entire internal agent message history.
+So that's up to you as to what you want to pass back to the supervisor.
+In this toy cartoon example, I'm showing only passing back that final message indicating the agent output.
+Then the supervisor, as you can see here, has that agent output, as well as the tool call indicating handoff back to supervisor, and it proceeds.
+So now we've seen how the information flow works.
+Let's actually look at this in a little bit more detail.
+So I'm in a notebook now, define my LLM.
+I'll pick a few tools.
+In this case, I'll have an add, multiply, and web search tool.
+And I'm going to find two agents.
+So I'm using our pre-built create react agent.
+And again, I supply the model, the tools, the agent name, and the system prompt.
+Now, each of these, again, are just simple react-style tool calling agents.
+They're going to follow a flow just like this.
+So what's going to happen is the LLM is going to make a decision to call a tool.
+The tool will be called.
+Feedback or result from the tool call will be passed back to the LLM.
+This loop proceeds until no more tool is called.
+That is that final message or agent output that will then be passed back to the supervisor,
+as you'll see in a minute.
+Now we create supervisor.
+And you can see in this system prompt, I'm just going to explain the two agents I'm connecting
+to it and when to use each.
+So for current events, use the research agent.
+For math, use math agent.
+I pass those agents as subgraphs.
+I pass those agents.
+I supply my model.
+Now this is that output mode.
+This is what's determining what we pass back to the supervisor.
+So now we're going to use our library to create a supervisor.
+So let's walk through what's happening here.
+First, a prompt to specify the two agents that we have and when to use them.
+So for current events, we use our research agent.
+For math, we use our math agent.
+We then supply our agents to create supervisor.
+Supply our model.
+We specify the output mode, which we talked about right here.
+So this output mode determines when you pass information back to the supervisor from any
+agent.
+Do you only pass back that final message indicating the agent output?
+Or do you pass back the entire agent's message history?
+So you can control that if you want.
+And we supply our prompt.
+Then we compile and run.
+So I'm in Langsmith.
+And let's actually walk through the trace and kind of compare this to the diagram to make
+sure we're very clear about what's happening.
+So first, we start with a supervisor.
+We can look at that OpenAI model call.
+We can see the supervisor basically has two handoff tools.
+Transfer the research expert.
+Transfer to the math expert.
+Okay.
+We can see we receive a system prompt, which we specified.
+We have the human input.
+And we have a tool call to transfer to the research expert.
+So that's step one.
+Now that corresponds with what we see right here.
+So human input and a tool call.
+By our supervisor to hand off to one of our two agents.
+The tool is called.
+We can see it outputs this handoff, which tells it where to go.
+And we go to the research expert.
+Now we're inside our agent.
+And we can see that the model receives.
+This was the original human input.
+This is that tool call from our supervisor to go to the research expert.
+This is the tool that actually executed the handoff.
+And now the research expert makes a decision to call its search tool.
+And we can see it kicks off a few different queries for various FANG companies.
+Then the tools are called.
+Let's look at our diagram quickly.
+So we're basically in here.
+And again, as we saw, this all gets transferred over.
+Our agent makes a decision to call tools.
+Those tools are called.
+In this case, it's search tools.
+The agent receives the output of those tool calls and provides a final answer.
+This is basically the final agent response.
+No more tools are called because it's effectively answered the question.
+So now you can see one important thing.
+When the agent is finished, this additional tool call is executed.
+That says transfer back to supervisor.
+That's basically that handoff tool call.
+And it's executed.
+The tool message is also appended to our message history.
+So that is what's represented right here.
+The agent says, I'm done.
+Handoff back.
+Now we're back at our supervisor.
+And confirm with the tool message saying, we're successfully back.
+The supervisor can then decide what it wants to do next.
+We can look at the LLM call.
+And it makes a decision, hey, I should transfer to the math expert.
+The handoff is done, just like before.
+There we go.
+We saw that previously.
+Now we're inside our math expert.
+And it follows just like we saw before.
+Now we're just inside our agent.
+Our agent goes ahead and executes the arithmetic necessary.
+And once it completes, we go ahead and pass that back to the supervisor,
+which then finishes and provides the final answer to the user's question.
+So I don't show in this diagram that second iteration of going to the math agent,
+but it follows the exact same handoff flow.
+That's the key point.
+We basically go first to that search agent.
+Search agent does a bunch of work.
+We bounce back out to the supervisor.
+Supervisor can then call the next agent to follow up on that work.
+And you can see this message history would just grow accordingly
+with the response from the math agent.
+And that's exactly all that's happening.
+So we've seen this basic flow where you can set up a single supervisor,
+you can connect it to any number of agents, and it can run.
+Now I do want to highlight briefly that this is also hierarchical.
+So you can have supervisors that manage other supervisors.
+So you can kind of have an org chart in the way that a real organization would.
+You can have like a CEO,
+and then you can have supervisors that manage each of themselves a small team of agents.
+So I'll show an example of this briefly.
+So let's just define a few new tools, one for precipitation and weather.
+And I'm going to define two teams.
+One's a math team.
+These are two different agents that do math.
+And a weather team, two different agents that do weather.
+And I'm going to create a supervisor for each one.
+So there's going to be supervisor over my math team, supervisor over my weather team.
+And I can have a hierarchical supervisor,
+and I just pass in the math supervisor and weather supervisor.
+Again, all you need to do is just modify the names and the prompts.
+It's pretty simple.
+And you can run it just like before.
+And we can look at the message history here, which is pretty cool.
+So the top-level supervisor basically takes this request
+and relays it to the weather team.
+We get the response back from the weather team,
+and it's transferred back to the supervisor.
+The supervisor then answers the question.
+And we can look at that in the trace.
+You can see the top-level supervisor calls the weather team,
+hands-off to the weather team.
+The weather supervisor will transfer us to the temperature expert.
+The temperature expert then, again, the handoff has been made,
+makes the tool call, get temperature.
+So naturally, this temperature expert is our agent.
+We get the tool call back, and we get the response.
+It'll be 80 degrees.
+That goes back to the weather supervisor.
+The weather supervisor then makes a decision to transfer to the precipitation expert,
+which checks on the rain, sunny.
+And the weather supervisor receives then the results from both of the resulting agents
+and responds with the full weather back to the top-level supervisor,
+which then relays that back to the user.
+So it works just like before, except we basically have a hierarchical system now
+where a top-level supervisor relays to other supervisors that themselves manage multiple agents.
+So just to recap, Landgraf Supervisor is a new library to build multi-agent teams.
+It uses a supervisor pattern where you can connect agents to a supervisor.
+The supervisor handles the handoff of information to the agents
+and then receives information back from the agents, and that's all configurable.
+So again, as mentioned, you can control what you pass back from the agents to the supervisor.
+I hope this gives you a good sense for how to build multi-agent teams using this pattern,
+and feel free to leave any comments or questions below.
+Thanks.

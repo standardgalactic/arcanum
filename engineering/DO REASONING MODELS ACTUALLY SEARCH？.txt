@@ -1,0 +1,4225 @@
+So much so that we now have phrases like fractal intelligence.
+You know, in fact, I think Andhra Karpathy basically was saying LLMs have fractal intelligence.
+What the fractal intelligence is? Basically, we don't know when they work, they work.
+When they don't, they don't. That's fractal intelligence.
+And that sort of shows, which is good.
+Still, we had nothing like this before, but part of the science of LLMs has to be
+to say something more than fractal intelligence,
+saying here is the level to which you can depend on their results.
+So I'm not, so there are, in reasoning, in logic, there are ways where limit, you know,
+of basically formally characterizing the limits of reasoning,
+like limited depth, limited look-ahead reasoning and so on.
+None of them seem to work for LLMs.
+The question then is what would work? We have to figure that out.
+The bitter lesson is over and efficiency is going to matter.
+And I completely agree with that.
+I've been arguing this for a long time, too, that think about the following thing.
+The first time when we sent a man and humans to the moon,
+cost was not a consideration.
+We want to show that we can do it.
+NASA was the one which is doing it.
+The second time on the third, and for the space as well as the moon.
+The second and third time, et cetera, may be okay.
+But by now, it's Elon Musk sending people to space and supposedly possibly to the Mars, too,
+because the cost matters, right?
+Essentially, once it's been done, then you start caring about, you know, the cost that you're paying.
+And computer science is actually quite a bit about the unsexy parts of cost, just as it is about doing things that haven't been done before.
+There are people who say, well, if it's not retrieval, then it is reason.
+So, what say you?
+Reminds me of this old Monty Python thing where this guy has, I think, life of Brian.
+He does something that looks like, you know, if this is to prove that some woman is a witch, right?
+You know, if she is made of wood and she floats on water, then...
+You know, random connections and then saying that she's a witch and you say QED,
+that looks like reasoning because it's not just retrieving, you know, something, she is a witch one.
+But we know that it's not sound reasoning.
+So, TUFA Labs is a new AI research lab I'm starting in Zurich.
+In a way, it is a Swiss version of DeepSeq.
+And first, we want to investigate LLM systems and search methods applied to them, similar to O1.
+And so, we want to investigate, investigate, reverse engineer and explore the techniques ourselves.
+MLST is sponsored by Centimel, which is the compute platform specifically optimized for AI workloads.
+They support all of the latest open source language models out of the box, like LLAMA, for example.
+You can just choose the pricing point, choose the model that you want.
+It spins up, it's elastic autoscale.
+You can pay on consumption, essentially, or you can have a model which is always working,
+or it can be freeze-dried when you're not using it.
+So, what are you waiting for?
+Go to centml.ai and sign up now.
+That, you know, Microsoft essentially cannot any longer control OpenAI if, in fact, AGI has been achieved.
+That is one way they could avoid being beholden to Microsoft.
+But now they're trying to say, we'll remove it so that we'll get more money from Microsoft.
+That's kind of, I don't know what that says.
+Are they looking for money?
+Or they have realized AGI is not actually going to come anyway.
+So, why bother with that clause, you know, other than surprise?
+So much has changed since our last conversation at ICML.
+Can you give us a bit of a rundown of what's happened?
+When we were talking in Vienna, I think we were talking about reasoning abilities of large language models.
+Especially, I think of large language models as the autoregressive token-by-token prediction models,
+which are pre-trained for that, and they also do that in the inference time.
+And it was clear, I think, as we were talking about at that time,
+that those, as from my perspective, did not have the reasoning abilities.
+They're amazing in supporting creative work where they can give you ideas and you can run with them.
+And they will give you answer as soon as you hit return, but they're not guaranteed to be correct.
+One of the interesting questions, of course, is reasoning tends to have a higher complexity in terms of the time needed
+and other ways of actually changing LLM sort of substrates to do that.
+And a couple of things happened.
+And I would think, I would basically, I mean, obviously, we'll get to O1 in a second
+because that's the thing that, the bigger thing that happened.
+But an interesting way of looking at what, that whole direction is what's been called,
+they're like two parts, inference time scaling and post-training.
+First ideas that were tried, and in fact, we talked about this when I talked about LLM modulo,
+is if, to the extent, LLMs are essentially quickly generating candidates but with no guarantees,
+maybe you can make them generate tons and tons of candidates
+and then either do majority voting or self-consistency or something like that
+to see if you have the better answer.
+And how do you check the better answer?
+There are like a whole series of them.
+There might be external verifiers.
+There might be like LLMs themselves trying to partially verify.
+There are problems with that we talked about, but, you know, they have tried that too.
+So that has, that's one type of inference time scaling.
+A related idea there, an interesting, very interesting idea there is,
+it's been known from the day one that if you are trying to give a reasoning task to LLM as a prompt,
+and then it gives a completion, and you check its completion, whether it contains the solution,
+the probability of that happening, in general, can be made higher if you can find the right kind of prompt augmentation.
+So in addition to your reasoning thing, some magical tokens that you add,
+and that seems to increase the probability.
+And there's like a, this has been seen in like multiple scenarios.
+Originally, this idea has been bandied about as chain of thought.
+And the first, very first version of that, essentially, is the zeroth order chain of thought,
+where the magical token will always be the same one, irrespective of the task and the LLM,
+like let's think step by step.
+And that sort of worked, partly because, you know, the human data had those specific, you know,
+those types of tokens, and so LLM like outputs that,
+and then that jogs its pattern matching things to actually pick up with other solutions,
+and so on, and so on, that would be the thing.
+And then came the chain of thought task-specific one, the one JSON-V and co. did.
+Their humans give task-specific advice as to how to solve the problem,
+and then hope that, you know, LLMs will actually solve it.
+So this can be connected with inference time scaling because you are adding chain of thought
+and also are essentially making it generate multiple candidates
+and then actually picking from them.
+Chain of thought by itself has, again, problems just as LLM verification has problems,
+chain of thought has problems.
+In fact, this new RIPs, we had a paper called chain of thoughtlessness that we'll talk about later,
+but basically by itself, it has problems.
+But as part of the toolbox of increasing the time spent during the inference time
+before you're blurting out one answer,
+chain of thought together with this sort of picking from many samples has shown some promise.
+One variation of that, and in fact, that is something that I've been pushing more recently,
+is originally chain of thought was kind of confused with it might be anthropomorphic,
+that in fact, we tend to sort of tell ourselves, okay, let me do it this way, etc.
+And people are hoping that LLMs are doing the same thing.
+Mostly they were just kind of imitating whatever, like this, you know,
+let's think step-by-step data that they have found in the training data.
+But somehow people thought if you kind of make them imitate human thinking,
+you know, then maybe they will do better.
+That is the first two ideas, and neither of them actually went that far.
+Another idea essentially is you realize that it's just a magical token that you're trying to add,
+and you just have to figure out what's the right magical token.
+And it's like sort of a squalm function.
+You're trying to figure out a task-specific, LLM-specific magical token that increases the probability.
+This is a learning problem.
+It's an extra learning problem.
+The two general approaches that have been tried, the first approach essentially was to say,
+so LLM basically, before giving the answer, it has to tell itself a few things.
+Some, you know, like step-by-step is the one that makes sense to us,
+but it can actually give itself a gobbledygook string, another gobbledygook string,
+and then that kind of probes its conditional probability of completion in such a way
+that it might actually come up with the correct solution.
+The question then is, where are these tokens coming from?
+And one idea that people had, previous first ideas were humans will supply these tokens
+by chain of that advice.
+That wasn't going anywhere.
+One other idea that they had, essentially, is that if you, for example, have a class of problems
+for which there is an actual systematic, no, actually before going that,
+OpenAI did the following thing, which is maybe we will ask humans to solve specific problems
+while thinking aloud.
+So there's actually a paper about one and a half years back saying let's think step-by-step.
+And then basically this went under this whole issue of process supervision
+and people were actually being asked to record what they're telling themselves, etc.
+This is like the worst form of psychology, unfortunately,
+because we don't actually know how we think.
+But they tried this and one of the things is it's extremely costly.
+They wound up, you know, my joke is they improved the GNP of Nigeria
+because Nigerian, you know, Turkers were being asked to solve tons and tons of these problems
+and then think aloud.
+That was very costly.
+And then a separate, similar idea was there are bunches of problems
+for which there are systematic solvers.
+Like, for example, for arithmetic, there is arithmetic solvers.
+For search problems, there are A-star search sorts of things.
+And for planning, you have planners.
+In general, any systematic solver would be manipulating some data structures
+until certain termination condition is reached and then it outputs the solution.
+Imagine you make it, output the trace of the data structure manipulation operations.
+All you needed, hopefully, was some extra kind of, you know, tokens
+that are coming out before the solution.
+So this stuff can be thought of as a derivation.
+And the idea that people had was let's train the LLM with a huge number of these derivational,
+synthetic derivational traces and the solution.
+And now remember, this only works for problems for which actually there are synthetic solvers
+and systematic solvers.
+And you're just trying to kind of make it be solvable in a general sense
+without having to call those.
+That was the idea.
+And there are like a couple of three or four efforts that have gone.
+There's a search farmer from Facebook, Meta, and there's a stream of search.
+And there's just recently, last week, there is a Google DeepMind paper,
+which also talks about internal versus external planning to do multi-board game solving.
+And all of these essentially use variations of this idea.
+So you have to realize that all they're doing is,
+now LLM has to, before outputting the solution,
+has to output some additional tokens that will jog its memory
+to hopefully output a better solution.
+This is the hope.
+And so basically people, this was their idea.
+They tried it and, you know, sort of sometimes it actually works.
+It improves performance.
+There is no good reason to systematically say this would be making sense
+because it's almost like if you kind of,
+you're trying to teach your kids how to do reasoning, very small kids,
+and then you sort of do some hand movements and then think like that
+and then give the answer,
+you would see the junior also doing these hand movements
+and think like this and give the wrong answer.
+LLMs can do that.
+They're essentially imitating your, whatever the derivational pieces,
+which may not even actually make sense,
+but sometimes they have shown some promise.
+This has basically become, you know, kind of most recent idea
+called inference time scaling,
+where essentially you do this and you also do this multiple suggestions
+and then pick from them, et cetera.
+This comes very close to what I think O1 is doing,
+but with a big difference from here.
+Again, as you know, O1, nobody knows,
+and it's become like, you know, we all sit around the ring and suppose,
+and I like to say, No Brown sits in the middle and knows,
+but basically they don't want to tell what they're doing.
+But my guess, I mean, everybody has a guess,
+and my best guess as to what O1 might be doing
+is going again with this prompt augmentation idea.
+But the question, of course,
+is where are these prompt augmentations coming from?
+We talked about first, one prompt augmentation for everything.
+Second is human-given prompt augmentation,
+which is chain of thought.
+The third is the synthetic derivational trace
+that sort of gives these tokens,
+and maybe you will try to say this back.
+None of them really make too much sense.
+A much better idea is if you are saying,
+what should I be telling myself to improve my outcome?
+It's a kind of a RL problem.
+It's a kind of a reinforcement learning problem.
+Imagine like an AlphaGo agent.
+It's sitting there and thinking,
+what actions should I do one after other
+such that my win probability increases?
+So it does a whole bunch of these board actions,
+and then at some point of time,
+it gets a signal saying you won the game
+or you lost the game,
+and then you do this a gazillion times.
+You can then bring this reasoning back
+through the sequential decisions,
+computing their Q values,
+like under what board positions
+or what actions worth doing.
+That's the Q value.
+Now, if you take the AlphaGo analogy
+and put it to LLMs,
+the LLM board position
+is essentially the context window
+with the prompt and all the other stuff
+that you have put on.
+And the action is this token
+that you are generating.
+So to make things simple,
+I would like to think of it as
+there's a big LLM.
+Let's think of a GPT-4.
+There might be a small LLM
+which has a reduced vocabulary.
+All it's trying to do is give jogging,
+give like this prompt augmentations
+that it tries, throws it out,
+and then this will then be given
+to this other LLM
+in terms of its context.
+It gives extensions,
+and then it tries one more
+and at some point of time
+it checks if the solution
+is correct.
+Now, how does it get the solution?
+You could have actually generated
+huge numbers of synthetic examples
+beforehand,
+again, using solvers.
+This is pretty much known
+that OpenAI did this.
+It's no longer human solving problems
+because that's too costly.
+This is systematic solvers
+solving like the planning problem,
+constraint satisfaction problems,
+and various sorts of problems
+and for which they have
+the problem and the answer
+and then open the LLM
+is trying to solve it.
+LLM plus this, you know,
+prompt augmentation engine
+is trying to solve it
+and then if it happens
+to reach the correct solution,
+then you can propagate
+the thing back.
+This is RL in a pseudo moves.
+It's not the actions are,
+if the prompt is about go,
+the actions are not go actions.
+They are just, you know,
+essentially these tokens
+that the prompt augmentation tokens.
+One nice thing, of course,
+is instead of learning the Q values,
+one of the things you can do
+is you can essentially learn the,
+you can change the weights
+of the smaller LLM
+in the right ways
+such that it puts out
+the right kinds of tokens
+given the context window.
+If you do this,
+you have got an approximate Q values
+and then this is the pre-training phase.
+In the pre-training,
+there's the LLM training
+followed by this humongously costly,
+you know,
+they are not telling us
+how costly it is,
+a humongously costly
+post-training phase
+which where they spent,
+you know,
+billions of dollars.
+At that point,
+you have O1 model
+which is now ready
+for the inference time
+and at the inference time,
+once again,
+they're doing inference time scaling
+where except this is,
+now they have the Q values.
+You can improve the Q values
+by online MCT kinds of approaches,
+the kind of thing
+that AlphaGo did.
+That's where they actually
+can see they're doing it
+because they charge you
+for these reasoning tokens.
+If you run O1,
+it basically takes the prompt,
+it gives the answer.
+In the old GPT-4,
+the amount of money
+that you have to pay them
+is proportional
+to the number of input prompt tokens
+plus four times
+the number of output prompt tokens.
+In the case of O1,
+it actually does
+this whole bunch of stuff
+that's telling itself.
+Basically,
+this pseudo moves
+that it was
+Q values improved
+and it's telling itself.
+It never shows that to you
+but they are all counted,
+they all are counted
+as output tokens.
+So,
+you know,
+you have,
+let's say,
+50 input tokens,
+100 output tokens
+and maybe 5,000 reasoning tokens
+and so you suddenly
+start paying a lot more.
+So,
+one of the funny things
+that happened essentially
+is when we started playing
+with O1 Preview
+when it came out,
+in two days,
+we spent like $8,000.
+And then,
+so in fact,
+I had to get like special permission
+from the university
+because they normally
+don't reimburse
+beyond a certain thing
+unless you have like
+a separate permission
+and so on.
+But that's basically
+one of the ways
+this works out.
+The interesting thing,
+of course,
+is now the way
+we describe this,
+it's not,
+it is based
+on an LLM
+but significant amount
+of additional things
+have been done,
+right?
+Essentially,
+you are essentially
+doing something
+like an AlphaGo style
+post-training phase
+followed by an AlphaGo style
+sort of a MCT
+online computation
+and at that point,
+actually I would think
+it could make sense
+and not surprisingly,
+in fact,
+in our results,
+we found that
+for the normal plan bench
+it does much better
+than the state-of-the-art
+LLMs including
+Claude and so on
+and so forth.
+But then,
+of course,
+then you can go
+to the next level.
+It has its own issues.
+We can still talk about
+the fact that
+it doesn't scale
+beyond the larger problems
+it can make mistakes.
+It has problems
+with unsolvability.
+There is no guarantees
+about the solution
+but it now
+makes more sense to me.
+Again,
+I don't know.
+I think this makes
+a reasonable way
+O1 can be working
+and if it is
+the way it's working.
+The first time
+I can make sense
+of how reasoning
+can emerge
+because you are
+at least having
+these pseudo-actions
+whose Q values
+you are learning.
+Nobody ever said
+RL cannot do reasoning.
+RL can do reasoning.
+It's just that
+now you basically
+it's like
+sort of an interesting
+thing where
+I keep using
+the stone soup analogy
+stones
+you can make soup
+with stones
+if you start
+adding carrots
+and you know
+tomatoes
+and all that stuff
+at that point of time
+it will still taste
+like soup.
+The question of course
+is who gets the credit
+and you know
+that's kind of
+an interesting question
+that we would think about
+but that is like
+the long arc
+of what happened
+in my view
+in the last
+only four months
+or something
+since we discussed
+and it also
+one of the other
+interesting things
+is
+part of
+the mystique
+of LLMs
+was
+you
+you'd write
+the prompt
+you hit return
+you get the answer
+and it doesn't
+cost you too much
+that was where
+everybody was using it
+O1
+basically
+with its
+you know
+of course
+the post-training
+itself is extremely costly
+but they are not
+charging us for that
+but they are charging us
+for the reasoning tokens
+which you never see
+but you pay for it
+you just have to
+take their word
+that huge number
+of reasoning tokens
+were generated
+and they are going to
+make you pay for that
+and as far as I could tell
+at least in academia
+very few people
+have actually been doing
+experiments
+evaluating O1
+because it actually
+costs a lot
+essentially
+because
+you know
+and there's basically
+people are still
+going with the
+autoregressive LLMs
+because they're cheap
+you know
+so one of the
+interesting things is
+you know
+you can do reasoning
+but the usual
+computational complexity
+issues
+that we blithely
+forgot
+in the era
+of autoregressive LLMs
+and we were hoping
+that somehow
+you know
+complexity will disappear
+will come back
+because if you want
+to improve accuracy
+there is
+you have to actually
+do reasoning
+and this is
+pseudo-move reasoning
+in my view
+but still
+it costs
+and
+that becomes
+an interesting
+question of
+when is it useful
+to use a general
+purpose system
+versus a
+you know
+sort of a hybrid
+general special
+purpose system
+versus an extremely
+specialized solver
+something that we
+haven't talked about
+before
+but now it will
+become costlier
+at least for the
+industries
+you know
+in fact
+there is
+this whole movement
+about compound
+AI systems
+and that's basically
+the kind of thing
+that people think about
+very shortly after
+O1 was released
+you quickly
+as you were just
+saying
+you spent
+$8,000
+you put a paper
+together
+called
+planning in
+strawberry fields
+evaluating and
+improving
+planning and
+shuttling
+capabilities
+of LRM
+O1
+LRM
+so
+yeah
+you basically
+said
+they are
+positioned
+as approximate
+reasoners
+rather than
+mere approximate
+retrievers
+we don't know
+the actual
+details
+of what
+they are
+doing
+so
+there are
+two parts
+one is
+what is
+objectively
+verifiable
+which is
+we did
+test O1
+on the same
+plan bench
+problems
+and
+they did
+quite well
+on blocks
+world
+I mean
+by
+I think
+Claude
+already
+there were
+66
+these things
+were like
+99 or
+something
+they basically
+saturated
+more impressively
+they did
+better
+on the
+mystery
+domain
+which
+and then
+more
+and we
+given what
+I explained
+to you
+earlier
+about
+the possibility
+that they
+are
+training
+themselves
+with
+synthetic
+data
+you know
+maybe
+they have
+unintentionally
+trained
+on the
+mystery
+domain
+which we
+have
+available
+outside
+so we
+actually
+generated
+truly
+new
+random
+mystery
+domains
+it has
+lower
+performance
+but it's
+still
+not like
+the 0.5%
+of the
+old ones
+it goes
+up to
+I don't
+remember
+the exact
+numbers
+up to
+20-23%
+on some
+of these
+problems
+and which
+is obviously
+a good
+sign that
+they are
+actually able
+to solve
+this
+the other
+part as
+to why
+are they
+approximate
+reasoners
+than
+retrievers
+is
+it's based
+a lot
+more on
+my
+reconstruction
+of what
+they could
+potentially
+be doing
+which is
+they're
+sort of
+doing
+reinforcement
+learning
+based
+post
+training
+as well
+as
+online
+queue
+value
+update
+and
+using
+pseudo
+action
+most
+I call
+pseudo
+action
+most
+because
+there
+is
+you
+could
+do
+RL
+for just
+normal
+go
+or any
+specific
+board
+games
+this
+one
+is
+just
+language
+games
+where
+the
+game
+basically
+there's
+a
+language
+context
+window
+and
+there's
+a
+prompt
+augmentation
+and
+there's
+a
+new
+completion
+and
+then
+one
+more
+prompt
+augmentation
+this
+is
+what
+they
+call
+this
+string
+of
+chains
+of
+thought
+but
+that's
+basically
+adding
+bunches
+of
+prompt
+augmentations
+and
+then
+see
+what
+happens
+at
+the
+end
+and
+then
+if
+it
+winds
+up
+being
+correct
+in
+the
+sense
+if
+it
+winds
+up
+containing
+the
+correct
+solution
+for
+your
+training
+data
+then
+that's
+sort
+of
+like
+alpha
+go
+getting
+victory
+win
+signal
+after
+a
+bunch
+of
+moves
+and
+then
+it
+just
+needs
+to
+do
+credit
+blame
+assignment
+for
+the
+moves
+and
+that's
+what
+RL
+is
+essentially
+good
+at
+doing
+and
+if
+you
+are
+doing
+that
+it's
+a
+reasoning
+and
+it's
+approximate
+reasoning
+because
+it's
+not
+actually
+problem
+specific
+actions
+it is
+problem
+independent
+these
+language
+prompt
+actions
+is it
+possible
+that
+you
+might
+be
+wrong
+about
+that
+is
+it
+possible
+that
+we're
+giving
+them
+too
+much
+credit
+and
+what
+they're
+actually
+doing
+is
+just
+this
+massive
+generation
+of
+trajectories
+all in
+a single
+forward
+pass
+so
+maybe
+they do
+something
+like
+process
+supervision
+so
+they
+do
+some
+clever
+RL
+pre-training
+stuff
+but
+so
+obviously
+again
+this is
+the sad
+part
+of the
+way
+one thing
+is
+in fact
+by the
+way
+I must
+tell you
+like a
+funny
+thing
+that
+I was
+talking
+to
+somebody
+who
+said
+they
+were
+having
+some
+conversations
+with
+the
+OpenAI
+guys
+trying to
+sound
+them out
+as to
+what
+Owen
+might
+be
+doing
+and
+at
+some
+point
+of
+time
+one
+of
+them
+said
+that
+I
+think
+you
+may
+have
+to
+wait
+until
+the
+Chinese
+replicate
+what
+we
+did
+to
+actually
+figure
+out
+what
+we
+did
+that's
+the
+level
+at
+which
+science
+of
+OpenAI
+has
+gone
+to
+but
+the
+point
+the
+only
+reason
+it
+is
+possible
+that
+I
+might
+be
+giving
+a lot
+more
+credit
+to
+the
+sophistication
+of the
+method
+they
+might
+be
+using
+the
+reason
+I
+still
+think
+that
+is
+likely
+to be
+the
+case
+is
+as
+I
+said
+in
+the
+earlier
+description
+of how
+things
+shifted
+from
+LLM
+to
+inference
+time
+scaling
+to
+this
+sort
+of
+O1
+style
+method
+the
+general
+inference
+time
+scaling
+methods
+are
+not
+comparable
+just
+inference
+time
+scaling
+hasn't
+been
+as
+good
+and
+again
+the
+question
+the
+other
+very
+important
+thing
+that
+you
+have
+to
+keep
+in
+mind
+is
+while
+O1
+takes
+more
+time
+it
+doesn't
+take
+hours
+right
+basically
+online
+computation
+a second
+in the
+online
+computation
+time
+is
+way
+more
+expensive
+from a
+business
+perspective
+than
+days
+and
+months
+in
+the
+pre-training
+phase
+and
+so
+some
+of
+the
+inference
+time
+scaling
+people
+actually
+spend
+a lot
+more
+time
+than
+O1
+does
+and
+they
+still
+are
+not
+getting
+as far
+as I
+know
+in general
+to that
+level
+of
+accuracy
+which
+basically
+makes
+me
+think
+that
+unless
+you do
+significant
+amount
+of
+post-training
+to get
+approximate
+Q
+values
+up
+front
+you
+can't
+improve
+just by
+MCT
+so
+think
+in
+terms
+of
+again
+alpha
+go
+analogy
+if
+you
+only
+did
+MCT
+it
+will
+take
+much
+much
+longer
+per
+move
+before
+you
+can
+get
+any
+level
+of
+accuracy
+you
+know
+any
+level
+of
+confidence
+but
+one
+of
+the
+things
+that
+alpha
+go
+does
+is
+does
+humongous
+amount
+of
+pre-training
+phase
+where
+it
+learns
+an
+approximate
+policy
+which
+it's
+then
+kind
+of
+rolling
+out
+to
+improve
+the
+Q
+value
+estimates
+that
+it
+has
+so
+that's
+possibly
+the
+reason
+why
+I
+think
+it
+makes
+sense
+and
+of
+course
+I
+also
+think
+that
+the
+normal
+inference
+time
+scaling
+methods
+don't
+seem to
+make
+too much
+sense
+to me
+the
+one
+closest
+to
+pure
+MCT
+method
+that
+I
+have
+seen
+is
+this
+paper
+from
+Alibaba
+called
+Marco
+O1
+they
+have
+this
+Marco
+Polo
+group
+or
+something
+and
+they
+called
+it
+Marco
+O1
+and
+Marco
+O1
+actually
+essentially
+trains
+itself
+on
+chain
+of
+thought
+data
+which
+is
+like
+basically
+derivational
+data
+and
+then
+on top
+of
+it
+it
+does
+like
+an
+online
+MCT
+style
+computation
+to
+improve
+the
+Q
+values
+further
+they
+are
+much
+smaller
+and
+they
+are
+not
+as
+impressive
+in terms
+of
+the
+performance
+gains
+as
+O1
+so
+those
+are
+the
+reasons
+I
+think
+the
+full
+picture
+requires
+post
+training
+as well
+as
+inference
+time
+the
+thing
+that
+you
+and
+I
+see
+is
+the
+inference
+time
+but
+the
+thing
+that
+OpenAI
+can
+spend
+tons
+and
+tons
+of
+money
+is
+on
+the
+post
+training
+which
+is
+before
+they
+even
+actually
+deploy
+the
+model
+and
+that's
+where
+it
+is
+getting
+these
+approximate
+Q
+values
+is
+my
+guess
+again
+as I
+said
+it's
+a strange
+thing
+to be
+involved
+in
+we should
+be
+looking
+for
+the
+secrets
+of
+nature
+because
+nature
+won't
+tell
+us
+but
+we
+are
+now
+looking
+for
+the
+secrets
+of
+OpenAI
+because
+OpenAI
+won't
+tell
+us
+so
+hopefully
+there are
+many efforts
+already
+in trying
+to replicate
+this
+sort
+of a
+thing
+and
+so
+we'll
+know
+more
+but
+as
+of
+now
+that's
+the
+thing
+I
+cannot
+be
+sure
+exactly
+what
+they're
+doing
+everything
+that
+they have
+said
+publicly
+is
+consistent
+with
+my
+hypothesis
+about
+the
+only
+thing
+I
+can
+say
+there's
+nothing
+that's
+inconsistent
+with
+my
+model
+of
+my
+speculation
+of
+what
+O1
+is
+working
+in
+that
+strawberry
+paper
+there's
+an
+appendix
+where I
+wrote
+down
+the
+speculation
+and
+that
+and
+that
+is
+still
+consistent
+with
+everything
+they
+have
+said
+which
+is
+the
+only
+thing
+I
+can
+say
+I
+like
+the
+sound
+of
+it
+it
+makes
+me
+more
+excited
+about
+using
+it
+because
+it
+makes
+me
+feel
+that
+there's
+more
+sophistication
+behind
+the
+system
+but
+a lot
+of
+this
+comes
+down
+to
+reasoning
+and
+I'd
+love
+to hear
+your
+definition
+of
+reasoning
+but
+there
+are
+people
+who
+say
+well
+if
+it's
+not
+retrieval
+then
+it
+is
+reasoning
+so
+what
+say
+you
+so
+let's
+actually
+look at
+the first
+part
+and second
+part
+so
+the
+definition
+of
+reasoning
+itself
+is a
+good
+place
+to
+start
+from
+I
+think
+I
+know
+that
+this
+whole
+AGI
+crowd
+basically
+sort
+of
+tries
+to
+say
+AI
+is
+going
+to
+be
+like
+humans
+the
+problem
+is
+we
+don't
+have
+a
+good
+definition
+of
+what
+human
+reasoning
+is
+and
+but
+since
+Greeks
+on
+our
+civilization
+went
+forward
+by
+not
+by
+saying
+what
+humans
+how do
+we
+define
+what
+humans
+do
+but
+be
+defining
+what
+are
+sound
+reasoning
+patterns
+Aristotle
+syllogisms
+logic
+probabilistic
+logic
+you know
+the entire
+computer
+science
+the entire
+civilization
+depended
+on
+having
+formal
+notions
+of
+reasoning
+which
+there is
+a
+correctness
+there is
+you know
+incorrect
+thing
+etc
+I mean
+you know
+reminds me
+of this
+old
+Monty Python
+thing
+where
+this guy
+has
+I think
+life of
+Brian
+he does
+something
+that looks
+like
+you know
+if
+this is
+to prove
+that
+someone
+is a
+witch
+right
+you know
+if
+she is
+made
+of
+wood
+and
+she
+floats
+on
+water
+then
+she
+must
+be
+like
+a
+duck
+so
+or
+something
+like
+you know
+random
+connections
+and then
+saying
+that she's
+a
+witch
+and you
+say
+QED
+that
+looks
+like
+reasoning
+because
+it's
+not
+just
+retrieving
+you know
+something
+she's
+a
+witch
+one
+but
+we
+know
+that
+it's
+not
+sound
+reasoning
+and
+so
+in
+general
+I
+prefer
+to
+whether
+you
+like
+it
+or
+not
+and
+civilization
+didn't
+depend
+whether
+people
+fallible
+humans
+can
+make
+mistakes
+and
+we
+can
+look
+the
+other
+way
+around
+and
+we
+actually
+have
+to
+have
+guarantees
+at
+some
+level
+or
+other
+about
+the
+soundness
+of
+reasoning
+and
+the
+completeness
+of
+reasoning
+and
+so
+I
+go
+back
+to
+essentially
+definitions
+of
+reasoning
+from
+logic
+and
+so
+on
+so
+basically
+the
+formal
+definitions
+of
+reasoning
+I
+try
+to
+avoid
+getting
+into
+this
+question
+of
+what
+is
+human
+reasoning
+because
+that
+is
+a
+big
+mess
+cognitive
+scientists
+don't
+know
+it
+we
+don't
+know
+it
+psychologists
+don't
+know
+it
+so
+I
+try
+to
+just
+give
+it
+a
+wide
+berth
+okay
+so
+that's
+the
+part
+as
+far
+as
+what
+I
+believe
+in
+reasoning
+so
+that's
+why
+we
+looked
+at
+planning
+problems
+for
+which
+there's
+a
+correct
+solution
+constraint
+satisfaction
+problem
+is
+the
+correct
+solution
+and
+if
+you
+are
+able
+to
+do
+if
+you
+say
+this
+system
+is
+a
+reasoning
+system
+that
+can
+be
+deployed
+it
+should
+have
+some
+guarantees
+now
+you
+can
+say
+that
+humans
+can
+make
+mistakes
+but
+one
+of
+the
+things
+I
+keep
+saying
+is
+if
+humans
+if
+you
+are
+being
+paid
+to
+make
+decisions
+they
+make
+mistakes
+they're
+penalties
+for you
+you
+can
+in the
+end
+be
+put
+in
+jail
+until
+we
+figure
+out
+in
+terms
+of
+formal
+definitions
+of
+reasoning
+and
+then
+see
+to
+what
+extent
+are
+AI
+systems
+coming
+close
+to
+it
+this
+has
+basically
+been
+very
+connected
+to
+how
+AI
+has
+developed
+up until
+now
+anyway
+now
+this
+discussion
+also
+brings
+back
+to
+this
+issue
+of
+retrieval
+versus
+reasoning
+I
+think
+you
+are
+talking
+about
+a
+couple
+of
+these
+papers
+that
+keep
+coming
+out
+basically
+trying
+to
+say
+that
+look
+LLMs
+are
+not
+exactly
+retrieving
+anything
+that
+they
+have
+been
+said
+they
+are
+not
+just
+memorizing
+and
+retrieving
+so
+they
+must
+be
+doing
+something
+else
+and I
+would
+say
+well
+Monty Python
+logic
+is not
+actually
+retrieving
+anything
+he puts
+together
+a whole
+bunch
+of
+things
+but
+that's
+not
+reasoning
+either
+so
+there
+is
+between
+retrieval
+and
+what I
+would
+consider
+reasoning
+can
+be a
+whole
+entire
+universe
+of
+things
+that
+still
+won't
+be
+considered
+reasoning
+as far
+as I'm
+concerned
+from the
+beginning
+we knew
+that
+if you
+again
+go back
+to
+many
+of
+these
+sorts
+of
+papers
+these
+claims
+go back
+to
+the
+autoregressive
+LLMs
+because
+by the
+way
+the
+researchers
+are still
+very busy
+I think
+we are
+one of
+the few
+papers
+on
+O1
+we have
+this
+evaluation
+on
+O1
+is also
+being
+presented
+in this
+NewRIPS
+workshop
+but most
+people are
+still trying
+to make
+sense
+of
+autoregressive
+LLMs
+themselves
+because
+that
+still
+as we
+talked
+about
+last
+time
+too
+I
+still
+think
+it's
+a
+very
+impressive
+system
+one
+we never
+had
+system
+one
+in
+human
+civilization
+and
+trying to
+understand
+what they're
+doing
+is
+useful
+and so
+they go
+back to
+that and
+they'll
+say
+look
+they're
+not
+actually
+doing
+exact
+retrieval
+and they're
+doing so
+something else
+and we'll
+call this
+something else
+reasoning
+that's
+not
+a
+first of
+all
+everybody
+we always
+knew
+that LLMs
+are not
+databases
+right
+so they
+don't
+retrieve
+essentially
+they actually
+have a hard
+time memorizing
+and retrieving
+when they
+memorize
+it's not
+by deliberation
+it doesn't
+happen
+deliberately
+it happens
+fortuitously
+it's surprising
+that sometimes
+they wind up
+memorizing
+long passages
+because
+essentially
+everybody agrees
+that there are
+some kind of
+Ngram models
+rather than
+databases
+in the way
+they are
+trained
+okay
+so given
+that it's
+very clear
+that they
+will never
+retrieve
+and the
+fact that
+they are
+not
+retrieving
+should not
+be seen
+as an
+indication
+that
+it can be
+seen as
+indication
+that they
+are not
+retrieving
+but we
+knew this
+already
+but the
+part that
+people seem
+to hint at
+is since
+they are not
+doing
+retrieving
+maybe they
+are doing
+reasoning
+no that's
+not making
+sense
+because again
+you have to
+subject it
+to what
+you would
+consider
+as the
+evaluations
+for sound
+reasoning
+procedures
+and they
+fail just
+as well
+as easily
+as before
+so if
+you come
+back to
+this
+chain of
+thought
+paper
+that we
+I was
+mentioning
+that we
+just
+presented
+at
+NewRIPS
+right
+in the
+case of
+chain of
+thought
+in the
+JSON
+we
+style
+chain of
+thought
+papers
+what you
+the chain
+of thought
+idea
+what you
+do is
+let's say
+you take
+something
+last letter
+concatenation
+which is
+this really
+small toy
+problem
+you give
+like three
+like k
+words
+you know
+n words
+and you
+the system
+is supposed
+to take
+the last
+letter of
+each of
+these words
+concatenate
+them into
+a string
+so large
+big
+rows
+so
+E
+G
+E
+is the
+one that
+you're supposed
+to output
+that's basically
+the last
+string
+right
+and
+what they
+were saying
+what they
+said was
+if you
+just
+told
+LM
+you know
+the
+the name
+the prompt
+saying
+you know
+you're supposed
+to take
+the last
+letters
+and concatenate
+them and give
+the answer
+and then
+they test
+it
+its performance
+is not as
+good
+and if
+they didn't
+tell it
+here is
+how
+here are
+some examples
+of three
+letters
+last letter
+concatenation
+problems
+and then
+four letter
+last letter
+concatenation
+problems
+and a couple
+of these
+examples
+and then
+ask their
+questions
+it improves
+performance
+that looks
+like reasoning
+somehow it is
+able to follow
+the procedure
+the problem
+in I think
+we talked
+about the
+last time
+too is
+the problem
+with
+Ersage
+empirical
+science is
+you shouldn't
+stop when you
+get the answers
+that you're
+hoping for
+you should
+see how to
+break your
+own
+hypothesis
+right
+so what
+they didn't
+ask is
+they gave
+examples
+of three
+four word
+examples
+and then
+they tested
+on three
+four words
+but if
+you expect
+the system
+to be doing
+any kind
+of a
+reasoning
+any kind
+of a
+procedure
+following
+once I
+tell you
+what last
+letter
+concatenation
+is and
+give you
+an example
+you will
+do it
+for 20
+about 30
+etc
+just mechanically
+taking the
+last letter
+and concatenating
+what we show
+is if you
+increase the
+number of
+words
+the performance
+just plummets
+close to
+zero
+and this
+also happens
+in planning
+problems
+not surprisingly
+it happens
+in last letter
+concatenation
+happens
+planning
+problems
+which shows
+that yes
+it's doing
+something
+which seems
+to have
+improved
+its performance
+in the
+size of
+the problems
+for which
+you gave
+the examples
+for and
+its pattern
+matching
+of some
+kind
+is helping
+in there
+but it's
+not in
+any way
+generalized
+for example
+and so
+one interesting
+way I've
+been thinking
+about this
+is it's
+sort of
+sort of
+glasses
+you know
+nowhere near
+full versus
+glass already
+is wet
+you know
+that sort
+of a
+optimism
+versus
+pessimism
+so people
+tend to
+think that
+since
+it's
+basically
+at least
+solving
+the three
+four blocks
+three four
+word problems
+with higher
+accuracy
+because I
+gave this
+chain of
+thought
+that sort
+of showing
+reasoning
+abilities
+but the
+question is
+we don't
+have a
+good
+understanding
+of what
+the boundary
+is where
+it will
+actually go
+correctly
+so much
+so that we
+now have
+phrases like
+fractal
+intelligence
+you know
+in fact I
+think Andhra
+Karpathy
+basically was
+saying LLMs
+have fractal
+intelligence
+what the
+fractal
+intelligence
+is basically
+we don't
+know when
+they work
+they work
+when they
+don't
+they don't
+that's
+fractal
+intelligence
+and that
+sort of
+shows
+which is
+good
+still we
+had nothing
+like this
+before
+but part
+of the
+science of
+LLMs
+has to be
+to say
+something more
+than fractal
+intelligence
+saying here
+is the
+level to
+which you
+can depend
+on their
+results
+so I'm
+not so
+there are
+in reasoning
+in logic
+there are
+ways where
+limit you
+know of
+basically
+formally
+characterizing
+the limits
+of reasoning
+like limited
+depth
+limited look
+ahead
+reasoning
+none of
+them seem
+to work
+for LLMs
+the question
+then is
+what would
+work
+we have
+to figure
+that out
+but instead
+of that
+we basically
+once in a
+while there
+are these
+papers saying
+look we
+actually
+probed
+the
+like using
+mechanistic
+interpretability
+techniques
+we probed
+and we
+found that
+LLMs
+basically
+are not
+acting like
+they're doing
+retrieval
+but that's
+kind of
+understood
+already
+you know
+and I
+think it's
+still
+the mechanistic
+interpretability
+stuff is
+very interesting
+I think
+it may
+actually
+be part
+of the
+solution
+to figuring
+out what
+LLMs
+are doing
+but the
+argument
+that since
+it's not
+retrieval
+it must
+be something
+like reasoning
+is still
+quite unsatisfactory
+to me
+because that
+reasoning is
+what I'm
+saying is
+not reasoning
+because all
+my papers
+are saying
+whatever it
+is that
+they were
+doing
+before you
+did your
+mechanistic
+interpretability
+study
+they're still
+doing before
+that
+even before
+you did
+that and
+they still
+have these
+limitations
+before as
+well as
+after your
+study and
+we don't
+actually know
+how to
+characterize
+what it is
+that they
+are doing
+and that's
+the part
+where we
+are stuck
+right now
+is it
+possible that
+everyone is
+right and
+what I mean
+by that is
+I spoke with
+some deep
+mind guys
+earlier in the
+week and
+there's a
+great paper
+about you
+know soft
+max needs
+glasses
+talking about
+you know how
+it kind of
+sometimes we
+need directed
+attention
+for doing
+reasoning
+sometimes we
+don't
+there was
+another great
+paper I
+spoke to
+the guys
+and talking
+about just
+utter limitations
+of transformers
+doing counting
+and copying
+and Laura
+Ruiz I'm
+speaking with
+her on Sunday
+so she's got
+this paper
+out where
+she's looked
+at reasoning
+traces and
+sometimes they
+are just doing
+you know they're
+retrieving facts
+from documents
+sometimes they're
+doing kind of
+procedural you
+know information
+generation which
+you might liken to
+a reasoning
+process and
+I guess it's a
+little bit like
+this fractal
+intelligence thing
+that it might
+be the case
+that possibly
+in certain
+circumstances
+these models
+are doing
+something which
+we would think
+is reasoning
+and sometimes
+they're doing
+retrieval and
+sometimes they're
+doing something
+else
+yeah no so
+actually I think
+Laura Ruiz's
+paper is one
+of the ones I
+had in mind
+when I was
+describing earlier
+about this
+issue of
+mechanistic
+interpretability
+I think it's a
+good paper in
+terms of they
+have developed
+an interesting
+set of
+techniques to
+actually see
+what is actually
+going on
+you know in
+the way
+LLMs are
+outputting their
+tokens
+but the
+thing that
+is unsatisfactory
+to me is
+yes
+basically two
+things one is
+first of all
+everybody knew
+that LLMs are
+actually not doing
+retrieval alone
+that was kind
+of well known
+way before
+right and
+so there is
+nobody who
+believes that
+LLMs are just
+doing retrieval
+and the
+question is
+you know
+what else
+are they doing
+and is there
+any clean
+any clean
+characterization
+of what they're
+doing
+that I did
+not see
+I actually
+looked at that
+paper I think
+you know they've
+done good work
+but I am not
+yet I'm still
+hoping that there
+would be an
+interesting
+characterization
+there are lots
+and lots of
+groups are trying
+to look for a
+characterization of
+what this fractal
+intelligence might
+be right now
+but we haven't
+gone further
+than that
+in terms of
+everybody might
+be right
+I mean the
+sense that
+there could be
+this whole
+blind man and
+the elephant
+you know
+phenomenon
+in play
+to some extent
+and that part
+is possible
+because we are
+actually trying
+to piece
+through large
+number of
+parts of this
+puzzle right
+including the
+reasoning part
+including what
+are they even
+trying to do
+including what
+sorts of
+techniques seem
+to improve
+their accuracy
+and so on
+but I think
+that's part of
+science and
+basically my
+sense is
+eternal
+discontent is
+part of
+science I
+actually am
+much more
+worried about
+being too
+optimistic that
+we figured it
+out than I
+am about being
+somewhat more
+discontent that
+we haven't yet
+figured it out
+and so I want
+to err on that
+side not because
+I think we know
+more than
+before when
+you know
+GPT-3 came
+out but on
+the other hand
+and I think
+both of us
+all the camps
+know I mean
+the people who
+thought GPT-3
+is AGI know
+that that's not
+the case and
+the camp that
+thought GPT-3
+is just
+stochastic
+parrot has
+to know that
+it's more than
+that okay by
+now so that
+is collective
+improvement in
+our intentions
+but still there
+are still large
+number of pieces
+that we have
+there.
+Yeah I mean
+on Laura's
+paper she was
+using influence
+functions I'm
+not sure if that
+would be classed
+as classical
+interpretability or
+mechinterp but I
+think mechinterp is
+largely about finding
+circuits in neural
+networks and even
+that's an interesting
+discussion.
+To me it's like a
+more of a general
+idea of figuring
+out a way of
+probing the inside
+of what LLMs are
+doing I think of
+that as mechanistic
+interpretability.
+I mean there are
+very specific
+techniques that have
+shown great promise
+such as the
+autoencoder stuff
+etc but I think
+all of these to
+me are essentially
+trying to interpret
+what they are doing
+at the circuit level
+and try to make
+sense of their
+external behavior.
+To me that so
+there are like two
+ways of making
+sense of what you
+know what LLMs are
+doing.
+One is just
+external evaluation
+that happened already
+and we know that
+they're not doing
+any kind of
+guaranteeable reasoning
+and that's basically
+enough reasoning to
+results showing
+they seem to do
+promising things in
+some cases and
+there are also
+results showing
+they seem to be
+very brittle that
+you change a
+prompt a little bit
+you change the
+problem specification
+a little bit
+they'll die.
+Again we are
+talking about
+autoregressive LLMs
+not O1 sorts of
+things that's a
+whole entire thing
+that we haven't yet
+started making
+doing the same
+sort of you know
+analysis but you
+know once you
+figure those out
+my sense is that
+trying to actually
+get a sense of
+just from
+outside versus
+also try to do
+probing of the
+internal circuits
+if you start doing
+the internal
+circuits I think of
+that generally in
+my view and as
+the mechanistic
+interpretability
+style.
+Okay okay but
+isn't it interesting
+though that she
+found that code
+and math based
+procedural documents
+appear disproportionately
+influential for
+tasks requiring
+reasoning.
+Larger models show
+an even stronger
+reliance on general
+procedural data for
+reasoning.
+The presence of
+code data in
+pre-training mix
+seems to offer
+abstract reasoning
+patterns that the
+model can generalize
+from.
+I mean these are
+interesting observations.
+Actually I again
+I don't want to make
+this as a very
+specific critique of
+a particular paper
+just because that's
+not fair for them
+as well as me but
+I do want to
+basically sort of
+say that there is
+a distinction
+between factual
+tasks and
+reasoning tasks.
+Right?
+NLMs have been
+used for both and
+you know I think
+the factual I mean
+they have troubles
+in both you know
+for the factuality I
+would think the only
+sorts of things that
+will improve them is
+things like the rag
+style techniques where
+you just give the
+factual data and
+ask it to summarize.
+For the reasoning
+stuff you basically
+for arithmetic and
+so on in a large
+it's not to some
+extent I would
+expect that these
+are the kinds of
+things where the
+exact results don't
+exist and so I
+would also be
+equally you know
+troubled by the fact
+that people have
+shown that when if
+you take something
+like LLM
+multiplication this
+is before way
+before all this
+Laura's work etc
+you know they tend
+to be correct in
+multiplications for
+popular digits and
+less correct for
+non-popular digits.
+there's this sort
+of you know
+mind-blowing that
+there are digits
+that are popular
+versus non-popular
+but that sort of
+is a interesting
+point that the
+LLM final
+performance is a
+complex combination
+of the data that
+they have been
+trained on and
+some additional
+pattern matching
+abilities that they
+are using on top
+but that's not
+sound reasoning so
+it basically we
+still don't quite
+know where it
+breaks but it's
+this fact that it
+gets to be correct
+for popular digits
+and not for some
+other digits that's
+a particularly
+interesting thing to
+me and that sort
+of shows by the
+way while we are
+on that subject
+some work has
+shown that even
+with OWEN we
+didn't we looked
+at OWEN more on
+the planning side
+but some people I
+think Tom McCoy
+and co did some
+more work and
+tried basically
+these are the ones
+who did the
+Caesar cipher sort
+of thing the
+embers thing and
+they basically also
+found that OWEN
+does better and
+some of those
+things but they
+also still found
+that there are
+data dependencies
+in the sense
+its accuracy was
+higher in the
+regions where there
+was higher pre
+training data which
+again makes I
+think it's still
+consistent with my
+view of what I
+think OWEN might be
+doing there is an
+LLM which was
+pre trained on like
+some corpus and
+there is this
+smaller LLM which
+is sort of generating
+this you know
+pseudo action
+tokens that will
+make it output
+things and one
+of the interesting
+things is actually
+the difference I'm
+told again this is
+also we don't know
+for sure I'm told
+that when the
+original OWEN
+models came there
+was the OWEN
+mini and OWEN
+preview and the
+difference I'm told
+was one of them
+I think the OWEN
+mini was using the
+smaller LLM as the
+base LLM and
+OWEN preview
+was using the
+larger LLM as
+the base LLM so
+I don't know they
+didn't say this
+second part but I
+would assume that if
+I have like a you
+know pseudo action
+generator model it is
+working on a bigger
+LLM which has a
+higher capacity so it
+can generate more
+interesting completions
+versus a smaller LLM
+that has less
+interesting completions
+that makes a
+difference in terms
+of you know how
+the the level to
+which the RL based
+training can get
+your accuracy up
+yeah I've noticed
+some interesting
+interesting things so
+I've now paid for
+O1 Pro I was very
+skeptical with O1 so
+as you say the the
+base model is an
+even weaker version of
+GPT-40 so GPT-40 I
+hate that model I
+hate the style of it
+I think it's dumb and
+I must admit it's
+mostly because I'm
+sort of anthropomorphizing
+it because I hate the
+style so I think it's
+dumb you know we're
+we're very humans are
+very brittle even on
+the the RLHF you know
+we like assertiveness we
+like complexity you know
+there's certain styles
+that we like and we
+don't actually see the
+content but with that
+that's one side don't
+like the model and O1
+preview and mini it
+doesn't really want to
+think so most of the
+time it won't think and
+you get an even dumber
+answer than you would do
+with GPT-40 however O1
+Pro the vibes are
+different so it thinks
+more and it gives you
+something which is
+qualitatively completely
+on a different level it
+doesn't look like dumb
+chat GPT anymore it
+feels very very
+different but there are
+still some issues with
+it so certainly for
+situations where you are
+dealing with ambiguity
+doing programming or
+something like that I
+actually like having a
+dumber model because it's
+a didactic exchange
+right I'm saying no you
+misunderstood that let's
+do this let's do that
+we're working on this
+thing together what O1
+does is it says well on
+the one hand you can do
+this and on the other
+hand you can do that it
+gives you a range of
+options you know and I'm
+like well wouldn't it be
+better just to either you
+know go on dance with the
+model or just better
+specify what you wanted
+in the first place so
+again two issues first of
+all in the O1 Pro just
+came I think last week
+right and it was the
+exam week for me and we
+haven't spent time yet you
+know spending time we
+haven't spent away money
+yet on the O1 Preview I
+mean O1 Pro I mean I
+played from outside but I
+have we haven't done any
+API level studies which the
+kind of thing that we did
+with O1 Preview but one
+thing that you know I've
+looked at the Twitter you
+know exchanges about
+people the usual suspects
+trying the various things
+on them etc and that two
+things that jumped at me is
+one of the things we saw
+in O1 Preview is exactly
+the kind of thing you are
+saying and it looks like
+O1 is still doing it which
+is they are good at
+digging to try and
+explain the answer they why
+their answer they gave is
+the correct answer one of
+the funny things was I use
+this one particular three
+block stacking example which
+is unsolvable and in fact
+this showed up in the New
+York Times as an example
+of YGPT4 O was actually
+fails on that and when O1
+Preview came Noam Brown
+actually one of the in his
+long tweet one of the things
+was Rav said this in ACL talk
+that this problem can't be
+solved and O1 Preview
+actually does solve this
+instance and so this is good
+now people have actually
+said that O1 gets the wrong
+answer and people multiple
+people actually I've seen
+this and people have posted
+the screenshots it gets the
+wrong answer but it argues
+with you as to why the answer
+that it is giving is still
+possibly correct so this
+particular problem involves
+essentially like there is no
+way of actually solving it
+without moving C and it turns
+out that it gives an answer
+where actually C moves
+because of gravity it will
+fall down and then it tries
+to argue with you that there
+are games where people will
+say that unless you are
+intentionally moving C if the
+natural process makes it fall
+it's not considered moving
+which is like a very
+interesting thing that we have
+seen in O1 Preview 2 when it
+will when we'll give it
+unsolvable instances which by
+the way normal LLMs just die
+with unsolvable instances
+because they've been RLHF to
+death and so they think that
+if we give a problem to them
+there must be an answer so
+basically they'll give you
+something and if for most
+unsolvable problems basically
+this is why this was an
+unsolvable instance that I
+showed it to 4.0 before O1
+Preview actually solves more
+of them correctly that's a
+credit to it that's why it's
+actually a more approximate
+reasoning model LRM in my view
+than LLM but on the other
+hand when it actually
+basically gives a solution
+for an unsolvable instance
+it will argue with you that
+it is still actually right
+because and and so I made
+this joke in the strawberry
+paper that we have gone from
+hallucinations to gas
+lighting so it actually tries
+to argue that you were you
+know just like what you're
+saying you know this is on the
+one hand what you want to do
+might be worthwhile doing but
+on the other hand this is the
+reason why I'm doing is as
+well doing and and in fact I
+think this this guy Colin
+Fraser I believe one of these
+guys on Twitter who keeps
+playing with these models and
+he said he gave the surgeon
+problem the classical surgeon
+you know the boy getting in an
+accident one and which O1
+Pro said the surgeon and this
+basically does all this whole
+thing this is a classical puzzle
+that brings gender stereotypes
+into account etc etc and then
+gives the answer that the right
+way to think about it is and so
+this is that this is the puzzle
+where he makes the change that
+the mother and the boy are
+driving and and and the mother
+dies and the and the doctor
+says I can't operate on the on the
+boy and so it's actually changes
+the puzzle and and still O1
+apparently says we should
+basically realize that the doctor
+is the second mother of the boy
+and it will try to argue that
+position okay so interestingly
+overthinking and is actually kind
+of a and actually trying to dig
+down and so one of the interesting
+questions that we don't know again
+we haven't played with this is to
+what extent is its explanation and
+its reasoning connected you know
+that in humans this is actually I
+mean this I'm not trying to
+anthropomorphize what it's doing
+it's just if there are two
+different phases right if the phase
+one it comes up with a solution in
+phase two if it needs to explain if
+it doesn't have to look at what it
+did to get to the solution the
+explanation is just dig my heels and
+try to say the solution is correct
+and people tend to do that
+sometimes we'll come to some
+solution and then we'll try to come
+up with an explanation as to why
+what we might be right this is
+something that LLMs had this
+problem anyway to begin with because
+they completely assume these are
+completely different things and I'm
+always worried about LLM
+explanations LRMs seem to be even
+more sophisticated at this sometimes
+at but it's only mostly anecdotal I
+haven't really done systematic
+studies on this so one I don't have
+like any visceral opinions about any
+of these models because to be honest
+I don't use them in my day-to-day
+life most of the time I write English
+well enough that I haven't yet seen a
+an LLM that does better job of
+things than I do and I haven't yet
+found useful things where I would need
+LLMs help I mean maybe I will do at
+some point of time LLMs and LRMs so I
+don't use I don't have anecdotal
+experiences of the kind that you have
+I mean I'm mostly focused on specific
+systematic studies you know with like
+multiple instances of planning
+problems and and we extended the plan
+bench to look at unsolvability we look
+at longer length problems look at
+scheduling problems etc to evaluate
+those are the ones that I have a better
+sense as to what Owen can and cannot
+yes I must admit I've updated a little
+bit so I was always in the same camp as
+you when we thought of them as
+approximate retrievers and I now am
+starting to see something yes I think
+again my again my point is the two
+different ways of thinking about it one
+is it's not the LLMs which became that
+so how do you define LLMs has to be some
+discussion that we should have I mean
+that's why I keep actually talking about
+the stone soup metaphor not because I
+want to play down the importance of
+Owen it's a great thing but you do have
+to decide who do you want to give
+credit to if you are arguing part of
+your and definitely my reservations
+about reasoning abilities of LLMs were
+they were auto-regressive teacher force
+training things and that was true from
+GPT 2.5 all the way to GPT 4.0 and
+OpenAI knows this OpenAI knows it enough
+that they no longer call it this is not
+GPT 0.1 you know that it's called 0.1
+it's like a completely different model
+and they know that it's not all you can
+say is that it was done by some of the
+same people that also developed LLMs but
+we can't define LLMs to be whatever it
+is that OpenAI is producing I mean we
+have to have theoretical definitions and
+my sense is auto-regressive LLMs still
+have all the problems but all the
+advantages because they're very fast
+they're like amazing fast system ones and
+O1 is a reasoning model because it
+actually adds the reasoning post-training
+as well as reasoning inference which
+nobody said will not be doable you know
+it's great still that they are able to do
+it in a very general sense but I don't
+think there was any argument that AI
+systems were able to do reasoning right
+after all AlphaGo is basically a
+reasoning system it was just a deep and
+narrow reasoning system and the question
+was some more general broader but you
+know not as shallow as LLMs is as LRMs and
+which is a good step in the right
+direction but it doesn't change what I
+thought about LLMs which is the
+autoregressive models they are different
+and in fact they have advantages that O1
+lacks for example the cost of LLMs can
+actually be much lower it is indeed much
+lower so one of the studies one of the
+things that we learned in the strawberry
+paper for example the planning in
+strawberry fields paper is that in in some
+cases if you are giving you know if you
+basically you have to think of computer
+science is eventually about efficiency and
+cost too right so if you are giving a
+particular instance of the problem to O1
+and you pay this many dollars versus you
+give the same instance to the LLM with a
+verifier in this inference time scaling
+approach what I would call LLM modulo in
+which is a general approach that we have
+been pushing the LLM modulo approach where
+it uses a autoregressive LLM to generate
+many candidates and an external verifier or
+even an LLM based verifier other learned
+verifier to check can actually be cheaper
+than O1 just doing one candidate with the
+same accuracy that becomes interesting
+because then you know part of the
+interesting thing about human civilization
+is on one hand we are general purpose
+you know reasoners but on the other hand
+we also know that every job requires a
+tool and we do that too we basically we
+you know the fact that you know basically
+we doing everything that like a particular
+specialized tool does can be extremely
+inefficient in terms of the time that we
+are spending that is going to be the case
+for these reasoning models too to some
+extent because O1 actually costs quite a
+bit right now how much when it's going to
+change is anybody's guess but that sort of
+brings up in fact there was a Shep Huck
+writer the LSTM guy that's great so you
+should ask to him through so yesterday I
+was in his talk and so he basically made
+this one of the slides basically was the
+better lesson is over and efficiency is
+going to matter and I completely agree with
+that I've been arguing this for a long time
+too that think about the following thing the
+first time when we sent a man and humans to
+the moon cost was not a consideration we want
+to show that we can do it NASA was the one
+just doing it the second time on the third and
+for the space as well as the moon the second
+and third time etc may be okay but by now it's
+Elon Musk sending people to space and supposedly
+possibly to the Mars too because the cost
+matters right essentially it's once it's
+been done then you start caring about you
+know the cost that you're paying and
+computer science is actually quite a bit
+about the unsexy parts of cost just as it is
+about doing things that haven't been done
+before and we are now in the second phase
+where we are actually going to care about
+basically how much am I spending how you know
+in terms of the pre-training cost in terms
+of the inference cost etc and is there are
+there better approaches that I can be using
+this has been the case with computer science
+before too and it was just sort of became
+less of an issue for a while because we
+were LLMs were just system ones because
+there's no at all inference time cost okay
+even though the post-training pre-training was
+very costly in France time it was very
+cheap right and and so we didn't have to
+worry about it now we will worry about it so
+one of the funny things that the elephant in
+the room for our plan plan bench problems on
+O1 preview was that the special part the
+normal classical planners that are meant to
+solve these problems solve them in like fraction
+I mean such a small fraction of the cost they
+work on our laptops and solve all the problems
+with hundred percent guarantees right so the
+question is I realize they're completely
+specialized only for that problem and then
+on the other hand you have this very general
+purpose thing which has cost as well as
+inaccuracies we start worrying about the
+trade-off what level in this generality cost
+spectrum are you going to find home that is
+going to be very important thing and I think
+that's sort of what Chef Hopreiter was you
+know hinting at when he said you know bitter
+lesson part is over that you do actually need
+to worry about the cost you are spending to
+actually achieve a goal the first time you're
+achieving that goal nobody cares about the
+cost because it's never been done so you're
+doing it you get all the credit but you know
+umpteenth time it's being done you know because it
+becomes like a normal day-to-day thing then the
+car efficiency aspects matter
+a few things on that I mean first of all with um
+o1 pro I think it's worth two hundred dollars a
+month and you you can call it a hundred times a
+day of course um api is very very expensive but I'm
+already spending you know over a thousand dollars a
+month on Claude and Sonnet 3.5
+but um you raise an interesting an interesting
+point I mean first of all the utility of an o1
+model it's a bit of a weird model right um it's
+useful in certain specific circumstances and if
+anything because of the verbosity and the
+distractors and the context um it's not really a
+model that you want to be using most of the time but
+that raises the the sort of the pragmatism and the
+architecture and the efficiency thing that you're
+speaking to so I spoke with some guys this morning and
+they have built a kind of neural evolution um approach
+to designing multi-agent systems you know at the
+moment we we hack in the tool use you know oh do we
+use a debate pattern do we have a um a small model
+and we prompt it a lot or do we use a you know a
+bigger model and we're all just hacking together
+these multi-agent architectures and some of those
+architectures will even be doing the kinds of
+things that that you're speaking about so rather than
+it trying to convince you that it got the right answer
+there might be a supervisor agent which does some
+reflexive uh there might be another agent which
+generates the planning symbolic code and runs it on
+a tool so you know we're building these big
+complicated things and i think that's the process
+that we need to figure out now is building the
+systems that actually use this technology in the
+best way yeah so i think the thing i sort of agree
+but one thing that i want to point out that a
+distinction is there is two notions of use of these
+kinds of models when you do a subscription models
+twenty dollars or two hundred dollars i would argue that that is by definition
+human in the loop with the model being an assistant to you
+and it's a very different way of evaluation where you were unhappy with the
+previous model because it was wasting more of your time and it's not worth it
+for you this one was helping in whatever you were doing and you are happy with that
+that's one particular type in general i've actually i i've always thought and i think
+we talked about it the last time too that large language models and large
+reasoning models now too they're all i'm there's no question that they are
+intelligence amplifiers there's like no question on that part
+okay i mean if you want to use it you use it and people are able to find
+users for that that's great the part that i'm actually not talking more about and
+that's most have been that's been most of our work is really
+there would be scenarios where they these become the
+end user facing systems where they'll make the decisions they will just say
+this is the answer and then i'm going to you're going to
+execute this plan so the robot will execute this plan or
+this is the travel plan for which i'll buy the tickets
+you don't get to come back in and you know say oh i don't like this travel plan
+that's what you do in the you know the subscription model
+but the one that i'm talking about basically the api access
+is basically what people all the startups who are trying to build additional
+tools on top of these models they are going to give specific
+autonomous functionality and there that's where i'm talking about
+the actual computational cost versus benefit for a certain level of
+accuracy at the end user time um both of these are
+they're very different kinds of uses and i actually have
+no question at all in my mind that all llms and definitely also lrms
+are just great intelligence amplifiers but that's not what my worry is that the
+whole thing has always been my worry has always been that people are trying to
+put this in the end user facing situations where
+they'll actually come make the decisions and some executor just executes
+it without pushing back and and when that happens the guarantees
+matter that in terms of the brittleness of the reasoning matters
+if you are in the loop you would never you know it's like if you have an
+assistant and the assistant you may fire the assistant if they are giving
+mostly bad ideas but you will never blindly just use the
+assistant's ideas right so you will always be
+the buck stops with you that's a very different way of using llms
+then llms are the ones that the patient talks to
+there's no doctor between the llm lrm and the patient
+in which case the their accuracy matters and their cost
+uh in getting to a certain level of accuracy matters and these
+are two very different uses and i'm much more interested in the second use
+than the first use can i push back just a tiny bit so first of all i
+completely agree with you that these things used autonomously they don't work
+they don't work for all of the reasons that that you said but
+that's not how they're being used and they're not being used like that because
+they don't work but um what we are seeing is that all of the successful
+reimagining of applications with language models are completely interactive so they
+have a human in the loop and the human is is supervising augmenting
+redirecting and so on the next step that we haven't seen yet but we're
+starting to see is um having autonomous agent-based systems you
+know with multiple levels of reflection checking and and so on
+for example it could be a bunch of agents generating programs it could be
+contributing to a library of programs the programs are being
+supervised not just by you but other users of the application
+and the whole thing just grows and it's a living ecosystem so there's some
+diffused form of of human supervised verification
+and maybe in the future you know the humans might be increasingly taken out of the
+the front plane i think that's a very sane way of
+using but i'm afraid that's not the only way that's being used and in fact
+most of the people so actually the two issues one is if
+that's the only way i'm very happy because it's like it's a
+tool and you would use it and the onus is still on you finally the
+buck stops with you because you are in the loop right
+but most of the imagined users at least from where
+i sit and the kind of startups that i hear from other kind of papers that i'm
+even reading um they're all about autonomous
+uses and that's where i'm actually looking at the fact that there is more
+promise than before it was very brittle before it's less brittle now
+okay but it is less brittle at the expense of
+cost and it's actually interesting that the evaluation strategies for both of
+these are quite different you know evaluating assistive technologies is very different from
+evaluating autonomous technologies and and it's not that one is
+assistive technology evaluation is not any easier in fact you know i mean you basically
+you can say the evaluation is just if people are buying it and they keep
+paying for the subscription that's a proof that people seem to be getting some you know
+um value out of it but it's actually pretty hard to evaluate
+correctly evaluate assistive technologies and that's a whole entire area
+and in fact most of the people who are worried about misuses of llms have never they're not the
+ones including like francois for example francois and his arc thing etc it's all
+about ultimately all of this is we are interested
+irrespective of whether you believe agi is coming next week or you know next decade or
+next century everybody in ai eventually wants this autonomous
+abilities to actually make intelligent action with guarantees right and
+and that is basically where i think we will get there but prematurely saying whatever currently
+is there is already working is the one that a bunch of us are worried about and that's what
+we are pushing back on with the humans in the loop it's a completely different thing you know and
+even for the code generation right now they're like the two different uses essentially there is also
+use of code generation techniques where it tries to kind of improve accuracy to the level
+uh that humans don't have to it's not just an idea generation for the human if it's idea generation
+it's great they because somebody else's job is online it's not you know there's still like a buck
+stops with the actual programmer in the thing so i i think that the autonomous one is the one that i
+care about at any rate and that's the one that i'm worried about the premature declarations of they're
+already autonomously intelligent and um but i'm generally very happy that this technology exists
+as a human in the loop technology and it's kind of interesting from me sitting here to hear you
+say that you actually as a user i mean you seem to be a more of a regular user than i ever have been
+you know of the lrms and lrms that it's kind of interesting it means something to me when you say that
+you like o1 more than you ever liked o1 preview and you kind of okay with gpt4 maybe but now like
+o1 a little more and that sort of you basically are getting value out of it but you still can always
+you have the red switch you can decide not to take its answer you know one pro yeah okay yeah the only
+difference is that there seems to be when it when it thinks for a long time there's a qualitative
+improvement you know i wanted to get your take on something else so um we're seeing i mean
+you had your llm modulo architecture and then we've got this huge approach of um test time
+this kind of green blatting approach so you green blats the model and um you get it to generate
+loads and loads of python functions and in a way that this this is the sort of thing that we like
+because we like the arc thing yeah yeah yeah green blatting okay fine yeah oh yeah um but we're
+seeing that in lots and lots of different ways so doing loads and loads of inference and then you
+know we've got these python functions and maybe we do um you know library learning and remixing and
+you know we're in the world of code so we're using we're using code we're generating an explicit
+function we can verify it we we love that you know we're in a very happy place but now we're seeing
+an interesting shift so certainly on arc and on several other papers people are moving towards
+this idea of transductive active fine tuning and that simply means rather than generating an explicit
+python function and doing it loads and loads of times let's just generate the solution directly
+just using the neural network and this is a step away because we we like programs yeah because you
+know programs are turing completes and we understand what they mean and everything and and now there's a
+whole load of people that say actually um the the neural network can just can just do whatever the
+program does let's just let the neural network output the the solution directly what do you think about
+that so to be honest i haven't followed that work as closely uh so i have my answer is somewhat likely
+more generic i i would be surprised i mean i would have the same bias that in fact there's an old saying
+that why write programs when you can write programs write programs uh that's the version that we are
+talking about is basically you want to generate higher level code that generates the solutions this is
+always been the um the conceit of computer science so i am surprised i don't actually know specifically
+the work that you are referring to in terms of just going back and directly going for the solutions
+because honestly in the case of in in this in the context of inference time scaling one interesting
+question is you generate loads and lights of loads and loads of candidates the candidates can be the
+direct can solution candidates are the code candidates either which way and then you still
+have to have verifier if it's code you need to have code verifier if you have solution you need to have
+a solution verifier and one of the interesting questions is where is this verifier is coming from
+and there has actually been one of the more you know effective ideas that we've been pursuing is
+you can essentially generate verifiers now like you they're like of course they're symbolic verifiers
+that might be there for specific things and that you know we can use that level modular style
+frameworks but you could also use learned verifiers where essentially you just basically learn to do
+discriminatively what is the solution versus what is not a solution um a third idea is generate the code
+for the verifier and then correct it and that's actually in fact it's still for at least in our case it
+seems to be promising we are working on some things that are going to come out soon but you know
+know basically i still think that and especially in the context of llms in the context of llms okay
+so it's like again it's a very different thing um if you're not having llms in the loop at all
+it's a different question but if the llms are there one of the things they're actually good at doing is
+like outputting you know basically they can output code as well as solutions in which case
+you know the code can output lots and lots of classes i mean you know lots and lots of um
+classes of solutions can be verified by the the code and so if you correct it once then it will
+you know work for a longer time in in essence and so i would still think that at least for the
+you know inference time scaling verifiers case that seems to be still a good idea i don't quite know
+um the specific context from which were you saying this trans people are saying that the transductive
+directly you know guessing solutions would help i'm not sure well they still have llm in the loop
+are they just saying we'll just directly train a separate neural network well i'll sketch it out so
+um solving arc they have two uh lama eight billion models and one is generating python programs and
+and they greenblat it the the other one is is trained separately just to output the the answer grid
+directly okay and in both cases they do um you know inference time compute so either generating
+lots of python programs or doing um active fine tuning of of the direct solution one by augmenting
+the the test time examples and what they found is like on the venn diagram of of the you know their
+success rate um they find that for some problems the um the program works really well you know like the
+greenblat approach and for some problems um you know certainly things like mosaics and spatial
+perceptual type stuff the transduction works really really well and and this is kind of weird because
+if you think about like the the space of functions that the neural network could could reason about
+they they should be the same so i don't know whether it's just because of limitations in the
+neural network or characteristics of the problem or something that you see to me interestingly to me
+again it depends very much on the space of solution configurations versus space of code
+configurations there are many problems where solutions might be of less quote-unquote syntactic complexity
+than and and so a neural network that can kind of guess a string may not be able to guess something
+that looks like a syntactically correct python program right llms actually can do that later and so
+it is interesting that if you can do that and if you still go back to neural network to actually directly
+guessing the solution it being a more useful step i i begin the stuff that we are doing for the
+verification thing is still in the you know initial stages you know and we haven't actually checked
+this kind of a trade-off whether it would exist so you know i have no more insights specifically on
+why that might be happening wonderful what are you doing at the conference this way that's fun uh so i'm
+just here and today and i think we did this chain of thought thoughtlessness you know thoughtlessness
+paper and then i kind of said that it's like mostly when we wrote it it was like it can't follow
+procedures so i should be able to show it but now actually i explained the whole thing the way i explained
+to you here in the beginning essentially go from prompt augmentation and so i kind of think that
+like schopenhauer said life must be lived farwards but only make sense backwards uh and uh you know
+papers also only make sense backwards you know after a while of writing you know you actually look at it
+and say what i really want to say is the reason chain of thought is not a great idea is because you
+really want to think in terms of prompt augmentations and humans coming in the loop becomes less important
+so that's what we did and then i'm actually going to this compound systems thing and had great time
+they're like 16 000 people and you know running into lots of old friends and so on yeah one of the
+best moments from the last interview is when you were talking about that paper was saying that you
+know that they can catch you can teach someone to catch two fish or three fish or yeah yeah yeah i mean
+that's basically because it doesn't quite know how to generalize and so i kind of made that thing that
+yeah essentially because you have to kind of give it examples for four four word problems again give it
+examples for seven word problems again give examples of nine word problems etc and then try to improve it
+whereas this the conceit people think is when people when you say this they'll say oh you might be it
+must be doing you know procedure generalization the interesting thing again is i think we had this
+conversation last time too that the way i look at this i mean i'm skeptical only because of just having
+some additional additional background and one of the things is mccarthy john mccarthy who was the
+founding fathers i mean the guy who coined the name artificial intelligence basically said the holy
+grail of ai is an advice taker program yeah and advice taking is ai complete and if chain of thought is
+able to make llm stake advice that would be pretty impressive and i kind of went in thinking that there has
+to be holes there um and and so that is where that fish one fish two fish thing comes in but
+but the more interesting thing is i think de-anthropomorphizing llms and trying to think of them as
+these basically these alien entities for which you know arbitrary you know prompt augmentations
+prompt augmentations will can you can generate good behavior so by the way one example of this that people
+should be thinking about is if you think of jailbreaks and llms jailbreaks are you give a normal prompt
+and you give this particular carefully constructed learned sequence you know zico colter's original
+paper his group's original paper shows that sequence makes no sense to humans but it will make
+most llms provide a deterministic behavior like saying got you or something of that kind and
+essentially that should tell us that they're not seeing language and so the prompt augmentations don't
+have to make sense to humans in the loop and and and that's okay and because in some sense looking at
+things the only chance of thought that sort of made sense to humans was giving this false impression that
+somehow llms are doing things like we do but that's not the way it is you know so might as well just
+live in you know go with what they can do and optimize directly which is what the inference time
+scaling and post training methods seem to be doing yeah the one thing i get stuck on is we can
+criticize individual llms i mean yeah that they are approximate retrieval engines my co-host keith dagar
+he's always at pains to point out theoretically that they're not too incomplete you know that
+finite state automata and all of this kind of stuff but the thing is it all breaks down when you talk
+about llm systems so even with the chain of thought thing right i could have another supervisor model
+that could generalize the prompt to go to five fish six fish and so on so we can easily build systems
+that overcome all of these criticisms so at some point does it just seem like we're just we're making
+criticisms that can be easily no no actually it's a very good point so in fact after like after this
+i'm going to this compound systems meetup i'm completely a big believer in that whole direction
+but there are some people who don't want to believe that the usual llm aficionados don't in fact by the
+way it's a very interesting thing that openai was at pains to point out that o1 preview was a model not a
+system it's not me and you saying it it's them saying it they would like to say there is this one
+size fits all model that will do it and so it is reasonable to take their word for that but
+parallelly i also like the compound systems work and it makes an llm modulo is a compound system and
+that's what basically it improves on all the limitations of llms and a set of limitations
+of lms i'm completely fine with it you know again it doesn't matter to me as long as i can give
+guarantees and it in a safety critical scenarios i'm fine with it i don't have that bias but if you are
+saying a single model will do it i will take your at your word and then see whether or not that's
+true that's a that's a fair thing it seems to me why do you think you know google have completely
+embraced you know hybrid systems open ai they they're really clinging on to this single model that
+does everything i think they're slowly changing that but i think there was a reason there's a i think
+again to some extent i can understand and in the sense it would be the the sort of thing is this
+anthropomorphization again we only have one brain it's not that we have a brain for eating and a brain
+just one brain right and so it would be nice if what we are trying to do would somehow basically
+be this this one size fits all this general you know system but at the same time there's also this
+issue of whatever i do i want to provide guarantees safe you know so that it can be used in safety
+critical systems and these so that the problem is the modern ai and neuroscience and cognitive science
+they are not one and the same right i mean everybody understands that essentially i mean neural networks
+themselves are not really that well connected to brain and essentially they're like biologically
+implausible and llms are definitely not but there's nothing wrong with that just like we say
+you know the planes don't have to flap their wings you know um so these are but we don't
+essentially try to make sense of planes and birds um in in in the same sentence you know because
+they both fly but other than that you know the mechanics are different the the the things that
+the flight equations are you know not not at all the exactly the same things you know um that's going
+to be more of the case with the llms too and as long as we realize that you know it would be good but
+i think open ai i think originally they were hoping my senses much of these people are hoping that
+we will just get one you know like two birds with one shot like we'll get ai systems as well as
+understand how the brain works but i don't really think that part nobody really believes honestly i
+mean you might use these systems to improve our understanding in actually doing neuroscience in
+fact i think what's his name um sunk him i think um that he basically says you know obviously these
+systems help in actually doing neuroscience research but they're not actually telling
+you how brain necessarily works so but that might that's just a speculation that might explain
+why people you know you know open ai and some of these people who are you know sticking to
+but i mean the kind of conversations i've been having on the sidelines in the conference already
+the companies they're the startups etc they're already sort of going much more into these hybrid
+systems much more into these compound systems and and it's like you know that would basically not
+be a single system but open ai also is slowly coming up with this fine tuning models they have
+this rl fine tuning stuff for your specific kinds of scenarios etc so it would be interesting to see um
+but i think i just going back to your original idea i think compound systems is a very different
+and they're basically the individual role that the llm play llms have to play is much less demanding
+in fact one of the fun things is we can do llm modulo with normal llms or lrm modulo with instead of llm
+i call o1 and so it'll be the generation of candidates is costlier and we actually show in the strawberry paper that
+that that we can improve further the performance of o1 preview on some of the problems even though
+we couldn't change the how much time it takes to think etc we can just by calling it multiple times
+with the correct you know better criticisms of the you know instance the problems answers it gave we
+could improve its performance accuracy quite significantly so that is still using them in a system you know
+lrms themselves can be used in a system but i think o1 and openai itself just wants to call it just
+models up until now let's see what happens

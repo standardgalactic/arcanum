@@ -1,0 +1,3349 @@
+If there's going to be errors, which do you prefer?
+It's almost like a precision recall.
+Would you prefer a model that refuses to answer more?
+Sometimes be quite frustrating because of that.
+Or would you prefer a model that runs the risk of, as it were, hallucinating a response?
+And so these are really, really tricky things to, like, drill down and get right.
+Today we're going to give you an insider perspective on retrieval augmented generation,
+or RAG, as you've probably heard it mentioned.
+We speak to Patrick Lewis, who is the guy who helped coin the term.
+He's a leading expert in the field.
+He works for Cohear, and he's also a very cool guy.
+We will deep dive into the evolution of language models,
+going all the way back to the days of Mikolov and Word2Vec,
+to modern language models and beyond.
+Even back in 2015, this algorithm, when you did this clustering of the elements,
+they clustered in such a way that they reproduced the periodic table.
+It just had, like, read the literature and had discovered the periodic table within it.
+We share practical tips for implementing RAG systems in large enterprise,
+and this is the reason to use Cohear, by the way, because they're extremely good at that.
+Prompt engineering to get augmented generation working is really, really hard.
+And so what we do at Cohear is try and build, like, actual, like, prompt templates
+that the model has, like, very, very concrete, like, awareness of in the way that we post-train.
+It would also be remiss of me not to mention that the Brave Search API is partnered with Cohear.
+So if you want to do some really cool retrieval augmented generation now
+on the best search index on the web,
+sign up to the Brave Search API at brave.com forward slash API.
+Enjoy the show.
+Let's talk about, yeah, like, evaluation.
+So, like, there's evaluation for RAG, which is quite specific,
+and you tend to, like, try and measure a few different things.
+There's that answerability thing.
+Is this answerable? Is this not?
+There's these senses of faithfulness,
+which we usually use these grounding spans or these citations
+as a way of making that concrete.
+Like, is everything grounded?
+Are we missing anything?
+Is there other things that shouldn't, like, shouldn't be grounded,
+but the model has produced a mistake there?
+Like, that's how we get a grip on that problem internally.
+Then there's, yeah, like, fluency.
+Is this model good or bad?
+In terms of, like, the structure of its answer,
+does it, like, feel like a high-quality response?
+And then perceived utility.
+A lot of these terms come from a really great paper
+that Nelson Liu did from Stanford a year and a half ago, I guess now.
+It's, like, a really nice piece of minimal things
+that you need to, like, study.
+Verifiability in generative search engines, I think it is.
+It's a good paper.
+Perceived utility is, like, a term that goes further back than that,
+but it's, like, does it feel like the information need was addressed,
+even if it was wrong?
+So, like, did we do the right thing ignoring the documents existing for a moment?
+And so you need to have both good fluency addressing the information need
+and the actual, like, citations tell you if you got it right or wrong,
+like, in terms of the faithfulness.
+All of those things are really hard to measure,
+and there aren't good data sets out there
+to just, like, benchmark against that do this anymore.
+We, the quality of our models has massively outpaced data sets
+that we use to evaluate RAC,
+and also our, like, consensus on what, how we should evaluate them.
+So our metrics are lagging pretty hard.
+We're still in a mode where a lot of time we're just using simple,
+one-hop, general knowledge questions augmented with Wikipedia,
+which is what we were using back in 2020, like, same data sets,
+but now our, like, you know, our scores are just outrageously high.
+And our metrics are not sophisticated at all, like, kind of in the general space.
+We're sort of saying, you know, is this answer a sub-span?
+Like, is this named entity, which is considered the correct answer to the question,
+appearing somewhere as an exact string in my model's generation?
+And that's very poor and, like, just doesn't work that well,
+and all the models are quite close in their performance,
+and the error in that metric is very, very large.
+And so, like, a lot of work that we've done internally is trying to benchmark better,
+and poll is a thing that we shared because, like, we were sufficiently kind of, like, grumpy
+about some of the things, like, that, you know, we thought we, oh, we can share this,
+this is a contribution, it's not specific to RAG, but it's kind of, like, where it grew out of.
+So we wanted to basically train, we wanted to build better metrics
+that allow us to judge correctness, for example.
+And we looked and saw what was out there,
+and there's a bunch of kind of quite popular open source tools
+that you can use to do RAG evaluation.
+They were not very good for what we were looking at,
+and so we thought, oh, we better develop something else.
+We looked at some of the core assumptions that people are making
+in using language models as evaluators out there in the world.
+And there is quite a core one, which is, like,
+a lot of the time people are trying to do very sensible things,
+and they're saying, if I had an Oracle LLM, like, it was perfect,
+what were the things that I would need it, like, how I would use it to do an evaluation?
+And then they assume that GPT-4 is an Oracle LLM,
+and you could just use it, or any powerful large language model
+is going to do that job well.
+But really what you're doing there is setting up an ML problem,
+and you're not doing the evaluation of that thing.
+So you have to evaluate your evaluator.
+This is the first thing.
+It's like, how well is my system working
+if I apply any kind of evaluation system
+that isn't just a very straightforward canonical metric
+from the literature, which is, you know, useful by consensus?
+If you're doing something new or you're using an LLM as an evaluator,
+you need to first understand the correlation
+to, like, you know, the actual gold standard evaluation,
+which is usually pretty close to asking three humans
+to do the problem, to do the evaluation.
+So, like, until you've got your, effectively,
+your inter-annotator agreement between your LLM judge,
+your, like, model-based evaluation, and your humans,
+and you compare that to the agreement rates
+between humans and other humans, you don't have an evaluation.
+You just have a thing that produces a number.
+So you have to do that.
+And then when you've done that,
+you can then start to compare different styles
+of doing an LLM evaluation
+because you can then evaluate your evaluator.
+And what we found doing that is that GPT-4,
+or, like, really, really powerful large language models,
+were not always the best at this, counterintuitively,
+and that, in general, LLMs being used as judges
+were worse than they could otherwise be.
+And that's the start of poll.
+The second part of poll was saying,
+okay, like, given we need to build an LLM evaluator,
+like, automatic evaluation is important,
+how can we do this better?
+Inspired by what we're seeing
+with these kind of self-preference things
+where, like, large language models
+are pretty good at detecting their own outputs
+or their model family's outputs,
+and they may prefer them,
+they may dis-prefer them,
+but they know that, like, they recognize themselves.
+And so you say, oh, what can we do to mitigate that?
+Well, we'll just use, like, three different models.
+And if you ensemble them,
+not only do you get the benefits of,
+generally, when you ensemble models together,
+you tend to get a better model,
+but you're also specifically mitigating the risk
+that Command-R might prefer Command-R,
+or, you know, Haiku might prefer Haiku,
+or GPT 3.5 might prefer 3.5,
+you, like, smooth that out.
+And then you just see empirically it works really well,
+and that ensemble of smaller models
+often outperforms GPT 4,
+or Opus or big models, you know.
+And cheaper, because small models,
+you can do it in parallel.
+Cheaper and faster, yeah.
+But you said some really interesting stuff in the paper.
+I mean, the first thing you said,
+just as you did now,
+is that, you know, GPT 4
+is spectacularly wrong some of the time,
+and you thought that might be
+because it's over-reasoning.
+You know, it's actually, like,
+it's being weighted too much
+by its base training.
+And you spoke about, you know,
+the annotator bias,
+the model bias,
+the style bias.
+So there's all of these problems,
+and it really does make sense
+to kind of, like, aggregate over them.
+But you also said,
+well, a really interesting thing
+to get it closer
+to what human evaluators might have done
+is look at some kind of correlation
+between something like LLM Cesarina,
+because you actually have examples there
+of human, you know, decisions,
+and you can kind of look
+at some kind of correlation between them.
+Yeah.
+You had this kappa metric, right?
+Yes.
+Cohen's kappa, it's a metric,
+people use it,
+but, like, it's hard to interpret.
+So it's more like one of those things,
+like, it's hard to know
+what a Cohen's kappa of 0.7 is,
+but you know that a Cohen's kappa
+of 0.75 is better than 0.7.
+But, like, for different problems,
+it doesn't necessarily compare,
+but it is a way of comparing.
+It's a statistically more vigorous
+and better way of comparing
+than, say, just binary agreement rate.
+It basically corrects for the background.
+We're just using this Cohen's kappa thing.
+It comes from annotator agreement,
+kind of canonical scores.
+If you have more label spaces
+or more annotators,
+there are other ones
+that you pick off the shelf.
+But Cohen's kappa is sort of the simplest one
+that people tend to use
+for inter-annotator agreement.
+And we kind of view this as, like,
+we have evaluators,
+we have, like, annotators,
+and sometimes there's annotators of humans,
+sometimes they're models.
+And so you just have to compare
+how different ones compare to each other.
+And so we're using that
+inter-annotator agreement metric there.
+But you're coming back to the GPT-4
+and the poor performance
+you sometimes see using it as an evaluator.
+It's very unpredictable
+about whether it will be great or bad,
+and you can't know from the first principles.
+You can maybe, like, do some kind of,
+you can think about it,
+maybe come up with some estimate.
+But until you get the humans
+to evaluate your problem at least a bit,
+you don't know whether GPT-4
+is going to be really good at this
+or really bad at it.
+And in the case of one of the evaluations
+we were doing,
+it was particularly weak,
+even compared to GPT-3.5
+with the same prompt
+and all the other models
+that we were looking at.
+And so what I did is, like,
+you know, one of the last things
+before we, like, threw it out into the world
+was sat down for, like, half a day
+and just did some, like, prompt engineering
+to see what it would take
+to get GPT-4
+to reach the same level of, like,
+performance on this task
+as GPT-3.5,
+which is kind of, like,
+a counterintuitive thing.
+It's like, you're almost always
+doing the other way around.
+And yeah, it turned out
+that, like, GPT-4
+is more sensitive
+to the prompt structure
+than other models were,
+the smaller models were.
+It also turns out
+that because the task involved
+those factuality things,
+like, these are questions
+that are annotated in 2019, I think,
+and the world's changed a fair bit.
+So they're saying, like,
+when does the next season
+of Insert TV Show Here
+come out?
+And the answer was, you know,
+based on some time.
+And the task we were doing
+is saying, here's a reference answer.
+Does this model-generated answer
+match the reference answer?
+The LLM's just to say yes or no.
+And what we think was going on
+was GPT-4 was knowing
+that the answer to the question
+was different now
+and being confused
+and upset about that.
+And it has, you know,
+all these conflicting
+kind of signals
+in its reward model training
+and its post-training
+that it's not really supposed to,
+like, it's supposed to be smart
+and, like, work well
+in other contexts maybe.
+And I think what it was doing
+is getting a bit confused
+between the consistency
+between the answer
+and its prior beliefs
+about the world
+and what it was being asked to do,
+which is say,
+is this wrong answer
+the same as this wrong answer
+according to, like,
+where the world is now?
+But at one point
+these were two correct answers
+and it was, like,
+had this, like,
+difficulty in its head.
+And so you could, like,
+cool that down a bit
+by saying,
+this is just a case
+of semantic matching.
+Don't use your facts
+about the outside world
+and don't overthink this.
+And that,
+and a combination of those
+kinds of, like,
+styles of things
+to, like, adjust
+the instruction
+you gave the model
+when it was doing
+this judgment thing,
+managed to get it up
+to about the level
+that GPT 3.5 was at
+with the sort of
+standard prompt.
+Yeah.
+It's a kind of interesting
+reverse scaling law
+in a case.
+Like, these things
+are kind of rare.
+This is one thing
+that Ethan Perez,
+that one of my collaborators,
+used to talk about a lot,
+like, when he moved
+to Anthropic
+where he is now.
+A couple of years ago,
+they held a kind of competition
+to find reverse scaling laws,
+things where smaller models
+were better than bigger ones.
+This feels like
+it's kind of like that
+where you want the model
+to do something quite simple,
+but it's too powerful
+and it's worried
+about more subtle behaviors
+and so that's kind of
+getting in the way of it
+just doing the
+straightforward, simple thing.
+Yeah.
+It's a little bit like
+the no free lunch theorem,
+but during the process
+of training,
+you're kind of running
+this whole sausage factory
+and presumably
+you are then using that
+to fine tune
+in the base model.
+So the base model
+has internalized
+all of these judgments.
+Is that fair?
+Yeah, kind of.
+Like, we collect
+a lot of demonstrations
+of what, like,
+good examples look like.
+That's sort of
+at the SFT step
+or thinking of it
+a bit more in an RL way.
+We have quite a lot
+of, like,
+gold-annotated trajectories,
+effectively.
+Right.
+So for imitation learning.
+Yeah.
+And then we also collect
+a bunch of preference pairs
+that might be collect,
+like, most of this
+is verified by humans.
+So, like,
+the cleanliness of your data
+is super important,
+both for supervised fine-tuning
+and for preference.
+So you can either defeat this
+with vast scale
+or you can defeat this
+with moderate scale
+of your data
+but with, like,
+very obsession
+over cleanliness.
+And so we go
+with the cleanliness way
+because of the budgets.
+Like, it's much more,
+it turns out to be
+much more efficient.
+If you look at, say,
+like, Lama 3,
+its preference data set,
+some millions, right,
+of preference pairs
+that they annotated.
+Number one is very,
+very expensive
+and number two,
+there will have been
+some sacrifice
+of the quality of that data
+and so there'll be
+some amount of it
+that's not the right way around
+or is subjective.
+We work very hard
+to make sure our data
+is all very, very good
+so we tend not to do
+too much synthetic training,
+i.e. what I'd mean there
+is, like,
+apply all these metrics
+that we've talked about,
+these evaluation metrics,
+and train the model
+to optimize them.
+That is stuff
+that we're interested in doing
+but we know is not
+the most efficient way
+of improving the model.
+That's the cherry
+and we're still, like,
+in the cake
+and at some point
+we might, you know,
+do some very, very
+last-minute polishing
+of the model
+with some, like,
+online RL
+using these metrics
+as, you know,
+like, optimization
+but usually we're
+carefully thinking
+about distributions
+annotating them
+and training those
+into the models
+and being very careful
+with how we train
+and ablate the model
+to be good
+with those sort of things.
+There's a lot of complexity
+to what we do
+but that complexity
+is more operational
+than technical
+at this point.
+What you're describing
+at the moment
+as I understand it
+is, you know,
+you've rolled out
+these processes
+and you've baked it
+into a model
+and there are
+more interesting variations
+of that
+where you actually
+either use the human
+in the loop
+as an agent
+or you have
+an auto-judge
+which is an agent
+and these things
+are post-hoc
+running after people.
+Yes, you can kind of,
+like, say,
+oh, like, you know,
+that wasn't good
+and you can, like,
+force it to go again
+or you can, yeah,
+you can kind of
+critique it online.
+I'm quite interested
+in human-AI collaboration.
+So, like,
+the next phase of this
+is going to be, like,
+you have your work assistant
+to do research work
+or, like, knowledge work
+and not unlike
+code co-pilots.
+Like, we don't know
+exactly the correct
+surface form
+that's going to take
+but we also know
+that we want the model
+to take demonstration,
+take instruction,
+improve fast,
+like, fast learning
+in the loop,
+this kind of thing.
+But even something
+as simple as, like,
+taking a model
+that works quite well
+like our React agents.
+React is just a way
+of doing, like,
+chain of thought
+over several hops.
+So that's how
+a lot of these
+models work right now
+is this very simple thing
+where you just say,
+like, I'm going to get
+a model to sequentially
+call tools
+and it's going to do that
+by first generating a plan
+then generate the tool
+API calls it wants to take
+and then you call
+the model again
+and it, like,
+looks at its observations
+that come out of the,
+out of its retrieval systems
+or other tools
+it's connected to
+and then decides
+whether it's time
+to answer directly
+or whether it's time
+to do another call
+to the API.
+So it kind of looks like,
+you know,
+in situ,
+generates a thought
+or like a plan
+calls some tools
+generates another thought
+calls some tools
+and then at some point
+it reaches this terminal state
+and answers you
+generates an answer.
+They work quite well
+but often you'll like
+ask it something
+and it will get it,
+it will get the premise
+a little bit wrong
+and it will start to go
+and you'll be like,
+oh no, no, stop.
+If you just edit
+its plan
+a little bit yourself
+you can very quickly
+steer it to do
+kind of what you want.
+So there's some
+quick fixes there
+but like generally,
+yeah,
+it's like how you collaborate
+with the research agent
+to like quickly get it
+to do what you want
+and how that process
+like it can learn
+like to work
+with you quickly.
+To me,
+that looks like something
+like a version
+of in-context learning
+where you like
+take the feedback online
+that it's giving,
+that you're giving it
+and you and your agent
+get some like,
+like quite fast synergy
+based on just working together.
+I look a bit
+at like different
+ways of giving
+effectively,
+yeah,
+like demonstrations
+to the model.
+Like a lot of people
+are excited about
+getting models
+to power browsers
+or power your desktop
+and that kind of thing.
+Like I'll just record
+me doing a workflow
+and get a model
+to do that.
+I don't think that's
+all of it.
+Like I think
+that's missing something.
+I'd make the analogy
+there between
+there's like any kind
+of automation.
+Like we could make
+an automated train
+or we could get
+a self-driving car
+and a self-driving car
+is a much more
+challenging thing.
+But if you don't have
+a road network yet,
+do you really need
+to solve the
+self-driving car problem
+or could you build
+a road network
+that's more effective,
+right?
+That you don't have
+to design around
+the human.
+Like does the LLM
+and the human
+who are collaborating
+to do knowledge together,
+do they have to share
+the same experiences
+of like what that looks like?
+Like are we,
+how many kind of concessions
+are we making
+to like the human UI
+and desktop?
+What kind of way
+should an LLM experience
+the things it needs
+to interact with
+to like make the human
+more efficient?
+Like often that,
+that could just be APIs.
+Like it can directly
+interact with an API.
+It can interact
+with the browser
+but it may be slower,
+worse, more error prone.
+And so I'm kind of like
+very interested in this
+human computer interaction
+problem right now
+and skeptical
+that just getting LLMs
+to power browsers
+is the,
+or power the desktop
+is,
+is the right way
+to do things.
+It just feels very slow
+and inefficient.
+It's general,
+but like not quite
+there for me.
+For me,
+like understanding
+is about reconstructing
+the intention
+of another agent.
+You know,
+so the reason why
+we have this divergence
+in multi-step tool use
+is because it didn't
+really understand
+what you wanted
+and it very quickly,
+especially if you have
+like,
+you know,
+by the time you're
+on the third step,
+it's going in a
+completely different direction
+and then you need
+to have a really cool UI
+where you can say,
+no,
+wait a minute,
+that's not what
+I wanted you to do.
+Yeah.
+Yeah.
+We make assumptions
+that it's an agent
+that like,
+yeah,
+like you go and task
+to do things,
+but it is,
+it is,
+it's a bit more collaborative
+than that,
+I think.
+It's,
+it's going to be interesting
+to like see how,
+how,
+how we work through these things.
+Like that's a lot
+of what our team
+are gearing up to do
+is a lot of this
+thinking through
+what those,
+those collaborative systems
+should look like
+for,
+for kind of productivity
+and not getting the LLM
+and get in the way
+too much,
+but still help you
+and automate things
+that you find slow
+or you want to do quickly.
+The same thing happens
+with humans
+to some degree,
+like,
+you know,
+I'm a manager,
+and I've got like
+a really great team,
+but it's often like,
+maybe I'll communicate
+something I want
+someone in our team to do
+and then what like,
+like come together next week
+and they've done
+something totally different
+and that's on me.
+I thought I explained
+myself pretty carefully.
+So like,
+even like two autonomous agents
+who are pretty powerful,
+like me and someone
+in my team,
+that transfer of,
+yeah,
+like what you were saying
+in terms of like
+getting my intention
+into them
+and getting them to
+operate on it
+is like fraught
+with difficulty
+even for like humans
+to communicate
+that kind of thing.
+So yeah.
+I had early access
+to GPT-3
+and it was still
+at the point where,
+I mean,
+I was kind of saying,
+I think this is a bit
+of a parlor trick.
+It's not really,
+there was a famous
+database example
+from Matt Brockman
+and, you know,
+he said,
+oh,
+John is in the database.
+I'm removing John
+from the database.
+You know,
+does the database
+have John in it?
+And it appeared
+to be working
+and I was like,
+come on guys,
+this is bullshit.
+But the amazing thing
+is that there was
+a community of people
+who, you know,
+even though it was very
+just random sometimes,
+they could see something
+in it.
+They could see something
+interesting.
+The vision there
+is actually quite impressive.
+I saw it as a target
+for fine tuning
+because that's a paradigm
+that you would do,
+say,
+but,
+and even models before that,
+you would say like,
+all right,
+the paradigm is going
+to look something like this.
+Like we get great representations
+and then we fine tune it
+to do something.
+But the fact that you could
+do this generation
+without anything,
+you know,
+without actually changing
+the parameters
+and the fact that you could
+like prompt it
+with this in-context
+learning stuff
+and I think like
+one of the great things
+that OpenAI did
+in GPT-2 and GPT-3
+was talk about this
+like unsupervised intelligence
+that was coming out.
+Although the ability
+to do tasks
+in a different way,
+the orthodoxy
+would have been
+we trained GPT-2
+and then we fine tuned it
+to do a bunch of stuff
+and it's great.
+That's what they did
+in GPT-1.
+But they were like,
+now let's move it along.
+We're just going to like
+give it a question
+as a textual input
+and see if it can
+generate an answer
+or the TLDR stuff
+that they were like,
+we're going to try
+and like fool it
+into summarizing something
+based on some common
+patterns from pre-training.
+And then in GPT-3
+with the in-context
+learning stuff,
+I was like,
+well,
+if it's a language model
+that tries to predict
+the next most likely thing,
+if you give it
+a very predictable
+like pattern of sequences,
+can you then like
+train it on the fly
+with like it reading
+kind of on the fly
+to do things?
+They were like,
+you know,
+very interesting
+like novel takes
+on what could have
+otherwise been a case
+of like,
+we just made this
+really powerful model.
+You can use
+the same techniques
+that everyone
+has been using
+to achieve great results.
+I kind of think
+it's great
+that they went
+the other way
+and said,
+I just move this on
+and this is kind of
+like what is enabled.
+I've not seen
+too much of that
+from the big labs
+since.
+Usually it's a case
+of like incremental
+improvement phase
+where the increments
+are quite fast
+and like the models
+are improving a lot,
+but the paradigm
+hasn't changed
+for a little while.
+Yes, yes.
+And I think we'll get
+on to how that
+might change
+but just to kind
+of recap,
+so we have
+the base training
+and then there's
+fine tuning
+and then there's
+this whole domain
+of preference steering
+and things like
+RLHF
+and that's kind
+of saying,
+you know,
+I want you to talk
+like a conversational
+bot
+and I want you
+to be precise
+and I want you
+to adopt this tone
+of language
+so we're kind
+of shaping
+the distribution
+but then
+the in-context
+learning is
+the interesting thing
+so you can do
+that
+or you can say
+you're a chatbot,
+you are just
+like Donald Trump,
+you behave
+in this way
+and you had
+this genius idea
+which is called
+retrieval augmented
+generation
+which is based
+on this idea
+of in-context
+learning
+which is
+quite funny
+because at the time
+we didn't think
+of it quite in that way.
+we came out
+of a reading
+comprehension
+and like question
+answering space
+so some of the things
+that I used to do
+before my PhD
+the company I was
+working at
+Bloomsbury AI
+that became the seed
+for the fair
+London lab
+was working on
+open domain
+question answering
+and so there
+there's a very long
+tradition of
+having a corpus
+of text
+and needing to
+like answer questions
+based on it
+and a very common
+way that you do this
+is via like
+retrieving
+like the most relevant
+pieces of information
+and doing some
+transformation on it
+and so for the
+longest time
+there were these
+like tasks
+that you'd study
+in question answering
+NLP
+called reading
+like reading
+comprehension
+or extractive
+question answering
+span based
+question answering
+where you would
+train a neural
+model to take
+a paragraph
+of text
+and you would
+extract points
+to the beginning
+of an answer
+within that text
+and the end
+of an answer
+within that text
+so and that's
+kind of closed
+world be one
+paragraph
+one question
+and you'd
+extract like
+an annotated
+answer
+and you'd
+train a supervised
+model to do
+that thing
+where we were
+coming from
+was that
+kind of world
+and if you
+wanted that
+to be more
+useful than
+just answering
+a question
+over a short
+document or
+paragraph
+you would
+hook up a
+retrieval system
+to that
+and so you'd
+have a bunch
+of paragraphs
+you'd have a
+question you
+wanted answered
+you'd retrieve
+from it
+get a number
+of paragraphs
+and from those
+paragraphs
+you'd use your
+neural model
+usually to extract
+these specific
+spans
+and it would
+literally say
+point to the
+start
+point to the
+end
+that's your
+answer there
+you'd produce
+these like
+collections
+and then usually
+have some
+re-ranker or
+something like
+that's how a lot
+of like question
+answering systems
+were working
+there was some
+interest in how
+you like train
+these models
+end-to-end
+in a way
+at the time
+where you say
+okay I've got
+these systems
+I've got this
+retrieval system
+and I've got this
+like question
+answerer
+and I'm going
+to train them
+end-to-end
+with some
+like fun
+latent variable
+like learning
+models
+quite straightforward
+from a kind
+of generative
+story perspective
+but like you
+know quite
+difficult to get
+them to work
+in practice
+and there was
+a lot of this
+kind of stuff
+going on at
+the time
+then there
+were the
+introduction
+of these
+models that
+could generate
+text very
+well
+yes
+from one
+perspective
+one way of
+looking at
+what we were
+doing was
+saying like
+okay let's
+instead of
+doing this
+span extraction
+thing
+wouldn't it
+be nice
+if you could
+just have a
+model that
+instead of
+extracting
+an answer
+just generated
+the answer
+that you
+wanted
+straight
+away
+and so we
+didn't really
+think of it
+at the time
+from that
+perspective
+via like
+from the
+in-context
+learning
+way of doing
+things
+but like it
+turns out
+there's kind
+of equivalent
+that said
+there is a
+whole different
+line of work
+that we were
+doing at the
+time
+based around
+like knowledge
+in language
+models
+and so
+these names
+are kind of
+hilarious now
+where we had
+a probe
+or a way
+of like
+measuring
+just relational
+knowledge
+that like
+language models
+like BERT
+or simple
+GPTs had
+it was called
+the llama
+probe
+which is
+kind of
+hilarious
+because it
+was you
+know
+years before
+llama
+and so
+there what
+we were
+doing
+was saying
+okay like
+I'm just
+going to
+give a
+language model
+like the
+president of
+the USA
+is blank
+and see
+what like
+it chose
+to put
+in there
+that's
+kind of
+like
+zero shot
+prompting
+and then
+we had
+a different
+work
+called
+alpaca
+which is
+again
+kind of
+funny
+because
+that was
+before
+any of
+the famous
+alpaca
+now
+and what
+we were
+doing
+there
+was
+saying
+okay
+does
+the
+model
+get
+better
+if
+you
+give
+it
+a
+paragraph
+beforehand
+and that's
+that's
+this like
+in context
+learning idea
+and we saw
+that on that
+very simple
+llama probe
+it got way
+better
+and so we
+had these
+two separate
+ideas
+saying like
+what if
+we wanted
+to have
+a generative
+open domain
+question
+answering
+model
+and we
+wanted to
+like extend
+these
+alpaca
+ideas
+that's
+the kind
+of two
+bits
+that we
+put
+together
+into this
+first
+retrieval
+augmented
+generation
+paper
+the reason
+I kind
+of
+explain it
+from those
+two angles
+is because
+there were
+two kind
+of groups
+of people
+who came
+together
+to do
+this stuff
+like I
+was working
+on the
+alpaca
+stuff
+I was also
+working with
+Dow and
+Ethan
+so Ethan's
+the other
+first author
+on the
+rag paper
+retrieval
+augmented
+generation
+and Dow
+was the
+last author
+along with
+Sebastian
+my supervisor
+and so we
+put these
+two groups
+of people
+together
+the people
+who were
+like
+what if
+we did
+this open
+domain
+question
+answering
+system
+but
+generative
+and we
+took the
+in-context
+learning
+I guess
+as you
+say
+like
+paragraph
+reader
+LLM
+improver
+kind of
+thing
+and we
+were like
+okay let's
+just design
+this thing
+that you
+hook it up
+to an
+unstructured
+source
+you give
+it a
+prompt
+it will
+unsupervisedly
+learn what
+relevant
+information is
+from your
+information
+and then
+it will
+generate you
+a freeform
+answer
+using this
+kind of
+in-context
+learning
+thing
+but we're
+going to
+fine tune
+the system
+end to
+end
+and we're
+going to
+try and
+target
+like at
+the time
+with the
+rag paper
+it was quite
+an empirical
+focus
+like we
+wanted
+to get
+good results
+on benchmarks
+and that was
+our kind
+of goal
+with it
+so
+introduced
+this framework
+this like
+way of
+looking at
+things
+based on
+these
+very new
+generative
+models
+like generative
+language
+generators
+and that's
+yeah that's
+where it
+kind of came
+from so
+it's kind
+of just
+like a
+zeitgeisty
+thing
+where you
+just had
+these two
+groups
+put us
+together
+and did
+this
+thing
+and for
+a long
+time
+everyone's
+like hey
+that's
+quite
+cool
+but didn't
+really
+like it
+was just
+a paper
+in the
+space
+and then
+I guess
+about two
+years ago
+people started
+to use
+this acronym
+in conjunction
+with like
+large just
+large language
+models and
+hooking them
+up to
+retrieval
+systems in
+a more
+general sense
+than what
+we meant
+when we
+first like
+wrote the
+paper
+so like
+the retrieval
+augmented
+generation
+paper is
+a I guess
+a way
+of doing
+rag but
+it's quite
+different to
+what a lot
+of people
+do
+these days
+and it's
+become this
+term or
+this way
+of referring
+to a
+very general
+set of
+solutions to
+the problem
+of knowledge
+and language
+models which
+is kind of
+like funny
+from my
+perspective
+because like
+really the
+first paper
+was just a
+paper in
+a line
+from like
+lots of
+different
+people and
+there's lots
+of like
+similar systems
+almost the
+same kind
+of thing
+maybe without
+this generative
+aspect because
+really those
+systems only
+appeared about
+two months
+before we
+put the
+paper out
+but yeah
+lots of
+people would
+be like oh
+he didn't
+invent
+and I
+don't I
+don't claim
+to people
+tell me I
+do a lot
+but yeah it's
+just like a
+zeitgeisty thing
+you know lots
+of lots of
+people having the
+same sorts of
+ideas at the
+same sorts of
+time
+and I think we
+just gave it
+a three-letter
+acronym that
+people can
+ascribe you know
+easily refer to
+that like group
+of ideas with
+amazing so I
+guess we should
+split it into
+the architecture
+bit and maybe
+the UX bit
+you're describing
+as you said
+a collection
+of possible
+architectures
+and a
+significant
+component of
+it is
+information
+retrieval
+and I
+guess the
+complexity
+here is
+you know
+a person
+implementing
+RAG they
+might be in
+an enterprise
+and they
+might have
+knowledge
+stores
+semantic
+indexes
+blobs
+sharepoint
+blah blah
+blah so
+they're kind
+of they're
+hooking in
+all of this
+stuff and
+they need to
+have relevant
+scores and
+so on and
+so forth so
+just the
+information
+retrieval bit
+is already
+really difficult
+very tough
+yeah and
+then they do
+the AG
+bit yeah
+and the two
+things are
+kind of from
+a UX
+perspective
+they're
+compounded
+together so
+now I just
+see I see a
+bunch of
+augmented
+generation
+yeah what
+could possibly
+go wrong
+yeah exactly
+I mean
+there's there's
+there's so much
+there and I
+like the way
+that you broke
+that into the
+two parts so
+now if I
+describe what
+my team
+does I
+would say
+there's two
+broad parts
+there's tool
+use which
+grew out of
+like using
+an information
+retrieval tool
+so we've kind
+of abstracted
+a little bit
+away so you
+can do
+more sophisticated
+types of
+retrieval or
+just cool things
+that aren't even
+retrievers anymore
+but kind of
+like producers
+of information
+you might want
+to inject
+or like get
+and so there's
+the tool use
+part and then
+there's the
+what we call
+grounded
+generation
+but it's yeah
+like you can
+think of
+augmented
+generation as
+being a
+similar thing
+but we call
+it grounded
+generation
+because of
+the way
+that we
+effectively
+annotate
+and think
+about it
+internally
+using these
+this concept
+of citations
+which maybe
+we can talk
+about in a
+bit
+but there's
+the tool use
+part that's
+kind of hard
+there's lots
+of things
+that can go
+wrong
+even if you
+abstract down
+to the
+very simple
+things like
+okay my
+tools are
+only retrieval
+systems and
+they only take
+natural language
+queries
+still kind
+of hard
+to figure
+out
+given an input
+does it need
+retrieval
+does it not
+need retrieval
+if it does
+what is a good
+search query
+am I using a
+keyword based
+retrieval system
+am I using a
+like dense retrieval
+system
+they all prefer
+different types
+of surface
+form of queries
+is this something
+where I need
+several queries
+often there's
+things we have
+to do these
+parallel
+retrievals to
+like get the
+information to
+fully satisfy
+your information
+need in the
+tool use
+literature this
+is called
+parallel function
+calling which
+we kind of
+accidentally did
+without thinking
+about it too
+hard but it's
+like a bit of
+a trendy thing
+now so there's
+this tool use
+stuff and then
+you have this
+very difficult
+problem of
+saying okay I've
+called my
+retrieval tools and
+I've got all
+these documents
+out and now I
+have to like squash
+them into my
+second call which
+is where a lot
+of things get
+even harder and
+the reason we
+kind of think
+about these things
+separately is
+because that's
+a sort of
+difficult challenge
+in and of
+itself and
+sometimes you
+want to do
+this grounded
+generation this
+augmented
+generation thing
+without the
+tools you can
+imagine like
+summarization is
+an example of
+this where you
+say like here's
+my big document
+summarize this
+and you have to
+inject your
+document into
+the LLM in a
+very very similar
+way to you do
+with like reading
+retrieval results
+and so like this
+is a sort of
+broad class of
+problem I think
+of as like you've
+got some things to
+read and you've
+got a task that
+you're trying to
+do and how you
+generate a good
+response there
+super hard there's
+a lot of different
+factors to think
+about you have to
+think about
+faithfulness you
+have to think
+about say I have
+a bunch of
+documents the
+model has this
+inherent tension
+between its own
+prior belief about
+the world which
+usually comes from
+either pre-training
+or post-training
+and the documents
+that it's reading
+on the fly in
+context and it
+might there may
+be in tension
+they may be in
+conflict so
+temporal stuff is
+a key like a
+very common way
+this comes up
+where that
+president of the
+United States
+thing is the
+usual like easy
+way people think
+about this like
+that changes over
+time and the
+model may think
+that it's Donald
+Trump but it's
+actually Joe Biden
+now and so if I
+give the model a
+document that says
+the president of the
+United States is
+Joe Biden and then
+I ask the model
+who's the president
+it has this
+inherent tension
+and so the
+model has to be
+like set up to
+do one or the
+other there's
+interesting like
+safety or
+philosophical
+questions that
+come in there as
+well like let's
+say I'm internet
+augmenting and I'm
+asking about
+elections and
+that's a key
+place where you
+might get bad
+actors who might
+make easy to
+retrieve information
+that will confuse
+or like break
+some of these
+systems and it
+might happen by
+accident as well
+so like a lot
+of the things
+where there's
+been in the
+news issues
+with say Gemini
+producing some
+quite strange
+answers that's
+often happening
+because of a
+misinterpretation
+plus faithfulness
+kind of problem
+it's like the
+model is saying
+these quite
+ridiculous things
+that without the
+retrieval augmentation
+it probably wouldn't
+be saying but it's
+being kind of like
+injected in some
+ways or it's
+like other things
+are going on
+where yeah you
+get these very
+strange results that
+aren't great coming
+out of it and
+they're kind of
+illustrating the
+challenge of this
+augmented generation
+step so if there's
+faithfulness problem
+you also have
+additional issues
+that are kind of
+like less obvious
+when it comes to
+augmented generation
+where you want your
+model to stay
+producing a nice
+pleasing response
+for usually in a
+chatbot situation
+and so you want it
+to say like a nice
+fluent response
+you're also
+counterposing that
+against this
+faithfulness thing
+and so sometimes
+it's not always a
+zero-sum game
+but these things can
+be in slight tension
+that it's often
+difficult to balance
+faithfully representing
+the information in
+your retrieved
+information versus
+writing a nice
+high utility response
+to a person
+one of the tricky
+empirical things to
+get right
+is where you need
+to decide if a
+question is
+answerable or not
+so you've got the
+your retrieved
+information
+does it answer the
+question or like the
+the information need
+of the person using
+your your retrieval
+augmented generation
+system
+that's pretty tricky
+because the way
+things that come out
+of retrieval
+systems might be
+is sort of like
+partially extracted
+from their context
+that usually just
+chunks of information
+from pages
+so that's a very
+tricky like decision
+boundary to make as
+well there's practical
+applications there
+about also like is
+it worse for a
+model to sometimes
+respond where there
+isn't information in
+its retrieved in its
+retrieval stuff
+counterposed with
+abstaining from
+answering all that
+like like a lot
+if there's going to
+be errors which do
+you prefer it's
+almost like a
+precision recall style
+thing like you can't
+always have 100%
+accuracy here so
+would you prefer a
+model that refuses
+to answer more
+sometimes be quite
+frustrating because of
+that or would you
+prefer a model that
+runs the risk of
+as it were
+hallucinating a
+response and so
+these are really
+really tricky things
+to like drill down
+and get right
+especially when like
+you have to do
+already so much work
+to get to a point
+where the system is
+at the point where
+it even works at
+all like prompt
+engineering to get
+augmented generation
+working is really
+really hard and so
+what we do at
+Cohere is try and
+build like actual
+like prompt
+templates that the
+model has like very
+very concrete like
+awareness of in the
+way that we post
+train and so it
+there is a correct
+way I guess to do
+the prompt
+engineering there and
+we'll template that
+for you using the
+API and so you can
+avoid a lot of the
+startup cost associated
+with building one of
+these things and so
+then the model kind
+of is familiar with
+the concept of a
+retrieved thing it
+knows what that is it
+knows how to deal
+with it it knows that
+a bunch of retrieval
+results in a row if I
+permute the order of
+those it should have
+no effect on the
+model's answers right
+like just because I
+take my top 10
+retrieval results and
+shuffle the order
+shouldn't change the
+answer quality but for
+every single LLM
+other than ours it
+does oh interesting
+and we take steps to
+avoid that basically
+but we can only do
+that because we
+control the prompt
+templates and so like
+effectively our APIs have
+a documents parameter
+or a tool output
+parameter that we can
+use to ensure the
+model doesn't violate
+some of these
+principles in training
+at least when I do
+evaluations in other
+people's models that's
+also hard because you
+don't necessarily know
+the optimal prompt
+template to render
+for you know the best
+result you can get
+from GPT 4.0 for
+example like I find it
+very hard to evaluate
+RAG systems and like
+know the true upper
+bound of like how
+good someone's
+models can be I
+know it for my
+model because we put
+a lot of effort in but
+when I try and do like
+a true faithful
+comparison which is
+something I really
+care about it gets
+very tricky there's
+also other like
+interesting things that
+happen like what
+should you do if two
+retrieval pieces of
+retrieved information
+are in contradiction
+with each other what
+should you do if you
+have like ranges of
+information so let's
+say I ask a
+numerical question and
+I find a bunch of
+different answers for
+what that numerical
+answer is these are
+all quite pragmatic
+things to work through
+but they're things you
+have to like decide
+about how your
+language model should
+work and they're
+interesting to kind of
+work through I mean
+the picture I'm getting
+is that this is
+insanely complex so
+that there's this
+entire sausage factory
+yeah you've done some
+stuff and obviously
+the customer needs to
+configure this quite a
+lot yeah and one
+immediate observation is
+information retrieval is
+already it's an
+interesting example in
+software because
+normally when Microsoft
+or Google or whatever
+when they build
+software they're solving
+the hard problem and
+they give it to you via
+an interface and you do
+the easy problem
+whereas with
+information retrieval if
+you're building an
+enterprise search system
+it's actually harder than
+building Google
+yeah what I mean by that
+and I'm glad you agree
+what I mean by that is
+Google has like all of
+this statistically
+significant information
+they've got page rank
+you know there's this
+like hypergraph you
+know they've got all of
+these head queries
+they've got millions of
+people clicking on you
+know you search for this
+millions of people click
+on it they've got the
+total number of clicks
+they've got really
+powerful information in
+the enterprise you're
+first of all you're you
+know you've got
+multimodal data and
+you've only got really
+content metadata you
+can't learn to rank you
+can't learn relevancy from
+the users really and even
+harder to do so with rag on
+the top of it so and then
+you've got all of this
+stuff that you're that
+you're just talking about
+so I need to evaluate my
+system I need to fine
+tune it and like you
+know it's so nebulous
+it's very tough I think
+it's also like yeah it's
+one of those things where
+even if you try to
+evaluate it you don't get
+a true sense of like what
+the what the problems that
+arise in application might
+be you have to like build
+the thing and put it out
+there and get like alpha
+feedback from people
+trying it out to really
+discover where the
+problems are for your
+database or your kind of
+stuff we can't easily
+know beforehand so like
+we can try and like make
+the model as good as it
+can be I don't work these
+days on the retrieval
+system itself there's a
+different team Niels runs
+who who build cohes
+embedding and re-ranking
+models that are very
+strong but like again
+they they're they're based
+on semantic content rather
+than yeah any kind of
+like statistical usage or
+things like that it can do
+things with metadata as
+well but again it's all
+based on like getting the
+model to kind of not
+reason you know as we
+talked about but like try
+and try and rank things
+based on content like the
+the content of the
+information rather than
+like how often it gets
+used could you talk to
+that a little bit because
+could you use the
+terminology you know dense
+versus sparse retrieval and
+I think what you mean by
+but by sparse you I think
+you basically mean an
+inverted index like an
+old usually yeah it comes
+back to word to beck in
+way we're going back to
+this this the same like
+core concepts really of
+what you're going to do
+you're going to do is
+say like okay we can
+represent a document by
+the words that are in it
+and that's usually how
+the stuff works so that
+like what what's there in
+the document we can
+either do that by
+recording sparse features
+like the words or we can
+do that by embedding the
+document in some way or
+storing a representation
+that's like outcomes out
+of a neural model or
+some kind of like low
+dimensional representation of
+that those are the two
+kind of broad classes and
+then if you do it with a
+sparse representation that
+traditionally things like
+TF IDF BM25 these kind of
+things are basically based
+on you just say I'm going
+to break the document up
+into words and I'm going
+to build very long very
+sparse vectors that have
+a vocabulary size and I'm
+just going to count all
+the terms or words that
+appear in my document
+that's going to be my
+representation and then I'm
+going to build an index of
+all the documents in there
+and you build these
+efficient like lookup
+systems like you said like
+an inverted index that makes
+it quick and easy for me to
+to take a query which is
+usually some words and do
+the lookup to quickly find
+which documents have those
+words in them.
+There's a lot of finery that
+goes into the specifics of
+how you like modulate the
+weights of the vector the
+sparse vector.
+So is it just like binary this
+word is in here or is it
+not?
+Usually you moderate it by
+like how much more that
+word appears in the
+document than in the
+background and there's
+decades of information
+retrieval research that
+went into that.
+That was the sort of
+primary way that that
+information retrieval
+worked before representation
+models got good enough to
+build these dense vector
+models that usually either
+represent a chunk as a
+single vector or now
+there's multi vector
+techniques that kind of
+do it slightly differently.
+They're effectively like
+just different ways of
+representing the
+information in chunks
+either with the sparse
+representation of individual
+features or these kind of
+yeah semantic spaces that
+you build and retrieve over
+in a kind of different
+way.
+So with the inverted index
+you know the good thing
+about it is you can
+essentially use a hash table
+so you've got a constant
+lookup time and with the
+dense version because it's
+in some kind of a vector
+store you've got like a log
+lookup time.
+But what I want to say
+though is you know the good
+thing about the sparse
+version is specificity and
+the bad thing about the
+sparse version is specific.
+You know and like you've
+got let's say a high
+entropy word or something
+you know so like a low
+frequency word that's
+great you know boom I've
+got the thing you know
+but it doesn't always work
+that way.
+So what how do you
+contrast the two?
+Yeah if you ask a
+sufficiently generic or
+like surface form query
+you often don't get what
+you want with a sparse
+index usually.
+Also in the way that we've
+described the sparse
+indices so far it's hard
+harder to learn learn from
+data.
+So sometimes we have data
+that allows us to know
+that like certain queries
+pair with certain documents
+or we may be able to add
+those as like priors.
+And so initially like a lot
+of the things around like
+the dense methods were in
+favor because you could
+train a model to rank a
+certain document very closely
+like an embedded query or
+question more easily or with
+more kind of power and like
+more connectivist kind of
+like thinking than you could
+with the sparse ways of
+doing things.
+They were a bit more powerful
+from that perspective.
+But yeah like there are
+issues with the dense model
+as well as like you don't
+get that specificity.
+So like it is sometimes
+harder with especially a
+low dimensional dense vector
+retriever if you do put some
+like very specialized terms
+in it it might not have the
+like reposition of power to
+like do that kind of very
+precise addressing.
+So usually in practice a lot
+of the systems that are
+most performant are a hybrid.
+So you'll do a dense
+retrieval and you'll do a
+sparse retrieval and you'll
+combine them and throw
+them through.
+What we do in a lot of my
+work like in our team's work
+now is assume a black box
+retrieval system.
+There's so much for us to
+focus on.
+We will assume a black box
+retriever just try and deal
+with what comes out.
+And that might look something
+like there's a there's a
+concept called query
+reformulation where like
+we're trying to train these
+rag models which to some
+degree now now we can think
+of them as research agents
+that kind of like go over
+several hops but they'll
+like try it try a query.
+See if they find what they
+what they like.
+They might not find it.
+They can reformulate.
+They can say okay that
+query didn't work.
+I'm going to try a different
+type of query that might be
+similar but like you know
+I've added some words or
+I've changed the words and
+try again.
+So you can repeat this like
+reformulation process.
+Oh wow.
+Where you like.
+It's almost like a
+gential.
+Yeah.
+Information retrieval.
+Yeah.
+So you know there's actually
+a kind of iterative loop there.
+Yeah.
+Because I was going to say as
+well that another thing you
+can do is kind of query
+expansion.
+Yeah.
+it's even more relevant for
+sparse indices but it just
+goes to show there's this
+huge sausage factory.
+Yeah.
+And it could it could be an
+agential thing.
+And before we move off
+retrieval I think one of the
+biggest concerns I've heard
+from people is the
+sensitivity problem.
+So the recall problem which
+is that there might be
+missing information in the
+results.
+So the language model will
+kind of because there's a
+sicker fancy problem that
+the language model will say
+whatever you tell it to
+say.
+We'll fill in the blanks.
+Yeah.
+sort of confidently say
+something is the right
+answer when it's missing
+the underlying information.
+Yes.
+That's a great point.
+So that kind of we can
+transition to talk about
+grounding and attribution
+and citation.
+They're all like different
+words for sort of the same
+thing in our view that how
+we train our systems and
+how we annotate for our
+data that like helps us
+train our systems is that
+we when we're doing this
+augmented generation step
+the second step the model
+generates its answer.
+And we ensure that all
+of our annotation every
+claim that is made by the
+model like something that
+can be recognized as like a
+piece of like a factual
+claim or a piece of
+knowledge.
+We ensure that it is
+annotated with a link back
+to the retrieved piece of
+information where it comes
+from or the several pieces
+over very very fastidious
+about this.
+Hmm.
+And we indicate to
+annotators that like unless
+there's specific instructions
+for the task that's going
+on every single factual claim
+has to be attributed back.
+And that is the way in which
+we've kind of over time
+really built out our
+model's abilities to be
+very faithful and to avoid
+that sycophancy problem
+is like the model has a
+prior or bias effectively
+trained into it that it
+really doesn't like to
+generate things it can't
+then attribute.
+The way this works actually
+in practice is that we
+generate the text with
+these markers in it.
+so like these little citation
+markers that appear like
+span indicators around facts
+and number one like as a user
+you get the immediate like
+visual feedback I guess of
+like if a claim is being
+made by the model you see
+oh there's no like the model
+hasn't generated any citation
+spans or attribution spans
+around here.
+That's much less likely to be
+something the model could
+support with evidence and
+therefore it's likely to be
+a hallucination.
+Even if there are like you
+know those those markers
+there it's less a sense of
+like hey this is like true
+this is like something I can
+trust it's more I have a
+pointer that now lets me
+verify it easily so I can
+look and see oh like here's
+this piece of information I
+want to believe the model has
+told me like responsible
+operation or like any piece
+of technology or machinery is
+like it's on you to take that
+information that you want to
+believe and sufficiently
+convince yourself that that
+is something that you should
+then go and make decisions
+about.
+We don't just say anyone can
+drive a car you have to
+train yourself to drive a car
+again with like online stuff
+is like if you see a claim
+on an online like social
+media platform you shouldn't
+just take it at face value
+the same thing would like an
+NLM producing an answer from
+a retrieval system but what
+we should do is design the
+way the retrieval retrieval
+retrieval augmented system
+works to make it as simple
+and straightforward to go and
+verify that information and
+trace the information trace
+back to like where it comes
+from and that's what these
+spans are about so you say the
+spans are there like it's
+saying this information comes
+from document one and document
+two you do then if you want to
+make a decision based on that
+you should really go and look
+at document one and document
+two to make sure but we at
+least tell you it's from
+document one and document
+two whereas if a model is just
+generating this answer
+directly it's much much harder
+because you may have 30 50
+100 documents to look through
+like pages and pages of stuff
+yeah and that becomes more of
+a pressing concern with long
+context so as we get models
+that can process more and more
+and more tokens at one time
+this like grounding thing of
+saying like I got this info
+from here becomes very
+important otherwise it's just
+kind of reverts all the way
+back to just being an
+un-augmented model because
+there's just so much stuff
+there that it's effectively you
+know not too different in
+terms of just like asking the
+model to do something based
+on its sort of parametric
+so two pieces on that you said
+first of all your annotators
+your annotators so the
+interesting thing is that the
+command R model is actually
+specifically trained to do rag
+and you've got a whole bunch
+of annotators and you've said
+this is what good looks like
+and that's why it's better for
+rag than other models
+there's specific large amounts
+of annotation in our post
+training data and our
+supervised fine-tuning step
+and our preference steps to
+make it good at this it's not
+just the sense of it like it
+being good it's also like the
+sense of these built-in citation
+mechanisms there are specific
+prompts and they're documented
+on hugging hugging face there's
+links to them effectively like
+that show you what those
+prompts look like that if you
+use those specific types of
+prompt the model will kind of
+switch into a rag mode and
+will reduce its sycophancy by
+by just prior and bias and it
+will switch to something much
+drier much more faithful much
+less creative but much more
+appropriate for a system that's
+always going to be augmented
+by retrieved information or
+information that's augmented
+from tool output same thing
+with tool use like there are
+special prompts for tool use
+that are documented on on the
+hugging face model card for
+command R and R plus that if
+you use you'll get this
+intentional behavior yeah yeah
+could you could you comment on
+the UI in general because I
+mean maybe like we could look at
+Gemini or perplexity as an
+illustrative example of rag so
+you know you do a search you
+have a load of results coming
+back I mean in the olden days I
+would go to Google if I'm
+planning a holiday and I would
+kind of you know have a whole
+bunch of stuff in my mind I'd
+have different tabs open yeah
+and now that entire kind of
+cognitive tree has been
+compressed into a load of text
+results and on Gemini is quite
+interesting as well so when it
+generates code you can actually
+hover over the lines of code
+and it will tell you oh this
+came from github and you can
+go and look at it yeah and
+that kind of makes it a lot
+more transparent but part of
+me is also thinking you know
+like in in the 1980s we used
+to have to use command lines to
+talk you know we used to have
+to use text to talk to
+computers and there was this UI
+revolution and now it's far
+more structured and like do
+you think is it a good thing
+to go back to a textual
+interface I think in general
+there's like very interesting
+questions to ask about like
+human computer interaction and
+what like language models and
+these these kind of systems
+mean for that we do two things
+we think about how we can make
+our rag models work generally
+well and how we can make them
+work very well in specific user
+interfaces or in specific UX
+given that we're now making
+these research agents agents
+need an environment to operate
+in and not necessarily a space
+of potential environments and so
+it's quite hard to make a really
+good agent unless you say here
+is the UI that it operates in
+and these are the rules that
+should follow and so like we
+we do think quite carefully
+about where is the destination
+for our language model acting
+as an agent being and like how
+can we like optimize for that
+like fully so like say like we
+have at Cohere the ability to
+like control the entire training
+stack all the way from pre
+training to the final thing
+we can take advantage of that
+to some degree to make something
+very very performant in a
+specific user interface or UI
+the specifics of what that UI
+should look like I think is an
+is an open question especially
+when it comes to like getting
+things that are useful for
+people to increase their
+productivity or like get feel
+that they're augmenting
+themselves and not just smashing
+stuff into a fancy search bar
+often it comes down to like you
+know not just what should the
+UI look like but also things
+that are critical for this to be
+useful like certain parts of the
+system meet at very low latency
+that will affect a bunch of a
+bunch of like design decisions
+about like how the agent should
+work how the LLM inference should
+work sizes of models the trade
+off between the size and the
+quality of the model to enable
+like the best thing to help you
+like get your job done faster
+tell me about your story how did
+you how did you end up at Cohere
+I'm a trained synthetic chemist
+organic chemist but I kind of
+didn't really enjoy the practical
+elements very much I enjoyed the
+maths and the physics of
+chemistry and in my fourth year
+the masters year so I ended up in
+this kind of research masters
+working in a chemical informatics
+group I was working with like a
+great professor professor Jonathan
+Goodman and he kind of just said
+hey do whatever you think is
+interesting but what I think is
+interesting is trying to understand
+things about chemistry from the
+chemistry literature and so what we
+did in that project back in like
+2014 2015 like quite a long time ago
+now I guess was first collecting a
+big corpus of chemical literature
+so like abstracts of chemistry
+papers and some small number of
+millions I think it was at the time
+so I wrote these scrapers to go do
+that stuff and then trained like a
+big simple algorithm on it called
+Word2Vec which is quite famous as
+like one of the early interesting
+unsupervised NLP algorithms so just
+sort of trained up this model and
+then we took this model and I
+collected the word vectors for the
+chemical elements that this
+algorithm had learned so Word2Vec
+is just a word embedding
+algorithm it tries to build vectors
+in a semantic space for words and
+so what I did is clustered the
+chemical element word vectors and
+visualized them with a few different
+methods one of them was T-SNE others
+were some force directed algorithms
+but the thing that like really amazed
+me is that even back in 2015 this
+algorithm when you did this clustering
+of the elements they clustered in such
+a way that they reproduced the
+periodic table without any kind of
+like explicit instruction or
+knowledge it just had like read the
+literature and had discovered the
+periodic table within it and literally
+like the noble gases were in one
+cluster and then the non metals and
+then you know other types of metals
+and it all kind of just made
+semantic sense and that was like crazy
+moment for me that I was like oh this
+is amazing I want to do this and yeah I
+kind of then quite quickly you know
+wanted to find something to work that
+I could do more of this work as a
+research scientist working you know
+always at this intersection of
+knowledge and AI and thinking about
+like how we can use NLP systems to
+access and leverage knowledge you know
+manipulate knowledge for like the kind
+of applications that humans find useful
+and and we can learn things from and
+then yeah I think I wanted to do
+something a little bit more long term
+like I found like the research loop at
+the time would last about you know
+three months you'd furiously write code
+and you'd experiment on something and
+then you'd write your paper and it would
+kind of be over and your research arc and
+your kind of research journey and your
+body of work would grow but I never
+felt that we were like building
+something in the same kind of way and
+I kind of wanted to do that so yeah
+like moved to cohere and build built
+the team for rag and tools and here we
+are almost I guess two years later
+talking to you amazing I take it you
+know Ed Greffen step from UCL as
+well right yeah and he introduced me
+to Minchi yes Minchi is a legend I've
+had him on the podcast twice the the
+the first one was actually the most
+downloaded audio podcast we've ever
+had on the channel I think I think
+even above Noam Chomsky wow that's
+great that's a that's a badge of
+honor yeah he's amazing I haven't I
+haven't seen him for a year or two
+now but like yeah we used to hang out
+a bunch because yeah he was a fair
+PhD student one of the smartest
+people like he's so sharp and like
+has he expresses himself very precisely
+as well a bit like Ed yeah great guy
+I know I'm really happy that I got
+the scoop on Minchi because he's you
+know he's the perfect guy to interview
+because he's just razor sharp amazing
+communicator but a couple of things on
+what you said so my co-host Keith he
+has a PhD in organic chemistry from
+MIT oh cool and the transferability is
+insane I mean he's a god of Bayesian
+analysis and he kind of you know cut his
+teeth when when he was at MIT and I
+I mean you know even things like
+bioinformatics when I did that on my
+undergrad there was lots of sequence
+modeling and you know Needleman
+Wunsch and you know like all of these
+sort of like approximate multiple
+sequence matching algorithms so loads
+of computer science in there but you
+started talking about Word2Vec by
+Mikulov I think that was 2013 was
+that algorithm out and that's a really
+interesting place to start so how does
+that algorithm work I think when it
+came out so there's different way
+lenses to look at like how how that
+algorithm works and how it connects
+back to algorithms before the broad
+idea of these algorithms is like you
+say I want to learn a representation
+for a word so I like I want to be able
+to embed this word in a meaningful
+space where like words that are more
+similar to each other cluster together
+or like exist closer together in the
+space than words that are more like
+distant from each other the core idea
+behind a lot of these is like a word
+a word is defined by like its use in a
+sentence or use in language and so what
+you can kind of do is say like take a
+word and try to predict what the
+nearby words might be or equivalently
+take nearby words and try and predict
+what the word in the middle might be
+yes you know a word by the company it
+keeps yes exactly yeah that's that's
+the kind of quote is it by good what
+was the name of the guy I'm not sure who
+who it is it's yeah it's like it's a
+definitely a linguist from like um yeah
+from early on you've heard that like
+yeah that they're repeated and so
+effectively like word to vec there's
+different actually ones within there
+this is one called a script skip gram
+and a continuous bag of words are the
+two like implementations of this it's
+actually very similar to masked language
+modeling like the kind of modeling
+that's used for and they've fallen a
+little bit out of favor now but like
+but and models like that where you
+effectively predict what the word
+might be from the one from its from
+its neighbors it's just not doing it
+contextually it's just trying to say
+like we will learn a word from all of
+the places it gets used and it's going
+to be a representation effectively of
+all the words around it and if you do
+that it turns out that the optimum that
+you get is is pretty powerful at
+describing you know what a word means
+and so if we went back to the
+chemistry example it's seeing chemical
+elements appearing in in these in
+these abstracts and the words around
+it are similar for chemicals that are
+similar and so if you do this thing
+and you take the chemical words what you
+end up with is these embeddings that
+yeah have like just naturally learned
+to be similar for chemicals that have
+similar chemical properties because we
+write about chemicals that have similar
+properties in the same kind of ways and
+so it's sort of like a distillation of
+the knowledge really kind of just way of
+representing that knowledge this is
+really really nice unsupervised kind of
+thing the other kind of way of looking
+at this in a kind of more technical
+perspective is like a lot of these word
+embedding algorithms and there was like a
+very big kind of flurry of interest after
+you could see that say word to that could
+do some like simple like word analogy
+tasks as the famous like king man and
+woman and queen i think like analogies
+and it there was like a whole like zoo of
+these models that came out the year
+after the year after that looking at like
+you know what can you do to improve
+this or like you know what are some like
+refinements but if you actually like
+look back as well there's like algorithms
+that almost do exactly the same thing
+the same thing but weren't done at the kind
+of scale or like with the same kind of
+framing so a lot of these all end up
+kind of being imagining a very big word
+by word co-occurrence matrix columns
+equals like number of words in your
+vocab rows equals number of words in your
+vocab and you just build a big sparse
+matrix of where words co-occur within a
+certain distance of each other and that's
+a very big sparse matrix and if you do
+a decomposition so like like factorize
+that into smaller dense representations
+of these so like word by dimension and
+dimension by word and if you multiply those
+things together would you recover that
+sparse co-occurrence matrix a lot of the
+algorithms end up being mathematically
+like an approximation of that factorization
+so you can kind of think of it like that
+that word vector is is trying to be a
+kind of low dimensional representation of
+the co-occurrence matrix of like literally
+trying to predict what the words that are
+nearby would be
+yeah so it's it's very well it's almost
+analogous to collaborative filtering you
+know where like you might have netflix and
+you have people and you have films that
+they like and you've got this big sparse
+association matrix yeah very similar like
+yeah and then as you say you you factorize
+it i think there was a glove algorithm for
+word embeddings which kind of did it entirely
+and then you can think of the mikolov type
+algorithm as being like a kind of online
+version yes yeah exactly yeah um that's
+exactly it yeah but the actual algorithm
+itself i guess it had like two inputs so
+it was like a sliding algorithm and you
+would have is it a neighborhood or adjacent
+words and then it would learn some kind
+of intermediate representation uh yeah for
+for word to vec uh stretching my my my exact
+knowledge and there were like two different
+ways of it but yeah effectively you'd have
+this traveling word window and you'd like
+slide it over your big corpus and you'd say
+right i've got the word vectors for this
+window and i'm going to try and use the
+outside ones i'm going to sum them up and
+i'm going to blast them through a linear
+layer and then they're going to predict the
+middle one and you're just going to see how
+similar those two things are like the middle
+one that you've stored is that close to like
+the sum effectively of the with some
+transformation you can also throw in like
+neural networks at this point if you wanted
+to like do a bit more transformation you're
+just trying to basically make the aggregation
+of the surrounding words be as close as
+possible to the word vector that you've got
+stored for your middle one initially starting
+from random and then over time you optimize and
+you do gradient steps and you just repeat this
+algorithm again and again it's just an
+optimization thing like not unlike a lot of
+modern nlp and yeah it's just like the
+beginning of these kind of like yeah
+distributed continuous nlp things
+yeah and to kind of touch on that so i mean
+it's interesting that it's a dense continuous
+vector and like the netflix recommendations
+thing it also has the ability to fill in the
+gaps and that's a kind of generalization so
+that means in in situations it might not
+have seen in training it could actually make
+some inference and and it's a highly dimensional
+space as well so it's kind of representation
+learning where different dimensions might
+represent different things and the algorithm
+when trained in this way because these
+pad these neighborhood patterns exist in in
+the corpus it'll kind of fill in this
+information in the representation yeah because
+it has this like relatively low dimensional
+embedding it needs to make from this high
+dimensional space it kind of like forces it
+to be quite efficient in a way with like how
+how it's observing like the the things and
+like it has to like decide the best way to
+represent this sort of information bottlenecky
+kind of thing and so like it's going to
+combine features that correlate in the high
+dimensional space so that it can like you know
+save some representational power and like that's
+how you kind of learn you go from this like super
+high dimensional sparse thing and it sort of
+summarizes if you will like this information into
+the lower dimensional spaces and they might be
+entangled as you know like the actual like
+meaningful dimension of variation for some
+concept that we'd recognize might be spread across
+several dimensions of the actual word vectors you
+end up learning but there'll be a transformation
+where you can kind of find it that's kind of like
+the magic of this stuff is like the representation
+learning forces very sparse information to be represented
+by something like simpler and more summarized you can
+make an analogy to how large language models work
+even though they have very large hidden states
+and they have lots and lots of parameters to do
+it it still pales in comparison to the you know
+the amount of information they're trying to represent
+I remember when BERT came out in 2018 so that
+that was like a kind of a masked encoder model
+where you would kind of like mask out tokens
+in a sequence and it would give you really good
+representations
+yes it's quite interesting we talked about started
+talking about word2vec it's basically the same
+idea except if it was trying to make representations
+of that specific word in that specific sentence
+or like paragraph or context and so you have to like
+rather than just say hey here's my static word vector
+you have to have a model that like takes as your sentence
+as input and then like embeds it on the fly effectively
+to get you your like contextualized word vector which is unique
+just to that sentence and then you've got it and that's very
+like a very powerful representation that you can then go do tasks with
+the first GPT came out roughly the same sort of time but it was a yeah
+just a different way of that you could think of this generatively
+or you could think of this as like a representation learning thing
+it's like were we trying to do a predict generate generate stuff or are we just
+trying to like get like good representations of language
+so BERT was a bi-directional encoding scheme that learned representations
+you know going forwards and backwards and backwards yeah
+and GPT was was different
+yeah left to right people obsessed about this quite a bit like like I did other people did
+and like thinking that this like bi-directionality is very important for like
+being able to like get a very rich representation of what the language is
+from an empirical perspective that's less of a thing these days
+like a lot of the way that we use language models now
+you're not taking the representations from early on and doing stuff with them
+you're prompting the model to generate something later on
+so like you always get like a full attention on what's happened
+and you don't necessarily often have to look forward in time very much
+although like you know there's the whole like text diffusion stuff going on at the moment
+which kind of is a little bit different that you might rather than generate sequences out
+token by token forwards you can just generate the whole thing a lot
+and just kind of iterate this non-autoregressive text generation
+was a big thing that people were excited about
+seems to have gone away and now is starting to come back again
+but on that because that's a really interesting inductive prior
+which is first of all there's there's the locality prior
+which is that you know we're interested in things in the vicinity
+but then there's this kind of prior that says
+i'm only interested in things before not in front
+why would that work?
+when you write or talk
+you can kind of think about what you're going to say next
+but you can only say one thing at once
+and so you have to express yourself in a sequence
+like in a like just a sequence that goes along
+it feels a little bit more like that like you know
+the model can have this internal representation of what it's planning to do next
+like we don't know
+probably there's something in there
+of like that kind of type of phenomenon
+but it's just going one at a time in the same way that i'm talking one at a time
+i can't say my entire thought like splat all at once
+same thing when i write
+like i might write a document in a hierarchical way where i first write a plan
+then i flesh out each bit
+but i'm still writing each individual like token one by one
+and that's just like i don't know something to do with time i guess
+you know like maybe a human doesn't exist outside of time
+and can't just like continually like simultaneously write an entire document in like one big go
+you can only do one thing at a time
+like why we think that a model that can only do one thing at once
+and does go in like you know a single direction
+can't be like a you know generally intelligent system
+like i don't see why that's important
+you might say like hey it's easier if the model can observe
+everything at once and kind of contextualize across
+that's just a engineering detail in a way
+yeah but in a way it's it's kind of um anthropomorphic
+because i was reading the language game by nick chater and morton christensen
+i've interviewed them as well
+and they called it the now or never bottleneck
+which is that you know human attention
+it's almost like a razor point
+we can only pay attention to one word at a time
+even in our visual field most of it's discarded
+we only just you know take yes
+taken a very small amount so the remarkable thing is that that's the way that we've learned
+to communicate with language
+and presumably it's i guess a good thing to mimic that in a language model
+it might be a good thing or it might just be sufficient
+yeah and it may not be optimal
+but like for models that uh like i'm going to keep it constrained to text and language
+they're training training to model text and language and all of that except for the last year or two has been written or generated by humans
+um and so because they think word by word yeah you can model these things like that way pretty successfully
+maybe a counter argument is like the way i generate a document say i'm writing something like i'll write my plan and then i'll go through and i'll edit it but the final finished piece that's the thing you observe and the model tries to generate
+yeah that's why you know it's pretty pretty straightforward and intuitive why things like chain of thought and stuff like that works
+it's because you're basically it might it's sort of part of the necessary process for actually like producing a good finished product when you can only go left to right you know like very few people like write a perfect document or some like finished polished piece of work by just like writing their paper like start to finish
+effectively all of that like intermediate like writing and rewriting is is human chain of thought that doesn't always get observed but if you get a model to do it suddenly you get these big improvements
+this like internal monologue almost um is useful patrick it's been an absolute honor to have you on mlst thank you so much for joining us
+thank you so much for having me it's been great uh yeah love it cool great thank you
+you
+you
+you
+you
+you
+you

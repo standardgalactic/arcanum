@@ -1,0 +1,778 @@
+all right uh welcome everyone so today we're going to be talking about phylogenomics so uh
+the you know this comes at the end towards the end of the class so we are we have two more lectures
+on metabolic flux and analysis and today we're kind of completing the second part of the evolution
+lecture so in the first half we talked about how we can use evolution to study genomes so we can use
+evolution to sort of make sense of functional elements in genomes and we talked about functional
+elements within proteins functional elements in non-coding regions and how we can use evolutionary
+signatures to distinguish different classes of function between protein coding versus you know
+rna micro rna regulatory motifs etc and we also saw how these very powerful deep learning approaches
+allow us to actually go a step further in traditional analysis of comparative genomics
+by studying not the changes in the letters but the changes in the interpretation of the letters
+and we focused a lot on the conservation of that interpretation in other words even when the letters
+themselves were changed we could see still see conservation at the level of function at a higher
+level of abstraction if you wish and that's where all of this representation learning that we've been
+doing on the machine learning part of the class came in handy everybody with me here so far so today
+we're switching gears and we're looking at the other part of the arrow namely can we use genomes and many
+many species genes and alignments to study the process of evolution itself okay and we're going to be
+talking about three types of analysis at increasing layers of complexity if you wish first we're going to look
+at phylogenetics namely how do we study the changes not just in an alignment but in the tree that is
+responsible for this alignment so this is going to be taking comparative genomics to the history level
+to the series of divergence events then we're going to talk about phylogenomics where you now have
+thousands of trees evolving inside thousands of trees inside there were in other words understanding
+every duplication and loss event beyond just simply can we build an accurate alignment of the the sequences
+that were given so in the first part of phylogenetics we're not going to care where the genes come from
+but in the second part of phylogenomics we're actually going to use the species tree along with the gene
+tree to basically distinguish gene duplication and loss events based on the reconciliation based on the
+agreement between these two trees everybody with me here and then the third part we're going to you
+know go beyond just the constraint of trees basically in parts one and two we'll be given a set of
+regions or genes or elements that we call orthologous or paralogous and in part three we're going to look
+at how do we even get these to be on top of each other we're going to look at genome assembly we're
+going to look at you know all kinds of other ways of alignment and we're going to also look at evolution
+very very near and very very far we're going to look at evolution between different hominin
+lineages or within the modern human lineage as well as the beginning of life and RNA world okay a lot
+of stuff to cover today but again this is not on your quiz the goal is to expose you to all this
+extraordinary wealth of different types of data sets different types of questions many of which
+are still very active areas of research everybody excited so again three parts so three outlines and
+the three outlines are going to be number one phylogenetics number two phylogenomics so we're
+going to look at reconciliation we're going to look at gene and species trees we're going to look at how
+evolution happens within populations we're going to look at incomplete linear shorting and how to
+blend population and species models and then we're going to look at the modern synthesis namely the
+evolution of evolutionary theory itself and then part three we're going to look at genome assembly
+whole genome alignment whole genome duplication we're going to look at human selection multiple timescales
+human demographic history and also the world before dna and proteins were even invented okay
+all right so that's our goal for today so part one phylogenetics how do we build trees
+how do we score trees how do we build distances and so on so forth so first we're going to talk about
+the basics of phylogeny then we're going to go see how we can go from the multiple sequence alignments
+that we saw in the earlier lectures in the earliest lectures of the class to distances by modeling sequence
+evolution then we're going to see how we can use these distances to build trees and tree building
+algorithms that start from sequences from distances and then we're going to look at tree building
+algorithms that start from alignments so we can either build a tree from the distances after having
+figured out distances from the alignments and modeling evolution or we can build a tree
+from the alignments directly okay and then we're going to see how in fact this is when we build trees
+from alignment this is basically just alignment scoring given a tree but then we have to actually
+iterate over trees okay let me uh make this more concrete but uh first we're going to dive in okay so
+what what are the basics of phylogeny so phylogeny is not a new thing phylogeny did not start with
+dna sequences phylogeny started well well before when scientists were looking at fossils and were
+trying to figure out the history of divergence events that separated these fossils and those
+traditional traits were basically morphological data you would look at a skull of a lizard or a dinosaur
+or a crocodile and you would basically say okay what are the different parts of that skull
+and can i infer phylogenetic histories that allow me to have the least number of events
+is everybody with me here that allow me to group species together and group fossils together
+based on the number of trees or based on the shape or based on you know whether that particular
+bone is there or not and so on so forth okay so these are what we call traditional traits these are
+morphological data and these traditional traits have very distinct properties from the modern traits
+of molecular data so molecular data has a lot of uh you know differences first of all we have
+very very large numbers of traits every dna position and every protein residue is a different trait
+okay these traits are very frequently ill-behaved namely they have back mutations that are very frequent
+this is what we call convergent evolution because most evolution is divergent you have a common ancestral
+phenotype and also genotype and then you diverge from each other but very rarely would you see
+convergence at least in some of those traditional traits so for example you can assume that you know
+this particular bone here only evolved once and therefore every species that has it is a descendant
+of that same event where that bone was developed is everybody with me here so this is traditional
+phylogenies and our goal in traditional phylogenies was to build species trees we had a small number of
+traits these were hoofs and nails and teeth and horns and they were very well behaved every single event
+arose once and therefore we could use parsimony principle we could use occam's razor and basically say
+among many different hypotheses that all explain the data equally well i'm going to choose the simplest
+hypothesis namely that something evolved once rather than evolved here was lost there re-evolved here was
+re-lossed there and so on so forth everybody with me here so this is occam's razor and basically says
+you know if i have multiple explanations i'm going to choose the simplest one as long as they explain
+the data equally well with modern phylogenetics we have to worry about correcting for back mutations namely
+having an a at that position is very easy to realize you just make that mutation again okay so these
+back mutations where you go from a to a t and back to an a there's only four options you mutate chances
+are you're going to you know sometimes go back so we're going to have to correct for this everybody
+with me here awesome and then there's also a very small number of letters and therefore they could
+arise many many times uh independently okay so now in the lecture for today we're going to be or at
+least the first part we're going to be thinking about how do we infer a tree from alignments so
+alignments we already saw how we can build okay you just basically have this dynamic programming
+matrix and you can use that to figure out where should i position the gaps to maximize the score of
+the alignment okay there's of course a back and forth between them because if i have a pairwise alignment
+between two species then i can use that to infer the position of the most likely ancestor and then i
+can use a tree that i can that i can infer to basically walk up and figure out in what order
+should i be assembling these most common recent ancestors and so on so forth so there's a big
+interplay but for now we're going to separate them and say we're given the alignment can we infer a tree
+of course once you have your tree you might rebuild your alignment to get a better tree and so on so
+forth yeah no no if you have n species you're starting an alignment you're starting with an
+alignment of all n species on top of each other here are the positions along a protein and here's the
+um every row is a species every column is a letter so we're starting with that and then
+we we want to figure out the tree that relates these species okay so basically the data is going
+to be sequence data it's going to be either nucleotide alignments or protein protein alignments
+and then all of our divergence events are going to be binary even though sometimes we might not really
+be able to tell whether say in a very close phylogeny whether these two separated first or those two
+separate the first or you know whether this one etc but we will assume that everything is binary
+and you know sometimes we'll have some confidence value in each of these branches that basically tells
+us if i resample the positions in my alignment how often do i get exactly the same topology okay
+everybody think so far yes awesome so again we're going to either first from the alignment of n rows
+of different species first we can infer an n by n pairwise distance matrix that basically says i already
+have my alignment but now i'm going to use this to calculate how far is a from b a from c a from d a
+from e b from c b from d b from e etc and that's my n squared distance matrix and then i'm going to
+completely throw away the alignment and only use the distance matrix to infer the tree or if i worry
+about every character and i don't want to lose away i don't want to throw away information
+and summarize it in single distance between every pair of species or sequences then i will be able to
+go from the alignment directly into the tree and basically ask how well does that tree capture the
+events that i observe in my alignment and then i will couple that with a tree proposal and scoring
+that allows me to now fine tune an initial proposal and make it into a better phylogen everybody with
+me here can i get a five four three to one how well you're following okay super all right so these are
+going to be the four parts of you know part one of the lecture so basically one how do we go from
+sequences to distances two how do we build trees using these distances three how do we go from alignments
+the phylogenies and four how do we propose uh trees topologies okay so dab right in everybody with me
+here awesome so what do we want we want to figure out how to turn pairwise sequence alignments into
+pairwise distances and as i mentioned earlier there's back mutations okay so that's where it becomes
+interesting that's where we need a model for sequence evolution we can't just simply count events
+events but we need to actually model events everybody with me here great so how do we model
+evolutionary rates if i see a number of changes how do i infer a rate from those changes so let's
+distinguish different types of events i could just simply measure how different are the nucleotides
+i could use a uniform rate and just simply count the overall percent identity that's a fine distance
+there's been 13 percent changes or i could use transitions and transversions i could have two
+parameters one parameter for how often is a changing to g and c changing to t and one parameter for how
+is often a changing to c or t and g changing to c or t ready with me here so i could also include
+within protein encoding regions a synonymous rate and a non-synonymous rate so i don't know if you
+remember in the last lecture we talked about measuring not just amino acid changes but also
+synonymous changing we found some regions that had dual constraint we had constraint not just for
+the protein sequence but also for the nucleotide sequence and those were regions where the synonymous rate
+was in fact very very low and of course we should realize that there are many mutations that don't
+change the amino acid sequence at all and those are basically blind like selection is blind to those
+mutations basically if the only selection is at the amino acid level then changing between any of these
+nucleotides nucleotides will be fine so basically changing an agg into a cgg you know both translate
+to arginine okay and now the the last part is that the number of actual mutations is actually typically
+much larger than the number of observed substitutions in other words if i observe 80 events
+some of those are likely to be back mutations okay where i change into a t and then back into a c and
+then you know i have a hundred positions i see that 80 of them are changed the other 20 might appear
+unchanged but some of them will actually be changed twice and the reason for that is that if i have for
+example a 60 divergence from a into each of the other nucleotides i have to be actually quite cautious
+that the next time i change you know from an a into a c the next time i change from a c to another
+position i have to be very cautious that i don't change back into an a everybody with me here in
+other words for every substitution to be representing only basically for for the only mutations to actually
+be the observed changes that i see i have to be very cautious in other words most of the time i will
+have more events than what i observe okay let me illustrate what that means suppose that i have only
+one parameter the parameter is how often do i change from any letter to any other letter so here i'm not
+dealing with transitions and transversions between you know pyramidism period and periods okay so at every
+time state i'm going to start with the letter a and i'm going to stay at an a with 70 frequency i'm
+going to change into each of the other letters with 10 frequency at the first time point you know when
+i start let's say time point zero i'm at one zero zero zero but at the next time point i'm already at 0.7.11
+also so far so good and then the next one i'm not at 0.49 i'm not just at 0.7 squared
+i'm at 0.7 squared plus 0.01 squared or 0.1 squared okay in other words i can stay at an a by changing
+to a c and back into an a and therefore my probability of changing of of staying an a is not just 0.7
+squared which would be 0.49 but instead it's 0.49 plus 0.1 times 0.1 0.1 times 0.1 0.1 times 0.1
+or i basically switch from an a to a c and back into an a that's 0.1 squared that's 0.01
+at short evolutionary distances it doesn't matter at all or at least it matters very little but as i
+go further and further and further say i get to 10 percent 20 percent 30 percent 40 percent observed
+changes then if i observe 40 percent i've actually done almost 60 percent okay so if i observe 10
+i've actually done 11 if i if i observe 20 i've actually done 23 if i if i've done 60 change i've
+actually changed nearly every position on average okay and if i observe 70 percent divergence
+i have on average two substitutions per site everybody within here what if i observe 80
+percent divergence who can comment on 80 percent divergence
+how far do you think that gets
+now what does 80 divergence mean how many letters do i have in the dna
+four letters a c g t if i take a random sequence and i put it on top of another random sequence what
+percent difference i'm going to observe
+good the limit is basically 75 if i have 80 divergence i'm basically doing something wrong
+with my alignment okay my alignment basically sucks if i if i have a good alignment algorithm
+there's no way i'm going to be able to align 75 or you know more than 75 and the reason that the
+aligner itself is going to just like move some locations and it's going to say well you know i
+have three a's here i have three a's here i'm going to move them together is everybody with me here so
+basically i saturate at 0.75 and then basically hit infinity okay so basically at that point
+you hopefully can see that like as i go further and further and further i asymptote towards 75
+divergence sounds good and that basically means that i need a way to correct i need to basically
+say okay i i never i never have the actual i only observe mutations and therefore i need a way to
+correct from the observation to the actual number of mutations and that involves simply taking that
+equation expanding it out and just saying you know as a as i move further my forward process is going to
+be that the number of um you know conserved amino acids is going to be one quarter times one plus three
+e to the minus four at which is simply if i run the stationary process to completion or at least to time t
+then i'm going to basically end up if i run this markov process i'm going to end up with
+you know some curve and then i can just read off the curve what the actual number of mutations is
+by reversing this equation so this is you know the number of conserved and the number of
+substitutions and now the reverse process simply tells me here's you know how do i solve for t
+given that i have this and then the actual distance is going to be you know three quarters
+log of that which is reversing that equation is everybody with me here so i have this asymptote
+this exponential driving towards 0.25 and then i need to reverse that exponential to basically
+figure out what's the actual and therefore if i observe you know 0.3 0.4 0.5 etc i can infer this
+can i get a 5 4 3 2 1 who's following me here awesome great any questions can i get everybody's
+hand up please okay awesome good good good all right so that's the simplest model this is known
+as the juke's counter model and it has only one parameter and that's basically the part about
+actually modeling evolution so how do we turn pairwise sequence alignments into pairwise distances
+what we need is a probabilistic model divergence and the simplest one is the juke's counter model
+everybody so far awesome so that's the simplest model i can be a little more complicated i can
+basically say that a to g and c to t change with each other at a transition rate which is uh sorry at
+the transversion rate which is less frequent than the transitions between you know um
+um sorry the colors are off here so a to g are transitions c to t are transitions a to c a to t
+uh you know etc the rest is transversions okay so basically the substitution rate between purines
+and between pyramids or within purines within pyramids is actually much higher than the substitutional
+frequency between the two categories and therefore i will have two parameters and i will need to
+estimate those two parameters based on the observed uh mutations okay and then this is the simplest
+model where i have only one substitution type this is the kimura two parameter model where i have one
+transition parameter one transversion parameter and all of these are assuming equal base frequencies
+i could then have two different transversion frequencies one between say a and c and one
+between you know a and t or something like that uh or i could have a fully symmetric model basically where
+i have you know one two three four five six parameters or nine parameters or something like that and then i could
+basically have um all of this is with equal frequencies and i can also have with unequal base frequencies
+additional substitution substitution types is everybody with me so far so this is all about
+modeling sequence evolution okay so now i've basically aligned my sequences i've figured out
+all of the distances between every pair by simply counting all the alignment i remove any kind of joint
+gaps which are gaps in both and i simply count for every position that's on top of each other
+what is the actual distance based on the aligned positions for now none of these are dealing with
+gaps none of this is dealing with sort of fancy events like duplications losses or segmental changes
+etc it's just counting the number of events okay question okay everybody with me okay now let's look at how we
+can go from distances that i've just computed using my model of sequence evolution to actually trees okay so i
+now have my n squared matrix of distances and i want to build a phylogeny what does that mean that means that i
+i want to i want to figure out a tree such that moving from species a to species i don't know uh m over
+here or species p over there along the tree is recapitulating the distance that i have between species a
+and species m or species p is everybody with me here so to be able to infer a tree that matches quote unquote
+my matrix of distances simply means that i will be able to compute any pairwise distance by basically
+just walking up and down the tree try to figure out the distance between human and cat it's this branch
+plus this branch plus that branch plus that branch and if that matches exactly the tree distance that i
+had between uh the the the matrix distance that i had between human and cat then i'm doing great can
+i get a 5 4 3 2 1 on this concept awesome so that's basically fitting a tree to a matrix sometimes it's
+possible sometimes it's not possible and when it's not possible we're going to have to figure out what
+is the best tree that matches those distances okay so we have the goal of minimizing the discrepancy
+between the observed pairwise distances which are completely unconstrained i don't have to walk along
+any roads i can just go from the dog i don't know house to the rat house by teleportation which costs me
+the dog rat distance or i can walk along the paths that connect all these houses and then i have to pay
+the tree distance okay everybody with me here great so now when the matrix is such that it can be
+perfectly encapsulated in this sum of paths
+then that's known as an ultrametric distance
+and moreover actually i should say that that's that's known as an additive distance
+so an additive distance basically means that i can just add up all of these distances
+and then my matrix was basically generated by adding up these segments everybody with me here
+now i can impose an additional constraint which is that all species evolved at the same rate
+since their common ancestor so basically i can fold up the tree in a way that says that the trees
+actually represent divergence times not just number of events and therefore that i don't know 65 million
+years ago you had the divergence of or like 90 million years ago you had the defense of all the
+mammals then i don't know 65 million years ago you had a divergence between human mouse and rat
+and then i don't know 30 million years ago you had the divergence between dog and cat is everybody with
+me here so if the matrix is such that it can be represented as a series of
+times elapsed since a common time of divergence then that's known as an ultrametric distance
+okay so an additive distance is simply a distance that can be built by a tree and an ultrametric
+distance is simply a distance that can be made by traversing from a common ancestor down to every
+branch with the same exact number of steps so far so good good so again an additive distance can be
+checked simply by satisfying this four-point condition but all the four-point condition says
+is that for any four points i can find a midpoint branch that you know satisfies this and notice a and b
+don't need to be the same whereas for an ultrametric tree every single time i have three points there
+is you know two of the distances are always identical and the reason is that this must be a tree and guess
+where's the root exactly at the midpoint okay
+but of course most of the time i'm just going to have general distances
+okay so if i have an ultrametric tree in other words if the distances were indeed generated by a clock
+model where every single one of these species diverged at a specific time from the common ancestor and from
+today then i can basically use upgma which is unweighted pairs grouping with arithmetic mean
+so upgma is effectively a clustering algorithm that says i'm going to find the two closest species
+group them and put the midpoint i'm going to find the next closest group them and put the midpoint i'm
+going to find the next closest group them and put the midpoint i'm going to find the next closest
+group them and put the midpoint and if indeed my tree was generated by such a process then this
+algorithm is guaranteed to find the correct tree if it wasn't absolutely no guarantees so far so good
+okay so this is upgma also known as hierarchical clustering basically unweighted pair group method
+with arithmetic mean and it's what i just said you just take every closest pair group it
+make a cluster out of it etc
+and then in the case of you know human mouse rat dog you basically just keep you know averaging and
+then you build a tree progressively and then you're very happy okay now there's a problem with upgma
+it assumes a molecular clock and it implies that the time is constant for all species
+and therefore in a case where the correct tree has some species that accelerated
+for example i don't know this is a tiny little species it migrated to a new climate
+it now needs to you know that very rapidly or this is a very slow generational species you know
+every species lived till 300 years and then you know there's very few mutations okay let's say
+that's a turtle and that's a i don't know chipawa or something okay everybody with me here
+so if the correct tree looks like this what's upgma going to do it's going to assume that they
+were generated by a clock and therefore you're going to say oh well two and three are clearly the
+first ones i should merge because they're the closest and their midpoint is exactly in between them
+and then the next one is going to be i don't know four and i'm going to group that there etc
+so upgma is basically guaranteed to have the wrong tree if there are some branches that are shorter and
+some branches that are long so far so good
+so that's where neighbor joining comes in neighbor joining says okay well why don't i deal with this
+situation how am i going to deal with it by saying that if a species is repeatedly far from all of the
+other species i'm just going to assume that that species is antisocial and has a long branch and if
+a species is repeatedly close to all the other species i'm going to assume that it's very promiscuous
+and it has a very short branch so i'm going to do a correction factor that basically says what is
+the sum of distances from my species to all of the other species let me just simply correct by that
+when computing my distances so i'm going to have a promiscuity index for every species and i'm going
+to adjust my distances to be revised the distances where i'm just going to subtract the promiscuities
+of the two distances from the distance is everybody with me here can i get a five four three two one
+awesome good and that's what neighbor joining is all about
+and the idea here is we're going to define the set of leaf nodes we're just going to sort of
+progressively merge but using this refined you know distance okay and that's great for the
+additive distances in other words neighbor joining is going to do fantastic for additive distances
+upgma is going to do fantastic for ultrametric distances but most of the time we're going to be here
+in the general distance scenario okay so what are we going to do in the general distances well we
+we can still use neighbor joining and that will probably be a fine tree most of the time
+or we could be a little fancier and say well let's define an optimality criterion
+and that optimality criterion could be either character or distance based i could basically say
+maybe i want a least squares solution where i can basically simply see what is the deviation that i
+have from adding these distances between adding these distances and then the original matrix distances
+and i'm just going to simply set all of these parameters to minimize the sum of square distances
+between what i get for each of those is everybody with me here so then i have an optimality criterion
+which is basically i want to just minimize the distances and then i'm just going to have some kind of
+fitting algorithm that's going to try to select these and you know maybe i will have some kind of gradient
+descent that basically says if i adjust this distance how is it changing and so on so forth
+is everybody with me here awesome so that's in the general case where basically um you know we
+could minimize the distance discrepancy with least squares or with minimum evolution okay as for character based
+well let's talk about it next okay so what have we talked about we've talked about the basics of
+phylogeny we've talked about how to go from alignments to distances how to go from distances to trees we
+looked at different tree types ultrametric where there's a clock additive where it was generated by a
+tree and general distances where all bets are off we talked about upgma that works great for ultrametric
+we talked about new neighbor joining that works great for additive and these have guarantees but
+also have limitations in the case of the general distance and we also talked about this optimality
+idea of maybe we could adjust the tree branches to to minimize the least spread error or minimize evolution
+okay and then again all of these require a search which is what we're going to talk about number four
+okay so now let's talk about how we can go from alignments directly to trees so how do i go from an
+alignment to a tree okay everybody with me here so what are we going to do we're going to look at
+different approaches for doing that the first approach is parsimony where i could be either set
+based or use dynamic programming and then the third approach is maximum likelihood okay so again we saw
+how we can go from sequences to distances from distances to trees or from sequences directly to trees
+and that's what we're going to do now but remember that this everything we're going to say now in section
+three is for a given tree how well does it match a given alignment but then we're going to sort of
+have some tree proposal and scoring coupled to that okay so character-based phylogeny is essentially about
+scoring not necessarily about tree finding so we need to couple them with a tree finding algorithm okay
+so and that tree finding algorithm is going to be some kind of tree proposal and update and that's
+going to be part four and there's two approaches which use the same architecture one seeks to minimize
+events and that's parsimony and the other one is probabilistic and that's maximum likelihood or maximum
+a posteriori we have an alignment an alignment is made out of many columns of the alignment so suppose
+that we're looking now at one of the columns of the alignment everybody with me so in one of the
+columns i see b for one species a for another species b for one species a for another species
+and i want to know how bad or how good is that tree for capturing the states of these variables for each of
+the species okay so how good is it well if this is my tree i have to infer a cost what is a cost the cost
+is the number of events so i can say here's how many events i need to explain my tree
+and to get that there's a very simple algorithm which is a parsimony algorithm
+that basically says i'm going to look at the nearest neighbors and i'm going to walk up the tree
+and i'm going to infer the most likely or at least a good ancestral state for every one of those so if
+i have an a and a b here what's the what are the possibilities for the ancestor either a or b
+okay so i'll just choose the set a or b and what is the cost the cost is one
+either because i changed that ancestral a into a b here or because i chose that ancestral i changed that
+ancestral b into an a by mutation event along this branch five four three two one who's following with
+me awesome great now if i have an a or a b at that position here and i have an a here what should i put there
+probably a okay so then the next step after that is if i have a non-empty intersection between the set
+of possible characters here and the set of possible characters here then i'll just take that intersection
+okay and then i have an a or a b here then i'll take the union again is everybody with me here so this
+is the simplest possible algorithm if the intersection is empty then i choose the union
+if the intersection is not empty then i choose the intersection end of story yeah
+so this could be an a a a g and a energy
+uh so here i've conflated the concept of a species and a character in this particular case i'm looking at
+one column of the alignment and in that column of the alignment i have character a that could be
+rounded hoofs character b could be pointy hoofs so i have rounded hoofs pointy hoofs rounded hoofs
+pointy floofs or it could be the actual letter a g a g and so on so forth these these are all great
+questions so you know don't don't feel bad for asking something that probably other people were
+wondering as well okay and then as for the species yeah you you could call this bucket the human bucket
+the chimp bucket the rat bucket and the mouse bucket or something okay everybody with me here
+awesome so there's a problem the problem with this union intersection approach is that it doesn't
+actually capture all possible trees in other words it will only explain
+this particular tree by having an a at that position but when you look further up you basically
+realize that wait a minute there's a b here and there's a b here so i could have gone b all the way
+and then just change into an a once and an a twice in this particular scenario okay this is
+equally optimal it's still only two events where the ancestor was a b but it's simply not accessible
+to the union intersection approach because it doesn't look ahead
+okay so what are we going to do instead we're going to use dynamic programming
+what dynamic programming allows you to do is to remember all of the possible scores for all of the
+possible paths find the maximum score and then trace back to find the optimal path in other words
+it will postpone making that decision until the end of the search so instead of just saying oh there's
+a non-zero intersection great i'm going to just set it to that it's going to maintain all four characters
+so it's going to say at every position i can be an a c g or t
+and my observable species are mouse rat human and dog so my mouse costs if i set the mouse
+to a my cost is zero if i set the mouse branch to c g or t my cost is one because i need to change it
+from that back to the observable way is everybody with me here so i can do that for the observed
+variables mouse rat human dog and i can just set it to exactly what's observable the one that's observed
+is the zero cost one and now at every merge i just simply add up the costs
+so at position b1 if i set b1 to be an a then i have a cost of one if i have if i set b1 to be a g i
+have a cost of one so in both cases i have an optimal cost and i'm maintaining the fact that
+there's two possible solutions both with cost one one step above i now have the costs for b1
+and i just simply add up the cost for the human and then the cost for b2 is one if it's all set to one
+or three events if i set it to c three events if i set it to t or two events if i set it to g so far
+g doesn't look good at all but at the next iteration when i go to b3 based on the states
+and costs of b2 and the state of d and cost of d then at b3 one now becomes a two but then the two
+becomes a two again because there's no cost and suddenly i have two optimal solutions one is an a
+and the other one is a g at that answer from them can i get a five four three two one so who's following
+awesome great so that is a parsimony approach but using dynamic programming going up the tree
+okay and that's actually going to be the foundation for many of the other approaches
+this concept of dynamic programming to basically infer a cost function for every possible state
+of the intermediate variables okay great so we basically looked at a greedy approach of union
+intersection that doesn't access all solutions but still is guaranteed to find an optimal score
+or a dynamic programming approach that actually sums up the costs as it goes up the tree
+okay now let's look at a maximum likelihood and a maximum of posteriori more probabilistic approach
+that also includes back mutations etc okay so what are we going to do we're going to build
+a generative model and that generative model is going to have some kind of process through which it is
+generating trees i can have a duplication loss process that generates the topology and i have a mutational
+process that generates the actual sequences given the topology that basically says that i will have
+some maximum likelihood interpretation of the sequence alignment data d
+given given the branch lengths b and the topology t with which i am generating my sequences so i'm sampling
+a set of data i'm sampling characters using a topology of a tree and using branch lengths
+and what i want to do is maximize basically do a search over all possible branch lengths and topologies
+to find b hat and t hat the optimal branch length and the optimal topology that best explain my data
+can i get a five four three two one here awesome beautiful alternatively i could say that i don't
+want to just maximize the probability of generating the data given my branch and topology what i want instead
+is to scale that by a prior they should say prior i want to scale that by a prior of what are some
+completely unrealistic branch lengths and topologies okay so i want to have a bayesian approach that
+basically says what is my prior over all branches and topologies and what is the likelihood and together
+i'm going to get the posterior okay another way to think about that is the posterior is having observed
+the data in other words posterior to observing the data what is the maximum probability
+branches and topology okay and this is just using base rule can i get a five four three two one here
+awesome beautiful okay so that's the likelihood of the data given the model and then this is the prior
+on the tree on the trees and branch lengths and how do i generate this i can have some kind of duplication
+loss model i can have a birth death process or a yield process and so on so forth that generates
+topologies and branches and here the if i if i know the branches and the topologies then the probability
+of generating my data i.e the sequences is simply the evolution model that we looked at before
+namely i have a forward process that generates data according to some probability and i can just say
+given the juke's cancer model a cumulative parameter model hky model what is the probability of generating
+the observed sequences why is that helpful because i can say given topology a and topology b
+which topology better explains my data okay and that probability is going to be what i'm going to be
+using to choose the maximum likelihood or the maximum a posteriori tree everybody with me here
+who fears that they're they're learning stuff yeah good again this is taking a lot of concept that
+we've seen already and just applying them in the context of by logging so we can compute that recursively
+using the exact same idea of dynamic programming that we did before in other words instead of just
+doing a very simple score of plus one we're going to do a slightly fancier score as i go up my tree
+everybody with me here all right so what are we going to assume we're going to assume that every column
+of the alignment evolves independently it's a very simple assumption we're going to treat that column
+in isolation and then we're going to do the product over all of the columns okay everybody can hear so
+far that's step one step two we're going to assume that every branch evolves independently from all
+other branches in other words it doesn't matter what happens in t6 t7 is going to have its own
+evolutionary process that's fine as well so we're going to condition on the parent and just say if i've
+observed the parent i don't care what happens in t6 i'm just going to evolve down my t7 branch
+okay so i'm going to expand the total probability into some product of each of the children condition
+upon its parent and the time elapsed along that branch so far so good and the only thing that
+remains is this probability of an ancestor which is some kind of root prior which is basically just a
+background nucleotide frequency now how do i compute each of these branches for a single column it
+basically says i have a g here and i had an a here that's just my juke scanter or kimura to parameter
+model and so on so forth just a single event or at least a single branch isolated from all other
+branches i know the parent i know the child and i know you know how many changes there were so how do i
+compute the probability of a child given the parent and the time well that's just you know the model
+that we have already and we can easily calculate it for any given assignment of the internal nodes
+and because the internal node values are known are not known they're they're unknown we're going to
+basically marginalize what we're going to basically do is we're going to compute the dynamic programming
+algorithm going up that tree up these branches maintaining the uncertainty
+and we're going to sum over all possible values of all internal slash root nodes and that will be
+what will represent the sequences of all of the internal nodes okay so basically the joint
+probability of observing all of my sequences x1 through x5 aligned to each other given my topology and
+the branch length is going to be simply that in isolation which we're given this branch independence
+we're going to assume that it's just going to be you know each child given its parent and the
+corresponding branch length which is going to be simply that problem can i get a 5 4 3 2 1 here
+awesome beautiful all right so again side evolution of a single sequence we know how to do that
+evolution of a single branch we know how to do that just multiply all of the sides together
+evolution of the entire tree we just walk up the tree and then marginalizing of the hidden ancestral
+sequences this is basically the dynamic programming matrix which i set up exactly like before and when
+i put it all together i have this very efficient marginalization overall of the tree and i have this
+dynamic programming algorithm for you know computing the scores for every one of the characters in every
+one of the ancestral nodes which i'm going to be adding up according to this case analysis and in the end
+what do i end up with i end up with scores at every position and what did i do for my very simple sum
+before i just took the maximum score and i just ran down with it okay just like before i basically had
+my minimum score my minimum cost two here i set that value to a and then i basically said okay well how
+did i get here i need to remember the arrows i don't know if you guys remember that from dynamic
+programming earlier in this in the course but basically every time i say i got a two here i'm
+going to remember what were the states that gave me that two and i'm going to do the same thing here
+as i go back down the tree to basically compute the overall cost okay
+so we're going to fill in all of the internal node likelihood vectors when we reach the root we're
+going to multiply the base frequencies and that's going to give me all of the states and i can kind
+of go back and compute that okay so this is this third part here where i basically said i can go from
+sequences to distances i can go from distances to trees and i can go from characters to trees
+score different trees and figure out which tree gives me the best likelihood or the best a posteriori
+probability but now i need to actually suggest some trees how many trees are there it's an exponential
+number again because for every one of them i could sort of choose which one of those i want to go up
+and then that gives me you know way too many choices so what are we going to do instead we're
+going to basically iteratively refine the trees using some kind of stochastic process for walking
+through tree topologies so i'm going to initialize maybe with a neighbor joining tree because that's a
+fine algorithm works well a lot of the time and then i will compute the probability of that tree
+given what we just talked about and then i'm going to modify the tree using some kind of operations
+what are these operations well i could do nearest neighbor interchange that basically says you know
+i have a b c d this way i'm going to change it so that it becomes b d a c sounds good so that's
+a nearest neighbor interchange event or i can do subtree pruning and regrafting that basically says well you
+you know c is connected here i'm not going to move it to to connect it here and so on so forth okay
+so and then i'm going to score the likelihood of the modified tree compare it to the likelihood of
+the tree that i had before and if it's better i'm going to keep it with some probability
+if i keep it all the time if it's better then it's basically some kind of greedy hill climbing
+approach and i'm going to end up at some local maximum if instead i keep it with some probability
+that means that i might be able to get out of this local maximum okay and explore more of the space
+moreover if i keep it with a probability that's exactly the difference in the likelihood ratio between
+the two trees then i guarantee that i will be exploring my space according to the posterior
+probability distribution of all tree topologies okay and that's what we call mark of chain montecard
+it basically says i can take any proposal rule as long as it's connected that as long as i can explore
+every topology from nearest neighbor interchange and subtree pruning and regrafting i can take that
+proposal rule and when it's worse i could basically decide to take it or not take it when it's
+better i can decide to take it or not take it and based on exactly the way that i do these decisions
+that i make these decisions based on the probabilities i can basically estimate that posterior probability
+distribution effectively sampling from the universe of tree spaces in a probabilistic way okay
+the last component is that i want to estimate some kind of reliability because every single time i
+have an alignment that alignment is a sample every time i have a species that species is actually a
+sample every time i have pick an individual from that species that individually it's a sample
+and so on so forth so what i want to know is if i had chosen a slightly different alignment
+if i had chosen a slightly different part of the genome if i had sequenced a different gene would
+the topology be different so for that what i can basically do is resample columns of my alignment
+and redo this type of operation at those different columns okay awesome so that completes part one of this
+very ambitious lecture that basically says how do we build phylogenies we basically can go from
+sequences to distances from distances to trees from alignments to trees as long as i have this tree
+proposal and score can i get a 5 4 3 2 1 on this part awesome you guys are great all right so this was part
+one let's go to part two part two basically says that up until now we've only worried about one type of
+object it didn't matter if we were comparing species or genes or you know every hemoglobin or only one
+ribosomal sequence from each of 100 species etc or god forbid a bunch of hemoglobins from a bunch of them
+so suddenly i can do a lot more if i have knowledge of what every element in my tree represents
+okay and that's what we're going to do now now we're going to deal with phylogenomics the first part
+is to basically realize that gene trees evolve inside species trees what does that mean that means that
+every time that i have a speciation event say between mouse and rat the mouse is walking around
+with a bag of 20 000 genes as soon as it speciates from rat all of the genes that it carries have to
+speciate everybody with me here so basically that every gene tree if i label the branches remember before
+i hadn't even labeled my branches but now i've labeled my branches dog human mouse rat
+and if i build a tree topology that is discrepant from the species topology then i have to imply
+that there were some duplication and loss events okay so that basically means that if i have
+any kind of gene tree that i'm trying to study i can label the corresponding branches
+species according to the species that they came from whether that that gene was sequenced in a dog
+in a human in a mouse in a rat okay and now if i have a duplication event as i mentioned earlier
+all of the 20 000 genes in the bag of mouse have to diverge sorry if i have if i have a speciation event
+all of them have to diverge but now if i have a duplication event that duplication event means
+that on the common ancestor of mouse and rat that gene was duplicated what does that mean that means
+that at every speciation event the two the two copies are going to be speciating okay so that basically
+means that all of the descendants of that duplication event will now have two copies is everybody with me
+here awesome so let's make some definitions a gene in dog that has one and only one copy in human that
+fulfills the same function and that arose from the same common ancestral gene that also fulfilled that
+same function is an ortholog ortho means right up straight up in greek so ortholog basically means it's
+a gene that descended by vertical descent from that other common ancestral gene
+now if i have a duplication event and i now have two copies say you know hemoglobin a and hemoglobin b
+those are paralogs of each other because they arose from a duplication event
+and paralogs have all kinds of properties paralogs might have different functions paralogs might take
+on new functions paralogs might each keep a subset of the ancestral functions of the pre-duplicated gene
+is everybody with me here and paralog means on the side so ortho means straight down para means on the
+side everybody here so an ortholog and a paralog can basically be defined functionally just like i did
+ortholog has the same function paralog o arose from the gene duplication
+and i can also define them based on their phylogenetic relationship now pay attention here an ortholog
+paralog pair is a pair whose common ancestor is a speciation event a paralog is a pair whose common
+ancestor is a duplication event what does that mean for r1 and r2 trace the history of r1 and r2 r1 and r2
+coalesce coalesce coalescing basically means as i walk up the tree i meet so they coalesce at a duplication
+event everybody with me here so that means that they're paralogs now what about m1 and r1 are they
+orthologs or paralogs shout it out m1 and r1 they coalesce at a speciation event therefore they're orthologs
+m2 and r2 are orthologs but let me give a tricky one m1 and r2 what are they they're in different
+species but they're different copies of these genes in fact r2 and m1 coalesce at a duplication event
+and therefore m1 is a paralog of both m2 and r2 r1 is a paralog of both r2 and m2 but r1 is an
+ortholog of m1 and m2 is an ortholog of r2 everybody with me here awesome so now i want to define what
+are orthologs and what are paralogs for this i better have a a correct phylogeny and we're going to worry
+about that b a correct species tree and we're going to worry about that as well and c a correct
+mapping of my gene tree to my species tree and let's talk about that now okay so how do i map
+a gene tree to a species tree this is known as reconciliation basically says that i have a bunch
+of branches labeled by species and i'm going to reconcile them on the species branches that's not
+obvious the way that i'm going to do that is i will basically map every single one of them as low as i
+can go but no lower okay basically that simple m and r i'll map it to the mouse rat common ancestor
+but no lower mr same thing this one same thing this one well what do i have underneath i have dmr mr so
+basically i better map it all the way there but no lower everybody with me here so that's basically
+a very simple explanation for what reconciliation is so i basically build my species tree i build my
+gene tree and then i reconcile them by simply mapping to the least possible height so i recursively call
+solve this particular um algorithm which at the root of it has this least common ancestor in other words
+the most recent common ancestor of all of the branches of all of the species that are represented
+in the children of that node can i get a 5 4 3 2 1 here yes awesome beautiful okay so that's the
+reconciliation problem and now here's here's where it gets tricky if i reconcile the wrong way if for
+example m and r reconcile here by mistake then that implies all kinds of duplications and losses that's
+why a reconciliation algorithm is very important okay all right now that we have distinguished gene
+trees from species trees we can do all kinds of new cool things okay so first of all if i'm trying to
+build a correct species tree and i'm going to color those blue as always then i could average a bunch of
+gene trees together in other words i'm trying to figure out in what order did a bunch of mammals diverge from
+each other is the red panda closer to panda or is it closer to a bear or a raccoon and so and so forth
+okay so how do i do this well i can take every every gene in all of these mammalian species and build a
+topology for each of those using the methods that we saw in the first part of the lecture part one
+then i can somehow combine them to infer the species tree how can i do that well there's again many
+methods i could use a super matrix method that basically looks at the matrix of relationships
+and then you know figures that out or a super tree method that looks at the set of all possible splits of
+two uh branches i could minimize the deep coalescence that basically means that as i walk up my tree that
+all of the pairs coalesce as close as possible to their branch but not they do not traverse species
+divergence events or i can explicitly model for lessons and i can use that to basically
+infer the most likely scenario for all of these ancestral trees and again i want you to sort of
+get out a key insight here which is that i can represent every split between a group of n species
+in this n squared matrix that basically tells me what are all of the possible splits
+and then i can count every topology as simply what split does it induce if i look at that topology
+okay so the way to reconcile topology is by start thinking that every branch simply separates ab from c dc
+every branch here ab from cde and so on so forth so even though every gene tree could have a different
+subset of species represented the splits that induces can be compared across these different topologies
+everybody with me here awesome all right now we should basically realize that i can actually use this
+information to build better gene trees i can use this information to now have a better model
+for how gene evolution happens remember before i was sampling topologies i was sampling branch lengths
+i can now have a much more sophisticated model if i understand that there's species trees and gene trees
+what are we going to do now we're going to basically build a generative model
+for learning what a gene tree should look like if i already know the species tree so we're going to use
+the concept of a common species tree across thousands of gene trees to improve gene tree reconstruction
+everybody with me here so what we're trying to do trying to leverage this common information
+to learn some common properties of the evolution of genes in that lineage of species
+and use that to improve um reconstruction in other words if i have a known species tree of dog human mouse and rat
+and i end up with a topology of my gene tree where the human diverges before the dog okay so that lineage here
+here diverges there i've just swapped two branches doesn't sound like a big deal but swapping those two
+branches infers that there was in fact an ancestral duplication event in the common ancestor of those
+four species followed by speciation another speciation and then a loss here a loss here and and so
+so and so forth okay so basically what i need is one two three losses and one duplication which are
+very costly whereas the cost difference between you know branching here or branching right above that
+might be very small is everybody with me here about the intuition so therefore if i know something about
+the species topology that can constrain my gene topology do i always want to follow the gene topology
+no but when there's sufficient evidence i'll be able to overrule the species topology and that's
+what we want to model everybody with me here so this is um this is what we call phylogenomics and this
+is something that that my student matt rasmussen and i uh developed uh gosh a few lifetimes ago so
+we want to develop a rate model that basically said what is the probability of a given tree
+given number one the topology number two the reconciliation and number three some parameters that are
+that are representing the evolutionary rate of that gene okay so what did we notice we noticed that as we
+took different genes in the drosophila uh phylogeny of 12 species that we had different genes basically
+showed a scaling that was uniform across all of the species why because some genes are very constrained
+and other genes are very fast evolving but when a gene is constrained it tends to be constrained
+similarly across all of the different species where it evolves and when a gene is fast evolving it tends
+to fast evolve in all of the lineages where it's evolving so everybody within here with this concept
+so that's the gene centric view which basically says that these gene will evolve fast or slow
+so let me now take a different view which is the species centric view this species here is has a very
+long branch because it evolves rapidly i don't know it sort of was separated by a volcano it suddenly
+adapted to a new environment and all of its genes were more rapidly evolving or that species has a shorter
+generation time or a slower mutation rate so you could think of it conversely as
+as there's a there's an overall species tree which is a normalized version of all of the gene trees
+where this species here is always longer than those three species here and it doesn't matter
+how i what gene i throw in there that gene will end up evolving slower in that lineage everybody can
+hear so again these are the two forces the two forces are on one hand you basically have
+a species rate and on the other hand you have a gene rate okay let me put it a different way the
+branch between drosophila grimshawi and drosophila ananasi which actually as you can guess draw
+grows on ananas like pineapple um so grimshaw and ananasi are basically correlated
+when you look at the absolute lengths that you measure but if you look at the normalized lengths
+they're almost uncorrelated and you can see that on average the correlation is 0.6 compared to 0.01
+sorry 0.1 for the normalized stream length in other words there's this common force that's driving all of
+these correlations and you can think of that force as simply the fact that a gene evolves at a given
+rate and a species evolves at a given rate and when you look at them together they're just the product
+of the two everybody with me here awesome so what can we do we can basically model the evolution of
+individual genes as sampled from some inverse gamma distribution and the evolution of individual
+species the relative acceleration if you wish as samples from some gamma distribution and therefore
+the branch length is simply these you know properties together there's a gene rate there's
+a species specific rate and then there's the time elapsed everything here can i get a 5 4 3 2 1
+awesome now suddenly that allows me to completely change the phylogenomic pipeline
+so before i would just do an all-by-all blast i would cluster i would align i would build the trees
+i would reconcile and then you know i would have some kind of reconciled tree but now if i have the
+species tree i can actually do much better at tree building than that why because i now have a
+probabilistic model that basically says i'm given a species tree i'm sampling topologies from within that
+species tree when i have the topologies i'm sampling rates and when i have the rates i'm sampling sequences
+okay so it's a generative model that explains every aspect of this duplication loss evolution topology
+and mutation process everybody with me here cool and that suddenly had this you know extraordinary
+improvement in accuracy so basically if you look at neighbor joining it had 60 recovery of orthologues
+we now had had suddenly 96 recovery neighbor joining would infer um 22 000 duplication events we could
+suddenly infer you know 5 000 duplication events and so on so forth okay is everybody with me here
+so suddenly we can get much much more accurate trees that infer many many fewer duplication loss events
+okay all right so all of that is modeling gene duplication and loss but there's another component
+which is that evolution doesn't happen in the whole species separating at the same time but there's a
+diversity within a species remember before when i said that the mouse is carrying a bag of 20 000 genes and
+the rat is carrying a bag of 20 000 gene and as soon as they speciate all of their genes speciate at the same
+time well in practice it's not exactly that and the reason is that species are made out of populations of individuals
+and there's variation between that population specifically there might be a duplication event
+that happens in the common ancestor of all of the mammals and the species
+that carry that duplication event have some variation some individuals have it some individuals don't
+and that standing variation might persist along a speciation event and another speciation event
+and now the standing variation is finally resolved when you get to a lower lineage so all of that is
+thinking about evolution going forward but when you run evolution forward you have an exponential number
+of possibilities instead you could say well let's run evolution backwards i know that i have observed
+these four sequences the question when you run evolution backwards is when do they coalesce
+and coalescence is when they meet up on the path to the common ancestor okay and here you you have regular
+coalescence but then here you have deep coalescence what does that mean that means that the topology
+of this tree is incongruent from the topology of the species that it came from
+in other words if i look at a and b they coalesce after c and d coalesce
+do you see that so on the gene tree c and d meet up first and then they meet up with a and b
+but in the species tree a and b meet up with c first and only then they meet up with d
+do you see that this is an example that if you look at backwards in evolution is known as deep
+coalescence in other words these two lineages the a b lineage and the c lineage don't coalesce
+until after the d lineage so here you have regular coalescence and here you have deep coalescence
+everybody with me here conversely you can think of this going forward in revolution as incomplete
+lineage sorting that basically means that these lineages are sorting here but they haven't completely
+finished sorting when the next speciation event happens is everybody with me here who thinks this
+is kind of cool i hope you guys are enjoying this as much as i do so this is this is like you know
+understanding the subtleties of evolutionary processes so now we have a problem because
+the same tree can be interpreted in two different ways if you only care about coalescence and if you
+only care about duplication loss if you only care about coalescence and you see an incongruent
+topology oh no problemo that's a deep coalescence event but if you only care about duplication loss and
+you see deep coalescence you say oh well that's a duplication loss event is everybody with me here so now
+the question is how do you model both together and again with my student matt rasmussen we basically
+develop this two-step reconciliation event that basically says i have a coalescent tree that
+evolves inside a locust tree which in turn evolves inside a species tree and i sample loci where here i
+have a locus which was duplicated and then i can have my coalescent tree have deep coalescence within
+that locus so suddenly i'm able to model both deep coalescence and duplication and loss in a single
+joint model everybody with me here awesome yeah beautiful question and um that's the topic of part three
+where things can go you know all over the place okay so the last thing that i want to deal with
+is this recombinations and this concept that recombination events effectively mess up the tree
+with which regions have evolved in other words i have inherited now a gene from my mom who was here and
+a gene from my dad but my sibling has inherited a gene from the paternal grandma and the maternal grandpa
+and so so forth is everybody with me here so in other words the moment i include coalescence events
+uh you know up a tree in a population at the moment i include recombination events
+then suddenly i have the possibility of switching from position to position in the genome the topology of
+ancestral recombinations that or ancestral coalescent events that explain any position and that's known as
+an ancestral recombination graph or an arg it basically tells you that these genes in the human population
+at this locus have this topology so basically you know very often we say okay what's the ancestry of
+this person but then i'll ask you yeah but at what position because the ancestry of say one person in
+the class at this gene here might be oh i don't know asia africa and you name it in that other position
+it might be a different ancestry because they inherited a different gene from their parents does that make
+sense so the moment i have recombination events i can't just talk about a single phylogeny relating
+all people in this classroom i have to think about all of the possible topologies based on all of the
+recombination events that have separated us everybody with me here so then you can build this ancestral
+recombination graph that goes through all of this all right so um the last uh thing that i wanted to
+leave you with is uh sort of this evolution near and far uh question and i'm gonna i'm not going to
+talk about how we build alignments or how we infer these but i will tell you about this um
+very strange phenomenon where if you compare the species the the genomes of um you know four closely
+related species you end up with more or less a straight line but with that fourth species here
+you end up with a broken up line and the key inside here is what could have led to that where you can
+zoom in here and open it up and what you can see is that at every location of this one species
+you have a whole alignment spanning two complete regions in chromosome 7 and chromosome 10 of that
+other species and the same thing happens at every one of these places where basically you have some
+kind of collinearity here but then that segment is also here and that segment is also there and that
+segment is also here and that segment is also there and so on so forth so at every position you end up with
+a region of one species mapping to two different regions of another species
+but then the way that this mapping happens is not that all of the genes are in both regions there's
+only two genes that are in two copies but all the other genes are just simply interdigitated with each other
+so what goes on here what goes on is that there was in fact a complete duplication of that segment
+after which this gene that gene that gene that gene that gene and that gene were lost
+in one copy and then this gene this gene this gene this gene this gene the gene this gene this gene in that
+gene were lost in the other copy so everybody with me here so when you see this interdigitation
+it basically means that there was in fact the complete duplication followed by loss
+is that cool so so so this actually happened to me i basically was staring at these sequences
+and i was trying to figure out what the heck happened and then what we uncovered is that
+this is an example of complete duplication followed by loss and that's not true in just
+one region but it was true in every single region of the saccharomyces hervisiae genome
+of baker's yeast the model organism that everybody has been studying for you know decades and
+decades is in fact the descendant of a whole genome duplication from a species that we
+just happened to sequence frankly because they sent us the wrong sample we had asked for
+four closely rated species they mixed up the bottles they sent us a further species and
+thanks to that mistake we're able to uncover a whole genome duplication event and what's
+really extraordinary is that in some locations you don't have a single gene that's maintained
+in two copies because the vast majority of genes were lost after that whole genome duplication
+event but in this region you also see that the centromeres were in fact preserved and that
+there's a one to two mapping between every pair of chromosomes between the ancestral pre-duplication
+gene order and then the derived post-duplication gene order of course both species are alive and with
+us today but cruverma situality represents that ancestral gene order and you can see here that
+there was a gene here that was lost and there was another gene here that was lost and we can now study
+dramatic episodes of evolution using that okay so that allows us to now reconstruct the ancestral gene
+gene order but also infer that there was a whole gene duplication followed by gene loss even though only
+eight percent of genes are actually maintained in two copies we can still unambiguously argue that there was a
+whole genome duplication and it also allows us to now infer the fate of genes post whole genome duplication
+gene so we had 5 000 genes before we went to 10 000 genes and the vast majority of them 90 of them were
+actually lost in the second copy retaining only 500 duplicated genes and what's really cool now is that we
+can ask given that routing from that common ancestor which copy evolved faster or slower and in some cases
+we're basically finding that there was this dramatic acceleration event giving rise to new functions
+that the silencing protein ser3 evolved from a duplication of the origin of replication function
+that was there before or this antiviral defense evolved from this translation initiation function
+and so on so forth and what we found is that these derived function genes were never lethal they were very
+specific in their expression and they were specific in their localization okay so that's uh i think
+where i'll have to stop today um but there's just so so much i'm gonna leave you with one final story
+of the rna world okay we all study all these species and you know we love everything about them
+and we love the central dogma of dna makes rna makes protein but when you look a little more deeply
+you basically see that rna actually has a lot of functions rna can basically uh play roles of
+you know translation they plays roles of splicing it plays roles of catalysis it plays roles of sensing
+and you know ribo switches and all kinds of stuff and that points to this ancestral world where rna invented
+proteins and together rna and proteins invented dna okay so that there was once an rna world where rna was
+used for information storage through self-replication it was used for modifications and it was also used
+for catalysis where everything in that world was carried out by rna and eventually there was this
+specialization of functions where dna took over the boring task of storing information
+proteins took over the extraordinary versatile task of folding in three dimensions and carrying out
+functions inside the cell and rna at least still serves as the intermediate between dna and proteins
+but it also plays all kinds of other functions okay and that rna world basically is one where
+um rna basically invented splicing and you can still see that a lot of splicing is made by rna's
+rna invented proteins and that's the most extraordinary machine known as the ribosome
+where you have this giant machinery where you have um
+at the catalytic core lies only rna it's a combination of rna and protein and people thought for a long time that
+maybe you know the catalysis happens by the proteins but the structure of the ribosome basically showed
+us that the catalysis is all based on rna that proteins were only added later in evolution to
+stabilize that whole structure and then the adapter molecules themselves are t rnas which on one side
+function as dna by basically binding by complementarity and reading the triplet code and on the other side
+the function by structure bringing together a particular amino acid for a given transfer rna molecule
+so that extraordinary invention basically allowed now rna to invent proteins and what you see is that
+in all of the operations that involve dna rna didn't bother inventing dna by itself rna first invented
+proteins and then together they invented dna through reverse transcriptase so basically transcription
+itself happened only later but reverse transcription came before transcription and reverse transcription was
+basically the process of taking this rna information and storing it in a more stable molecule and then
+together they you know they make all kinds of additional functions okay all right with this i will leave
+you with this uh extraordinary topic of evolution we only have one lecture unfortunately given how much
+other stuff we want to cover but hopefully gives you some glimpses of uh this extraordinary diversity
+of first understanding phylogenetics the basics of phylogeny going from alignments to distances from
+distances to trees and from alignments to trees and this tree exploration the complexity that arises from
+understanding that genes evolve inside species and this phylogenomics approach and also evolution
+in populations in completely linear shorting and these extraordinary events these evolutionary jumps
+that can happen by whole gene duplication and then the slides that i kind of skipped in the in the middle
+are about the evolution of evolutionary thinking itself basically this you know introduction of natural
+selection by darwin and you know the advent of genetics with mendel and you know all of these different
+discoveries and i really encourage you to just spend a little bit of time studying that slide because
+it's still an evolving field as you can see like even students like you can sort of have you know an
+impact in understanding how to bridge together all of these different types of events but um you know
+it's it's truly an extraordinary field and i hope you guys um go on and study it all right that's where we'll
+stop here and uh we'll continue on tuesday after thanksgiving break with uh metabolic modeling so thank
+you all have a nice uh thanksgiving break

@@ -1,0 +1,190 @@
+Google Research just dropped a new paper that might be the successor to the seminal
+attention is all you need paper that started this entire new AI wave.
+This paper details an approach called Titans, which details a way to give models
+memory much more akin to how human memory works with long-term memory.
+And it happens during inference time with an interesting surprise mechanism.
+This is all quite complicated, but I'm going to try to break it down for you in really simple terms.
+So this is the paper Titans learning to memorize at test time, and this is out of Google research.
+Now the abstract of the paper describes the problem with transformers, which is the context
+window is limited because there is a big penalty as you increase the context window based on the
+transformers architecture. But what if you didn't have that limitation? What if you can have infinite
+tokens in a context window and it's still performed really well? That is what Titans aims to deliver.
+The way it's described in the paper is this more accurate modeling of dependencies, however,
+comes with a quadratic cost limiting the model to a fixed length context. So when you think about
+the context window of major models, GPT 4.0, let's say 128K tokens, even the biggest context window
+with Gemini is 2 million tokens. And that's huge. But as our needs grow, we need ways to grow past
+that context window. And so what they're going to describe in this paper is a way for the Titan
+based models to learn, to actually have long-term memory, and to figure out what to focus on,
+what to give its attention to. Our experimental results on language modeling, common sense reasoning,
+genomics, and time series tasks show that Titans are more effective than transformers.
+They further can effectively scale to larger than 2 million context window size with higher
+accuracy and needle in a haystack tasks compared to baselines. So if this is true, this is a really
+important paper. So in the introduction, they first talk about transformers and why the attention
+mechanism was so important. Transformers, pure attention-based architectures have been firmly
+established as state-of-the-art models and sequence modeling. Basically, the vast majority of
+language models that you use today, from OpenAI to Anthropic to Llama, DeepSeq, everything,
+they are based on the Transformers architecture and the attention mechanism. And it is the state-of-the-art
+because it is due to their in-context learning and ability to learn at scale. The scale is the
+important part. But there is a major drawback to the Transformers architecture, which is,
+it comes with quadratic time and memory complexity in terms of context length. Basically,
+it starts to struggle with longer context lengths. The more information you give it during inference
+time or in the prompt, the worse it performs. Now, this is all relative because with 2 million tokens,
+that's quite a lot. You can load up entire videos in that. But again, as our need to input more and more
+information into these models grows, then this problem becomes bigger and bigger. So in complex
+real-world tasks, video understanding, long-term time series forecasting, the context window can
+become extremely large, making the applicability of Transformers challenging in these downstream tasks.
+So that is the problem. That is what they are trying to solve with Titans. And so what Titans
+really aims to do is model their architecture much more closely to how the human brain works.
+And the human brain has multiple types of memory. It has short-term memory. It has long-term memory.
+It has meta memory. And how all of these different memory types work in coordination,
+but also can work independently, is a critical feature of how the human brain works and how our
+thought processes work. And so that is not something that the current Transformers models do.
+And so again, that is what Titans aims to do. Give it multiple types of memory and allow these
+different types of memory to work together. We argue that in an effective learning paradigm,
+similar to the human brain, there are distinct yet interconnected modules, memory modules,
+each of which is responsible for a component crucial to the learning process.
+All right. So now they take a 10,000 foot view here. What is memory? Why is it important? So memory is a
+fundamental mental process and is an inseparable component of human learning. So learning plus memory,
+two different things, but interconnected. And if we didn't have memory, humans and animals would be
+restricted to basic reflexes and stereotyped behaviors. So think about the most basic types
+of organisms. They are just reacting to their environment, nothing more. Now, whether that's
+the case with humans and it's just so complicated, we can't actually see that. And we think we have
+memory. That's a discussion for another time. So taking inspiration from the common definitions of
+memory and learning in neuropsychology literature, most existing architectures consider memory as a
+neural update caused by an input. So you see something, you hear something, you smell something,
+that is the input. And that is the way a memory is formed and define learning separate from memory
+learning as a process for acquiring effective and useful memory given an objective. And so in this paper,
+they aim to answer a few questions. One, what constitutes a good structure for the memory?
+Two, what is a proper memory update mechanism? Three, what is a good memory retrieval process?
+Four, how to design an efficient architecture that incorporates different interconnected memory
+modules. Remember short-term, long-term matter memory. And five, is a deep memory module needed
+to effectively store remember long past. And again, that is one of the drawbacks of transformers. It
+really struggles with very long-term memory. And so what if you could bake that memory directly into
+the model? Now, here's the important part. In this paper, we aim to answer the above five questions by
+designing a long-term neural memory module that can efficiently and effectively learn to memorize at
+test time. I really want to emphasize that test time, not during pre-training. This is at the time
+when the model is actually running, when you're giving it a prompt and it's figuring out what to
+respond with. That is when they want to give the new memory to the model. So it learns how to memorize,
+store the data into its parameters at test time. And if this sounds familiar, it should be. I covered a
+paper called test time training, which basically in the most simple terms allowed a model to learn
+based on its prompt. It can actually update its parameters during that prompting and inference time.
+Now, here's the most interesting part in my mind. We designed this memory module. So an event that
+violates the expectations, more simply being surprised is more memorable. Now let's think about how humans
+work. Think about when you're doing something really boring or something that you've done a million
+times, something really repetitive. Those actions are so ingrained in the way that you do things that
+you just kind of zone out and you kind of just do them without thinking about them. Think about,
+think about driving. Do you ever show up somewhere and then think, oh, wow, I don't even remember
+driving here. It's because you've been driving so long. You kind of don't think about it. You don't have
+to think about it. And that is different from when something surprises us. Now think about this,
+you're driving and then all of a sudden you get cut off or there's a huge accident in front of you
+or anything, a tire falls from the sky, whatever it is. You're going to remember that because that was
+a surprise and not something that you would encounter usually. And so that kind of function is
+what they're trying to give the model. There's this surprise mechanism and they actually baked it into
+the architecture of how memory works. Very fascinating. So when the model becomes surprised,
+it knows, okay, I need to memorize that. So we measure the surprise of an input. We present a
+decaying mechanism that considers the proportion of memory size and the amount of data surprise,
+resulting in better memory management. So basically when something surprises you, it has a high memory,
+let's say factor at the very beginning. And then over time, it kind of learns to give that less
+attention or less priority, whatever you want to call it. So again, think about something surprising
+that happens in your life. Right at the time of the surprise, you are thinking about it a lot. It is
+in your memory. It is deep in your memory. But then as time goes on, that memory starts to decay.
+You start to forget details about it. And days, weeks, months, years on, that memory becomes more
+abstracted and less important because it is less surprising in the current time. This decay mechanism
+is in fact, the generalization of forgetting mechanism in modern recurrent models. So what is
+the Titan's architecture? It is the ability to incorporate that type of learning, that type of
+memory into an AI model. An important remaining question is how to effectively and efficiently
+incorporate memory into a deep learning architecture. We present Titans, a family of deep models that
+consist of three hyperheads, core, long-term, and persistent memory. So think about core as short-term
+memory. That is the most important memory in that moment. And it is responsible for the main flow of
+data. Then they have long-term memory, which is responsible for storing and remembering memories
+over the long-term. And then they have persistent memory, which is, as they describe, a set of
+learnable but date-independent parameters that encodes the knowledge about a task. So it's not
+short-term memory. It's not long-term memory. It is just baked into the model itself. And they
+actually give three different variants of the Titan architecture with different trade-offs for each of
+them. So they incorporate memory as a context, a layer, and a gated branch. I'll try to explain what
+those are in a moment. Now we observe that our Titan architecture outperforms all modern recurrent
+models, as well as their hybrid variants across a comprehensive set of benchmarks and Titan scales
+to larger than 2 million context window size, which is the current state-of-the-art limit of what models
+are capable of with the Gemini model. So the next section is learning to memorize at test time. Now,
+as a reminder, test time means inference time. When you prompt a model and it gives you the response,
+that in-between period when it's figuring out what to tell you, that is test time. And that is the
+interesting part because at test time, it needs to happen really quickly. And again, we reviewed that
+paper a few weeks ago called test time training, which is kind of using the same technique. It's
+basically updating the model itself at inference time, at test time. So we present a neural long-term
+memory module, which is a meta models that learn to memorize at test time. So first long-term memory,
+it encodes the abstraction of the past history into its parameters. So again, it's like a long-term
+memory. You don't remember every single major and minor detail of a memory over the long-term. That is
+just not how the human brain works. And so again, they're trying to mimic the way the human brain
+works in these new Titan models. And so it's an abstraction. It is a rough picture of something that
+happened over the long-term. Memorization, however, has almost always been known as an undesirable
+phenomenon in neural networks as it limits the model generalization. So if it memorizes everything,
+it is less capable of generalizing. That is why knowing what to memorize is an important feature
+of these models. It also causes privacy concerns. So if you memorize everything, then you'll run into IP
+issues. You'll disclose private information that shouldn't be disclosed and it results in poor
+performance at test time. Now, my favorite part, the surprise metric. So as discussed earlier,
+an event that violates the expectations. I love that phrase. Basically, it's called surprise. You
+expect something and something happens that is not within your expectations. You're surprised and thus
+that is something to memorize. So it is more memorable for humans. Inspired by this, a simple definition
+of surprise for a model can be its gradient with respect to the input. How different is it from what
+it was expecting? The larger the gradient is, the more different the input data is from the past data. I
+mean, it's pretty straightforward. The surprise metric, however, can result in missing important
+information that comes after a big surprising moment. So if you put too much attention on a surprising
+moment, then things that occur after it, you may not remember. Again, think about humans. So from the
+human memory perspective, an event might not consistently surprise us through a long period of
+time, although it is memorable. The reason is that the initial moment is surprising enough to get our
+attention. So we like we talked about through a long timeframe leading to memorizing the entire timeframe to
+improve the above surprise metric. We break the surprise metric into past surprise and momentary surprise. So past
+surprise measures the surprise amount of a very recent past and momentary surprise, which measures the
+surprise of incoming data. So it is the new surprise versus the surprise that just happened. But we also
+need a way to give the model the ability to forget. It can't just memorize everything. That's when you run
+into poor quality. So it needs a forgetting mechanism. When dealing with very large sequences, millions of
+tokens, it is crucial to manage which past information should be forgotten. To this end, we use an adaptive
+forgetting mechanism that allows the memory to forget the information that is not needed anymore. And so this
+forgetting mechanism takes a few things into consideration. But the gist is it factors in the surprise, plus how much
+memory it has available, and it decides what to forget. So in this next section, they are going to discuss the
+different ways that they can incorporate memory. And there are three, and each comes with trade-offs,
+as I mentioned earlier. So first memory as a context, and this stuff is very complicated. So I actually got
+help from AI to explain it with analogies. So first memory as context. So think of Mac, M-A-C, like having a
+personal assistant in a meeting who takes detailed notes of past discussions, long-term memory, whispers
+relevant information in your ear when needed retrieval, and then helps you combine both past knowledge and
+current discussion to make decisions. It's basically like having someone record a bunch of memories for
+you and then tell you that memory as context to make a decision. Next, we have memory as gate, M-A-G.
+So in this implementation, we have two advisors in your head. One advisor focuses only on what's happening
+right now, the short-term attention. Another advisor draws from years of experience, long-term memory.
+And then you have a gatekeeper that decides how much to listen to each advisor. So one that is just
+hyper-focused on whatever is happening in the moment, and then another advisor that looks at the
+history only and doesn't look at what's happening in the current moment. And then you have this third
+person who's deciding how much of each to use in whatever decision you need to make. And then you
+have memory as a layer, which is different from the other two. It is essentially putting information
+through different layers and each layer is a type of memory. So for example, the first filter might
+be processes everything through long-term memory. The second filter is looks at immediate context
+through attention, and then each layer refines the information before passing it to the next.
+Now, as I said, there are trade-offs, so let's discuss the different trade-offs. So Mac, memory as context,
+is best for tasks requiring detailed historical context. Mag, M-A-G, is more flexible and can switch
+between short and long-term focus. And then M-A-L is the most efficient, but slightly less powerful.
+So three implementations, maybe you use them all, maybe you choose one. Different trade-offs that you
+need to think about if you're implementing something like this. And so how do they perform? Well, across the
+top, you have the different benchmarks that it was tested against. So Arc E, Arc C, Wiki, all of these.
+So as we can see up top, these are the different types of architectures. We've talked about Mamba on
+this channel before. We've talked about TTT, Test Time Training and Transformers. And here are the
+Titan models. So if we look across the board, pretty much the Titan models win. It is really that simple.
+And this is for a 340 million parameter model. Then you have the 400 million and 700 million
+parameter models. And as you can see, the ones that are highlighted performed best across the
+different benchmarks and Titans did incredibly well. Now, next, the needle in the haystack test. So
+that just means when you have really long context windows, can it remember and retrieve things that
+are deep in that context window without forgetting or getting messed up? So what we see here on the
+Y axis is the accuracy in terms of retrieval from a long context. And then on the X axis,
+we have the sequence length. Now, as you can see, here's GPT-4 and GPT-40 mini in gray,
+these two gray ones. And then with the Titans MAC across the top, as the context length increases,
+it stays pretty consistent in performance, but the other models drop quickly, especially some of these
+other models right here. And this is for a few shots setup. And then here's a fine tuning setup.
+And again, as you can see, the Titans models across the board outperform the other different
+architectures in terms of needle in a haystack. All right. So the conclusion, we present a neural
+long-term memory that as a meta in context learner learns to memorize at test time. So it is a recurrent
+model in nature and adaptively memorizing tokens that are more surprising and are close to surprising
+tokens. I absolutely love that intuition that the researchers had. Our experimental evaluation on
+diverse tasks validate that Titans are more effective than transformers in recent modern
+linear recurrent models, specifically for long context. And so that's it. That is the way that they
+are proposing to give models better long-term memory with this surprise mechanism. I find it so fascinating.
+And congratulations to the author of this paper. I'll link the paper in the description below. And
+if you enjoyed this video, please consider giving a like and subscribe, and I'll see you in the next one.

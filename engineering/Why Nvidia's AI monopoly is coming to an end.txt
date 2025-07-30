@@ -1,0 +1,353 @@
+Hi everyone. As interest in generative AI has surged, so too has demand for NVIDIA GPUs,
+briefly making NVIDIA the most valuable company in the world. A large part of NVIDIA's success
+has been due to its CUDA ecosystem, which has long been a massive moat against other companies.
+However, that advantage is starting to disappear, and NVIDIA isn't the only player in the GPU game.
+Keep watching to learn more. This video has three parts. NVIDIA's CUDA moat,
+the competitor's view, and should NVIDIA be worried? Part 1. NVIDIA's CUDA moat. If you're
+involved in AI models at all, you probably already know that pretty much all deep learning is occurring
+on NVIDIA GPUs. This includes both training and inference. This fact is the reason why NVIDIA's
+stock price has climbed stratospherically recently, and even made NVIDIA the most valuable company in
+the world. As of this video, I think it's the third most valuable company in the world, but
+still, not bad. Of course, NVIDIA makes great GPUs, but their hardware is not the only reason for their
+dominance. NVIDIA has what people call an AI software moat. Basically, NVIDIA controls enough
+of the AI software ecosystem that they can keep competitors out. What exactly is this software
+stack? Well, let's start with a bit of history about GPUs. Originally, GPUs were only suited for
+graphics, hence their name, meaning Graphics Processing Unit. GPUs had a fixed function pipeline that was
+defined in hardware and couldn't be changed by the end user. Eventually, GPUs started to get a little
+more flexible when shader programming came along. Shader languages like GLSL for OpenGL and HLSL for
+DirectX allowed portions of the graphics pipeline to be changed programmatically. These languages
+effectively compiled down to GPU assembly code, which meant that GPUs had to start becoming more
+general purpose until GPU companies realized they could actually expose a fully general and fully
+programmable interface without too much effort. So they introduced GPGPU or general purpose GPU
+programming languages. As usually happens in technology, the market leader defined their own
+proprietary solution, which they kept closed source, while everyone else tried to define an open
+standard, which never really caught on. The open standard was OpenCL and the proprietary solution
+was CUDA by NVIDIA. So NVIDIA leveraged an initial lead that they had in the gaming GPU market and has
+built upon and maintained that lead ever since. What made CUDA so powerful? Several important design
+elements. It's designed to reveal low-level details about how the GPU actually works, in particular the memory
+hierarchy and also the computation structure. Just like a CPU, a GPU has many different
+layers of memory arranged in a sort of pyramid, where the smallest is also the fastest. And if you
+really want to use the entire GPU's memory, that's going to be really slow. But a GPU is particularly
+sensitive to the way in which you use its memory and its different levels of hierarchy. If you make
+a mistake, for example, you end up accessing memory in a pattern that's very inefficient, then the
+performance of your system can really tank. So that's why CUDA explicitly exposes this pyramid of different
+types of memory so that you can access the right portion for your needs. In terms of computation
+structure, while CPUs basically just have threads, in CUDA you work with grids and blocks and threads
+because GPUs have a much more complicated execution environment. In contrast, the OpenCL standard has been
+pretty slow to evolve and OpenCL code is meant to be written once and then run on a GPU or a CPU, which
+necessarily means hiding many aspects of how the GPU actually works. That also makes it really hard to
+get the best possible performance out of your hardware when you're using OpenCL. But this may have
+been inevitable when you get a lot of different companies coming together trying to make compromises
+and decide on a standard. But I really think they should have kept the CPU and GPU portions very separated.
+These days, the newer versions of OpenCL, like OpenCL 2.0 and 3.0, are actually optional because they don't have any
+staying power amongst GPU companies anymore. I think the other part of CUDA's success comes from PTX,
+which is the machine code that it outputs. NVIDIA is not afraid of change and so the PTX machine code
+that the NVIDIA GPUs support has changed a lot. I think there have been something like 12 or 22 different
+versions of it so far. This basically means that there are multiple different binary APIs that CUDA can
+target, which is very similar, by the way, to how the Android SDK works. If you've ever made Android apps,
+you know that there are like 18, 25, even 30 different versions of the Android API. This is also
+what ARM assembly code looks like. ARM being the CPU architecture that powers virtually every phone on
+this planet, including Androids, iPhones, and even Apple laptops these days. Assuming you have a good
+compiler infrastructure, which CUDA certainly does, I think this is the right model to enable rapid
+innovation. If NVIDIA tried to maintain backwards compatibility with its PTX machine code, that would
+put a lot of constraints on future generations of GPUs and how they could be optimized. This approach
+does force people to recompile their code whenever a new version of CUDA comes out, but you can impose
+that when you are the market leader. CUDA has become so popular that it was very natural for other
+frameworks to actually target it, meaning other frameworks or other programming languages output CUDA,
+which then gets compiled by the CUDA compiler into PTX that can actually run. Of course, if something
+targets CUDA, that means it only works on NVIDIA GPUs because there are two main problems for
+competitors. First is that CUDA is closed source and NVIDIA really, really doesn't like anyone trying
+to copy it. And second, even if you do try to copy it, CUDA has had a lot of features added to it over
+the years. So it's a really massive task to try to re-implement CUDA. The PTX language keeps changing
+because NVIDIA just has to make a new compiler in that case, but CUDA itself never changes, at least
+not in a way that breaks backwards compatibility. That's how NVIDIA makes sure that its customers
+don't have to keep changing their code for new generations. And CUDA has had such a huge market
+share and it's so complicated that if there are any bugs or quirks in the implementation,
+then that's actually what people rely on, which makes it even harder for someone to replicate because
+they would literally have to replicate all of the bugs as well. Just as an example, PyTorch,
+the most popular machine learning framework out there, used to target CUDA exclusively. So even
+though NVIDIA doesn't control PyTorch, which was originally created by Meta, they effectively
+guaranteed vendor locking for PyTorch and therefore for everyone that uses PyTorch, which means the
+entire machine learning community, basically outside of Google, which creates a huge amount of momentum
+that's really hard for any competitor to imagine changing. And there's also just the simple fact of
+human nature where if your previous cluster was built entirely of NVIDIA GPUs, your next cluster
+probably will be as well. Part two, the competitor's view. Let's take the perspective of an NVIDIA
+competitor for the moment. It's really hard to break into the GPU market, especially the machine
+learning part. NVIDIA has been involved in arguably anti-competitive practices to make sure they control the
+software stack. So if you're AMD or Intel or some other producer of hardware accelerators,
+how would you approach this issue? Actually, nobody likes the CUDA monopoly except for NVIDIA. Even
+PyTorch, which I mentioned, wouldn't have restricted itself to CUDA unless there was no other good
+alternative out there. Companies like to have additional options beyond just the primary provider.
+For example, Google wanted to build Stadia, their online gaming platform that eventually flopped.
+But anyway, when they were building it, they decided to use entirely AMD GPUs. And it makes
+perfect sense. Google would get better performance per dollar and a partner that was presumably
+more willing than NVIDIA to share details of how their drivers were really working.
+Companies also just hate relying on a single company because they see it as a single point
+of failure, right? If that company messes up or can't meet production targets or whatever,
+then you have nowhere else to turn to. So there's definitely a market for NVIDIA competitors,
+even if the hardware isn't as good. If you can just break this CUDA nut.
+So we're going to talk about four different ways that companies could address this issue.
+First, companies could try to have hardware compatibility. It's definitely the simplest
+way to approach this problem. For example, AMD CPUs are hardware compatible with Intel processors,
+which means that AMD doesn't have to have a completely isolated market for its CPUs,
+because a program compiled for an Intel CPU can just run on an AMD CPU, in theory.
+This is only possible because Intel had a sort of open standard. They published the details of
+how their architecture worked. And this can backfire on you. For example, AMD was the first to produce
+64-bit Intel compatible processors. So in many cases, it actually got their name. Although the
+official name of 64-bit Intel processors is x86 underscore 64, Debian Linux still refers to this
+architecture as AMD 64. And anyway, this worked because Intel has a very, very stable architecture.
+They actually implement their machine instructions by having some microcode underneath, and the microcode
+can change all the time, but the instructions do not. In theory, you can run an original 8-bit program
+designed for the 8080 on today's 64-bit processors. It's actually a little more complicated than that, but
+still, it's the thought that counts. That meant that AMD could target the same stable architecture. But as
+I mentioned, PTX is very unstable. So maintaining hardware compatibility with Nvidia would be next to
+impossible. You'd have to try to target the stable API, which is basically CUDA in this case. The second
+way to try to maintain compatibility would be to have library compatibility. Just take all those CUDA
+functions and rewrite them and have your own version. While this is definitely feasible, it doesn't solve the
+issue that you have all this user-written CUDA code out there. And it's also very difficult to do when
+the API is really large, which CUDA is. Like I said, they just keep adding to it. So for example,
+when IBM tried to take their database, DB2, and make it compatible with Oracle, they were able to do so
+because it was a relatively small API difference. And then they were able to slurp in all of Oracle's
+customers. When Microsoft tried to port Linux to run on Windows, they were successful. That's what's now
+called WSL, Windows Subsystem for Linux. And that's because Linux has a relatively small number of
+system calls, about 300 or so that have to be implemented for that to happen. But the other way
+around, when the Wine project tried to get Windows to run on Linux is essentially hopeless because there
+are more than 2000 system calls in the Windows kernel. And it's also not a stable API, which is why Wine
+stands for Wine is not the best. Oh, wait a minute. I think I got that one wrong. Wine is not an emulator.
+That's right. It's a library compatibility layer. Third option is to do binary translation. If you
+have a program written for one processor architecture and you want to run it on a different processor
+architecture, then you can technically translate every instruction so that it works properly on the
+new architecture. This is very hard technically and a lot of maintenance effort, especially as I
+mentioned, because PTX is not a stable API. There are some pretty successful examples of binary
+translators out there though. For example, when Apple started using ARM processors or
+Apple Silicon in all of its laptops, they were faced with the issue that all the Mac programs out there
+were compiled for Intel compatible processors rather than ARM processors. Now, Apple isn't as afraid of
+breaking backwards compatibility as Windows and Intel are, but they still had to do something about
+this or the brand new laptops wouldn't be able to run any programs. So they created Rosetta, which is a
+complete binary translation framework between x86 code or Intel code and ARM code. And although there
+are definitely edge cases, a large number of programs just work out of the box, which is simply amazing
+given the technical details of what it's actually accomplishing. Finally, the fourth and probably most
+difficult route you could take to try to achieve compatibility is to create an entirely new compiler.
+This is also a difficult task because you have to implement all of the CUDA libraries and also
+pretty much match all of its quirks and keep up with all the new updates that NVIDIA keeps adding
+to the language. And writing another compiler is a really easy way to get into legal trouble. If the
+compiler that you're copying belongs to a company that's likely to sue you, which NVIDIA certainly is
+in this instance, then you have to do what's called a complete clean room reimplementation, which means
+that you go and create a compiler without ever referring to any code that could possibly be
+copyrighted by the other company, which means no looking at their compiler to see how it works,
+no running it, you just have to work entirely off of documentation from their website, for instance.
+There's one really famous instance of a company doing a clean room reimplementation of a compiler.
+Google was out looking for a language that it could use for its upcoming Android smartphones,
+and it thought that Java would be the perfect fit. But Oracle owned all the rights to the Java
+compiler, and they didn't want to let Google use it. So Google did a complete clean room
+reimplementation. It took a long time. And unfortunately, Google's compiler was open source,
+and someone I think from Oracle ended up looking at that source code and saying,
+I think this tiny function right here looks like it was copied from our code. So Oracle sued Google over
+it. And I think Google lost that case and ended up paying a fair amount of money to Oracle for what
+was really a short function, just a few lines long. But because there was reasonable doubt as to whether that
+function had actually been recreated or was really copied from the internet from Oracle's code somewhere,
+it got them into a lot of trouble. You can also do a lightweight version of this, which is basically
+source to source translation. So you can have a tool that takes CUDA source code as input and outputs
+source code in another language that works with your hardware. And currently both AMD and Intel have this
+sort of tool in their frameworks. Now let's talk about how some of the direct competitors to Nvidia,
+namely hardware manufacturers, are going about using these four different techniques to try to
+make their systems compatible with CUDA. First is Intel, which since they started producing ARC devices,
+are now manufacturing dedicated GPUs of their own. Intel's equivalent to CUDA is called OpenAPI.
+And as mentioned, they have some ability to translate CUDA programs into OpenAPI code. There was also an
+Intel engineer who created this system called ZLuca all in his own time, which was meant to be a
+re-implementation of CUDA that would run on Intel GPUs. The project was shut down for a while as
+Intel decided to evaluate the business case for this software. And they eventually said, nah,
+just release it open source. We don't really want to pursue this direction. So this developer went to
+AMD, who's the other major producer of GPUs these days, and worked with AMD to start porting it to their
+GPUs. And then AMD came along and said, let us evaluate the business use case for this. And then
+eventually they also turned down the opportunity to have a complete re-implementation of CUDA.
+Basically, both of these companies realize that they could get into a lot of legal trouble if
+Nvidia decided to press them on it, which they almost certainly would. But AMD and Intel aren't
+the only GPU producers in the world. Although you may not have heard of them, there's a company called
+MoreThreads, which I think is a great name. This is a Chinese company that was founded in 2020,
+and then released their first GPU products in 2022. Apparently these GPUs are not very fast at all.
+But if you're in China, remember that the US government has banned Nvidia from selling their
+highest performing GPUs to China. So the bar is lower for more threads. They only have to compete
+against pretty slow Nvidia GPUs. So if more threads can get the costs down, then they'll probably start to
+look appealing. Anyway, the company has this tool called Musify, which is designed to allow CUDA code
+to work with its GPU architecture, which they call Musa. The English internet is pretty light on details
+about this system. But according to an architecture diagram I found of the MoreThreads product,
+they seem to be re-implementing most CUDA components. And Musify seems to either be a full
+compiler of CUDA source code or possibly a binary translation framework. My guess is they're trying to do both.
+They can probably compile unmodified CUDA code without too much difficulty, if they've already
+re-implemented all of the CUDA style libraries. But to a Chinese consumer, having a binary translation
+tool is probably ideal, because you can't necessarily contact the provider of your software and say,
+hey, can you please compile for a MoreThreads GPU, when they may not have heard of MoreThreads.
+The other reason I think that they're doing binary translation is because of Nvidia's response.
+Nvidia banned the disassembly of code that is linked with CUDA.
+Let me unpack that. So typically, disassembling code to understand what the instructions are
+doing at the assembly level is always possible in a technical sense, but it's often banned from
+a legal sense, because companies don't want their closed source proprietary software from being
+unraveled and replicated. Of course, if you're located in China, you probably don't pay much
+attention to these sorts of bans and are pretty happy disassembling a competitor's code anyways.
+But Nvidia went a step further. Instead of banning the disassembly of their own code,
+like the CUDA libraries, for example, which would make sense and would have precedent,
+at least in a Western legal setting, they literally banned you from disassembling your own code
+after you've compiled it, if you're linking it with the CUDA libraries, which is bizarre. I'm not
+sure it would hold up legally speaking. But they probably did it because they don't want people
+running binary translation tools. For example, something like Musify, which a company could use to make their
+product compatible with more threads GPUs. Of course, it doesn't help very much against someone
+in China, for example, more threads themselves from running the disassembly of your code and therefore
+translating the software for you. Because whatever Nvidia says is pretty unenforceable in China. So I
+think this is more of a gesture than anything else to let the market know that they're really serious
+about protecting the intellectual property, which is CUDA. And after all, as one commentator put it,
+recompiling existing CUDA programs remains perfectly legal. So if more threads, or anyone else for that
+matter, manages to actually implement a clean room version of a CUDA compiler, there's not much that
+Nvidia can really do about it. So let's talk about new compilers. Amazingly, there's actually a company
+called Spectral Compute, based in the UK, which came out with an entire clean room re-implementation
+of a CUDA compiler. Their compiler is called Scale. It currently targets AMD GPUs, although they're planning to
+support even more types of GPUs in the future, which I guess means probably Intel GPUs and not
+more threads GPUs. Even more amazing is that this compiler is currently free. It's unclear whether it
+will stay free because they're calling it a beta right now. And it's closed source, not open source.
+But that's only sensible when you're doing a clean room compiler re-implementation. You don't want to
+have to prove that this one little tiny function here was not copied from the internet. Also, this compiler
+took seven years for them to build. That's right. It took seven years to create a clean room
+re-implementation of a CUDA compiler. Now, Spectral Compute is a fairly small company. They have less than
+50 employees, according to LinkedIn, and they do do other things. But still, it just takes a huge amount
+of effort to clone something as vast as CUDA. I don't know what their intentions are. But if I were them, I
+would be trying to drum up interest and support for using this software, get a lot of people interested in it,
+get AMD really interested in it, and then start charging people for using the compiler, and get
+Nvidia to buy you out so they can make the compiler free again so that everyone keeps using their GPUs.
+Anyway, AMD has basically been doing that already through a different path. AMD has this compiler
+called RockM, which is basically their answer to CUDA. It's supposed to support a lot of the same use
+cases, but it has been very spotty in the past. Basically, AMD didn't set out to try to create a
+general purpose computing engine the way that Nvidia did. Instead, they just added features to
+RockM that were needed by their biggest clients. So hobbyists and machine learning developers that
+tried to use it found gaping holes. Of course, their attitude towards machine learning has recently
+changed rapidly. So in October 2023, AMD acquired Nod.ai. Nod.ai had their own optimizing compiler,
+which already targeted AMD GPUs. So it wasn't exactly CUDA in a box, but it brought AMD much closer
+to actually having a working CUDA compiler. I think they've now merged all of that into RockM
+and continued development there. It seems like AMD is continuing to put a lot of resources behind
+this project. As part of the research for this video, I actually spoke with an AMD compiler engineer
+who was working on all of this stuff. I didn't get any details, no NDAs were broken, but he did say that
+all of the work that they're doing is open source. And indeed, most of RockM is open source. It's a
+typical strategy when you're behind, as I always say, open source when you're behind to try to leverage
+the community to catch up to your competitors. But it's a really sound plan by AMD. And if it doesn't
+work out, they can always buy scale. Part three, should Nvidia be worried? First of all, this section,
+and indeed this entire video is not financial advice. Please don't invest or not invest based on what you
+see here. On the one hand, all of these techniques that we talked about that other companies are
+trying to do are fundamentally catch up techniques. They're ways that other companies can try to copy
+the market leader, which is clearly Nvidia, and really try to breach the software moat that Nvidia
+has built for itself. Remember that Nvidia still makes the best GPUs. On the other hand, AMD already
+provides arguably better performance per dollar spent, especially on the lower end. So Nvidia would
+probably experience significant downward pressure on their prices if their competitors were playing
+on a level playing field. So even though it's not an existential risk to Nvidia, they still want to
+maintain their CUDA monopoly as long as they possibly can. And also, of course, their sky-high valuation.
+My perspective, though, is actually that CUDA is just too large and complicated to be effectively
+emulated. Nvidia just keeps on adding to the framework. If you're scale or RockM, then you're
+constantly going to be on the back foot, constantly a generation or half a generation behind. Nvidia is
+also very wealthy now and can enforce its moat in many different ways. If it comes to a bidding war,
+Nvidia can easily outbid AMD when it comes to purchasing scale, for example. However, all that said
+and done, even CUDA is not actually the most ideal framework for general purpose GPU programming. Why?
+Well, the same reasons that make it really hard to copy. It's super complicated, which means that a
+simpler language and a simpler framework might actually perform better. Similar to how ARM processors
+can out-compete x86 processors when it comes to power consumption and all kinds of other metrics,
+because x86 processors are carrying around three or four decades of baggage. So there's actually one
+extra dimension that we haven't talked about yet, which Nvidia should be most worried about. And that
+is, what if a competitor introduces a more attractive stack? Now, this would be very hard to do. The
+competitor would need to have a significant advantage in at least one area for their hardware. Otherwise,
+you would just keep using the Nvidia hardware and the Nvidia stack that you're familiar with. It's also,
+as you can guess, extremely capital intensive to recreate an entire stack like this. And it takes
+quite a lot of time. So any company trying to do it would have to take capital from some other line
+of business that they're already successful in. AMD could afford this though, because they have pretty
+successful CPUs. And interestingly, we can actually get a good idea of whether and when this is happening.
+Because again, when a competitor is playing catch up from behind, they will often release their products
+open source to try to leverage some community involvement for that extra little bit of effort.
+And as it turns out, new stacks are actually being quietly created all the time. Most are really
+special purpose, but not all of them. This information is from an article by Semi Analysis,
+which you can check out in the links below. Basically, they highlight OpenAI's Triton,
+and also PyTorch 2.0. PyTorch, remember I said, has historically only supported CUDA as its backend.
+And part of that was because there was just layer upon layer of different operators and different
+features added to PyTorch until they had this huge API that they had to maintain. But they went back
+and rewrote a lot of the graph planning aspects of PyTorch. They called that PyTorch 2.0,
+and as it happens, it's much more compatible with the way that other GPUs want to do things.
+So suddenly PyTorch, which is this aspect of the stack that NVIDIA doesn't control,
+is making itself more compatible with other GPUs, which is not something that NVIDIA wants.
+But the really interesting development here is OpenAI's Triton. Basically, OpenAI has
+a lot of machine learning experts, but not very many GPU programming experts, or so I gathered.
+So they created Triton, which is a domain-specific language that's implemented on top of Python.
+As is very common for these sorts of languages, you just write Python functions and you add a
+little annotation at the front, which basically says, Triton, pay attention to this. This means
+that the same people that are writing PyTorch every day and are therefore very familiar with Python
+can actually try their hand at writing Triton code, which is certainly not the case when it comes
+to CUDA. CUDA is extremely complicated code to write, and you really need to think about it a lot,
+and you need specialized skills for it. Triton is a higher level version of CUDA,
+that nevertheless achieves pretty similar performance. And Triton does this by turning
+its code, that Python-based stuff that the programmer wrote, into an intermediate representation
+that's compatible with the LLVM compiler framework. I'll talk about that more in a minute,
+but it's basically something that exists inside a compiler, and then they use the existing LLVM
+support for outputting PTX code. If you remember, PTX is the name of the assembly language or
+the GPU machine language for NVIDIA's GPUs. In other words, Triton is skipping CUDA completely.
+They don't go from Triton code to CUDA to PTX and then run that. Instead, you just go from Triton
+code straight to PTX and then run it. This is really dangerous for NVIDIA because it cuts CUDA out of
+the equation and makes it much easier to port to other architectures. Let me stop and explain a bit
+more about LLVM so it will make more sense. If you're not familiar with LLVM, it's basically a
+research compiler that has slowly revolutionized every aspect of compiler technology. It's the first
+system with an intermediate representation for the code that's flexible enough to handle high-level
+information and low-level information. It's now used in the V8 engine to accelerate JavaScript in your
+web browser. It's used for traditional C and C++ compilers. It's used for new compilers like the
+Swift programming language that came out of Apple. Heck, even the Linux kernel that runs in Google and
+Meta data centers is compiled with LLVM. And basically, every researcher who's doing any kind of optimization
+research is going to make sure that their code works with LLVM. So there's a faster improvement loop
+for LLVM-based techniques. Improvements to LLVM code generation can immediately propagate to all
+these other uses of the technology. And because there's only one intermediate representation,
+it's really easy to write new source languages or new output languages. For example, new versions of
+PTX or supporting AMD GPUs as well or supporting Intel GPUs as well, etc. So as Nvidia, unless you develop
+your own LLVM-based system, you're probably going to lose in the long run. But unfortunately, having
+an LLVM-based system means that you can't really have your own proprietary compiler and proprietary
+framework anymore. It's much harder to add value there. So the existence of LLVM actually really
+shrinks this moat. And the fact that people are already using it and targeting PTX shrinks the moat
+even more. On the other hand, though, all of these companies that are investing in these types of
+technologies have to pick and choose where to put their investments. For example, even Triton only
+supports the things that OpenAI needs it to. For example, they only support Linux. But that would
+be a very good match for most clusters out there, which I think runs some variation of Linux. And as
+I mentioned, CUDA still has a lot of momentum as well. For example, Triton was first released three
+years ago, and Nvidia is still doing fine. However, support for AMD GPUs, specifically support for outputting
+ROCK-M 5.3 was only added to Triton on July 12th of this year. Before that, OpenAI had no use for it
+because they had only Nvidia GPUs, presumably. So I find it very interesting as well that OpenAI,
+presumably, has decided to start adding support for AMD GPUs. Maybe they're considering an alternative
+supplier. Or maybe Sam Altman just wants to make sure that when he finally gets his own chip company up
+and running, that OpenAI will be able to use their GPUs with minimum possible friction. So yes, Nvidia
+should definitely be worried. Their moat seems to be getting eroded by new technologies like LLVM,
+seems to be getting eroded by new projects like Triton, and also projects like PyTorch that used to
+be exclusively CUDA-focused, now sort of spreading out and supporting, in theory, other architectures.
+Besides CUDA itself being under attack by this clean room compiler, and also AMD potentially
+improving ROCK-M to the level where it can actually run CUDA stuff a lot better, Nvidia certainly has
+tons of momentum on their side, and months or years of pre-orders to pad their bank account.
+But if you've looked at this topic on Reddit recently, you'll see a lot of people saying that
+with PyTorch 2, they could basically get their AMD GPU up and running. They still expect lots of little
+issues. After all, deep learning has run on essentially the same stack since its inception,
+or at least since PyTorch was invented. So common wisdom in the machine learning community says that
+Nvidia is the only feasible way. Even I bought an Nvidia GPU for machine learning, so you can imagine
+what a corporation would do. They would just follow the common wisdom. Unless, of course, there was the
+potential for them to save a lot of money with just a few technical road bumps along the way.
+Surely those can be easily sorted out, right? Someone has to be the first, after all, to build
+a billion-dollar AMD cluster. Finally, in conclusion, we talked about the moat that Nvidia has built to
+protect itself from competitors, and why the software portion of their stack, CUDA, is such a big component
+of that moat. CUDA reveals the low-level details that let programmers extract maximum possible performance
+out of their hardware. And because Nvidia GPUs were the best, everybody just targeted CUDA, and that
+became a self-fulfilling prophecy. On the other side, though, there are lots of companies, pretty
+much every other company, in fact, that would really like to break this monopoly. We identified four
+different ways that a company could try to do this. The first three ways actually have potential legal
+difficulties, and they are hardware compatibility, library compatibility, or binary translation. The third way of
+creating a new compiler to recompile all the code is also very difficult, but there's at least one
+company that has succeeded in that. Spectral Compute has made a clean room compiler that they call
+SCALE. There are also projects like OpenAI's Triton that actually bypass CUDA completely by using newer
+compiler technology to do the heavy lifting for them. Using the LLVM compiler framework, you can bypass CUDA
+completely still get optimization and output Nvidia machine code directly, and presumably not that hard
+to add support for AMD or Intel GPU machine code as well. Because Nvidia has so much momentum behind it,
+I wouldn't really worry about them in the short run. But in the medium run, seems likely to me that there
+will start to be a lot more competitors, and then there will be downwards pressure on the price that
+Nvidia can charge for their GPUs, and that will make Nvidia stock do really poorly, and that could be a
+bit of a negative cycle for them. Big companies have lots of incentive to find a different approach
+than just paying whatever Nvidia asks. And to be clear, they're charging really high margins for
+their products. They have about a 75% gross profit margin right now. So that's a long way for their
+prices to fall. Please like and subscribe and join our Discord channel if you'd like to talk to the
+community and to me directly. If you liked this video, check out this previous one I made where I
+talk about how GPUs actually evolved. It's pretty technical, but it's similar to the one you just
+watched, so I hope you like it. Well, that's all I have for today. Thank you very much for watching. Bye!
