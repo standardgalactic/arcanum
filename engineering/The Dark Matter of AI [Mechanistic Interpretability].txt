@@ -1,0 +1,250 @@
+How would you know if a large language model was lying to you?
+If you give ChatGPT a certain phrase and ask it to forget the phrase, it will claim that it has.
+However, since the phrase is part of the model's context window,
+this is actually impossible. And if you badger ChatGPT enough, it will admit that it actually
+does still know the phrase and repeat it back to you. Although we can and do train our AI assistants
+like ChatGPT to be helpful and honest through specific examples, we have no direct access or
+control over model concepts or behaviors like truthfulness. This problem of LLM interpretability
+is an active area of research. One of the most promising approaches involves extracting model
+features using a separate learning algorithm called a sparse autoencoder. These extracted
+features often correspond to human understandable concepts like cats, dogs, Wi-Fi networks, and more
+complex concepts like internal conflict. Remarkably, once we have a feature, we can increase or decrease
+its strength in the model it was extracted from. If we increase the value of the internal conflict
+feature in Anthropic's Claude model and ask it to forget a phrase, it will immediately admit that
+it can't actually forget words. Examples like this are compelling, but as one of the key authors of
+this work, Chris Ola, has pointed out, we've only been able to extract a tiny portion, likely less than
+1% of the concepts that we know LLM models must know about. Chris uses a great analogy here. The features
+we haven't been able to extract yet may be a kind of dark matter of interpretability. Feature extraction
+gives us a telescope, allowing us to see the brightest stars in the model's universe. We may be able to
+build better and better telescopes and fully understand what's going on in LLM models. Or it
+might be the case that a significant portion of what these models have learned can only be observed
+indirectly. But why is it so difficult to understand how these models work in the first place?
+Why do we need to train a completely separate model to begin to make sense of what a language model has
+learned? Why can't we just train these models to be understandable in the first place? Why are we
+only able to extract a tiny portion of all model features? And why can't we just scale up sparse
+autoencoders to peer deeper and deeper into the universe of language models?
+Let's follow the path of some text through a large language model. We'll start with the phrase,
+the reliability of Wikipedia is very, and see if we can make sense of how the model decides
+what to say next. We'll use Gemma 2b, which is a scaled-down version of Google's Gemini model.
+First, each of the six words in our phrase is converted into a token from Gemma's vocabulary,
+and each token is mapped to a vector of length 2304. These vectors are stacked together into
+a matrix of dimensions 6 by 2304, and passed into the first layer of Gemma.
+Each layer of language models like Gemma consists of an attention and multi-layer perceptron compute
+block. These compute blocks return new matrices of the same size as their inputs. So after passing our
+6 by 2304 input matrix into the attention block in our first layer of the model, we get back a new 6 by
+2304 matrix. We then add this matrix to our original input matrix, and the result becomes the input to
+our next compute block. The output of this block, again a 6 by 2304 matrix, is added to our input,
+just as we did before, completing the first layer of Gemma. This output is then passed into the second
+layer of Gemma, which does the exact same thing, just using different learned weight values.
+We repeat this process again and again, with Gemma incrementally transforming its input matrix
+layer by layer into a new matrix of the same size. This matrix we keep updating, by adding the outputs
+of each compute block 2, is called the residual stream. After passing through all 26 layers,
+to figure out what Gemma is going to say next, we just take the last row of the final matrix,
+and map it back to a word. Interestingly, to do this, we multiply the last row of our final matrix
+by an un-embedding matrix, which results in a new vector of length 256,000, where every entry
+corresponds to a single token in Gemma's 256,000 token vocabulary. This vector is interesting,
+because after normalizing with a softmax function, it gives us the probability, according to Gemma,
+of each token in Gemma's vocabulary occurring next. We can rank these tokens by their probabilities,
+and get a sense for what Gemma thinks about the reliability of Wikipedia. The most probable
+next token is the word important, with a probability of 20.21%. We can get Gemma to expand on this by
+appending the vector for the word important to our original input, and passing this new slightly larger
+matrix through Gemma to find the next word in the sequence. Repeating this process, we see Gemma giving
+a nuanced take on Wikipedia, as we would expect from a well-tuned model. However, the next word choice of
+important was only assigned a probability of 20.21%, and Gemma's other probable options lead us down
+very different paths. With a probability of 11.16%, Gemma will tell us that the reliability of Wikipedia is
+very high. Or Gemma could go the other way, and tell us that the reliability of Wikipedia is very low,
+questionable, or poor, with probabilities of 10.8, 9.48, and 5.47%, respectively.
+These lower probability options are important, because production systems generally do not just
+pick the most likely next token. This often leads to uninteresting or unhelpful responses. Instead,
+next tokens are sampled from a modified version of the model's probability distribution.
+So in practice, this version of Gemma will give us different takes on the reliability of Wikipedia.
+Some nuanced, some positive, and some skeptical. Now, note that so far we're not using the
+instruction-tuned version of Gemma. This final version of the model includes a number of post-training
+steps to better align Gemma with the behaviors we expect from an AI assistant. Interestingly, if we switch to
+the instruction-tuned version, this increases the probability of measured takes, such as the
+reliability of Wikipedia is very much a topic of debate. There are still skeptical takes that Gemma
+could deliver, but they are less likely after instruction tuning. Post-training steps like these
+used to tune Gemma have proven reasonably effective at shaping the behaviors we want from AI assistants.
+However, these techniques do not give us direct control or understanding of specific model behaviors.
+A more direct approach is to open up the model itself and try to figure out exactly which parts are
+creating specific behaviors. Where exactly in Gemma's 2 billion parameters, spread across 26 layers,
+has Gemma decided that Wikipedia is reliable or not? A recent wave of these efforts, popularized under
+the name Mechanistic Interpretability by Chris Ola, has made impressive progress. Let's apply some ideas
+from Mechanistic Interpretability to our Gemma model and see if we can make sense of what's going on.
+Putting together the Gemma walkthrough for this video required a ton of hacking. On projects like
+this, I really value uninterrupted focus time, which this video's sponsor Incogni has really helped me with.
+As a dad of two young kids, my phone generally needs to be on. Legit stuff comes up all the time. But spam calls and
+texts can be a huge distraction. A couple of months ago when I was considering working with Incogni on
+this video, I signed up for an account. And I couldn't be happier with the results. I'm getting far
+fewer spam texts and calls and more uninterrupted focus time. The way Incogni does this is really
+impressive. After signing up for an account, you give Incogni permission to work on your behalf to
+contact data brokers to remove your data, which brokers are generally legally obligated to do upon
+requests. From here, you get this great dashboard that tracks all the removal requests and progress.
+It's really impressive. My data has been removed from 115 separate data brokers so far. This would be
+incredibly time consuming for me to do manually. In the United States, we also have these people search
+sites where for a small fee, anyone can look up information about you like your address, email, phone
+number, education, employment history, social media accounts, and so on. It's pretty wild. I signed up for an account
+on one of these sites. It's crazy how much information I was able to find on my wife,
+who I have not yet added to my Incogni account, which I will be doing. They have a great family
+and friends plan. By comparison, after being an Incogni customer for a couple of months, impressively,
+I wasn't able to find any records of myself on the same people search site. You can get a great deal
+on Incogni, 60% off an annual plan by using the code WELCHLABS or following the link in the description
+below. Plus, it helps me continue to make great content. Huge thanks to Incogni for sponsoring this
+video and helping me take back my data from data brokers and get more quality focus time. If Incogni
+sounds like a good fit for you, please check it out. It really helps me out. Now back to the dark matter
+of AI. Let's apply some ideas for mechanistic interpretability to our Gemma model. To get a
+better sense for how these techniques work, let's visualize our text as it passes through the model.
+Recall that our six-word prompt, the reliability of Wikipedia is very, is converted into a 6x2304
+matrix. And each block of Gemma adds a new 6x2304 matrix to this matrix. And this modified matrix is
+known as the residual stream as it moves through the model. After the final layer, the last row of the
+residual stream is converted back into a token and becomes what Gemma says next. Let's visualize this
+final row of the residual stream as it moves through the model. Visualizing a vector of 2304 floating
+point numbers is a bit tricky. Let's rearrange our vector into a 48x48 matrix and visualize each
+number as the intensity of a pixel in an image to hopefully make it easier to spot patterns in our data
+as it moves through the model. Before our first layer, our vector looks like this, with a few large
+positive and large negative values that stand out in our image. Note that we don't have to wait till the
+end of our model to map this vector back to a token. At any point we can normalize this vector and
+multiply by our un-embedding matrix, as we would at the end of the model, to see what token our vector
+represents. Generally, this vector would correspond to the word very, with a probability of 100%,
+because we haven't done anything to our input matrix yet, and this last row of our matrix is just
+the mapping or embedding of the last word in our phrase, which is the word very. However, this version
+of Gemma uses a soft cap function before producing final probabilities, which limits the model's
+confidence in any single next word. Interestingly, the effect here is for the model to predict
+variants of the word very, including different capitalizations and even different languages.
+Let's see how Gemma's first compute block changes our embedding vector image. The output of the
+attention block in the first layer of Gemma looks like this. And when we add it to our residual stream,
+it now looks like this. If we map our new vector to a token, we don't see much change, with variants
+of the word very now being predicted with slightly different probabilities. So if our model was only
+composed of this compute block, the next word predicted would be the word very. So Gemma would
+tell us that the reliability of Wikipedia is very, very. And we do often see word repetition like this
+in smaller or poorly performing language models. Adding the output of the multilayer perceptron block
+in our first layer to the residual stream, our vector now looks like this, and still maps to variants
+of the word very. We see similar behavior all the way through the 15th layer of the model. Note that this
+does not mean that nothing is happening in the first 14 layers. Remember that we're only visualizing the last row of
+our residual stream matrix, and our residual stream is changing, just not enough to flip our top
+predictions yet. Around the 21st layer of the model, we see for the first time expressions of doubt or
+skepticism, with Gemma telling us that the reliability of Wikipedia is very questionable, with a probability of
+9% after the 21st layer. Perhaps we can isolate some doubting or skepticism behavior in this layer.
+Having a close look at the output of the multilayer perceptron block in the 21st layer, we see large
+values at the indices of 1393, 1945, 257, and a few others. Each of these locations corresponds to the
+location of a single neuron in this layer. Maybe one or more of these neurons has learned to capture
+doubt or skepticism. One simple way to test this idea is to directly modify the values of each of these
+neurons and see how it impacts the model outputs. If we take neuron number 1393 and fix its output value
+to minus 160, this is about twice its observed maximum, and pass our text through our model again
+with this modification in place, our final outputs do change, with high moving up in the rankings.
+If we reverse our intervention and clamp our output to positive 160, we see our trend reverse,
+with low, questionable, and poor moving significantly up in the rankings.
+So increasing the output of neuron 1393 in layer 21 increases Gemma's trust in Wikipedia,
+and reversing its outputs increases its skepticism or doubt.
+So have we found a specific Gemma neuron that controls trust, or in reverse, doubting or skeptical
+behavior? Another way to test this idea is to search for other examples of text that cause
+neuron 1393 in layer 21 to output large values. If we've found a doubting or skeptical neuron,
+then the text that causes this neuron to maximally activate should reflect this.
+Searching through 100,000 examples from the pile dataset, and collecting the examples that maximally
+activate neuron 1393, these examples seem to have nothing to do with doubt or skepticism,
+and instead seem to correspond to examples of capital letters in acronyms or proper nouns in various contexts.
+We've reached our first big hurdle in interpreting Gemma.
+Clearly this neuron has some bearing on the model's doubting or skeptical behavior,
+but the examples that this neuron responds most strongly to are related to a seemingly unrelated
+concept. This phenomenon of single neurons in large language models corresponding to multiple
+seemingly unrelated concepts has been observed across a broad range of models, and is known as
+polysemanticity. Interestingly, polysemanticity occurs much more frequently in language models than
+in vision models. Specific neurons in vision models have been shown to respond uniquely to things like
+faces, cars, and many, many more recognizable concepts. In 2022, Chris Ola and the team at Anthropic
+published an interesting hypothesis to explain this observed polysemanticity. The idea is that language
+models are able to learn more concepts than they have neurons, essentially by representing concepts
+using specific combinations of neurons. The team calls this idea superposition. So concepts may be
+spread across multiple neurons and layers in Gemma. If we can't isolate concepts and behaviors to
+certain layers or neurons, how can we hope to understand or control language models? One option is to
+modify the model architecture to encourage or force the model to have fewer neurons fire for any given input.
+Ideally, this would stop the model from spreading concepts across multiple neurons.
+The Anthropic team tried this in 2023 and found that models still exhibited polysemanticity,
+even in extreme cases, where they forced only a single neuron to fire at a time.
+Another option is to try to figure out which combinations of neurons respond to certain concepts.
+Perhaps neuron 1393 and layer 21, combined with other neurons, will cleanly represent the concept of doubt.
+But how can we possibly figure out which combinations of neurons map cleanly to which concepts?
+Remarkably, there is a simple model that we can train to learn these mappings,
+called a sparse autoencoder. If the superposition hypothesis is true, we should be able to take some
+combination of the outputs of the neurons in a given layer, and this combination of neurons should
+respond very strongly to a single specific concept, and respond very minimally to all other concepts.
+Most sparse autoencoders used today in mechanistic interpretability work by hooking them up to a
+specific point in the model, such as the output of a certain layer or the residual stream at a certain
+location. So if we take the output of the 21st layer of Gemma, where Gemma started exhibiting doubting
+behavior, the idea here is that we can take these 2304 neuron outputs, and find some combination of these
+outputs that cleanly responds to examples of doubt. We can take a single combination of our outputs by
+multiplying our neuron outputs by a new weighting vector of length 2304, where each entry in the
+weighting tells us how much of each neuron output to take. We can then add these results together to
+give us a final output value that should correspond to the overall strength of our concept.
+Now, per the superposition hypothesis, our model represents more concepts than it has neurons,
+so we need more than 2304 of these weighting vectors to tease out all the different concepts.
+Let's try modeling 16,384 different concepts, so we need 16,384 separate vectors.
+We can stack all of these weighting vectors into a single new matrix of dimension 2304 by 16,384,
+where each column represents the contributions of our 2304 neurons to each concept.
+Multiplying our neuron output vector by our weighting matrix yields a new vector of length 16,384,
+where each entry should correspond to the strength of a specific concept.
+Now, how do we learn the weights for our new matrix that will allow us to cleanly map neurons to
+concepts? For any given input example, we know that we only want a very small number of our 16,384
+concepts to be active at once. Otherwise we would run into the same polysemanticity issue we saw with neurons.
+This is where the sparsity comes in. Sparse autoencoders work by forcing most of the values in our
+concept vector to be zero or near zero, and then using the remaining values to reconstruct the original
+input. Reconstruction of the original input consists of mapping from concepts back to neuron values,
+which we can do by multiplying by another weight matrix, this time of dimension 16,384 by 2304.
+So our sparse autoencoder works by mapping our neuron outputs to potential concepts, better known as
+features, by multiplying by a weight matrix, and then forcing most of the values in the resulting
+feature vector to be zero or near zero, and then taking these few remaining outputs and mapping them
+back to neuron outputs by multiplying by a separate weight matrix. If the superposition hypothesis is
+correct, and our sparse autoencoder is working well, then our output should be a reasonably faithful
+reconstruction of the original neuron outputs. Sparse autoencoders are trained to minimize this
+reconstruction loss. Let's see how sparse autoencoders apply to our Gemma Wikipedia example.
+The Google DeepMind team recently released a project called Gemmascope, which includes over 400
+separate sparse autoencoders, trained on data from various locations in the model and across
+variations of Gemma. Let's take the sparse autoencoder trained on the outputs of the 21st layer of Gemma
+that we've been working with. Let's pass in our example text into our model, pass the output of
+our 21st layer into our trained sparse autoencoder, and see which elements in our concept or feature
+vector are activated. We can visualize our feature vector in the same way we visualized our embedding
+vectors by reshaping it into a 128 by 128 grid and displaying it as an image. As expected, our feature
+vector is much more sparse than our embedding vectors. Now let's see if we can make sense of the
+concepts or features that our sparse autoencoder has learned. A challenge with sparse autoencoders is
+that we don't know ahead of time what actual concept any given element in our feature vector corresponds to.
+We can see that features 7344, 8353, and 8249 have high values for our Wikipedia example.
+But what concepts in our text are these features responding to?
+As we did with individual neurons, we can get a sense for what individual features represent by
+searching for examples of text that maximally activate a given feature.
+Part of the Gemmascope project includes launching on a platform called Neuronpedia,
+which allows us to quickly see what examples maximize any feature in any sparse autoencoder
+released with the Gemmascope project. Looking up feature 8249 for our sparse autoencoder,
+we do see many examples of text where questioning or uncertainty are expressed.
+We can also amplify or reduce this feature's impact on the model, just as we did with individual neurons.
+Clamping feature 8249's output to a constant value of 100 impacts Gemmo's next word prediction as
+expected, increasing the probability that Gemma will tell us that the reliability of Wikipedia is
+questionable. We can ask Gemma to generate more text with our modified feature in place,
+and see that this steered version of the model is highly doubtful and questioning of Wikipedia's
+reliability. If we crank up this feature to a constant value of 500, we see that Gemma starts to
+just babble, mostly with variants of the word question. So by learning to map neuron outputs to sparse
+features, sparse autoencoders are able to recover human-understandable features that respond
+consistently to specific concepts in text, and can even be used to control model behavior in
+predictable ways. Sparse autoencoders have been applied to a range of language models,
+with impressive results. In 2024, the Anthropic team showed that features extracted from Cloud III
+Sonnet are even multilingual and multimodal. A feature for the Golden Gate Bridge responds to
+references to the bridge in multiple languages, and even to images of the bridge. The Anthropic team
+has scaled up their autoencoders to extract around 13 million separate features, and a team at OpenAI
+has trained a 16 million feature autoencoder on the GPT-4 residual stream. However, as Chris Ola has
+pointed out, these millions of features appear to just be scratching the surface. The Anthropic team has
+found features for specific neighborhoods in San Francisco, but the Claude model these features
+were extracted from knows way more granular information about the city, like the intersections
+of streets, which do not show up in the extracted features. Large language models appear to know far
+more concepts than we've been able to extract so far. We may be able to simply continue scaling sparse
+autoencoders as we've scaled language models, but there are a number of theoretical and practical
+obstacles that may block this path. It's possible that the computational cost of extracting extremely
+rare features will become prohibitively high, leaving these rare features as an unobserved dark
+matter that has to be observed indirectly. The current sparse autoencoder paradigm effectively
+focuses on a single location in the model at a time, leaving it incapable of disentangling cross-layer
+superposition. There is work actively underway from the Anthropic team and others on a new approach
+called sparse cross-coders to address this issue. Finally, as the number of features increases,
+the features become more and more fine-grained, making them more difficult to work with.
+You can see this directly when experimenting with large autoencoders on Neuronpedia.
+Searching for doubt, we find many, many features, and it's not clear how various choices will affect
+the model until we test them. Sparse autoencoders and other mechanistic interpretability approaches
+have given us incredible insights into large language models. It will be fascinating to see how
+far we can push mechanistic interpretability and if the capabilities of large language models will
+continue to outpace our abilities to understand them.

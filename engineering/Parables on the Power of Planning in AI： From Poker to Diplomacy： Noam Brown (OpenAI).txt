@@ -1,0 +1,556 @@
+Okay, hi everyone. Welcome to this talk. So we are super delighted to be able to welcome
+Noam Brown from OpenAI here with us today. He's been responsible for multiple of the biggest
+developments in AI game playing over the past few years. He created the first AI systems that could
+beat the top human players in poker, which was recognized by science as one of the top scientific
+breakthroughs in 2019. And for this work, he was also awarded the Marvin Minsky Medal for outstanding
+achievements in AI and named as one of the MIT Tech Review's 35 innovators under 35. More recently,
+he's also developed Cicero, the first AI system to achieve human level performance in the natural
+language strategy game of diplomacy. So super excited to hear about what you have to share with us today.
+Okay, thank you. Oh, I think I put my mic up, yeah. Okay, hi everybody. My name is Noam. I want to start
+off by giving some motivation and talking about when I started working in AI as a grad student.
+So I started grad school in 2012 and I was working on AI for poker basically from the start. And around
+the time I started people had already been working on AI for poker for several years. And at the time
+it was felt like the system had been figured out and it was really just a matter of scaling the models
+further. I have this plot here showing you know each year and roughly the number of parameters
+and proportional to the number of parameters that were in that was in the model each year that we
+trained. So we would every year we would train this model. All the other research labs would also
+train models that played AI and we would all get together every year and play them against each other.
+in this thing called the annual computer poker competition. And yeah, every year we used roughly
+the same algorithm but there was a lot of challenges in scaling it. So you know we had to make it more
+distributed, train it on for longer on more compute and every year the models would get better and
+every year they would beat the previous year's models. And in 2014 my advisor and I developed
+an AI that beats all the other bots in the annual computer poker competition we got first place.
+And we decided to try to play it against actual human experts. And so this led to the 2015
+Brains vs. AI poker competition where we challenged four top poker professionals to an 80,000 hand poker
+competition. We had 120,000 dollars in prize money to incentivize them to play their best. And ultimately,
+our bot Claudico lost by a pretty sizable margin. So the amount was 9.1 big blinds per 100. If you're
+not familiar with poker that doesn't really mean much. But basically it was a substantial loss. It
+wasn't like a crushing defeat but it was a pretty substantial loss. And during this competition
+I noticed something interesting. You see our bot had trained on roughly one trillion hands of poker
+leading up to this competition. It had been playing poker non-stop on thousands of CPUs for months leading
+up to this competition. But when it came time to actually play against these experts it acted almost
+instantly. It would take about 30 milliseconds or whatever it took to just look up the policy for
+whatever state it was in and just act instantly. The humans, meanwhile, if they were in a very difficult
+spot, they would sit there and they would think. And they would sometimes think for five seconds. They
+would sometimes think for five minutes. But if it was a difficult situation, they would take the time to
+think through what to do. And it occurred to me that maybe this is what is missing from our bot.
+So after the competition, I decided to look into this direction and see how much of a difference does
+this actually make if we add this capability. And this is what I found. This data is from a paper that I
+published in 2017 with my advisor. So the blue line is if we don't do any search or planning,
+we just do what we had been doing for years at that point, just training bigger and bigger models,
+but having them act instantly when it came time to actually play. The x-axis here is the number of
+buckets. This was before neural nets were really taking off. And so we used k-means clustering. But
+you know, basically, it's the number of parameters in our model. And well, it's the number of parameters
+in our model times some constant factor that we won't go into, but basically roughly proportional
+to the number of parameters in our model. And the y-axis is distance from Nash equilibrium. So the lower
+this number is, the better you are at poker. I'm not going to go into a lot of details about this,
+because I don't want to make this a poker talk. But the lower that number is, the better you're going to
+do when it comes time to actually play poker. And you can see that, indeed, as we scale up the model,
+it was getting better at poker. The distance from Nash equilibrium dropped from around 800
+to around 400, as we scaled up the model 100x. The orange line is the same model if we add search,
+if we add the ability of the model to think for about 30 seconds before acting in the final round
+of the game of poker. And you can see, even for the same size model, you're getting about a 7x reduction
+in distance from Nash. To me, this was staggering. I had been working on AI for poker in grad school for
+about three years, three or four years at this point. And over those three or four years, I had
+managed to scale up the models by about 100 fold. And I was really proud of that. That was, I thought,
+really impressive work. And here, if you were to extend this blue line out and see how far would you
+have to extend it to match the performance that you're getting by adding search, the answer would be
+100,000x. And so just by adding search, we were able to do the equivalent of scaling the models by
+100,000x when it took me three years to scale it by 100x. So at this point, I realized everything I
+had done in my PhD up until this point was going to be a footnote compared to just adding search.
+Based on this result, we changed our approach completely. The focus became how do we scale up
+search. And in 2017, we did another competition with four top professional poker players.
+This time, we played 120,000 hands of poker with $200,000 in prize money to incentivize the players
+to play their best. And the bot ultimately won by 15 big blinds per 100. Whereas previously, the
+bot, the previous bot in 2015, had lost by nine big blinds per 100. And each human lost individually to
+the bot. This was a very surprising result to everybody. It was a huge surprise to the poker
+community. It was a huge surprise to the AI community. It was even a huge surprise to us. We
+were not expecting to win by this kind of margin. And in fact, I think what really illustrates this
+is that when we announced the competition, there emerged, not surprisingly among the poker community,
+a very active betting market on who would win.
+And the odds against us were about four to one. And even after the first three days of the competition,
+when we had won for three straight days, it was still a 50-50 in the betting markets on who would
+win. But by around the eighth day, it became very clear that we were going to win. And the only betting
+market that remained was which human would lose the least by the end of the competition.
+We followed this up in 2019. I continued in this direction of how do you do search and planning in
+the domain of poker. And in 2019, we made a six-player poker bot. The previous bot was just two-player
+poker. Now we have six-player no-limit Texas Hold'em poker. We played against, in six-player poker with
+five humans at the table and one bot, 10,000 hands over 12 days. We used variance reduction techniques
+to reduce the luck factor. And again, the bot won with statistical significance.
+What's really interesting about this bot is that it cost under $150, the equivalent of under $150 to
+train if you were to train it on cloud computing resources. And it runs on 28 CPU cores at test time.
+Now, the fact that this costs less than $150 to train means that we could have done this
+back in the 90s even if we had taken the right approach.
+So this was a big motivating factor for a lot of my future research in AI, this focus on planning.
+And I think looking back, it's really easy now to say like, well, why didn't people work on planning
+in poker before? I mean, clearly it was like such a huge win. And I think it's really hard to put
+yourself in the mindset of, you know, everything's obvious in retrospect. But at the time, it was not
+obvious that this would work so well. And so I think there were a few reasons why search and planning was
+not as active a research area in AI for poker. And I think it has a lot of lessons for how people
+approach research in general and today. So, okay, why wasn't search prioritized in AI for poker before?
+And the first thing I should say is that people were working on search in poker.
+It just wasn't given the same emphasis that I think it deserved. And it wasn't like considered
+the highest priority. And by the way, when I say search, I really, I use it interchangeably with
+planning. I consider search a kind of planning. But basically, the idea is that the model is taking
+a longer time to act than its pre-computed policy would do. Okay, so why wasn't it valued highly before?
+I think one thing was cultural factors. Researchers, especially in game theory,
+wanted to compute an equilibrium. And if you want to, you have to verify that you have an equilibrium.
+And so you want to have the entire solution up front. And if you're doing planning,
+then that means that you don't have the entire solution up front. And so you don't know,
+you can't compute exactly how far away you are from equilibrium. And so this was like kind of a
+cultural factor that the community came out of the, the community working on AI for poker came out of
+game theory. And so they had this bias against anything that wasn't computing the entire policy.
+Another is just the difficulty of doing experiments with planning. So as you scale up the amount of
+compute that's used at test time, it makes it very difficult to measure how well you're doing. It makes
+experiments much more difficult, especially in a game like poker, where you have such high variance,
+and you have to play maybe a million hands of poker between two bots in order to tell which one is
+better. Having the model take like 30 seconds per hand, it just makes things very difficult.
+Another was incentives. And I think this is especially true for academic researchers today
+to pay attention to. People were always thinking about, like I mentioned, there was this thing called
+the annual computer poker competition. And everybody was always focused on winning the annual computer
+poker competition, this kind of short term objective. And the annual computer poker competition limited
+the amount of test time compute that you could use to two CPU cores. And the reason for this is just
+the funding that the the organization had, it was very expensive to run, you know, these bots for
+millions of hands against each other, if they were taking so many resources at test time.
+And so people were focused very much on this, this short term goal of winning the annual computer
+poker competition at the expense of developing techniques that might work in the more important
+benchmark of beating top humans. And finally, I think the most important factor is that people
+simply underestimated the difference that it would make. If you had asked me before I did research on
+this direction, how much of a difference would it make if you added, you know, if you figured out how
+to do planning and added it to the poker bots, I would say, yeah, maybe it's the equivalent of scaling up the
+models by 10x, which is a lot. I would not have thought it would be 100,000x. And I think that's
+a general trend that I've seen that people underestimate just how much of a difference
+planning makes for these models. Okay, before I go on to other games, is there any questions about
+poker and planning? Yeah? Could you say a little bit about what search is in the poker process?
+I don't want to spend too much time on it because I think one of the points that I want to make is
+that if you look at how search is being done in all these different games, it's very specific to the
+game. And when you go to a different domain, it's not necessarily useful for those other domains. But I
+think there is a general trend here that figuring out how to do search ends up being very useful.
+And if we can develop a very general way of doing search, then that has the potential for being
+very, very useful. To answer your question for poker, we would do these equilibrium computations
+that are these iterative algorithms. So it starts by playing randomly, and then it gradually converges
+towards an equilibrium. So in rock, paper, scissors, for example, this would be randomizing equally
+between rock, paper, and scissors so that you're guaranteed to not lose an expectation. Obviously,
+in a more complicated game like poker, the strategy is much more complicated. And so even if you're
+playing what would appear to be a defensive strategy where you're guaranteeing you could not lose,
+you actually end up winning in practice because the other player makes mistakes.
+Now, previously, all of this equilibrium computation was being done ahead of time. And what we developed
+was a technique that would allow us to better approximate the equilibrium by doing this iterative
+process more, but only for a piece of the game. So kind of like in chess, when you're at a particular
+board state, you only have to search through the possibilities that could come after that board
+state. We developed a technique in poker where you could compute an equilibrium for the possible
+states that could come after the situation that you're in and not worry about the other states that
+came before or that are not possible to reach at the given point that you're in.
+Jamie? So forgive me, I know nothing about poker. I managed to make my way out of the union not
+knowing anything about poker. But were you, what you just suggested, was there a time-space trade-off
+also, right? Because like computing an equilibrium and like storing it in a lookup table is presumably
+gargantuan, right? Whereas like doing search conditioned on like, you know, this many steps in a game,
+like you could imagine you're searching a much smaller space rather than storing the entire thing.
+Is there some trade-off that you see there also in terms of like, you know, the amount of total
+compute and the amount of things you have to store or? Yeah, that's a good point. And this was certainly
+a factor for, you know, when we were doing research on poker, I remember like we'd spent a lot of time
+figuring out how do we compress the representation of the strategies that, you know, we can store in as
+little space as possible. We'd have to use like all sorts of clever tricks to like, you know,
+for most of the game, we actually just had like a binary representation of like, do you raise or do
+you fold and not worry about the probabilities so much. That, I wouldn't say it was the bottleneck
+for performance, but it certainly was a factor. And one of the nice things about doing search and
+planning is that like in poker, we no longer had to have a fine-grained representation of the
+strategy at the later rounds. Yep. You have a question? So obviously there's a lot of different
+situations in poker, like you can have different stack sizes, you can have different bet sizes.
+How constrained was this sort of model, like how much could it generalize outside of like to like,
+say 200 or 500 big blinds? For these, for the two-player and the six-player bot that I just described,
+it was always playing either 200 big blinds fixed stacks or 100 big blinds fixed stacks. We developed
+later techniques that would be able to play arbitrary stack sizes. Yeah. Yep.
+About test time compute, so if the model is larger, I assume it will take correspondingly longer at
+test time as well. So if you have a 100x model, 100x larger model, does it take 100x longer for
+a test time? For the models that we were using, no. But this was because we weren't using neural nets,
+so a lot of the computation was kind of like independent of the model size. I was wondering
+if like given a certain test time budget, if you should just train a much, much, much larger model
+that uses all of that time for inference at test time versus a smaller model that does search and
+planning and uses the same amount of test time? That's a good question. So I think the issue is
+that at a certain point becomes like, so I think at some point it's probably worth it to do planning at
+test time rather than just training a bigger model. Because you can imagine that like, you know,
+training a bigger model, you have to keep like 10xing. You have to do some kind of a multiple of
+the pre-training. And so at some point it becomes cheaper. If you imagine that you're only going to
+do an inference once, like a call once to, let's say, like play against a world champion and go or
+something, you don't, it's worth it to shift a lot of that computation to, like it's worth it to 100x the
+computation at test time rather than 100x the pre-training. Was your model optimized to be
+game theory optimal or did you ever go into the exploitation part? These poker bots were optimized
+to be game theory optimal. So we're trying to compute an equilibrium. And the idea was that,
+what will be observed empirically, was that by computing an equilibrium and playing that,
+we ended up doing very well against expert humans and beating them, even though we were not actively
+trying to exploit them. We never, like, I think a lot of people were interested in this question of
+how do you exploit expert players. We ended up developing techniques that could effectively do
+this in diplomacy by modeling the other humans that were playing. And I'll get to that a little bit
+later. We never actually applied this to poker. But if you're looking for an interesting research
+direction, I think applying these techniques to poker is something that, as far as I can tell,
+nobody's doing. And it's definitely doable, I think, at this point. Okay. I want to move on to Go next.
+Okay. So this idea of doing search and planning is not unique to poker. And in fact, it's been widely
+used in games like chess and Go. And I think if you look at the performance in games like Go,
+you see a similar pattern where I think most people underestimate just how much of a difference it
+makes. So here is a chart from the AlphaGo Zero paper. So AlphaGo is very famously this AI that beat
+Lee Sudol and Go in 2016. AlphaGo Zero is a follow-up that is even better and was trained with very little
+human knowledge. So you can see on the y-axis here, we have ELO rating, which is a way of measuring
+the performance of humans in different models. And on the x-axis, we have different versions of AlphaGo.
+So you can see AlphaGo Lee is the version that played against Lee Sudol. And it's just over the line of
+superhuman performance around 3,600 ELO. AlphaGo Zero is the stronger version, which has ELO rating about
+5,200. So clearly superhuman. But AlphaGo Zero is not just a raw neural net. It's a system that uses
+both a neural net and an algorithm called Monte Carlo Tree Search. And if you look at just the raw
+neural net of AlphaGo Zero, the performance is only around 3,000. It's below top human performance.
+So I want to really emphasize this point, that if you look at just the raw neural net of
+AlphaGo Zero, even though it was trained with Monte Carlo Tree Search, if you just run it at
+test time without Monte Carlo Tree Search, the performance is below top humans. And in fact,
+this was, you know, AlphaGo was in 2016. It's now 2024, eight years later. And still nobody has trained
+a raw neural net that is superhuman in Go. Now, I noticed that when I mentioned this to people,
+they would say, like, well, surely you could just train a bigger model that would eventually be
+superhuman in Go. And the answer is, like, in principle, yes. But how much bigger would that
+model have to be to match the performance of AlphaGo Zero? Well, there's a rule of thumb
+that increasing ELO by about 120 points requires either 2xing the model size and training
+or 2xing the amount of test time compute that you use. So if you follow this rule of thumb,
+if the raw policy net is 3,000 ELO, then to get to 5,200 ELO, you would need to scale
+the amount of the model size and training by 100,000x. Now, I want to caveat this. There's a big
+asterisk here, which is that I don't actually think AlphaGo Zero is 5,200 ELO. I think they measure that by
+playing against earlier versions, earlier versions of the same bot. And so there's a bias where it
+would do better against those because it's, like, trained through self-play. So it's trained against
+those bots. So I think the number is probably more like 1,000 to 10,000. But in either case,
+you would have to scale the model by a huge amount and the training by a huge amount to match the
+performance that you're getting by using Monte Carlo Tree Search where the bot thinks for, like, 30 seconds
+before acting. And by the way, this is still assuming that you're using Monte Carlo Tree Search
+during training, during self-play. So if you were to take away the Monte Carlo Tree Search from the
+training process, this number would be astronomical.
+Okay. So when I noticed this pattern, I started just, like, whenever there was a domain that I was
+looking at, I noticed that a lot of people would think about how do you do deep RL, model-free deep
+RL, which was the cool thing to do in 2019. Less cool now, but still pretty cool.
+And instead, I would look at the domain and see how can we apply planning. And I think
+Hanabi is a really good, another example of this. And by the way, this whole talk is just going to be
+me going through different domains and talking about how planning has been, like, really, really effective.
+So Hanabi is this fully cooperative, imperfect information game. And after AI became superhuman
+in poker and Go, people were looking for other domains that would be these new grand challenges.
+And in 2019, February 2019, DeepMind proposed Hanabi as this new benchmark. And they presented a new
+RL algorithm, DeepRL algorithm, that achieved a 58.6% win rate in Hanabi, which was very good,
+but not superhuman. Less than, like, six months later, my teammates and I at FAIR presented a new
+algorithm that achieved a 75% win rate in two-player Hanabi, which is superhuman performance in this
+domain. And we did this using a surprisingly simple technique, which I'll get to in a second.
+And the key breakthrough was, again, we didn't do anything novel when it came to the RL. We just did
+search. And in particular, we did, like, basically the simplest form of search you could imagine.
+Basically, in Hanabi, you know, there's uncertainty around, like, what state you're in. So you have
+this belief distribution over what states you could be in. And there's, like, 20 different actions that
+you could take in the game. And so we would just say, okay, for each of these different states that
+we could be in, you know, there's either, like, play card one, discard card one, hint red, there's
+these different actions you can take. Let's just do a bunch of different rollouts to see if we were to
+take that action and then play according to our policy for the rest of the game, what would our expected
+value be? And we do, like, a thousand rollouts. We get a good estimate of what our expected value
+is for each of those actions. And then we just pick the one that has the highest expected value.
+Here is what the performance is. If you just look, okay, let's set it, search aside for a second
+and look at the performance of, like, different, you know, pre-trained bots. So this is SmartBot.
+It's a heuristic handcrafted bot. And it wins about 25, maybe 28 percent of games. This is the
+algorithm introduced in the DeepMind paper. And it gets, it's a DeepQ Networks bot. And it got about
+45 percent win rate. And this is, you know, there's like a whole sequence of papers on DeepR algorithms
+for Hanabi that would get increasing performance. This was, at the time of our publication, the latest
+one, which would score about 58 percent. This is what you would get by adding this search algorithm
+to the different bots. So if you take this handcrafted heuristic bot that was only getting 28 percent
+and then added the simplest search imaginable, where you just, like, you know, do a bunch of
+rollouts for all the different actions you could take and then pick the one that had the highest
+expected value, that would boost your performance to nearly 60 percent, which was beating all the
+previous DeepRL bots just out of the box. This was using, like, a single CPU core at test time
+for, like, a second. And the beautiful thing was that you could actually add this on top of all
+the other DeepRL bots. So if you added it to, like, the latest and greatest bot, DeepRL bot, you would
+boost the performance even further to around 72 percent. And then if you did this, this was only if you
+did search for a single player. So if you did it for both players, that's the green bars. And you can see
+the performance went up even more. Now, I should also point out that the point, the upper bound for this
+game is not 100 percent because there are some, like, deal outs that you just cannot win. So
+really the top performance as possible is, like, I think maybe 90 percent. And so you can see,
+like, we're quickly saturating performance in this domain. Now, when my teammates and I at FAIR
+got this result, my teammate literally thought it was a bug because it was just unimaginable that you do
+this, like, simple thing and the performance jumps up from, like, 28 percent to state-of-the-art
+58 percent. And again, this, I think, is a trend that I've seen where people really underestimate
+the value of planning until they see it in the domain that they're working on.
+Okay. Any questions about this or go?
+So we're not the only ones to notice this pattern. And in fact, there's this really great paper
+that was published in 2021. It just went on archive. Andy Jones is now at Anthropic. And he did a bunch
+of scaling laws for the game of hex, basically using alpha zero-like techniques. And he had this plot
+that I think was really fascinating. So on the x-axis here, we have the amount of compute that goes into
+training a hex bot. Hex is this, like, board game that's kind of like a simpler version of Go.
+And this is the amount of test time compute that goes into the bot using the Monte Carlo Tree Search
+Algorithm. And you can see there's, like, these ISO curves of different ELO performance. So if you want
+to get 1500 ELO in this game, you can either spend a lot of compute at test time or you can spend a lot
+of compute at training time or some combination. And he found that, basically, there's a
+tradeoff between 10x of training compute is equivalent to 15x of test time compute. So what
+this means is that by increasing the amount of test time compute in this domain by 15x, you're getting
+the equivalent of increasing the training compute by 10x. Now, why does this matter? Well, if you're
+training a system that costs, let's say, like a billion dollars and you wanted to improve the
+performance further, you could either 10x that and go from, you know, a billion dollars to 10 billion
+dollars or you could increase the inference cost from, you know, like a penny to 15 pennies.
+Now, for certain domains, you would prefer to increase the inference cost by 15x over increasing
+the pre-training cost by 10x. Okay.
+Now, we've also worked on the domain of chess. And I think here, this is very interesting because
+this isn't so much about getting top performance, but it's about imitating humans.
+So there was this paper, Maya, that came out in 2020. And what they were trying to do is instead
+of just making like state-of-the-art chess bots, they were trying to make very human-like chess bots.
+And so they trained these chess bots on hundreds of millions of chess games from humans. And they
+created different models to match the ELO ratings, like different ELO ratings. And this was at the
+time state-of-the-art for predicting human moves in chess. Now, one thing that's really interesting
+about Maya is that for high ELO models, it was about 100 to 300 ELO points below the target ELO rating.
+So if you were to train it on 2000 ELO rated humans, it would only be about 1700 ELO. For the lower ELO
+ratings, this ended up not being a problem. For the higher ELO ratings, it was a challenge.
+Now, one hypothesis for why this is the case is that approximating human planning is hard for neural
+nets. That when you're at 2000 ELO, your planning process is so sophisticated that it's actually quite
+difficult to distill that down into a neural net. And I think one piece of evidence for this is that
+there is one version of chess where there was no ELO gap for the Maya model. And that was bullet chess,
+where humans have very, very little time to plan ahead. And they just have to basically act on instinct.
+Now, what we found, we wrote a follow-up paper that was published at ICML 2022. And in this paper,
+we added planning on top of these supervised models. And so here's the performance that we get. Basically,
+we pre-train on a bunch of human games, and then we add Monte College research on top with different
+hyperparameters for the Monte College research to regularize it towards the human policy.
+So this blue dot is if you just do imitation learning on human data. And the x-axis is
+accuracy of predicting human moves in different game states. And the y-axis is the win rate versus
+this blue model. Obviously, it's a 50% win rate against itself. And then you can see the human
+prediction accuracy. It predicts about 53.2% of human moves in a test data set.
+And I should say this is for highly rated humans. If you add Monte College research,
+you can see that the prediction accuracy goes up and the win rate goes up.
+And this is, again, for different levels of regularization. So this is for if you regularize
+very closely to the human policy. And this is like as you decrease the regularization,
+it moves further away, the prediction accuracy starts to go up, and then eventually it goes down
+quite a bit. But the performance keeps going up. So this kind of makes sense that as you completely
+ignore regularization towards the human policy, you have much more flexibility to improve your policy a
+lot. But the prediction accuracy goes down. But what's really interesting is that the prediction
+accuracy does initially go up by a pretty substantial amount. So roughly speaking,
+one percentage point increase in the prediction accuracy on this test set would correspond to a
+roughly 4x larger neural net and 4x more training data. And here we're increasing in both chess and go
+by about 1.5 percentage points. Maybe one percentage point in go. And what's interesting is that the
+optimal hyperparameter was the same for both. It looks like it's the same plot in both figures,
+but it's actually different. I think this is really surprising because we're kind of taught that if
+you want to maximize prediction accuracy on some kind of data set, the way to do it is to just take a
+giant model, feed that data in, train a giant neural net, and then see what it outputs. And here,
+that's not the case. If you add Monte Carlo Tree Search on top with the appropriate hyperparameter,
+then you're actually increasing the prediction accuracy by a substantial amount.
+And again, I think that's because you're adding this planning ability that the neural net is
+insufficient, is not good enough to approximate that humans are doing. Okay, any questions? Yep.
+I'm curious if you see similar gains using search in a space that's not in a game where there's maybe not
+as super defined optimal. Yes, I'll get to that a little bit later.
+Do you think the same like scaling law like test time and training will hold in like continuous
+domains where the states are not discrete? I think it's possible. I think it depends on the
+domain and the technique, but it's possible. Okay, so this idea of using planning to improve your ability to
+predict human moves. This is again a follow-up to the Maya work. So on the x-axis we have different ELO
+ratings and these are like levels, you know, human ELO ratings. And on the x-axis we have the
+prediction accuracy for predicting humans in those ELO ratings, in that ELO bucket. And you can see,
+let's just focus on this blue line here. So the circles is the raw Maya model and the squares are
+the Maya model plus MCTS with this like tuned hyperparameter. And you can see if you use Maya
+to try to predict, let's say like, it was trained on 1900 ELO humans and then we try to predict the
+moves in 1900 ELO humans, the prediction accuracy is only around 54%. If we then add MCTS, the prediction
+accuracy goes up by two percentage points. Okay, so we use this idea of trying to predict human moves
+better by adding planning to our AI for the game of diplomacy. So Cicero was an AI that we developed at
+FAIR that plays the natural language strategy game of diplomacy. And it was trained on 50,000 human
+games acquired through a partnership with webdiplomacy.net and the performance was quite strong.
+I won't go through all the details of how Cicero, because again, this isn't a talk on Cicero specifically,
+but diplomacy is this very complicated natural language strategy game. We entered Cicero anonymously.
+I'll get to the results and I'll talk a little bit about examples of it. But we entered it anonymously in
+an online diplomacy league. And so first of all, kind of separate from the planning stuff, it was actually
+quite interesting that Cicero was not detected as an AI agent, even though it played 40 games of
+diplomacy, sending and receiving an average of 292 messages per game. And honestly, people were kind
+of shocked afterwards when we told the humans that like, oh yeah, you've been playing with a bot the
+whole time. And we got a lot of messages like this. Fortunately, people were overall quite okay with
+the fact that they had been playing with a bot the whole time. We were pretty worried about that, but
+they seemed to take it quite well. As far as the performance, Cicero ended up placing in the top
+10% of players and second of 19 players that played five or more games. And it more than doubled the
+average human score. Also, there was one player that mentioned post-game that, you know, they thought
+that like, you know, they kind of joked that Cicero, like the screen name that we used for Cicero was
+like, you know, a bot. But they also accused a few other players of being bots. So I don't know if that was
+specific to Cicero. Or maybe there were just other labs working on diplomacy that also submitted
+agents. Okay, so the way Cicero works, it takes as input the board state and the dialogue history
+and it feeds that into a dialogue conditional action model. So this is a model that, again,
+takes as input the dialogue and the board state and tries to predict what all the players will do
+in the current term. These actions are then fed into this planning engine. And again, I think
+this is one of the novel things about Cicero that you don't really see in a lot of language models
+today. That it would iterate on what it was predicting all the players would do and what
+they thought we would do. And it would refine these predictions by doing several loops. Kind
+of like, in a way, similar to what we were doing in poker. And then that would lead to the action that
+we ended up playing. But it would also lead to these intents, these actions that we would condition
+our dialogue model on. So after we planned to figure out what moves we should do for this turn and what
+we thought other players would do for this turn, we would feed those plans into the dialogue model,
+condition our dialogue on those plans, and then output a message accordingly.
+And again, I think this is one of the underappreciated things about Cicero, that it wasn't like a
+typical language model where it was acting instantly. It was actually really expensive to run. We were
+using dozens of GPUs, and it would take sometimes at least 10 seconds for each message that it decided
+to send. But that time spent planning ended up making a huge difference for the performance of the bot.
+Okay, so there's a general trend here that for some problem, like, okay, why does planning work
+in so many domains? And I think one of the fundamental reasons is that there's
+this thing that you might call the generator verifier gap. Basically, in some problems,
+verifying a good solution is much easier than generating one. So for example, in poker,
+verifying that you're in an equilibrium is much easier than computing one. In chess, verifying that
+you're at a really good board state is much easier than finding the path to that very good board state.
+And in something like Sudoku, it's much easier to verify that you have a solution to a Sudoku puzzle
+than it is to find that solution. And this is true for domains like puzzles, math, programming,
+proofs, for example. It's much easier to verify a proof than it is to generate a proof.
+There are some domains where this isn't true. So for example, information retrieval,
+if I asked you what is the capital of Bhutan, I could give you 10 different options, and I don't think
+that would actually help you in telling me what the correct answer is, at least most of you.
+And also things like image recognition. These are domains where verifying isn't much easier than
+generating. And in these domains, we would expect planning to not make a very big difference.
+But when there is a generator verifier gap and we have a very good verifier, then we can spend more
+compute on the generation process and then verify when we've come up with a good solution.
+Okay, so I've talked, before I go to LLMs, do I have any questions so far? Because we've got to talk
+about LLMs, of course, right? Yeah?
+You say this is like, another way to think about it is like the efficacy of forward search
+versus backward search from your goal? Or is that distinct?
+I'm not sure what you mean by that. So like you have a goal in mind,
+and you're just searching backwards from where you, from the goal to your current position,
+rather than from an initial position to the goal? There are forms of search that do both.
+And I think that's, I don't think what I'm describing is assuming one or the other. I think
+you could do either one, depending on the domain. Okay, so we're going to talk about LLMs. I should
+mention, of course, that like, you know, I'm only able to talk about published research. And so I'll
+keep this, all these discussions to things that are published. So what does scaling test on compute
+look like in language models? There are instances of it. And again, I think people underestimate just
+how much of a difference those techniques make. So the simplest one is this algorithm called consensus.
+And the basic idea is, instead of just generating one solution, you generate a bunch of solutions,
+and you take the one that's the most common. There is this paper Minerva. So some of you might be
+familiar with what's called the math benchmark. So this is a benchmark. It's literally called math.
+And it involves many difficult math problems that are basically like high school, college level.
+People thought it would take a very long time to reach even 50% performance on this benchmark.
+But in 2022, Google published this paper, this bot called Minerva. And it got over 50% on the math
+benchmark. This was very surprising to the people in the LLM community, because like math was viewed
+as one of these very difficult tasks that LLMs are really bad at. They did a lot of things to get the
+performance to 50%. But one of the things they used was consensus. So they generated a lot of solutions,
+and they just returned the most common one. And that actually boosts the performance of Minerva from
+33.6% to 50.3% by generating 1,000 samples. Now, there are limitations to consensus. So for example,
+if you can do consensus when you have a single number that you have to return as your answer,
+it's much harder to do consensus when you have to write a proof, for example, because you're not
+going to generate the same proof multiple times. But there are other things you could do. Another
+one is best of n. And the idea here is that you have a reward model that can score how good a generation
+is. And instead of returning the first one, you generate n solutions, and then you return the one the
+reward model considers to be the best. Now, with a good enough reward model, best of n beats consensus.
+But it is in many cases bottlenecked by the quality of the reward model. And in fact, if your reward
+model is not very good, then you will see this overfitting dynamic, which you kind of see here,
+where on the x-axis, we have the number of solutions that you're generating. And on the y-axis,
+we have the test time performance, the solution, the score. And you can see initially, as you generate
+more and more solutions and take the best one according to the reward model, it goes up. But then
+eventually it overfits and it goes down. So if you don't have a very good reward model, this can be
+worse than consensus. It is very useful in a domain where you have ground truth. Like chess is a good
+example where you know you've either won or you've lost. Or Sudoku, where again, you know that you
+solved it or you haven't solved it. Can we do even better than these? Well, there was a paper that
+actually OpenAI published very recently. It went online about a year ago, but it was
+officially presented at iClear just a few weeks ago. This is called Let's Verify Step-By-Step,
+and they introduced this idea of process reward models. And the idea is that instead of verifying
+just the final solution, they're going to verify every single step individually.
+So yeah, they go through each of the steps, say is it correct? Is it incorrect? If it's incorrect,
+then they just like, you know, mark that down as incorrect for the whole solution.
+Okay, so how does this compare? Well, okay, so in this plot we have the number of solutions generated,
+going up to 1,000 or 2,000. And this is the success rate on the math benchmark.
+This gray line is consensus, also called majority voting, and you can see it like goes up initially,
+but eventually it flattens out. But you can see it actually gives you a pretty big boost. So you're
+going from like, you know, roughly 60 percent to almost 70 percent just by doing consensus.
+If you do best of n, you're getting an even bigger boost and you're getting up to 72.4 percent.
+If you do this process reward models where you're verifying every single step with a really good
+reward model, you're getting an even bigger boost and you're getting up to 78.2 percent. And you can
+see it still looks like that line would go up more if you generate more samples.
+There's some examples of this. I think this is a really interesting one in particular because
+this is a math problem. You know, it's asking you to simplify 10 of 100 degrees plus 4 times
+sine of 100 degrees. This, if you give it to the raw GPT-4 model, it would only get it right one in
+a thousand times. But by going through the process of verifying every single step, you could generate
+a thousand samples and then only take the one that the reward model says is correct and your success
+rate would go up a ton on this problem.
+Okay. I want to take a step back and talk about the broader picture about AI today.
+I mentioned at the start of this talk, when I started grad school working on AI for poker,
+people felt like they had figured out the method for getting to superhuman performance in poker.
+There was this algorithm that we had and it worked and it was just a matter of scaling it up. And
+every year, the models would get bigger, train for longer on more data, and they would always beat
+the previous year's models. And that's very similar to, I think, the state of AI today. We have a
+technique that works and we can train it on more data for longer with bigger models and it keeps getting
+better. And there are some that say that that's all we need to do. But one thing that I want to point
+out is that the inference costs for these models are still quite low. You know, you can go on ChatGPT
+right now, ask a question, you get a response basically instantly at very, very low cost.
+And it doesn't have to be that way. It wasn't that way for a lot of these games that we looked at.
+It might not have to be the case for language models as well. So the next goal and the thing
+that I'm working on is generality. Can we develop truly general ways of scaling inference compute?
+Now, this is a very difficult problem. We've developed a lot of these techniques, these search
+techniques that scale inference compute, but they've always been very specific to the domain that we've
+been looking at. And what I am working on and others are working on is developing very general ways of
+doing it. This would involve spending much higher computer test time, but it would mean much more
+capable models. And I think for many domains, we're willing to make that trade-off. Yes, it's true that
+for ChatGPT where you want a co-pilot for your coding tasks, maybe you don't want to spend five minutes
+waiting for a response. But there are many questions where we're willing to wait hours, days, even weeks,
+for an answer. You can imagine that we would be willing to spend that kind of cost for something
+like a proof of the Riemann hypothesis, or for a new life-saving drug, or for the next Harry Potter novel.
+And I think very importantly, it can give us a sense of where things are going as we scale these models
+further. It can give us essentially a window into the future of what the state of AI will look like
+down the road as these models become even more capable.
+Okay, so general advice for academics, because I know that a lot of academics, grad students in
+particular, are wondering how to do research in this new age of AI. And one thing I want to suggest
+is that planning is actually a relatively good domain for academic research. And I say relatively,
+I still think that it is much easier and better to do this kind of research in industry because
+the reality is you have way more resources in industry compared to academia. And it makes the
+research much easier to do. But I think compared to things like pre-training, planning is actually a
+pretty good domain to work on in academia. And the reason is because if you think about the incentives
+of large companies, if you have a company that's serving billions of users, you're willing to spend
+a lot of compute upfront to train a really good model. But then you want the inference cost to be
+extremely low, because you're doing potentially trillions of queries. And so the incentives are
+actually not in favor of planning. It's in favor of training a really, really, really giant pre-trained
+model and then having the inference cost be as low as possible. Especially if you're giving those
+differences away from free. Yes.
+And so if you're in academia, you don't really care about serving your model to trillions of users
+or billions of users. You just want to generate a proof of concept and only generate potentially a few
+samples enough to publish a paper and prove out an idea. So this is a domain where the balance isn't
+really as badly against you. I would also suggest, I mentioned for things like Best Event,
+the bottleneck is really on the verifier, the quality of the reward model.
+You might want to consider working on a domain where you have an external verifier, because
+then you avoid being bottlenecked by the quality of the reward model.
+Okay, I want to close with this quote from The Bitter Lesson. If you haven't read this, I highly
+recommend reading it. I think it's a great essay. It's really short. And towards the end, he says,
+the biggest lesson that can be read from 70 years of AI research is that general methods that leverage
+computation are ultimately the most effective. The two methods that seem to scale arbitrarily in this
+way are search and learning. Now, I think when it comes to scaling learning, we have done a great job.
+And I think that that Bitter Lesson has been internalized. I think there's more that can be done
+on the dimension of search. Okay, so I'll stop there, and I'll take questions for the remaining time. Thanks.
+Yep. What are your thoughts on the importance of undoing bad actions in this kind of general
+with AI applications where you're not playing against an opponent? And downstream, it turns out that you can do bad action.
+Can you go back and undo it and do something else?
+Yeah, so one of the things that I want to avoid doing is speculating about, you know,
+future techniques and what those might look like because, you know, I want to stick to like
+previously published work and very, very broad discussions. So I think that might be a difficult
+question for me to answer. Yeah, you have a question?
+These search algorithms that you've discussed in games like Go, are they a time variable
+or is it always a fixed time cost? They were any time algorithms that you could spend as much
+compute for as long as you wanted, and you would get better performance the longer that you ran it.
+I just mean that once you decide on the fixed time, would that fixed time cost the ball
+? Well, we did it for poker. We actually used a variable amount of time because we were targeting
+a certain number of iterations or a certain like solution quality. So it would think for variable
+amounts of time, but we didn't put a lot of time into optimizing that. Yeah. You have a question?
+So the research that you described makes a very clean distinction between search and the model,
+and you're using the model inside the search as a subloutine in some sense. But when you look at
+something like Transformers, you know, there's a lot of research on this, and maybe they are doing some
+amount of research inside the model. And maybe, you know, hopefully by doing that, you can actually do
+better than just by having the model and search for separate things. That's really possible. I think,
+you know, when I'm talking about search, really what I'm saying is scaling inference compute. I mean,
+search is one example of this, but I think that the bigger question is how do you scale inference
+compute to just be, yeah. And that could be with like some kind of external process that could be
+within the architecture itself where you can, you know, dynamically spend compute. There's a lot of
+different directions to pursue. So yeah, I definitely think it's like worth thinking more broadly than
+something like just MCTS or just like, you know, the algorithms that currently exist.
+Yep.
+Coming again from more of a poker background, but one of the primary uses for these models is for humans to
+implement them in some way. And have you looked at all about like the implementability of these things?
+It's like, for instance, mash equilibrium in the poker space would be incredibly complex,
+but oftentimes a lot of that's just noise. There's just, you know, you have these preconditions
+that you put into it and then you get all these very like small probabilities of doing this thing
+or that thing. Um, is there any sort of like human facing, uh, takeaways that you've come from working on
+in terms of poker? I think it is very difficult for humans to do this, the kinds of computation that
+the bot ends up doing. I think that there were general takeaways, but it wasn't really about like
+the way that the bot approached planning. It was more about like the general strategy of the bot.
+So for example, like one of the things the bot loved to do was in very carefully chosen situations,
+it would bet huge amounts of money. So, you know, there would be situations where there's like
+a hundred dollars in the pot. Typically humans would bet between like fifty and one hundred dollars
+and the bot would sometimes bet twenty thousand dollars. And that was considered very, very unusual
+by humans at the time. They actually thought the bot, this is part of the reason why the betting
+markets were so against us because they saw the bet, the bot doing these kinds of things and they
+thought like this, this bot's a joke. It can't be, it can't be good. But it turned out, it ended up
+being very effective in certain spots. And so that's actually one of the things that the humans
+took away from the bot and started doing in their own, in their own games. Yep.
+If I were to develop like a new search or planning algorithm, what are some of my good
+qualities that would make this algorithm more scalable?
+Some good qualities that make it more scalable? Well, I think you can, you can really plot just like,
+as you give it more compute, um, how does it do? And ideally you would like to see that it continues
+to improve the more compute that you give it. Um, please thank our speaker again.
+Thank you.
+Thank you.
+Thank you.
+Thank you.

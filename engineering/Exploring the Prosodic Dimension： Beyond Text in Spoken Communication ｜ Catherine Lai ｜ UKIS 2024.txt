@@ -1,0 +1,788 @@
+Thank you. Thank you so much for that very kind introduction. I'm Catherine Lai and I'm
+going to talk to you about prosody. So I come from a bit of a roundabout background. I started
+in maths and computer science and then became enthralled by the language problem and decided
+to do a PhD in linguistics and then went back to informatics and then now I'm back in linguistics.
+And so what I'm really interested in is spoken communication. And I think a lot has happened
+in the past few years, even in the last year, in terms of speech technology and language
+technology that actually allows us now to start to think about some very, very hard questions
+in speech communication. So I want to talk to you about some things that I think are worth
+thinking about now that really very happily align with what I'm very interested in. So
+a lot of the stuff that we've seen in the past. So I started really doing speech technology
+about 10 years ago. Before that, I was really much more focused on linguistics. And so what
+we have seen for a long time is a version of speech technology that mediates communication
+through text. So here was a tweet that was just from last year from Jim Phan, who was very
+excited to say, look, we have these new technologies now. We have really good ASRs, speech to text,
+whisper, you have chat to do your dialogue management. And then you have other TTS systems like
+Vali to do speech generation. So what we have here is the classic sort of spoken dialogue
+systems chain. We have speech to text, we do all our natural language understanding within
+the text realm, and then we generate text and then turn that to speech. But okay, so if
+you're, that's a reasonable approach. But I would argue that it's missing a lot. So when
+I saw this tweet, I thought, that essentially, so what I'm going to talk to you about today
+is all those things that are kind of missing when you strip away everything and just focus
+on the text. Okay, so here's our classic speech to text problem. So we have some recording.
+We usually try to get some sort of representation of it from which we can get some text out. So
+let me play this for you first of all. Okay, so this, because I use Google Slides, and that's
+my fault. This might take a little time. Okay, so hopefully you could hear that a little bit, or
+at least you could hear the, the general sound of it. So what maybe, so we have the captioning
+now. So you kind of preempted me. But um, so this is what he actually said. So I said to him
+when you left, do you remember I told you I said to him, don't forget Dave, if you ever get in
+trouble, give us call, you never know your luck. Right. So that was a, a real turn from
+a real speech corpus, British conversational speech corpus. Um, don't ask me where that
+corpus came from, because I don't know. Um, but it, we have it in Edinburgh, so you can
+ask Peter Bell, who's not here. Um, so see, this is the classic sort of situation. We have
+our, uh, waveform, we have our intermediate representation, and then we have words. So, uh, you know, even
+five years ago, people were mainly focusing on just getting the words out. So no
+punctuation, no capitalization. So that was another task that people worked on as a sort
+of post-processing step. Um, but we kind of know that, you know, to make sense of this,
+we need some more information. So to actually read that text, it, you really kind of need
+some punctuation there. There's an embedded quote in there. So there's attributed speech.
+And we kind of want to know what that is. So we can say whether that information was something
+that came from a specific speaker, or whether they're quoting someone else. So these sorts of
+things are important if we want to sort out what sources of information are there. And
+so you can see this is kind of a complicated quote. Um, there are several different points
+where it could have been a quote, but in the end, you can kind of, if you could hear it properly,
+you can hear, um, that it's the last bit that is the quote. So, um, at the first stage, we
+at least need some punctuation, right? Um, so let's look a little bit at where we are
+now. So, uh, that, that quotes, uh, reference whisper. Um, hopefully you can see this. Um,
+but so if we put the large pitch model onto whisper, you can see it does pretty well, actually,
+it only gets two words wrong. Um, it doesn't change the semantics too much. It says, if you
+remember rather than do you remember. And it says, we never know your luck rather than you
+know your luck. Uh, as we get to smaller models, we start to get some issues. So it says, I
+said to him, you left if you remember, I told you, I said to him, don't forget. So this
+is where it gets weird. I'm here to get in trouble. Give us a call. You never know your
+life. Right. So, okay. That's not the message that he said. Um, so even if the, so we're here,
+what I write is pretty low. Here, it's getting a bit, uh, worse. Uh, and okay, here it is,
+it's a bit cheeky, but okay. So the multilingual model, it got, it got wrong, right? It got the
+language wrong. So this is probably thinking as well. Okay. So it's not completely solved.
+We can do really well with big models with the smaller models. It's not so, so solved,
+let's say. Okay. So let's, let's look at text to speech instead. So that's kind of going
+back the other way, given the text, produce the waveform. So let's listen to some samples.
+Um, so we have a few here. So if we don't put in the punctuation, um, let's, let's just
+listen to it. So this is fast pitch. This is LJ. So this is, uh, uh, a voice that you probably
+know very well.
+Okay. So it's a bit hard to understand. She's not really doing any cueing of like how you should
+put the words together. Uh, I, uh, I, I chose some samples from the 11 labs voice because, um, you know,
+it's, it's touted as a state of the art voice and, um, it's very easy to make samples there.
+Um, so you can have a listen. So this is Fred.
+Okay. So it's a bit better. He's making, doing some sort of semantic, uh, or syntactic clustering.
+Um, so that's a red speech voice. That's, that's advertised as a audio book voice and the archer is a, uh, conversational voice.
+Let's see how conversational this sounds.
+I said to you when you left, do you remember? I told you I said to him, don't forget that if you ever get in trouble, give us a call. You never know your luck.
+Okay. So that's not that bad actually. That's pretty good. It's, um, given that it's got no punctuation, it's, it's clustering things together.
+But some things you might hear from that that's missing, uh, well, it's getting the overall tone kind of weird, um, in a way.
+So in the actual conversation, and there's no, no, no way that the TTS system could know this.
+The speaker is actually talking about this as an anecdote that's kind of funny, right?
+He's, it's a bit cheeky, right? So he's, he's basically telling Dave that, um, he'll help him out when he's like, ah, I won't really like.
+So, so it's kind of missing that tone. Um, with punctuation, um, you don't actually get that much difference.
+You get a bit of difference in the fast pitch voice. I won't play it for you just for, um, um, the time, but, um, you can sort of hear like some of these voices sound perhaps a little bit accidentally, uh, uh, unhappy, let's say.
+I said to him, when you left, do you remember? I told you. I said to him, don't forget Dave, if you ever get in trouble, give us a call. You never get in trouble.
+Right, so he sounds a little bit annoyed, I would say. Okay, let's, let's listen to Archer.
+I said to him, when he left, do you remember? I told you. I said to him, don't forget Dave, if you ever get in trouble, give us a call. You never know your luck.
+Okay, so, that one's also okay. Is it conversational? I think it sounds more conversational than the Arred speech.
+I'll just, okay, I, no, okay, I won't play LJ. It's, it's, it's quite far behind, but, um, so the thing is, like, when you're generating things,
+there's these, these different strands of tension that are pulling of, like, what do you want to convey?
+So, is it just the structural stuff, or do you also need to, do you also want to transfer the other things,
+so the affect, what are, what are you trying to be trying to convey in the conversation?
+Some of these things can be very subtle. Okay, so, in general, there, there's lots of things that are missing
+when we just strip out all of the information that's not just the words, right? So, that's, that's kind of, that's yesterday's news.
+Nowadays, we're focusing on, you know, native speech models, so that you, you want to really keep as much of information about the speech as possible.
+And, you know, if you've been keeping up with the news, a lot of companies are going in this direction for dialogue.
+We'll get back to that later. But, for now, what I want to talk about is a little bit about prosody.
+So, what, what is prosody actually? Um, so, um, the reason I think this is important is for all these reasons,
+but, uh, why I want to talk about it in some detail is just that it's very complicated, right?
+And I think it's good for, for us as a field to try to think about, like, how these technologies relate to these issues of communication
+that really come up when you're studying prosody.
+So, prosody, how we say what we say. So, we often talk about this in terms of intonation.
+So, pitch, is it high? Is it low? Loudness, is it loud? Is it soft? Timing, am I talking really fast or really slow, right?
+So, they're, they're not always independent, right? But they can, um, you can, you can vary them, these sorts of pictures.
+We also talk about voice quality. So, am I kind of harsh in my voice or am I breathy, right?
+So, this is about our articulators and how we're, how we're using them to express different things.
+Okay. So, in general, we're talking about suprasegmental aspects of speech.
+The stuff that you don't get from the words or the forms themselves.
+So, suprasegments, you know, more than just the segments.
+We're the segments, what we mean are forms, essentially.
+Okay. So, we have basically, as I said, there's kind of two main aspects.
+If you read Paul Taylor's book, you know about this. So, there's a structural bit.
+So, that's what a lot of linguists focus on. So, what's the phonology of a language?
+What's the intonational phonology of the language?
+What's the grammar there that's driving what we see?
+How do we put things together? How do we signal what?
+How do we learn, how do we know how to put things together in order to get the actual message to get across?
+But there's also this effectual bit. So, this is how we feel, how we feel in a dialogue.
+How do we feel towards the people we're talking to?
+How do we feel about what we're talking about?
+How do we feel about other things in the world?
+And you can see that we're kind of missing something when we just use text because we kind of invented all these things to put in the text to show these.
+So, we're also working on emoji. Very interesting. I won't talk about it too much today.
+It is very interesting. It's not the same as prosody, but it's very related.
+Okay. So, just some examples. So, prosody communicates linguistic structure.
+Let's see if I can... Sorry, it's a little bit quiet.
+I should have sampled again. Play it again, and...
+So, if you can hear that a little bit. So, what you can basically...
+What I want you to take away from this is like, okay, so this grouping together of clauses into prosodic phrases,
+it can be through pauses, we can signal things through lowered pitch register,
+and you can see this quote is actually kind of signaled by a very long period of lowered pitch register.
+So, he's talking low and fast, right, through here.
+So, that's how it's signaling.
+So, this is something that you can't really ask the TTS systems to do at the moment.
+At the moment, they're generating different variations, but we don't have that much control over what they do.
+Okay. So, here's another one.
+So, prosody communicates affect.
+This is from the TV show, Unbreakable Kimmy Schmidt.
+She's going to say the same thing twice.
+Oh, okay. Maybe they don't know.
+There you go.
+Remember the people who called together?
+Well, did you know what to talk to them?
+No, no, no.
+It's great.
+They apologize.
+I took a call about you.
+There's your website on where you're going to sell.
+It's just a team app.
+Type.
+I'm so sorry.
+You really heard that it's your friend.
+Did you guys meet any more?
+Oh, no.
+I don't know.
+I don't know if there's a topic.
+I don't know if there's a topic.
+I don't know if there's a topic.
+I don't know if there's a topic.
+I don't know if there's a topic.
+No.
+I'm so sorry.
+We really cared that it's your friend.
+But you guys, do you need any more?
+I don't know if there's a topic.
+I don't know.
+I don't know if there's a topic.
+Okay.
+So you can hear hopefully that is different.
+Right?
+Different.
+So you can't tell when.
+I don't know if there's a topic.
+So.
+No.
+No.
+So, so, okay, so she's doing it with her voice, right?
+The second one is sarcastic, but how do we know that's sarcastic?
+It's because if we know the show and we know our pop culture now, she's referring to Chandler,
+right?
+So who's Chandler?
+Chandler's is Stu, right?
+From the TV show Friends.
+And what we know about Chandler, he's very famous for being sarcastic and having a very
+specific way of talking.
+So let me just switch it out for a second.
+Sorry, there was a little bit of an issue we've left.
+Anybody know who Chandler used to close up?
+No, no, I'm just hoping to draw on me with chalk.
+Okay, draw on me with chalk, right?
+So that's the very typical Chandler being intonation that gives you sarcasm.
+And so if we hear this again, we can kind of see what this is.
+So this is Kimi saying, we really care in both iterations.
+Okay, it doesn't like that one.
+Okay, fine.
+So I'll do it for you.
+So she says, we really care.
+We really care, right?
+In the second one, you can see the pitch contour there.
+This is just like a screenshot from Pratt, obviously.
+But so you can see the blue line is the pitch contour, the F0 contour.
+And you can see in the first case, it's much shorter.
+In the second case, we really extend the really.
+You can see the pitch is much higher in terms of the excursion.
+And it's really drawn out.
+And there's a slight pause there, right?
+There's a slight break there.
+So you can see this in the acoustic features.
+Does that mean that's how you do sarcasm all the time?
+Of course not, right?
+So this is just one way of expressing this sort of thing.
+That's dependent on having a specific understanding of popular culture.
+Okay, so the phonetic detail here really matters.
+This is my main argument.
+So if you're going to do this as a conversational analyst and transcribe it all out,
+you might add a lot of stuff to your transcript, right?
+So this is a Jefferson-style transcription.
+Don't judge me if you're a conversational analyst.
+So, but just to say like this, if you want to actually really express this sort of thing
+in the text in a fine detail, you have to do a lot of work to get there.
+And in real life, how do we express these things?
+Often by deliberate misspellings, for example.
+So there's some work by my dad that we're doing on like how people express these things.
+And actually people, you know, misspell things.
+They do sorts of elongations.
+They do deliberate, disfluent writing in order to express this sort of stuff.
+So let's see how this sounds with another 11 labs voice.
+This is hope.
+I'm so sorry.
+Okay.
+That's just a normal one.
+I'm still sorry.
+I'm so sorry.
+Okay.
+That's just a normal one.
+I'm so sorry.
+I'm so sorry.
+Okay.
+So, I didn't.
+So that does sound a bit sarcastic, right?
+I'm so sorry.
+I'm so sorry.
+Okay.
+So, I didn't.
+I'm so sorry.
+Okay, so I didn't...
+So that does sound a bit sarcastic, right?
+But actually, that was not actually...
+I didn't ask it to be.
+I just did this.
+And then, you know, the way it...
+You can do this.
+You're sampling, essentially.
+So there's not that much control.
+So if I do it again, it comes out quite differently.
+I'm so sorry.
+Okay, so she does sound maybe a little bit sarcastic,
+but definitely not as much as the first one.
+So if you want to actually produce a specific type of prosody
+in order to produce a specific sort of affects,
+what you're going to be ending up doing is spending all your credits
+generating lots and lots of samples, right?
+Unless you have some sort of form of control.
+Okay, so hopefully that shows you that, you know,
+prosody expresses affects.
+And it's also contextually dependent how we interpret it.
+But the other thing is prosody out of context evokes context, right?
+So if you just give something, a sample for somebody to listen to,
+they'll project what context it came from, who said it, what are they like.
+So this is some work by Zakudari.
+He looked at getting neural synthesis more expressive
+and looking at whether we could actually codify this variation
+in terms of international codes a little bit before everyone else is doing it.
+So this is four different renditions of the phrase, I'm sorry.
+And you can think to yourself, where do you think they would come from?
+I'm sorry.
+So some of the, what Zak did, which was really nice,
+which he did actually do some qualitative analysis of this
+and ask people what they thought, right?
+And so it was very, very complicated.
+We were actually hoping they would say like,
+oh, they moved the focus from here to here and that sort of stuff.
+But what they actually said was very complicated.
+So one was like a brother and a sister talking and fighting
+and, you know, one wanting to apologize,
+one the other to apologize, the other one doesn't really do it.
+And lots of things like that, sorry.
+So, you know, it was a fake apology.
+That was the thing that it was described at as,
+not all of them, but some of them, right?
+You could probably, you know, just put a label of that on some of them.
+And so that's maybe something you don't want to have your TTS system do,
+make fake apologies or signal that they're fake apologies.
+So out of context, you don't really know what people are projecting onto speech,
+which is a problem.
+And another issue is that a longstanding issue that we've been talking about in linguistics
+is the fact that all these things point to different sorts of social and social identity, right?
+So you can use the way that you speak to signal that you're in a particular group, right?
+But also the way you speak, people can, you know, project a particular group onto you
+and they can also project a lot of different stereotypes onto you based on this.
+So one very famous one is uptalk.
+So this is rising pitch at the end of your sentences.
+And I'm from Australia.
+Australia, if you didn't know, so I do this when I'm at home, right?
+So this is often associated with young women's voices and, you know,
+the many debates that, oh, this signals that women are too subservient.
+Women should be more forceful in their talk or it signals that they, you know,
+require social validation and stuff like that.
+But actually men do it a lot too, right?
+People just don't focus on that.
+And also, I'll play you an example.
+Sorry.
+Sorry.
+Okay.
+One more happening in this, I think it's more prevalent with younger people.
+More in, I think, junior high school people would tend to use that.
+And now as you get older in high school, it's pretty much disappeared.
+I would think I haven't heard it for a while.
+Okay.
+So she's talking about uptalk, right?
+But she's doing it herself but saying that people don't do it, right?
+So it's really hard actually to have introspection about these sorts of things that you do
+in the way that you communicate.
+Like it's quite subconscious in a lot of ways.
+But that's just an example for you.
+This is from the language log.
+These things are really difficult to disentangle.
+Like what do you actually do in speech and also how people perceive you in speech.
+But this seems to be coming more and more to the front.
+And we will get to it by the end.
+So, I mean, don't read all the slides.
+But it's just to say that prosody is very complicated.
+It signals a lot of different things.
+So the main argument I've been making to you is it signals structure.
+But there's lots of different types of structure.
+And people worked on lots of different things to do with that.
+It signals people affects, so things like emotions, attitudes, and intentions.
+But we have to think about like how that is directed.
+Is it just general or is it directed towards specific people?
+So is it a stance, for example, towards a specific person?
+And it also signals things like social context.
+So this is very complicated.
+Possity does a lot on a very like constrained signal.
+And it also, where you have like competing sorts of things that you need a lot of stuff
+to interpret what's going on is essentially a thing.
+And so what we can think about now is whether our current speech technologies do these things.
+Like can we make them do these things?
+Do they take account of these things when we're doing language understanding?
+And so when we're moving from the point of just like getting speech to be nice, sound good,
+sound not glitchy, to actually thinking about what is being communicated.
+And whenever you have a voice and it sounds human-like,
+or even if it doesn't sound that human, it's communicating whether you want it to or not.
+So I made this slide a few years ago, but I think things will calm down a little in a way.
+It's kind of strange.
+But so there were a lot of claims in around early 2021
+that New York TTS was indistinguishable from human speech.
+So I wanted to find like one quote about this,
+but there was just like every paper in speech at 2021 had this at the first paragraph.
+So indistinguishable from human speech, indistinguishable from natural speech,
+indistinguishable from human recordings, et cetera, et cetera, et cetera.
+And this is all like good work, but everybody was talking about how it was indistinguishable
+from human speech at that point, right?
+So the question is indistinguishable from what?
+Like indistinguishable from natural speech in what sense, right?
+So where does this come from?
+So it really comes from, I think, well, people here can correct me, right?
+But from some findings from the Takotron 2 papers.
+So Takotron 2, you know, your classic now, classic, oh, so old, right?
+2000, right?
+So this is true.
+One of my students said they read a very old paper from 2017,
+and I had to like like, so, okay.
+So we have like evaluation of the system on mean opinion scores.
+So giving ratings of one to five on naturalness, so how good is this?
+And we have, okay, so ground truth, that's the actual, the actual speech,
+speak of a human, and then the Takotron stuff.
+And so we can just have a listen.
+Okay, so do you know which one was generated and which one was the human?
+Yeah, okay, so it was the second one, right?
+It got the process a little bit different, actually.
+But you can see why people would say that they're both from a person, right?
+They sound pretty similar.
+Okay, so it sounds great.
+But, you know, it's really a very narrow test, right?
+So if you're saying like, are they similar, are they same?
+Yeah, they sound pretty good, right?
+But they don't really sound the way that people talk in real life.
+They don't sound like I'm talking now.
+They don't sound like we'll talk later, that sort of thing.
+So that's fine.
+I mean, it's a really, there's a place for it, I think.
+I'll argue later.
+But the idea that this means like the TTS is solved is, it was a bit of a false flag, I would say.
+So the question is natural in what context?
+So, you know, linguists have been pondering like what the relationship between context and prosody is for many a decade now.
+Hundreds of years maybe, I don't know.
+So, but what we can say is that we can construct context based on information structure theory, semantics and pragmatics in the formal sense.
+From which we can really predict where, what the prosodic structure will be pretty, pretty well, actually.
+So this is a study I did in my PhD times.
+And given like some very short context or even longer contexts, if we knew what the information structure was, we could predict what the, how people would say it really well.
+I will play some for you.
+This might be required.
+So, I'll just read them actually.
+So, Emily didn't bring a meringue.
+No, Emily did bring a meringue.
+Okay.
+And so that's a direct contradiction, an indirect contradiction.
+I'm annoyed because nobody brought a dessert.
+People would then generally say, Emily did bring a meringue.
+And the clarification question, Emily bought a meringue.
+What?
+Emily did bring a meringue.
+Right.
+So this is, this is the samples here, but there were many others.
+And the basic point here is that there were distinct prosodic patterns.
+So when I got, when we, when we did this production study, we didn't give them the capitalization or anything.
+We just gave them the text.
+And they very, very consistently put the, the prominence and the risers where, where we thought they would put them, which is what's represented here in the, in the, in the punctuation.
+But they didn't have that.
+So that's very consistent.
+Okay.
+So if we do this evaluation, we bring this into a TTS evaluation.
+We wanted to see whether, so this is work with Elijah Gutierrez, a student of mine who's, who's a linguistic student in his undergrad.
+Um, so if we simply give them a very simple text prompt, like a question and then, uh, give the TTS, the TTS was not generated in context.
+Right.
+Um, how would people rate them?
+So would there be a difference in how people rated them and where would they, where would they put the errors?
+So, um, so the question here was like fast pitch versus Ophelia at the time.
+So fast pitch was generally rated higher in naturalness than Ophelia, but, um, you can listen to some.
+No, Holly ate cupcakes.
+So did John eat the cupcakes?
+No, Holly ate.
+No, Holly ate cupcakes.
+No, Holly ate cupcakes.
+All right, so you can see if we got people to rate, to mark words where they thought that there was a prosodic issue, an international issue, um, using this rapid prosody transcription paradigm, and you can see, I won't play the festival one, that was the one just to show, like, people did, um, attend to prosody separate from quality issues.
+Um, so people did kind of focus on different parts of the, um, the, the TTS stimuli as we expected, where there was a clash, an unexpected prominence or something like that.
+And in general, um, when we evaluate, when we measured this error rates, it was pretty much, you know, it was pretty good correlation to asking people subjectively, um, what they thought the prosody was like on a, on a rating scale, but it also gave us the extra information of where they thought the errors were.
+So that was kind of nice.
+And the other thing was that the system ranking was different based on, um, whether we had this question answer pair type, uh, evaluation or whether we just had your basic liberty TS, so audio books with LJ.
+Okay, so, I will play this because it is indicative.
+Also, a draft on future team, sometimes kinder, but generally extended.
+Okay, so, is it good?
+Uh, probably not, but can you really tell from that fragment?
+I mean, it's not, you don't really know what it's trying to communicate.
+It's a problem.
+Um, okay, so the issues around the audio book text were generally around the, um, phroditic breaks,
+and the ones around the questions were what we expected.
+So, um, lacking contrastive focus and that sort of thing.
+So, this is an incorrect, um, prominence placement given that, you know, the question is, did John eat the cupcakes?
+Uh, you'd expect, no, Holly ate the cupcakes, right?
+So the prominence to be there rather than on cupcakes.
+Um, but what, one thing that we found kind of interesting was that people also rated this no as being an error,
+which was, it seemed just excessively expressive at that point.
+It's like, no, Holly ate the cupcakes, right?
+So, um, why would the TTS system do that?
+So, even though it isn't technically wrong in terms of the information structure or anything like that,
+people found it, like, a bit weird.
+Um, so, in general, the expectations created by this question-answer structure projected pretty strong,
+tight, tight constrictions of what the prosody could be.
+Um, does that mean we can always predict the prosody given the context?
+Uh, no, unfortunately not.
+So, in this case, we have a case where the context, the discourse configuration is a very strong predictor,
+but in general, people don't talk like this, right?
+People are much more indirect and much more unpredictable.
+Um, and in general, prosody, um, affects, but also reflects speaker expectations.
+So, um, it can affect how dialogues proceed, for example,
+but we can't always predict that from the, from the previous context because people are autonomous beings, right?
+So, you don't know what's going to be surprising to someone.
+So, um, but based on the prosody, you might have a difference in what you want to do next.
+So, here's to, um, switchboard conversations, the telephone conversations, having the really in them.
+Okay, so in that case, there really seemed to be a real challenge, a question.
+He doesn't really believe that people are nicer, um, that, that the person would like,
+love it better than Dallas.
+And then this one you can listen to.
+Okay, so you can, you could, but I think, sorry, if you could hear that at all, it was, uh, it's basically,
+oh, really?
+And then he basically just moves on, right?
+So it seems like in that case, you don't really need to, to, to follow up what he was saying.
+So, one question for this was, like, okay, so is there a specific prosodic form that predicts what,
+what, you know, triggers an answer or not?
+And it seems not, actually.
+It's, it's more complicated than that.
+So, but in general, bigger prosody, um, for the really, um, means that it's more likely that you're engaged
+and you want it, you want it to be actually interpreted as a question.
+Um, and in general, if we look at discourse semantics and we, it's very, what we have to do
+is think about, like, what are the different attitudes that we could associate with this?
+And if we get the, if we ask, um, about certain ones, so if we just ask generally about uncertainty,
+for example, which is often associated with Fitch rises in English, we might not get a very
+clear answer, but if we ask about specific aspects of uncertainty, then we can see that
+there's a difference.
+And so we did some experiments doing manipulation of the prosody on different keywords, so really
+well, okay, short, right?
+So these are things that people say quite often in conversation and ask people, um,
+given the prosody, do people find what, what was said credible?
+Was it expected or, uh, unexpected, surprising, or, and do you think that the person wanted
+more people to talk about it more?
+And what we found was that, um, yeah, basically you have some sort of very strong indicator
+based on the lexical semantics of the keyword or the discourse marker, however you want to
+call it.
+Um, and then the prosody kind of, uh, could alter that.
+So, but generally not in terms of credibility, more in terms of like whether you wanted somebody
+to speak more.
+So if I say really, um, probably you're always going to think that, um, um, I want you to
+say more about that unless I really, uh, kind of flatten it out.
+And similarly, if I say something like, okay, um, generally if I say, okay, then that's an
+agreement, but if I say, okay, right, it probably means that I agree, but I, I want you to say
+something more about that.
+It can be a very disturbing experience if you say something to somebody and they're
+like, okay, right.
+So, uh, prosody can, can signal a little bit more than that.
+So you have to be careful, but it also has to, uh, you have to take a note of the lexical
+content.
+Okay.
+So I'll just go through here.
+Okay.
+So here are some challenges.
+So we want to model expectations.
+Um, so we want some probabilistic ways to model lexical and prosodic variation, um, evolving
+in the dialogue so that we can figure out what the expectations are at different points.
+So this means we need context dependent representations.
+Um, we need models of variation.
+So we need to be able to generate expected and unexpected prosodic variation.
+Um, so we don't want to just focus on average prosody.
+So I think people in the field know this, which I've been trying to get away from average
+prosody for ages.
+Um, but the big thing that I think, um, you know, linguists can bring and help is to think
+about the maps to perception, right?
+So methods to map from the variation we have in our models and the expectations we have
+from our models, um, to, to actual speaker attitudes and intents and things like that.
+So, um, so the main thing here is that we don't have a very nice one-to-one tune-to-meaning
+map.
+So it's not just like all questions rise, all statements fall, all emotional, um, all angry,
+uh, sentence utterances sound this way or happy ones sound this way.
+Cause it does, it doesn't work like that.
+If you look in, you know, real data.
+Okay.
+So for the rest of it, I'll, I'll just go, I'll, I want to talk a little bit about some
+work that we're doing a bit more currently, but first of all, um, a flashback to where
+we were in 2015.
+So this is work by my student, she's not a student anymore.
+Um, she's, she's, she's in Australia working for CSIRO.
+So, um, but just to give you an indication where we were.
+So we were basically handcrafting a lot of features.
+So this is for emotion recognition.
+So these are really big, massive sets of acoustic features that were, you know, you can get from
+open smile to kit, that sort of stuff.
+And what we were finding at that time was these massive, massive feature sets were being beaten
+by much smaller ones.
+So this EG maps one, 88 hand selected ones, and even this very small set of, um, global
+exotic features, um, which were just four, four features that were selected by Daniel
+Bowen, right.
+And that did really well.
+So obviously this idea of just throwing in, throwing in everything was not going to work.
+We did find that, um, you know, hierarchically bringing information together was helpful and
+that seems to be reflected in what we see now with the more newer models.
+Okay.
+So we don't want to do that anymore.
+We want to find representations that actually, you know, work on a bigger scale.
+And so these things will probably be quite familiar to you by now.
+So from the lexical end, we have our large language models like birds.
+So these are really good at building long context.
+If you give it enough data, you can use long context and get representations that represent,
+um, contextualized, um, text.
+Uh, but we don't really know that.
+We don't know exactly what they capture about dialogue.
+From the acoustic side, uh, we have an extension of that.
+So we have another form of self-supervised learning.
+This is Web Quebec 2.
+Um, so you're essentially, you know, doing the same sort of thing.
+You're masking out some bits of the audio and trying to, to fill that in again.
+And from there, getting a, a pretty decent representation of speech, which you can use for ASR.
+Very nice.
+Um, so in, in there, the layers encode something about lexical and prosodic information.
+We know this because it works really well for, uh, emotion recognition, but all this information
+is entangled.
+So we don't really know what the prosody is doing and what, what's being, um, given there
+by the, the lexical information, which is also there.
+So, okay, so we wanted to try and detangle this a little bit and bring, like, the perception
+back in.
+So this is work by, um, Saren Morbridge and Peter Bell and myself.
+So we want to understand how to model, um, expectations essentially.
+And the question is, does access to prosody actually change the expectations of what's
+plausible?
+And so the approach is to use large language models to find equally plausible continuations
+in the dialogue and then perceptual experiments to see what, you know, whether audio constrains
+this or not.
+Okay, so, okay, so here's what it kind of looks like.
+So in the text form, it's like a little text chat.
+Here's a fragment taken from switchboard and then people rates, you know, whether the thing
+that's coming up next is likely to be something that actually happened or not.
+And we found that people could do this actually pretty well, but you can see that it's not
+just they knew which one was the, the true one.
+Sometimes things that weren't the true response actually, um, had pretty high ratings.
+Um, and then if we look at the language models, we can see that, you know, Bert fine-tuned to
+this task, uh, does pretty well actually, does better than the humans at picking the true
+response.
+So that's the top, um, one, um, the, the highest ranked response and seeing whether it was the
+one that actually happened in the dialogue.
+Um, but the human judgments tell us that multiple utterances can actually be plausible continuations,
+right?
+So the, the framing of this as a, the response selection task, as it had been, which was always
+just to pick the, you know, find what actually happened in the dialogue.
+It's not really, uh, reflective of how we work.
+So sometimes people can do things that are very unexpected.
+So you'd expect there to be multiple ways of, um, multiple things that could happen in
+a, in a dialogue that could be equally plausible.
+Um, so how to look at this, so, um, doing the lexical bit versus the audio bit.
+So whether hearing the, the, the continuation in audio or lexical, we basically found for
+the subset, um, that were lexically ambiguous, so people didn't really know which ones were
+following.
+Um, we did get an improvement in accuracy from like basically none by design to, you
+know, a bit more if they had access to acoustic.
+But the most interesting thing I think from this is that, um, even if they weren't getting
+better at picking the true continuation, they were getting more consistent about which, what
+they thought the true continuation would be.
+And we measure this with entropy, so, we get less entropy in the audio condition.
+Um, for the non-ambiguous set, we find something kind of interesting.
+They actually got worse sometimes at picking the true one, but again, we see they're more
+consistent about what they thought was going to happen.
+Okay, so, so this is kind of interesting.
+So we have this kind of idea now that people that, given access to the audio, people have
+specific expectations about what's going to happen next, um, but we also found some interesting
+things about, you know, how people, expectations people have about text versus speech.
+So, um, in particular, these cases of one-word responses.
+So, in these cases, the one-word response was actually the real continuation, but people
+didn't seem to think it was rated as highly in the lexical case as in the audio case.
+And I'll play them for you and you can think about it.
+So, we try to do it as well as we can, and we'll keep them close contact with our parents
+and talk over the phone.
+But, uh, and with children, um, you probably don't have time to email now.
+So, that one's kind of funny, right?
+So, so, red, it seems, yeah, hearing it sounded, somehow sounded more realistic.
+I don't know, because she sounded so annoyed.
+I don't know.
+Like, but, um, so maybe people are rating them low because they are so speechy.
+There are things that really characterize how we talk to each other, these sorts of short,
+um, responses that seeing them in text just seemed kind of weird.
+Um, and then we also have the similar sort of thing with other speech features.
+So, this was rated, uh, in the audio cases, this was rated much higher.
+Okay, so that reads a little bit weird, but it sounds fine, I think.
+So, that wasn't a natural continuation, but, um.
+It looked good on it, either way, down to the end, you know.
+Well, and then you were able to talk to each other.
+Okay, so that wasn't, that was a natural continuation either.
+But you can see this one, because it kind of matched what was going on,
+and, um, the overlap was there because, uh, this actual turn overlapped its pre-,
+its real previous turn a lot.
+Um, so this seemed fine.
+It got a boost, um, when people heard the audio.
+And this one, when they heard the audio, they thought it sounded worse, right?
+So, there's some sort of, um, deviation from expectations, expectations there.
+So, some sort of incongruity that, you laughed, right?
+You found it funny?
+Um, so, there's something weird going on there that is, is, is triggering a response.
+And you know it's kind of not quite right.
+Okay, so, if I have some time, I will go through a few more things.
+So, basically, we found a bunch of stuff about expectations, and the audio does constrain it,
+and we can use language models to help us think about that.
+But that doesn't really, you might have noticed a slight, slight of hand.
+I started talking about non-lexical and audio rather than prosody, right?
+So, um, in order to try and figure this out, we've also had another line of work, um, looking at, um, using synthesis to try and, like, explore the space a bit more.
+And so, in terms of speech synthesis, you know, can we use this to kind of figure out what's going on with the attitudes if we try and really push, push the space out?
+And so, we looked at wells.
+So, just the word well in a corpus of conversational speech and clustered them, and you can hear some differences.
+Okay, they don't want to play.
+But, um, so it's like, well, well, well, you know, that sort of thing.
+So, they did find some kind of nice clusters, and what we're really interested in is things that kind of happened in the periphery.
+Um, and we asked people, after much hanging around ringing, to, um, to, we tried to figure out, like, what was a good attitude to try and test this with.
+So, um, we synthesized different variations of this from the different clusters.
+Um, so, well, yeah, well, no, well, I don't know.
+Um, so, um, and asked people to rate whether they, how, how, you know, when, the level of disagreement or agreement that the speaker was expressing on a hundred point scale.
+And what we found was, like, the actual big effect here came from duration, as you might, might, might expect, right?
+But we also find some effects of, like, the, the height, the F0 height, so the pitch height, um, and the curvature of the, of the pitch.
+But you can really hear it in the duration.
+Hopefully, you can hear it.
+Well, yes.
+Well, yes.
+Right?
+So, in this case, where you have these tentative features, so elongation and that sort of stuff, um, the, the, the agreement becomes lower.
+And the similar for the negation side.
+So, if you have this sort of, well, no, then the, the ratings go towards to more than the middle in terms of, like, the, the, the speaker is less certain about their agreement and stuff like that.
+So, um, so in general, like, the point for this is that, um, we need some sort of fine-grained control here.
+It's not just about, you know, F0 and, um, that sort of thing.
+But we need to have some fine-grained control and actually looking at the outliers.
+So, looking at the potentially incongruous prosody is actually helpful for understanding what this space of meaning looks like with respect to specific flexible content and, um, and, and prosody.
+So, we can do this and it's really fun and it's really nice to explore variation in speech, but we also have some other things to think about.
+So, I will go a few minutes over, but I think it's worth talking about it.
+So, something, other things that we've been, um, thinking about is, I mean, do we need human likeness here, for example?
+So, this is work by student Alice Ross, sorry, the previous work was with Johanna Omani, and this is with Alice Ross.
+Um, and she did some experiments looking at, you know, how people rate realism, so human-like, versus things like pleasantness.
+And you can see here, the human-like ratings for this LJ speech with fast pitch, they didn't actually get that high,
+but the pleasantness ratings were always higher, right?
+So, maybe we don't actually need super realistic voices if they're doing the job.
+And so, why might we be, um, not very interested in that?
+So, I'm going to play it from the other place.
+Okay, I'll just do it the other way.
+Okay, so this is ChatGPT for, uh, GPT-4-0, as I'm sure you all know.
+This is maybe the term of edit.
+Okay, so this is what I wrote down.
+What do you see?
+Aw, I see.
+I love ChatGPT, that's so sweet of you.
+Yeah, well, I appreciate that.
+Okay, so, so you can see there, like, so the, the big, the thing was like, you know, native speech model, but also that, um, but it's a chat, it's a chatty voice, right?
+And she, she has the very human prosody.
+But you can also see there at the end, she's doing some weird stuff, right?
+She's obviously been trained to behave in a specific way.
+And, you know, there, there's been some litigation here, potential litigation here.
+Um, but you can see, what does a real evaluation look like?
+Okay, in the news, it's flirty.
+People think it's flirty, right?
+They think it's bad to be flirty, right?
+So what could go wrong?
+It's flirty, it's flirty, it's flirty, it's bad.
+Um, but I like this one, it says, it's giving people the ick.
+I think that's the correct way to think about it.
+Right?
+So, so it's not really about naturalists now, it's about the ick.
+Okay, so, just one more, I'm sorry, sorry.
+Um, so, so what do we think, human-like, who exactly?
+So, this is a voice actor.
+Hi, I'm a full-time voice actor.
+And it's a totally popular film to us to use one of the ick.
+When doing text to speech, you have to maintain a consistent and clear tone,
+so the program can read anything.
+Which gets really weird in the recording sessions when you're saying words taken from shocking news headlines.
+This read is called detached casual conversation line.
+And it's supposed to actually sound like the real person talking while they're just fine.
+It's called a break-free.
+You'll usually hear it from a great department, so it's not even fair enough.
+They have death for the entire family.
+This is so hard-free.
+And I hear this when someone's trying to make you feel emotional about animals.
+Come and talk about this.
+I'm the most sensitive to it.
+It's just a little bit of C.I.
+And this one, I call this the general reasons to be conversational.
+And it's really simple to sound like a guy.
+Some people might call it shangri and be my first one.
+A little local flavorings here and there.
+This also corresponds to a more traditional family.
+When it's supposed to sound like you're just talking to a friend.
+Okay.
+So, human like who, right?
+Which of her voices?
+And then what about other accents?
+Gender, age, health, social status.
+There's a lot of work here that we can draw on from sociolinguists.
+So, I recommend that you look at work from Nina.
+Nina's right there.
+Go and talk to her today.
+I think that there's a lot that we need to bring in from linguistics, but also particularly sociolinguistics and social science.
+Because these issues, they're happening in the real world right now.
+So, it's not really the case that we're just playing with LJ.
+But also, you know, when people don't rate LJ as 100% human, that's kind of awful.
+She's a person, right?
+She's a person who recorded a lot of audio books for us.
+So, okay.
+Okay.
+So, I will skip over this, but basically to say that you found examples funny.
+I heard you laughing, right?
+So, one way to think about this is their deviations from expectations from norms.
+So, people argue that incongruity is the basis of humour, right?
+So, maybe that's a good way to think about, like, what is happening?
+How are we interacting with these speech samples today?
+With these speech technologies today?
+And when we ask about naturalness, it's basically asking about an imaginary, possibly stereotyped speaker.
+And so, we need to really think through that.
+And a lot of this stuff comes from prosody.
+It comes from how we say what we say, right?
+So, looking at the unexpected stuff, looking at people, voices also that are, you know,
+not necessarily represented that well in our current speech technology is a good thing to do.
+Okay.
+So, takeaways, finally.
+So, the fine way of prosodic detail is interesting.
+Phonetics is useful.
+But you need the words too.
+Semantics and pragmatics are useful.
+The recent methods from speech representation make it quite, you know, quite a lot easier, actually, now, to think about these things.
+We're at a point where we can actually use this technology to do linguistics research, believe it or not.
+But the theory of spoken communication is still, you know, still being formed.
+So, we have to think about that then.
+So, what I really want you to think about is how we can make this map between what technology is and how it relates to humans.
+And we can do this through thinking about human perception, but we can also think about how we interact with these technologies in the world.
+And, you know, look at the outliers.
+Okay.
+Okay.
+So, many, many people helped me with this work.
+They're not to blame.
+Right?
+So, yes, that's the end of my talk.
+If you have one takeaway, I made this meme, I'm so proud of it.
+So, thank you.
+Thank you.
+Thank you very much.
