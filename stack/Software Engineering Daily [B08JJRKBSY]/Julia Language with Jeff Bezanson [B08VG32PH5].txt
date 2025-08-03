@@ -1,0 +1,799 @@
+The university thesis of Jeff Bazinson described the motivation for a new programming language.
+He discussed the shortcomings of, quote, array-based programming environments,
+and his desire to create a more performant language with the best qualities of Lisp, Python, Ruby, Perl, and several other languages.
+The Julia language is the result of that desire to combine the best qualities of all those languages.
+It's a high-performance language designed to suit technical users that crave the flexibility to pick their own notation.
+The language has support for a wide variety of operators,
+which allows scientists to create domain-specific equations that can be elegantly expressed as code.
+So when you see those crazy operators like a circle with a plus sign in the middle of it,
+you can use those in Julia, and you can define it to do whatever you want it to do.
+Jeff Bazinson joins the show to discuss his motivations for Julia
+and how the language has evolved since he started working on it.
+Julia seems like a language that is increasing in importance.
+It seems like a really cutting-edge thing to cover, and I'm glad we got to cover it on this episode.
+So I hope you enjoy it.
+Jeff Bazanson is the co-creator of the Julia programming language.
+Jeff, welcome to Software Engineering Daily.
+Hi, also Jeff.
+Thanks very much for having me on.
+Yeah, it's great to be here with you.
+I guess I shouldn't be saying that.
+So when I was preparing for this show, I read some of your thesis,
+which describes the motivation for Julia, and your thesis discusses the idea of scientific
+or technical computing.
+Describe what that means.
+What is scientific technical computing?
+That's a good question.
+So it's very difficult to define it really precisely.
+And I think ultimately there isn't really a very well-defined domain
+of what is that kind of computing versus another kind of computing.
+I think all computing is just computing.
+But what it corresponds to is essentially people working in areas of applied science,
+applied math, who have numerical, real-world problems to solve
+and tend to work with large data sets, large piles of numbers,
+and the kind of programs that get written in that world.
+What are the characteristics of that type of programming that is different from something like
+building a web app or making a game?
+Sure.
+So there are a couple of pretty strong constraints on it.
+So first is that people want a very high level of expressiveness
+because they really want to think and write in mathematics
+or in terms of the conventional notations of their discipline
+rather than just thinking in terms of whatever programming language happens to be around.
+So they need a very high level of expressiveness.
+And then also they need very high performance.
+The goal is to get the peak floating point operations per second out of your processors that you can get.
+So those two constraints drive a lot of it.
+And they're actually willing to put aside many other things.
+So traditionally, a lot of – and unfortunately, a lot of kind of software engineering best practices
+have been kind of left out because people are often working in a research context
+where they just need to get some novel result quickly
+and then they might just throw it away and go on to the next problem.
+So kind of long-term maintenance is sort of not the priority.
+Although increasingly, people are getting aware of that as an issue in the research world
+and it's improving rapidly.
+But traditionally, that was sort of the non-motivation of these kinds of languages.
+It's interesting that you say that like up front.
+Like, oh, I'm admitting that oftentimes the way that academic code is written is kind of –
+I don't want to say sloppy, but like relative to industry code
+where you write a piece of code and it's going to be in the code base for a decade.
+It's a much different domain of programming, academia is,
+because you're kind of like – often it's more in service of a specific experiment.
+Yes.
+So that's been the traditional situation of different priorities.
+But that is really changing now.
+And what – you know, now the work is how can we get the productive and good part about that,
+which is getting answers and results quickly without ending up in that situation
+where you have difficult-to-maintain code or not very modular code.
+So you have talked about users in the past doing scientific computing in, quote,
+array-based programming environments.
+What languages are you referring to when you say array-based programming environments?
+There have been a lot of them, actually.
+So MATLAB is really well known.
+There was also APL, ZPL, quite a variety of them.
+And what are the characteristics of those array-based environments?
+I mean, arrays are in every programming language.
+They're pretty fundamental to every programming language.
+Right.
+So these have – sometimes these have also been called library languages.
+And the reason being that the main point of the language is really just to provide a certain set of array library functions.
+And the rest of the language is not as much of the focus.
+You know, whatever language allows providing these array operations is what they want
+because the array data structure is so all-important in this domain.
+And so the interesting thing about that is that this – the full set of n-dimensional array operations
+and data types and so on that people want to use is really very, very rich.
+It has a really rich variety of behavior with lots of polymorphism, lots of variations.
+And that behavior is actually difficult to express in most languages,
+and especially most traditional languages like C have a really hard time expressing those APIs,
+which is what motivated people to make new languages where they could have these array APIs they wanted.
+Now, you know, in our view, what you really want is a language that just happens to be powerful enough to define those APIs.
+And then you get the traditional array programming APIs plus everything else that maybe we've been missing all along.
+So when you were doing scientific computing in academia,
+what were the shortcomings of the languages that you were using prior to developing Julia?
+Well, let me see.
+I mean, this post that you wrote, Why We Created Julia, begins mentioning languages that you're a fan of –
+Lisp, Python, Ruby, Perl, Mathematica, R, C –
+but the implication is that there are certainly some shortcomings of these languages.
+Yeah, so there are a lot of little incidental things where, again,
+because of the focus on these array APIs, that part of these languages was often really, really good.
+The design of the array functions was mostly really good.
+But then there are just all kinds of other details that were just ignored and often really misdesigned,
+which just creates a kind of death-by-a-thousand-cuts situation
+where you're constantly annoyed by sharp edges in the language.
+And one aspect of that is actually performance, where the thinking was that,
+well, we wanted a very high-level language, and high-level languages are difficult to get to run fast.
+For a long time, people didn't really know how to do it.
+Well, what are the – oh, sorry, continue.
+But they figured that, you know, most of the time could be spent in compute kernels inside these array libraries,
+so performance of the language itself didn't have to matter so much,
+so performance was just kind of ignored in the design of the language.
+And this sort of worked well for quite a while.
+But then we – you know, as data sets grew and the world gets more complex,
+people started hitting limits in this thing.
+I see.
+And the performance of these languages has not caught up,
+or I guess it's just not – performance was not considered in the fundamental building blocks of the language,
+so maybe it's hard to go back in time.
+Yeah, that's right.
+So you can do a lot of work on, you know, pretty much any language to speed it up.
+But if there wasn't at least some thought during the design stage of the language
+to how it was going to run fast or what it would take to make it run fast,
+then it's usually very, very difficult to retrofit, you know,
+the highest levels of performance onto the system.
+So these languages like Lisp, Python, Ruby, Mathematica,
+what are the features that you appreciated about these languages?
+What are the best features of these languages that you wanted to mix together
+in a new language, Julia, which we will discuss shortly?
+Ah, well, for me, table stakes includes things like garbage collection
+and higher-order functions.
+You just have to have those kinds of features.
+So those are good.
+I also like dynamic typing.
+And I didn't get to mention this before, but it's notable that in this scientific computing domain,
+perhaps surprisingly, dynamically typed languages have been very popular.
+Again, that applies to MATLAB, Lisp, Python.
+And I think, you know, I don't know necessarily exactly why that is,
+but we think it's probably because, you know, when people are trying to model a particular domain of science
+or other kind of technical work,
+often, you know, it has its own conventions and its own notations
+and its own notions of how things behave.
+And that can be, those can be sometimes quite surprising to computer scientists
+and they don't necessarily line up with something that a static type system might accept.
+And so people like to have a lot of flexibility to have things behave the way that it's natural to them
+in these kinds of domains.
+So dynamic typing has been very popular.
+Talking about the motivations of Julia further,
+this post also mentions wanting, quote,
+something that provides the distributed power of Hadoop without the kilobytes of boilerplate, Java, and XML, end quote.
+And I think of Hadoop as more of an application than a language.
+It's certainly turned into an entire ecosystem.
+But it's interesting that you look at it as a language.
+Explain how you wanted to bake in ideas of Hadoop to the language.
+Well, I think, I don't know if we're necessarily looking at Hadoop as a language there.
+I mean, certainly there are parts of Hadoop, like HDFS, that any language can use.
+They're totally orthogonal to the language.
+And we have used them.
+And certainly there are ideas in it that you can reuse in any language.
+And so actually, originally, we were thinking about,
+we were thinking a lot about distributed computing
+and how it could maybe be part of the language.
+But I think we ended up kind of deciding that that really just could be left to libraries,
+that there wasn't a lot of language necessarily needed to do in that domain.
+And I think it's basically because once you're using multiple machines and a network,
+you have such latencies involved that you can really just handle it at the library level
+and you don't necessarily need a compiler to do anything about it.
+You remark that technical users crave the flexibility to pick notation for their problems.
+What do you mean by that?
+What are you talking about when you're referring to notation?
+Well, just how the program is written, what it actually looks like physically.
+And how does that fit into your construction of Julia?
+Right. So we like to at least be able to write syntax in a very mathematical,
+compact, expression-oriented style to the extent possible.
+So we have kind of a, one of our design rules is, you know,
+you want to be able to write something and then look for any possible extraneous characters
+or punctuation or anything and just remove all of it and just get it down to,
+you know, what would be written on a line in a textbook or in a paper.
+And that also involves allowing a lot of operators, you know,
+we have many, many mathematical symbols in Unicode now.
+So allowing use of lots of Unicode characters and lots of Unicode operators
+in the service of getting that kind of mathematical expression-oriented syntax.
+Ah, so that's not necessarily a challenge that interpreters have not dealt with before.
+It's just you've got a richer Unicode set to deal with
+so you can have richer operators.
+Yes. And I think, I mean, it's really interesting to see
+what other languages make of the available characters in Unicode.
+But given our background, we just jumped on them and we just use them very gleefully.
+Like what is, can you name one of those characters?
+Oh, there are hundreds of them actually.
+So there are hundreds of mathematical operators, you know, things like plus in a circle
+or times in a circle and just all kinds of symbols.
+There are lots of things you'll see in, you know, in math papers that you don't usually
+see in programs, but now you can see them in programs.
+When I write a line of code that is three plus with a circle around it, five, is the plus
+with a circle around it, is that already defined to do a specific thing or is it user defined?
+So that, for most of those, we do not have default definitions.
+We just parse them and then if you define a library function with that name, then you
+can import that library and then you'll have that operator.
+That's pretty cool.
+It makes me think about, so are most of the people that you encounter that are using Julia
+perhaps in an, well, I guess this would be in an academic environment, are most of them
+like solo programmers?
+Because I can imagine a solo programmer developing her own really, really dense operator syntax
+and anybody else that picks up the code is just like, well, I can never understand this.
+Yeah, no, there are definitely stylistic pitfalls there.
+And it's actually, usually it's not solo programmers, but usually it's people from a subfield.
+And there are a lot of subfields that have established notation that looks weird to everyone
+outside, but it looks totally normal to anyone inside that subfield.
+Ah, well, that sounds actually healthy.
+Yeah, so that's what you want to see.
+But if you, you know, people police this just at kind of a social level.
+If you see people going crazy with operators, you know, we'll say, hey, you know, that's kind
+of an abuse.
+You don't want to do that.
+Yeah, I think it would be particularly abusive if somebody wanted to audit your research results
+and you're like, well, OK, now you've got to look through this code.
+Yeah, it's really just to enable conventional uses that already exist and maybe invent new
+ones, but not to just go crazy with syntax.
+A high-level goal of Julia is to integrate code selection and specialization.
+Explain what that means.
+And then we will go into some of the features that enable that code selection and specialization.
+Yeah, so this was one of the core design ideas, maybe, in the language, which was that looking
+at these functions that are used in this domain, they have many, many cases.
+And that exists in two senses.
+So in one sense, you can have the same function, which will be called with many different kinds
+of arguments.
+And basically, what you want to do in every case is specialize the function for concrete
+argument types and then push type inference through it and get static types for everything,
+hopefully.
+And then you can compile very efficient versions of the same function for different argument
+types.
+So the different argument types might be int and float, say.
+But in full generality, there are, of course, a lot of cases.
+And then the other side of it is that people often want to write manual implementations of
+multi-argument functions for different cases of arguments.
+And they want to have the system dispatched to the right definition at each call site.
+And so those two systems, really, if you think about it, we realize they're really kind of
+the same thing, because if you have a compiler that's generating specializations for different
+argument types, well, when you get to a call site, you want to be able to dispatch to one
+of those specializations so that you get the fast version of the function.
+So you need that mechanism in there.
+And then when you have that, you might as well just use the same thing, essentially, as your
+object system and let people add their own definitions and dispatch on those as well.
+And so it's the same system in Julia.
+Julia is dynamically typed, and you mentioned this multiple dispatch feature of Julia, where
+you can have different functions that have the same name.
+They respond to different types of parameters.
+Is it a challenge to implement a language that has multiple dispatch and dynamic typing?
+Well, basically, yes.
+It certainly is.
+When multiple dispatch was first invented, it was in kind of the Lisp era.
+And Kloss, the common Lisp object system, is actually a multi-method, multi-dispatch-based
+object system.
+And that was certainly dynamically typed.
+So they actually, there's not really a conflict between them.
+They kind of grew up together.
+But people have been wary of the challenges of implementing it efficiently.
+So in C++, for example, you can dispatch on multiple arguments, but only on compile time
+types to make sure that there won't be any of that kind of dispatch overhead at runtime.
+But to us, that's really just a premature optimization.
+And you should really just allow the full dispatch power all the time and hope that you can make
+it as fast as possible and hope that the compiler can remove the overhead as much as possible.
+What else is unusual or remarkable about the Julia-type system?
+So what we are able to dynamically dispatch over goes beyond what most multi-method systems
+have been able to do.
+So usually what's happened is every object has a class, basically.
+And you'll just, a system will just, you know, get the class of each argument and then just
+use those and dispatch on that.
+But we go farther than that.
+Since the classes are parametric, they can have, you know, a type parameter, like you can
+have not just array, but array of int, array of float, and we can dispatch on the whole
+type.
+So we can have, so we have some types with this kind of nested structure where there are
+object kinds of types with parameters, and then there are also tuple types.
+And so you can just, and we can dispatch on the entire nest of whatever the structure of
+the type is.
+So we, so the dispatch takes into account a lot more information.
+And so that makes, it gives you more power for adding definitions.
+You can more narrowly specify exactly what your method is applicable to, and it provides
+more information to the compiler for specializing code on.
+So that, that really gives us a lot of power.
+We've talked about other types of array-based languages.
+Let's talk about Julia arrays.
+How do Julia arrays work?
+Julia arrays are not very surprising.
+If you know MATLAB or NumPy or one of those systems, they are, it's just an ordinary multidimensional
+array type stored in column major order.
+Okay, fair enough.
+They are not, not too surprising.
+But what's, what's happening now though, is because all of the array functionality is
+defined in Julia itself.
+It's pretty easy to write libraries that define new kinds of arrays and have them perform just
+as well and behave, you know, in a first class way as the, the standard array type.
+So we're seeing all kinds of these things now, like arrays with different index domains,
+like different ranges of indexes, distributed arrays, sparse arrays, all kinds of other
+arrays are, people are defining.
+Julia uses composition over inheritance.
+Can you contrast these two and explain why this is important?
+So we have, we allow inheritance from abstract types.
+So it's basically that you can't inherit from anything that's also instantiable.
+So there's no concrete inheritance, but, but there is inheritance of abstract types.
+How would you define, many people are familiar with inheritance.
+I think people are less familiar with composite composition.
+How would you explain that term?
+So composition is basically when you have, you have two kinds of objects that interact
+in some way.
+And instead of having one inherit from the other, you just include a reference to it and
+just use it as needed.
+And as we have discussed, Julia is known for its high performance when, um, and I, actually
+I looked at the benchmarks, it's approaching the performance of languages like C, which is
+pretty impressive.
+Why haven't previous scientific computing languages had this level of performance?
+Is it just because they didn't, is it like what you said earlier that they just were not
+considering performance or is there something about it that's really hard to do?
+Yeah.
+So they, in some cases, um, the languages have kind of gotten stuck, uh, with strange
+rules, uh, in the language that make it difficult to compile.
+And then they're, they're reluctant to change those or unwind those because there's a big
+base of code they don't want to break.
+And so they get kind of wedged.
+Uh, and so we, we solved that by just cheating and starting over with, with a different design.
+Although for some purposes, Julia will call out to C functions directly.
+When is this useful?
+When would it be high of higher performance to just call out to C functions rather than
+having that function execute in Julia?
+Ah, well, there, there are lots of really good libraries that already exist and you want
+to be able to reuse them.
+So things like, uh, blast, which does really fast matrix multiply, uh, libraries like FFTW,
+which does really fast FFTs.
+These are, you know, really, really well engineered things, uh, that already exist.
+So you, you want to be able to call them instead of rewriting them.
+I guess this is nothing new.
+This is something that other languages do a lot too, right?
+Yeah, of course.
+What support does Julia have for parallelism and distributed computing?
+That stuff that we discussed with the Hadoop ecosystem.
+Yeah.
+So we have a, uh, distributed or a kind of multi-processing, uh, library that's been in the
+standard library, uh, pretty much from the beginning.
+And that's just designed to make it easy, uh, to start up Julia processes, say on every
+node of a cluster, uh, and then it makes it easy to do communication between them using
+kind of an RPC like system, uh, really.
+Uh, so that's been there for a long time and it's really just a library.
+Uh, but the mere fact that we included that, uh, in the distribution from the beginning,
+uh, it sort of sent a signal that, you know, this is something we care about and we want
+to support it well.
+Um, and so that, that had, that had some impact.
+Um, and then that more recently, uh, we've been working on adding shared memory multi-threading,
+uh, which is just going to become more important as, as core counts keep climbing, uh, and the
+memory you can put on one node keeps increasing, uh, you know, you can get single machines with
+terabytes of RAM now.
+So it's, uh, so it's going to be more and more important to support shared memory threading.
+So we're, we're working on adding that now and we just released a kind of experimental
+version of it.
+I'm getting into some shows about in-memory distributed computing.
+I've done some shows in the past on it.
+Is there a really big shift that's going on where it's like the Hadoop ecosystem V1 was
+basically about, you've got everything in HDFS and it's on disc in HDFS.
+Um, and then when you do like a MapReduce or something, some big execution across your
+HDFS cluster, you've got to pull all this stuff off of disc and then put it into memory
+and then do stuff with it.
+But my impression is that we're moving towards this time where memory is so cheap and the
+tools for operating over distributed memory across a cluster are getting really good.
+Um, you think that's accurate depiction of the evolution?
+Yeah, I, I agree.
+I mean, and there's a, you know, the thing about distributed computing is you kind of want
+to avoid it if you possibly can, right?
+Uh, because coordinating multiple, multiple machines is, is always going to be more difficult
+than just using one machine.
+Uh, even though, yeah, as you say, the tools are getting much better.
+Uh, but if you can use one machine, you know, why, why bother?
+So we, I, we are seeing that, I think.
+What kinds of tooling has been built up in the Julia ecosystem?
+Are there really good hooks for, for all the, you know, all the tools that we want to use?
+Or is it, is it still in its nascent stages?
+So there's a, there's a really neat package, uh, called cluster managers, uh, which basically,
+uh, knows how to interface with lots of, uh, cluster scheduling, uh, batch queue kinds
+of software that's out there, uh, you know, like, uh, PBS, uh, sun grid engine and all
+like there's several of them.
+Uh, and it basically knows how to interface with all of these.
+And it puts essentially a one function interface on top of it, where you just say, you know,
+add, add in processors, please.
+And it knows how to do that over many, many different, uh, batch queues.
+So Julia uses the LLVM, which is the low level virtual machine.
+And I've been wanting to do a show on the LLVM because I hear a lot about it, but I actually
+don't know much about it.
+I think Swift uses it, but anyway, I, what is the LLVM?
+Why is it important?
+Um, maybe you could describe the, the development of the LLVM and, and how Julia uses it.
+Sure.
+So LLVM is absolutely great.
+So it's, uh, what it, it's aimed at kind of a classic, uh, problem, uh, in writing compilers
+where we have a whole bunch of source languages and we have a whole bunch of processor architectures
+and we'd like to compile every language to every processor.
+Uh, but obviously you don't want to write a different compiler for every combination
+of language and processor, right?
+Um, so you want some kind of an intermediate representation where you know how to compile
+every language to the intermediate representation and you know how to compile that one representation,
+uh, to every processor, uh, so that you can get what you want.
+Uh, and so there, there've been many of these over the years.
+It's been a perennial topic in compiler research of designing these intermediate representations.
+Uh, there've been several and, uh, LLVM was one, uh, that Chris Latner designed and it just,
+uh, it turned out, you know, many people feel he just sort of got it right.
+Uh, so it's, it's been the one that has really taken off.
+What does a low-level virtual machine enable from a fundamental perspective?
+Cause I mean, we hear about the JVM, we hear about things being built on the JVM, there's
+a whole JVM ecosystem.
+Obviously there's a lot of appeal to using the JVM because there's garbage collection built
+into it.
+And so if you build a language on top of the JVM, you get access to all of that, uh, ongoing,
+um, progress that goes on in the JVM, uh, ecosystem.
+So the JVM, uh, yeah, so the, the JVM bytecode is kind of a, another one of these, uh, compiler
+intermediate representations that can be used for the same effect.
+Um, and it's, it's an example where many, all, you know, although it's very good, it
+has, has the advantages that you describe, uh, but many people feel it gets the level of
+abstraction slightly wrong, if you will.
+Uh, and many people feel it's actually too high level, uh, in that it, you know, it not
+only lets you, uh, generate code, but it also has kind of an object model, uh, that it, that
+it imposes on you and it brings in a garbage collector.
+And some people want to write languages that don't have garbage collectors or they have a
+very different object model.
+Uh, and in those cases, it's harder to work with.
+Uh, so the idea of LLVM was to have a more, uh, more universal program representation that
+could just represent absolutely any program, uh, from any source language.
+Uh, and so that's, that's the LL part, the low level part, uh, where it has to get down
+to a pretty low level of abstraction of just bits and bytes, uh, so that it's not imposing
+anything on you that you might not want.
+What kinds of things are people doing with the LLVM?
+Like how is that ecosystem evolving?
+Can you talk about some of the specific languages that people are building and what you have enabled
+for, I mean, for example, um, why would you use the LLVM?
+Uh, well, there's a lot of work going on in the LLVM ecosystem.
+So there are people like us who are, uh, writing compilers that target it.
+Uh, and then there are, uh, hardware vendors who are working on support for LLVM to be able
+to generate code for their chips.
+You know, so if Intel comes out with a new chip, they have people there that work on adding
+LLVM support for it.
+So if you're using LLVM, you'll get that automatically.
+Uh, and then there are people who work on compiler optimizations, uh, and program transformation.
+And instrumentations of various kinds, and they can just target, uh, the LLVM representation,
+um, for all of their work.
+And then we can reuse things like that.
+So like, for example, there's this, uh, project, uh, called poly, which is a loop optimizer,
+which knows how to do very advanced optimizations and rearrangement of loops.
+Uh, it operates on LLVM.
+And since we use LLVM, we can just use it.
+Now, programming languages, they all have a certain feel to them.
+And I want to get into a discussion of Julia in more pragmatic terms.
+Um, the Julia usage, we've been talking about Julia implementation.
+What feelings does, this is kind of like a touchy feely question, literally, but what
+feelings does Julia evoke when working with it?
+Because we all have, you know, you work with Java, it has a certain feel to it.
+You work with Python, it has a certain feel to it.
+What does Julia evoke?
+Yeah, let me see.
+I mean, I, I think it's really fun.
+Uh, it's, it's a, it's a very lightweight and fun language.
+And you feel like you're wielding a lot of easy power.
+Uh, and it, it really comes from this, uh, once you start thinking in terms of, uh, multiple
+dispatch, and it's also, it's, it's also what's known as external dispatch, where the,
+the methods are basically outside of, of the objects, uh, so that there are many, many cases
+where you're, you're adding functions and they want to do different things on, on different
+combinations of arguments.
+And you can just write those definitions, you know, here's what I want to do in this case.
+Here's what I want to do in that case.
+Uh, and so it just has a, a very, uh, a very fun feeling because you can, you can write
+all these definitions in a kind of an uncoupled way.
+And it, it, it, it helps you kind of partialize your problems and focus on a small part of
+it at once, uh, which it's, you know, in a way it's kind of combining, uh, an object
+oriented dispatch with something that's a little bit more like pattern matching, uh, to some
+extent.
+Uh, and, and so when, once you get used to that way of doing things, uh, it's, it's, it's
+really hard to go back because then you, you know, for if you, if you, if you try to go
+back to a class-based OO language, you find that, you know, oh, if I want to, if I want
+a function to dispatch differently, I have to define a new class, you know, but I, but
+I don't really want a whole new class.
+I just want a new case of this one function.
+There are numerous examples of people using Julia for a wide variety of applications.
+And I watched some YouTube videos, read some stuff.
+What kinds of projects are using Julia?
+Uh, we are, we are seeing more and more.
+Uh, so they're now, uh, over a thousand packages registered, uh, covering a lot of stuff.
+Uh, yeah, we're, we're seeing lots of kinds of projects.
+There's lots of, uh, of course, research groups still using it.
+Um, it's getting pretty popular in, uh, optimization and logistics, uh, research.
+And I think also probably in practice.
+Um, and, uh, we're seeing things like, uh, you know, teams of data scientists, uh, building
+and deploying models in it.
+Uh, that's starting to happen more and more.
+Uh, it's, it's fairly popular in finance and people are doing economic
+modeling, um, analyzing securities, that sort of thing.
+Yeah, I saw a video from JuliaCon where someone named Erica Moszczykowski from the Federal Reserve
+Bank of New York was talking about economic modeling with Julia.
+And she discussed Julia being useful for a DSGE model, which is dynamic stochastic general
+equilibrium, uh, DSGE sounds, it sounds like the type of model that is useful in a lot
+of scientific applications actually.
+Um, and you know, when I, when I was looking at her, the work that she was doing, I could
+easily imagine, um, you know, Julia being useful for something like Black Shoals, which is like
+widely, widely used in finance and has a lot of like symbols in it.
+Like, uh, uh, the type of Unicode symbols we're talking about that you would want to define.
+Um, so I guess, yeah, I guess Julia must be a great fit for that kind of domain problem.
+Uh, yeah, apparently so.
+So there, yeah, the Federal Reserve Bank of New York wrote a great, uh, blog post about,
+uh, about how they use Julia.
+And so that's, uh, yeah, it's cool to, people should check that out if they're, if they're
+interested.
+Uh, a quote from your company, uh, your company, which is, um, what's it called?
+Julia Computing, I think?
+Yeah, Julia Computing.
+Mm-hmm.
+Okay.
+It's, financial modeling requires bringing together domain experts, quants and traders.
+Julia works well for this because it's a broad spectrum language.
+What does that mean?
+Why is Julia accessible to both quants and traders?
+Maybe you could describe a little bit the inner workings of how these different teams
+work together in finance.
+Uh, so, well, it has the kind of high-level mathematical syntax that, uh, people in those
+domains like.
+Um, so it's very easy to read.
+Uh, we, you know, we really focus on readability of, of the language.
+Uh, and then also people who are of a more software engineering bent, uh, look at the language
+and they find that it's, you know, uh, pretty decently designed.
+It doesn't, it doesn't have a lot of, uh, sharp edges and, and weird corner cases and
+bad behaviors, uh, because we've tried hard to take those things into account, uh, and
+take advice from, uh, many people, uh, who file issues and, you know, tell us how we should
+be doing things.
+Are you seeing big companies adopt it in wide use or is it more in, like, experimental pockets?
+Like, uh, are you seeing any Google-sized companies adopted as, like, a standard for
+doing research?
+Uh, so, yeah, so increasingly, uh, we're seeing maybe small groups within an organization,
+uh, will, uh, adopt Julia for, for a new project, say, that they have.
+They might try it out.
+Now, in terms of production, I saw a talk that one of your colleagues gave about using Julia
+for airplane collision avoidance.
+Yeah.
+This was a really cool project.
+Uh, they were, they were, they were fairly early adopters, uh, of Julia.
+Uh, so this, this is basically an FAA-sponsored project, uh, to develop an algorithm, uh, specification,
+uh, that will, will eventually run, uh, the algorithm will run, uh, on planes in flight, uh, for
+advising pilots for how to avoid collisions.
+Uh, and so their, their charter is to produce, uh, an algorithm spec, uh, and the way they
+did this before was it was basically written in pseudocode, uh, for the specification, and
+then there was a separate reference implementation, uh, and it was kind of unwieldy, and people
+weren't really sure if the reference implementation was exactly the same as the spec, uh, so for
+the next version, they wanted to be able to have, uh, a spec that was just directly executable,
+where the, the code could be the spec, uh, so that they wouldn't have that issue, there
+could just be one representation of the thing, uh, and then they could take the, uh, the
+specification and then directly simulate it and test it, and they would know that, uh,
+the spec they were shipping actually behaved as advertised, uh, and so they needed a language
+where they could do that, so it had to be basically read like pseudocode, uh, so it
+was very clear and readable, and then they had to be able to execute it really fast, and they
+do really big simulations, they try it out on, uh, you know, millions and millions
+of, uh, example scenarios, and they subject it to all kinds of analysis, uh, as you might
+imagine, uh, so they need, they need a lot of performance, uh, to be able to run the
+scale of testing they want to do, and they discovered Julia, and they, they said, boy,
+this, this is it, this is one of the few things that could, uh, could potentially do
+this, uh, so they, they've adopted that for writing their spec.
+There was a show I did a while ago with Leslie Lamport, who created the Paxos algorithm.
+Yeah, that was, that was a real treat, um, but he was talking about, I think with the
+language that he's working on now a lot, I think you mentioned actually, I think it's
+APL, is APL, no, maybe it's not APL, but, um, uh, what is it, I can't remember, but it's,
+it's used, he uses it for formal, what is it, I think it's formal, some sort of formal
+presentation of, but it's, it's, it's like an extremely formal way of writing code, um,
+I don't know, it sounds like Julia might be perhaps useful for that, um, as well, I guess
+that's, that sounds like what you're describing with the, the airplane collision avoidance
+stuff.
+Yeah, so they do actually, they, they, they do, uh, both, they do, they do multiple kinds
+of verification, there's a lot of actual, of simulation, and so actual testing, and then
+there are also, uh, formal verifications that happen, so they've, formal verification,
+that's the term I was looking for.
+Yeah, so they, they will actually take, uh, a symbolic representation of the program and
+do, uh, formal, formal verification techniques over it, so they, they do that as well with
+their Julia source.
+That's like an intense form of proof?
+Basically, yes, yeah.
+Yeah, and for, I mean, for anybody who has worked with Paxos, or in an academic setting,
+um, good lord, there are some intense proofs associated with that algorithm.
+Um, so, what is it like to develop a language in academia?
+Uh, well, I mean, I was, I was pretty lucky.
+I had, uh, uh, so my advisor was Alan Adelman, and I should also mention that, uh, uh, my other
+co-inventors who started this, uh, with me were Stefan Karpinski and Viral Shah.
+It was really the four of us, uh, and discussions among the four of us, what, what really gave rise
+to the language?
+Uh, so I, I, I was lucky in that Alan, uh, you know, I sort of pitched him on this idea,
+and he just said, you know, okay, that sounds strange and interesting, and he just sort of
+let me go at it and do what I wanted.
+Um, so, which is actually a little bit unusual, because normally there would be a lot of, uh,
+pressure to publish a lot of papers, and we worked on this for, I think, you know, easily
+a year or maybe two years, uh, without publishing anything, uh, which is very unusual, and that
+makes me a bad grad student, uh, by any standard, uh, but Alan was willing to let us do it, so,
+uh, that, that's really where the project came from.
+There have been some other really interesting languages, well, one other language that comes
+to mind that has come out of academia recently is Elm.
+Have you looked at Elm?
+Yes.
+What do you think of Elm?
+Uh, well, it's very nicely designed, uh, really, very, uh, very elegant language.
+Have you talked to him?
+Do you have any idea how his experience developing that language in academia compared to yours?
+Uh, let me see.
+Uh, well, uh, yeah, that's, that's a good question.
+Uh, I think he was, he was probably working on, uh, problems that were sort of more, uh,
+immediately publishable.
+Uh, I think he was, he was able to come up with some more, uh, more focused contributions,
+uh, in the area of functional reactive programming that let him get to some sort of research meet,
+uh, more quickly.
+Whereas we had kind of a more unfocused notion of, you know, how can we improve this kind
+of programming?
+Yeah, I don't recall what were the motivations for him or what were his research findings
+about FRP?
+Was it just like, this is a really useful programming construct or was it this programming construct
+gives you certain securities or, um.
+Yeah, I have, I have read it.
+I don't, I don't remember it in detail, but I, I believe, uh, it was, I think he basically
+came up with a better way to do it that made it more practical, uh, in some way, either
+in terms of performance or programmability.
+It was, it was something about the practicality of it, I think.
+Yeah, uh, that's kind of getting off topic, I guess, but it's just interesting because I
+know his language influenced the React, uh, programming framework for, for JavaScript, which has become
+all the rage, um, interesting seeing, seeing academia impact industry, um, I, I mean, I guess we
+also have seen that recently with Spark and the whole Berkeley badass stack, um, how do you, what's your
+experience with academia contrasting with industry?
+I mean, now you've got your own company, um, have you, have you worked in any large companies?
+Do you have any perspective for how the research process compares between academia and industry?
+Uh, so I actually have not worked for really large companies, uh, so I, I don't really have
+that experience, uh, I've kind of tried to avoid that.
+Yeah.
+Well, what about, yeah, so how, how, how are you translating that to, yeah, your, your own
+experience with the company, with your Julia company?
+But it's, it's, it's interesting.
+It's, it's pretty different.
+I mean, I, I mean, it's pretty, uh, it's pretty similar really.
+It ends up being a, you know, a balance of, uh, development work that you're directly interested
+in and want to do.
+And then there are other, you know, uh, side things you need to do, uh, for customers or then
+in academia, there are always side things you need to do for that are, you know, working
+on papers or classes or something.
+So it's, it's, it's a, it's a mix of both in either case.
+Does the work with customers push you forward on the quality of the language from, uh, the
+more holistic theoretical perspective?
+Uh, it definitely does.
+Yeah.
+Which is why I have been, I've been, uh, I've been happy to do it really.
+Um, because there's, you know, there's nothing like having, uh, demanding real world applications
+to, to push things along.
+Uh, and it's gotten us to think more broadly about, uh, you know, the kinds of data people have
+in the real world, you know, things are not always just grids of numbers.
+So let's talk about that a little bit more.
+What does your company, Julia Computing, do?
+Uh, so yeah, we do, we do a range of things.
+We do, uh, sometimes it's just, uh, support, uh, for teams using Julia, uh, where we, we do
+priority support, uh, help them with their code or, or sometimes, uh, prioritize, uh, fixes
+and improvements to Julia itself.
+Um, and then sometimes we do a little bit of custom development.
+If someone will say they want, uh, say an interface to a particular, uh, legacy system,
+uh, or a certain kind of functionality built, uh, we'll build that.
+Uh, and then we also have, uh, we have some products in the pipeline now.
+So we have a, uh, uh, product Julia Pro, uh, that's basically an easy to install all in
+one bundle that includes an IDE and everything that you can, uh, install easily on a variety
+of platforms.
+So, okay.
+Julia is free and open source in contrast to proprietary tools like MATLAB and Mathematica,
+but it sounds like you've got some kind of nice upsell products that are in the works.
+Yes.
+Yeah.
+We're, we're working on that.
+Now, do you think that the free and open source nature of Julia and the fact that it kind
+of replaces these, well, I don't know if it replaces, maybe it's augmentative or complimentary
+to MATLAB and Mathematica.
+Do you think it will put pressure on those proprietary companies to open up their language
+a bit more?
+Yeah, it's, it's a good question.
+I mean, uh, especially infrastructure kinds of software and programming languages, perhaps
+most of all, it's really becoming clear.
+You need to be open source.
+Uh, I think having a, you know, maybe even if there are cases where proprietary software
+makes sense, you know, a programming language is certainly not one of them, um, since, you
+know, it's, it's, it, it needs to be kind of for and by developers, you know, the, you
+use it to make software and it itself is software.
+So you ought to be able to work on it if you're using it.
+Uh, it makes sense.
+Uh, so it really, programming languages really need to be open source and we've really benefited
+from that and I, I wouldn't want to do it any other way.
+Uh, so, uh, for people who have proprietary languages, I'm, I'm not sure what's going to
+happen.
+It's, it's kind of an open question.
+So if there's somebody out there listening right now who is getting ready to start a
+new software project and they're deciding what language to use, why or why not should
+they use Julia?
+Uh, if they're, if you're doing anything, uh, numerically intensive, uh, that's going to
+involve, uh, data analysis or numerical computing, uh, you should definitely give it a look, uh,
+because we have, uh, very good libraries and, uh, very good facilities for that.
+Um, I suppose, I mean, the main reason not to use it is usually, uh, various kinds of
+legacy concerns.
+Like, you know, you're in an environment that is, uh, all Java, for example.
+Uh, if you're, you know, if you're say all Java or all C sharp, uh, environment, uh, bringing
+in Julia, if, if you're not getting the, you know, the, the benefits from its, uh, from
+its best, uh, qualities, then it's, it's might be counterproductive to bring it into that
+environment.
+Put it in a microservice.
+But in, uh, yeah, like a new microservice that, uh, you know, takes, takes some data,
+computes something and spits back an answer that Julia would be perfect for that.
+Yeah.
+Um, okay.
+Well, Jeff, what's in the future for Julia?
+Uh, well, we are, uh, we're always working on it, uh, and you can follow along on GitHub,
+of course.
+Um, but so we're, our, our goal now is to come up with a stable 1.0 release, uh, because
+we've done, uh, we've done five kind of pre-release, uh, versions now.
+We just released 0.5.
+Uh, so, and, and, and the one thing people are really asking for a lot is to have a, uh,
+you know, a 1.0, uh, release where we will commit to supporting it and not breaking, uh,
+compatibility for a long period of time.
+Uh, and where we're all, and we're, we're also iron out a lot of the basic issues in
+the, the language design and make sure it's really, really solid.
+Uh, so that's, that's kind of our focus right now is to, to get to 1.0.
+Okay, Jeff.
+Well, thanks for coming on to Software Engineering Daily.
+Uh, I'm impressed with the Julia language and I've been, uh, hearing about it a lot from,
+hearing a lot, a lot from my friend Srini who has hosted several shows, who is very involved
+in data science.
+He works at a place called DataQuest, uh, but actually, yeah, what are you seeing in
+terms of the data science community adopting Julia?
+I guess that's, that's kind of like the more industrial version of the scientific computing
+that we're talking about in academia, but, you know, this is, this, we didn't really discuss
+like kind of mid-sized or smaller sized companies and how they have data science stacks.
+How are you seeing that, that community adopt Julia?
+Yeah, we're, we're seeing more and more of those of the, the smaller and mid-sized, uh,
+companies, uh, are adopting Julia for data analysis.
+And so, yeah, we're, we're seeing examples of that just, just trickle in at a steady pace.
+That's great.
+Okay.
+Well, Jeff, um, thanks for coming to the show.
+I'll be watching Julia closely.
+Thanks to Symfano for sponsoring Software Engineering Daily.
+Symfano is a custom engineering shop where senior engineers tackle big tech challenges
+while learning from each other.
+Check it out at Symfano.com slash S-E Daily.
+That's S-Y-M-P-H-O-N-O dot com slash S-E Daily.
+Thanks again, Symfano.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Yeah.
+Wow.
+Wow.
+RAW.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Yeah.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.
+Wow.

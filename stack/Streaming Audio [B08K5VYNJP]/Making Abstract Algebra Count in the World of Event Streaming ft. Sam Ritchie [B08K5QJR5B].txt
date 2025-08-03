@@ -1,0 +1,510 @@
+What happens when you take the numbers out of arithmetic? And what does that have to do with
+stream processing? Well, a lot more than you might think. Sam Ritchie explains it all on
+today's episode of Streaming Audio, a podcast about Kafka, Confluent, and the cloud.
+Hello, and welcome back to another episode of Streaming Audio. I'm your host, Tim Berglund,
+and I am joined in the virtual studio today by Sam Ritchie. Sam is a Googler who has done,
+honestly, a lot of interesting things and is currently doing some work with machine learning.
+Sam, welcome to the show. Hey, Tim. Thanks for having me on.
+You got it. Tell us a little bit about yourself. I know that's a very vague introduction I gave.
+Tell us what you're doing now, how you got there. Yeah. Well, I'll keep this short. It's an odd
+road. So now, to give you the end of the story, I'm working at this kind of side lab at Google X.
+I think relevant to this topic, the slight sketch of my background is I spent a few years at Twitter
+building the kind of main product that came out of that was this project called Summingbird,
+and many little component libraries that were part of that. And this was, I would say,
+the first kind of big implementation that was public of this Lambda architecture idea that we
+can talk about. This is kind of a generalization of the MapReduce idea that Hadoop is all about.
+So I spent a few years there. We'll talk about that. And then moved on and spent a few years at Stripe
+building tools and infrastructure for machine learning engineers who were at Stripe doing fraud
+detection and then a number of other machine learning applications. And that's where we
+really kind of leveraged Kafka's ability to run applications online and run applications in batch
+mode and just sort of remove our data persistence long-term problems. So Twitter, Stripe, a few years
+off in the wilds of Colorado doing my own thing. And yeah, here we are.
+All right. Hey, that few years off in the wilds actually sounds interesting.
+Yeah.
+Unfortunately, off topic, but it would be great to explore sometime.
+Yeah. So Twitter, Stripe, and now Google. Tell us about Summingbird. I mean, that was a few years
+ago now, but what were the motivations for that? And really, what kind of a thing was it?
+Yeah. So Summingbird was an effort that I did with a colleague named Oscar Boykin.
+And this was a project that, okay, the motivation for this project was we both worked on the revenue
+team at Twitter and found ourselves writing many of these online, what I'll call like stream processing,
+well, stream processing jobs that had the shape that I think we're all familiar with in this field of
+some events come in at Twitter, their tweets, their clicks, their impressions, their just sort of any
+event you can generate, things that you'd go store in a log. And so many of these little projects we
+would take on at work were, you know, take the thing, break it into key value pairs, do the basically
+what MapReduce is good at. Get some sort of key and a value that's often just a number and feed it
+into a MapReduce system like Hadoop or Storm. And I'm sensitive to dropping these, these buzzwords. So
+we'll sort of unpack this as we go. Sure. But create some sort of key, have a value like a number that
+you care about. So this might be a tweet from a particular person on a particular day is the
+compound key, and then the values account. And you feed it into a system that will add all those numbers
+up and let you create the backing store for a dashboard that will tell you, you know, for every
+hour, how many tweets has this user kicked out, or for this ad, how many people have seen it per hour,
+things like this. So many, many things that all had this shape of group by a key, extract some number,
+add them all up, and then present them to a database, or present them to some sort of database
+that could inform a dashboard. So Hadoop is great at this. There's a lot of batch jobs that were
+running at Twitter that would calculate queries that looked like this every day. There's a character
+who comes into the story named Nathan Mars. He's an engineer who had a lot of experience from the
+closure world building these big batch jobs. And he created a system called Storm, which lets you do
+effectively that same style of job, but in real time. So you could feed in one event at a time,
+and some sort of database that could accept real-time updates would create, you know, key value
+pairs for you, which you could then have a real-time dashboard, you know, query and present something
+to you. Okay, so what Summingbird is, what Summingbird came out of was a motivation to like not have to go
+write the same thing twice. We just had dozens of jobs we were writing where you'd write the logic in
+Java to run on Hadoop, you'd write the logic in Clojure to run on Storm, and then you'd have to
+figure out how to make a dashboard that could look at one or the other or fuse the values together.
+And it was just a total mess. And like, honestly, just a huge waste of time. Like,
+which was kind of, kind of the, the classical criticism of the Lambda architecture. Like it was,
+it was responding, I think to give it its due, let us, let us honor sort of our elder here.
+That's right.
+It was responding to legitimate engineering constraints at the time, that it was very
+difficult to build one system that did batch well and real-time well. And, you know, we had the tools
+we had and say, okay, let's, let's fine, let's do everything twice. And then people started doing
+everything twice. And then we have guys like you, rage coding solutions that, that respond to that
+because it really hurt. It did hurt. It did hurt. And, you know, I, well, so Summingbird was our way
+of like reducing the pain a little bit, which, you know, it sounds like you did too. Like we all felt
+we wrote these things multiple times. Not only is it a pain because you're writing things multiple
+times, but you just can't do anything terribly interesting because all your mental bandwidth is
+consumed with, you know, orchestrating when the jobs are running, can the data actually match? So Oscar and I
+faced with yet another one of these things, sat down and Oscar's sort of enormous quantum information
+theorist brain began to pulse and quiver. This was very much a sort of mentee mentor relationship.
+Him too. Yeah. So strange. Seems like everybody I know fits that description.
+Yeah, that's right. That's right. More, more tangents we could, we could go off too.
+So, okay. So what Summingbird was, was just an attempt to remove the rage coding from our life.
+So you have the Lambda architecture. We were working alongside Nathan. The Summingbird was,
+it ended up being, let's see, how do I frame this? Well, give me a sec to collect this.
+So Summingbird is a library that we developed in Scala over a number of months that lets you write
+MapReduce logic. So you can take a representation of some source of data. So you say, here's some type,
+here's some object that represents just an abstract source of tweets or impressions or something like
+this. And so the type system knows what this abstract thing is going to produce. You can then write,
+you know, map calls, filters, all the operations that really are available to the Scala sequence API
+or any sort of functional programming. If, if you're familiar with these functional programming ideas of,
+you know, map, filter, flat map, reduce, you can chain up a number of steps of functions here.
+And what Summingbird does is it builds you a graph behind the scenes. So it's, it's doing this sort
+of first compilation phase where you get a big object that represents the thing you want to compute.
+And the thing you want to compute, you'd like to be able to run in Lambda architecture style
+on both systems. Now Scala gives you this beautiful way to sort of declare things about your types
+that the type system can pull in and validate as you're compiling your code. So an example of this
+would be, okay, I can't save anything to disk that's not serializable. So I don't have to worry
+about that as the code author, but the compiler will just tell me, Hey, you know, you've ended with
+the type that we don't know how to store to disk. And then somebody else can go build a library of
+serializations. So we had that component, we knew that we had to run in multiple places,
+we only wanted to write the code once. Now the trick with the Lambda architecture that it sounds
+like, again, you've experienced him is, you know, what if I fire this thing up on two systems?
+How do I know that I can go query one versus the other and not have any double counting or overlap?
+So Summingbird, in addition to being this library that lets you write the logic, you can take that
+logic, you can execute it on Hadoop, you can execute it on storm, or on, you know, Kafka streaming,
+or really anything that can know can speak this MapReduce language. But thanks to some type
+guarantees that we'll talk about, when you do that, and run on both systems, you get a reader
+that can pull data from both databases that you're writing to fuse the counts together in a way where
+there's guaranteed no overlap between them. And so that boundary stays completely clear. As you move
+forward, what would happen with this, what the result of this at Twitter was, is we'd have these
+jobs running in, you know, in batch mode on Hadoop, on multiple years of data. And then only the last
+two or three hours would really exist in a real time store. So our final dashboards had, you know,
+as the Lambda architecture pushes, the resilience of Hadoop's basically, you won't get an error,
+even on years of computation. And then this real time, extra little bump that you get from a system
+like storm. Then that, that being much more recent data, much more recent data. Yeah. Okay. So it,
+and the special sauce is in how all of that is able to happen without you having to really know
+about it at all. Right. Sounds like there's some interesting things going on under the covers to,
+to, to make that work. Yes. Okay. So in terms of, I have a sense,
+this is potentially a naive question, but sometimes I ask those, it's an API that tries to fix the,
+you know, the, the fundamental designed in flaw of the Lambda architecture, which is that you have
+to do everything two times. In what sense it is, is it like, or unlike Beam? Well, this will be an
+right answer because I'm not, I, I don't have experience in Beam, so I don't know. There you go. Okay.
+So it might be anyone who wants to comment on, you know, tweet us, tell us, tell us things we
+should have known. Yeah. Tell us things we should have known. Now this may be a problem.
+You know, there, there almost certainly are other attacks at this solution. The one,
+what Summingbird is, and you know, my presentation here is a little wandering, but what Summingbird is,
+is a very kind of odd, like functional programmers attempt at solving this by leaning as hard as
+possible in the type system to solve these problems for you. So let's see, I've been trying
+to walk up to this without, without freaking anybody out. That's okay. It's time.
+We're 13 minutes in or maybe 10 minutes in. I think it's safe. Okay. Yeah. So the question is,
+with the Lambda architecture is like one, how do you keep the boundaries separate? So the trick there
+is behind the scenes, what we do is we basically partition everything into clear batches. So every
+event that comes in has to have a timestamp and we keep those things. The timestamp follows events
+through the system as you process them and split them into key value pairs and join things. And so
+behind the scenes, what's happening, this is sort of one of two tricks behind the scenes. We're being
+very careful about accumulating things only into clear batches of data that might be one hour wide,
+say, where the real-time system is sort of transparently to the user storing a key comma hour
+of aggregation. And the real-time system has a marker on every single key value pair about how far up
+the aggregation has happened. So when you go to query, query the offline system, you get a marker that
+tells you given that in the current timestamp, what you have to fetch from the real-time store.
+Okay. That's sort of interesting, but not that interesting. The real sauce, the real special
+sauce with Summingbird was we started thinking about, okay, what restrictions do you have on what
+you can actually aggregate? Like numbers are fine, but numbers are boring, right? Like counting averages
+are a little less boring. Exponentially decaying averages are something you might want. That's a little
+less boring. And we're talking about for some key aggregating, for example, the exponentially
+weighted, exponentially decaying average of how many tweets someone's done just in the past.
+Lists are interesting. You might want to know what someone's entire, I mean, lists are what Twitter's
+all about. What tweets have I put out? Sets are interesting. So there's all these things that you
+might want to aggregate for a particular key. And they all look sort of the same. They have this
+property that if I have two of them, I can sort of quote, add them together and I get back the same
+thing, right? If I take two sets, I can take the union. If I have numbers, I can add them. If I have an
+average, well, how would you, how would you do that? You'd say, okay, well, I could track a count and I could
+track a sum of say the, you know, amount of money I've seen for a particular advertiser.
+And if I had both those things, I could just keep adding the pair up. And then when I want to finally
+read, I can turn that into an average. So that's fine. So this, the spidey sense kind of began to
+tingle as we were designing. And we realized that what we'd done here, what we'd found is
+a system that actually wasn't about numbers at all. It was about things that had this property
+that if I have two of them, I can add them together and get the same thing back. And a little bit
+beyond that, I'd like to be able to put kind of the parentheses of that addition wherever I wanted.
+So if I have three things, I'd like to be able to add, say two of them and store them in the offline
+database and then add the third one later, or take the old one and then sort of add, you know,
+all of the real-time things together and merge those two. So does that make sense? This kind of,
+I've got multiple things. I want to be able to add them up, like not shuffle them,
+but just add them in different groups, sort of put the parentheses wherever I want.
+Right. And I, so I don't want to, I have some idea of all of the things we want to talk about today,
+but just listening to you, even if I didn't have some idea of what you wanted to talk about, I would
+say, it sounds like you're kind of talking about abstract algebra. Like, you know, you said the
+numbers don't matter. What would I do if I took the numbers away and I have these things that are
+commutative or associative, you know, what, so is that where you went?
+That, yeah, that, that, thank you for the lead. That's, that's exactly where I'm going. We have
+this, this, what this looks like is, uh, the associative property. If you've got things that
+can add associatively and add just means combined in this case, actually, that's all we were leaning
+on. It turns out, you know, we're storing stuff in multiple databases. Uh, we want to add them
+together and get the same thing back out so we can rely on it on our dashboards we're building.
+That's not like a big interface to have to hold to. Um, so, you know, software engineer mind that
+I have would say, okay, just, well, code to the interface. Right. Um, but the, the extra step with
+this library is we said, actually, this interface is a particular thing called, and this was a math
+term that, you know, math is this kind of abstract algebra is this field of math that has these kind
+of freaky terms, but like everybody relax, it's going to be fine. This is a thing called a semi-group.
+Like a semi-group is just a data type that has those properties. And so why-
+Okay. Remind us of those properties again.
+So the properties are if I have two things that are of some type, I can have some operation. I can
+basically write an interface with a plus method and the plus method takes two of those things and
+returns the same type of thing. So a plus a gives you back an a.
+And if those things are, let's say, um, real numbers, everybody has some intuitive sense.
+Exactly. Just through training as children of what plus does, but this, this plus is not,
+this isn't arithmetic. We're taking the numbers out and saying more generally, this is a plus thing.
+And it does things with groups of those things at the same time.
+Yeah. And you probably have an intuitive sense, honestly, for a lot more than just numbers. Like,
+for example, lists, like we talked about, if I have two lists, I know that I can append them to each
+other and I'll get a new list back up. And if I append in, you know, if I keep lists in the same
+order and I append them and I can append them like groups of two in parallel and append the whole
+thing together, that's fine. I'll get the same list out no matter what order I choose to put the
+parentheses. So there's a lot of things that fit this, the sort of odd move is to squint and realize
+that these are all the same. Uh, these all can be coded to the same interface that just has a plus
+method. And also as a test associated with it, that if I give you things, if I give you three
+things, I should be able to say a plus B parentheses plus C is the same as a plus parentheses B plus C.
+Right. So does that, on some level, this might be confusing, but on a different level,
+like actually it's so simple that it might just seem, why are we even talking about this at all?
+It that's, that's what I want to encourage everybody as they're listening to your,
+your abstract algebra tutorial here. Um, there isn't a catch.
+There's no catch. There's no catch. To what Sam just said. It is, it is that thing.
+You know that you learned that when you were a little kid, they taught you in school,
+the associative property. And I remember thinking, this sounds dumb. Why are you teaching me? And I
+love math. Um, completely pointless. No, I'm not thinking it now. But, uh, you know, when,
+when those properties are a part of like middle school math curriculum or elementary school math
+curriculum, um, the point is not obvious at the time, but the point is about to be somewhat more
+useful here. Yeah. So the point, the point is not obvious at all in, uh, you know, back in elementary
+school. The point here is that once you realize that you found an interface that actually people
+have thought about for, you know, 150 years, you can, you can think about how you build applications
+in a very different way. So Summingbird can accept any system that gives you at the end of the day,
+a key value pair where the value is a type that conforms to this interface. So now what you can
+do is you can turn around and go to, uh, you know, you can go to GitHub, you can go to computer science
+literature. You can just start mining the internet for data structures where you can code up an
+implementation of this interface for them. And so we have the basic ones we talked about. Um,
+what it turns out is that there's this whole zoo of data structures that, you know, I personally would
+never have thought to try to use at a place like Twitter, just doing revenue dashboards, but that are
+just unbelievably fascinating. And okay. One example is this class of, uh, let's call them like
+sketching data structures. So these are data structures where they kind of look like the
+things you're familiar with. There's one called a hyper log log, for example. Um, so this is a set
+sort of, it's a set that I can put things into and I can ask it a question. How many things have you
+seen? How many unique things have you seen? Have you probably seen, have you probably seen it's not
+straightforward to add one hyper log log structure to another, right? It's absolutely not
+straightforward. Um, and it's so unstraightforward that you might not think, uh, if, if you were
+trying to build an application, like for example, yeah, roughly how many people have seen, uh, this
+ad or roughly how many followers, roughly how many people have seen this particular tweet, you might
+not, you know, reach for a thing like this. Um, but if you're just on the hunt for things where
+you can write this interface, you probably would find hyper log log separately. You realize, okay, I can,
+oh, so yeah, what this thing is, is you add, you can add stuff to it. You can ask it approximately
+how many things have you seen, but it doesn't get any bigger really as you add more things to it.
+So you can set up something that's roughly, you know, uh, you know, a megabyte, or I forget the
+error tolerance you get from that, but it's something that's so close to the exact number that it's absurd.
+You get, you get some relationship between size of the structure, uh, cardinality of the things
+you're probably counting and error tolerance. And so, yeah, you'll just never hit the limit.
+If you store a set, you're going to have to store every element to get this, uh, this problem.
+The theory is you, you, you don't get to do that. That's right.
+You don't have enough places to put all the things in the set.
+It's not going to happen. Um, so you go out, you mine the literature, you find the hyper log log,
+you put it in the zoo, which is this other library we built called algebra. You add an implementation
+of the semi group interface and you just move on and you keep mining and mining and mining.
+Then you put a different hat on, you come back and you say, okay, it's time to build
+stream processing applications. Uh, what could I use this for? What could I use that for?
+And you start to build systems that you probably never would have thought of before.
+And maybe you're not sure will work except for the fact that you're leaning on this interface
+that's so simple, but that you've built this entire massive engine around of Summingbird.
+And you could take those ideas and go implement them in some other system afterward. But
+I think the point here is really about the kind of creative boost you get from dissociating
+one, as we all know, like code to interfaces, don't code to concrete data types, but two,
+the interfaces you pick should be ones that other people in a different field have thought about
+for a long, long time. And that kind of gives you the secret, this, you know, the secret weapon
+moving across fields is always a secret weapon and pulling from math. It's just like a totally
+winning thing to do. It's awesome. It's, it's the, the, the best of the secret weapons because
+the tools tend to be powerful and to be, uh, to remind me, semi group is that interface you're
+talking about? Semi group is the interface. It's sort of, it's like, it's almost designed to be
+confusing. It should be called like an edible. If yes, if it, if it were a Java interface,
+it would most certainly be called edible, edible, but, uh, that's right. That's right.
+It's honestly, I think for Scala code, semi group is probably a better name, better name for it.
+Yeah. It'll get you more, it's more, it's more hipster for sure. Um, definitely.
+Yeah. So, okay. So we can go a few places. I can take you a little deeper down this rabbit hole.
+I think we've hit the, we've hit the app, the gold mine of abstract algebra.
+Yes. And you can go, actually go a little deeper if you'd like. This is, uh, if there's more
+you want to say, I'm, I'm with you and enjoying this. So don't stop on my account.
+Okay. Perfect. So we've set up the kind of pedestrian, you know, you're, you've got,
+you know, you're living the matrix life. You're just coding applications that add stuff. That's fine.
+That's, that's a good way to make a living. And then, you know, Neo calls and you see the semi group
+idea. And so you have to take the red pill. I think that's the one that takes you into the matrix.
+That's the one that takes you all the way down. Yeah. So then you go deeper and you say, okay, well,
+what, what else is there in this field? Uh, and again, what this field is,
+what abstract algebra is, is the idea. It's this field that came out of the observation that,
+okay, we do, there's a lot of properties we rely on when we add numbers together.
+What if we just broke that apart into all the different properties, again,
+that you probably learned in elementary school and just proved theorems or in the computing case,
+like wrote programs that only relied on one or two of those ideas or three,
+and we just built up. Just don't take the whole graph bag. Okay. So semi group gives
+you associativity. Associativity lets you store stuff in different databases. So Lambda architecture
+is only possible for associative data structures. Um, the next thing on the abstract algebra train
+is something called a monoid, um, not a monad.
+Uh, so again, again, we're in a zoo of sort of scary, uh, buzzwords, but a monoid is a semi group.
+So again, a thing you can, where you can add two together and get one back out,
+you can move the parentheses, uh, with a zero element. So with an identity.
+So this just means if you have a type where there's something you can add and it won't do anything in
+numbers, it's like literally the zero, uh, in lists, it's an empty list. If I append an empty list onto
+something, nothing happens. I get the same list back up. You know, if you have that, then you can talk
+about missing data. So then it's fine to say, you know, what happens if something's not in the offline
+store, if I haven't done a backfill yet, or say, I want to query, you know, five different databases
+for the same value and sort of add, add them all together. I've been storing my things in like
+multiple real-time stores. What if I'm missing data from something? Well, return the zero. And you know
+that when I do that ad thing I've implemented in the interface, nothing bad will happen. It'll just be
+identity. So there's this, this eerie thing we started to notice was there's this core correspondence
+between these ideas from abstract algebra and some sort of system optimization that you can do.
+So associativity gives you Lambda architecture. Missing values comes from adding the zero,
+which gets you, the interface then is called a monoid. And okay. So at this point, this gets
+a semi-group or a monoid is a semi-group with an identity operator or property.
+Yes. And you'd implement this by saying, okay, I have the addable or semi-group interface. I'm just
+going to extend it and I'm going to add a new method. And the method is, you know, in Scala,
+def zero or def identity. And it just returns something of the type that you're talking about.
+There you go.
+Um, just super simple. Again, like if you read the code and didn't see the word embarrassingly easy,
+it's more just that you've chosen the easy thing from an ancient field full of spells.
+Right. Right. Which is like, good. You know, you pick up like the ring, it's just a ring,
+but you put it on and, you know, and wow, you know, it was, um, don't put the ring on,
+by the way, the Lord of the Rings example, super bad plan, super bad plan. Um, okay. So just a,
+just another example here. And, uh, you know, you've got, uh,
+so if you, if you know that your data structure can commutatively combine,
+if you know that, for example, I can change the order of things like I can do with numbers,
+one plus two equals two plus one. Well, at this point, it's like, we, we sort of suspect that
+this is going to give you something. So we noodled about this. We thought, okay,
+we can write the interface. We know that some of our data structures can add commutatively.
+You know, we know we can shuffle numbers. We can't shuffle lists. We have to keep the order.
+We can put sets out of order because they don't care. Okay. So what does this give you? Well,
+in MapReduce world, what this gives you is the ability to start kind of pre-aggregating things
+as they appear. So there's this idea of kind of map side aggregation, but you can think if I'm,
+if I'm buffering something on a particular server, I'm getting my key value pairs. I haven't sent them
+off to the thing that's going to do the final aggregation yet. If I know that the, the ad is
+commutative, I can just start adding them whenever they show up. No problem. So what this does for
+you is if you have a system with a massively skewed distribution, say you've got, God,
+I think it was Justin Bieber when I worked at Twitter, like every time Bieber tweeted,
+it was just total chaos. There you go. Yeah. So if you try to aggregate with his user
+ID as a key, your system is just going to fall apart. But if you aggregate, you know, Justin Bieber
+key value pairs, and you know, you have a commutative data structure in your value type,
+then no problem. Those, whatever node is getting hammered goes ahead and just pre-aggregates. And
+it's just sending out instead of counts that look like one or two, every time something happens with
+this key, you send out, you know, a thousand or 2000, or if you're using sort of a different data
+structure and you're adding that together, you get the equivalent boost that you can imagine,
+where just that, that really heavy, that really hot key just gets kind of calmed down a little bit.
+So anyway, we, you know, we went down this rabbit hole, we built the whole library that is just like
+a whole zoo of these data structures and a bunch of interfaces that you can code to. And I spent a good,
+happy couple of years just mining computer science literature and finding things where,
+you know, you kind of go, I don't know if that's useful, but I'm gonna, I know I can write this
+operation and we'd add it to the zoo. And invariably somebody would find something just bizarre and wild
+and amazing to do with it. So I'm, I'm so hooked on stealing good ideas from people that sort of
+left the door unlocked. It's right. It's, it's wild.
+Um, and this was all scholar library and it, I just, I, um, I don't know if it's me adding this
+to what you're saying, or if you sort of speak with that accent, but I hear the,
+it's like the type system is kind of winking at us from the back of the conversation here.
+Yes, that's right.
+Yeah. So that, that seems like, uh, that was probably a good language to be working in.
+Yeah. The, the thing, yeah, that, that's a really good point. This kind of thing where you're saying,
+oh, you know, I'm, I'm, I'm trying to code, uh, against types that I want to have certain guarantees.
+Scala is a language where, you know, you can code in Scala like it's Java and you can have the type
+system be your, you know, effect, like sort of watching over your shoulder and being the bumper lanes
+in the balling alley, or you can take this sort of wizard demon thing and harness it and make it do work
+for you. And so, you know, you can say one, I need the, I need to make sure that these properties
+apply or don't submit the job. And it'll go do that. I need to go get these implementations of
+how to go add together. And they're written in some other library. I don't know where they are.
+I didn't import them. Please go find them. Compiler will do that for you. You might have something
+where you've got, you know, a tuple with 10 items in it. And each item is like a dictionary of a
+string. And then the value is another list and the list has hyperlog logs in it. And all of these
+things are, you're able to build up, you know, semi group and monoid instances for these, but it's
+just a bunch of work and you have to say, well, I've got a tuple of 10 things. I can make a monoid
+for that by getting 10 other monoids. And then I'll just sort of go down and element wise add them.
+So there's a lot of busy work that is just kind of a pain and makes you not reach for these tools,
+but you can get the compiler to build these things for you at compile time without you
+writing anything at all. And we use that trick in Summingbird all through. We use that trick
+for a similar library called with another scary name called bijection that was able to build these
+really complicated serializers for you for your data types without you really having to do anything
+at all. So yeah, totally agree. Use the compiler, lean in the compiler. It's not just something
+there to catch errors. It's there to be like harnessed and really bent to your will.
+Very nice. Now this, I'll call them backing stores. That word just came to mind. I don't
+like it, but the systems this was built on top of at Twitter were the contemporary systems at the time
+you were building it. You've mentioned Hadoop and Storm. Later on at Stripe, you took this and did some
+work with Kafka. How did it change there? This is like a no-brainer plug. I mean,
+the way it changed, and I'm not just saying it because we're friends. I'm not just saying it
+because I'm on the podcast. I mean, things just got much, much simpler. A lot of the problems with,
+well, another problem with a system like the Lambda architecture is, okay, say you solve the problem
+of writing the code twice. That gets you far. But what about your data? Your data is coming in,
+having to go replicate your data into something that can feed into an offline powerful error-free
+system. That's one engineering task. And then getting these things to go fly across the wire one
+at a time is another one. And in a sense, you just push the problem back. If you can write these jobs that
+can go run in multiple systems, now you have a lot of jobs running. It's like you have more pain
+than you did before, actually. And you know you have good ideas that if you could just solve this,
+they'd be exciting and wonderful. Right. And it's an engineering problem
+that feels like it's in the way of this beautiful and powerful abstraction you're trying to unleash
+on the world. That's right. So Kafka was just, I mean, just solve this. I just frankly didn't,
+at Stripe we, I think at Twitter, we did adopt Kafka. I'm just going to forget the details of
+what we used for the online streaming system. I'm sure that the move was made at some point, but
+very clearly at Stripe, it was Kafka from the beginning and it was just sort of a no-brainer.
+Events would come in, they go into Kafka, they get, you know, put into these wonderful sort of long
+logs that, you know, by topic that we're able to read out anytime we want. And offline Hadoop would
+consume these hourly batches of data that we stored in our logs and do its thing. Our real-time system,
+which was a custom, sort of a custom machine learning-ish version of what Storm did, just had
+a pointer into the same topic and would scan along. And the architecture of Summingbird there worked,
+I think very, very well with Kafka because frankly, it didn't matter if we double process data. We
+didn't have to worry about it at all because that was that implementation detail where everything is
+associated with a batch with a very hard boundary. And the boundary is derived from the event itself,
+not from when the processing happens. So if you, if you want just, you know, your real-time system dies,
+you just pick a couple of days ago, sometime before you think your offline systems process up to,
+and just start churning away and your pointer will catch up and you'll be fine.
+So, I mean, it really, I think is a nice example of how, if you get the right abstraction and lean
+really hard on it, classes of problems just, just go away. There's no more kind of, you don't get the,
+you know, the nice feeling of like solving hard problems, but they're just gone.
+Given all of this, it seems like it would be, there's, there's elements of what you're saying
+in Summingbird and the way you're describing Summingbird, elements that sound familiar with
+respect to, you know, what I'll call a mainstream stream processing language like Kafka streams,
+but then there's things that Kafka streams that didn't come close to doing that Summingbird does,
+not just with type abstractions, but with that catching up sort of functionality you were just
+talking about that you did at Stripe. Where do you see things going? I realize it's a terribly broad
+question, but given that you've built this stream processing thing, you, I'm assuming you sort of
+know the state of the mainstream APIs now, where do you think we're going to be in a few years?
+With the way we, we think about computations over unbounded data sets.
+Oh man. I mean, good question.
+Who knows, right?
+Yeah. So let's see. I think that the trend that I think is, well, one, let me just address
+something you just said. So you're talking about sort of, you frame Summingbird versus Kafka streaming.
+This is a, I would say that the, the, well, one, just concretely what the library is meant to be is
+not something to really compete with something like Kafka streaming. It's really just a, a little DSL,
+a domain specific language that just acknowledges and exposes the fact that, okay, Kafka streaming is
+plenty powerful enough to be the real time part of a system like the Lambda architecture, but you have
+to write stuff multiple times. So we'll just code generate for you the, what would be this finicky
+kind of delicate job where you're having to go figure out where the boundaries are and do things
+like this. We'll just take good patterns and have the compiler do them for you instead of you having
+to do it. So Kafka streaming, because of the level it sits at, one is a lot more accessible and usable
+than Summingbird, which if you picked up now, you'd hit this kind of abstraction wall probably.
+And you'd wonder where you're sitting. Kafka streaming, you're able to get started right away.
+So in one sense, they're a little different. But I think this difference gets at maybe my answer
+here, which is that, you know, the early systems really, really left you down in the nuts and bolts
+of things. You really were specifying a lot of how things happened and how to serialize your data
+and how shuffles, you know, you had key value pairs and not, well, the early systems gave you map and
+reduce functions and, you know, then, then they got a little bit more sophisticated, but yeah, it was,
+it was hard. It was hard. It was really hard. And because it was hard,
+people didn't do anything beyond a single MapReduce job. And I think the movement I would love to see,
+and I think is happening is toward more of kind of a declarative style of programming where,
+you know, this was our attempt at something where you say what you want to happen. You're still saying,
+you know, I want you to take this event and make key value pairs. So it's not quite there,
+you know, but you're saying, I want, I want this computation to happen. This is a computation I could have
+written in sort of the Scala sequence API. I don't care really how it happens on Hadoop or on Storm or on both.
+In fact, the data structures themselves are going to tell you everything you need to know about how
+to work with them. You want to know how to store these things, the data structure is going to tell
+you and the compiler is going to go ask the data structure for that. So really like this, this
+impulse toward, uh, declarative programming. This is what I want. I don't really care how it happens.
+You know, I've seen so many attempts at that, that it really just seems like this core, uh, desire for
+software engineers. Um, I, I maintained another project for a number of years called Kaskalog,
+which, uh, was like a DSL on top of, uh, MapReduce, right?
+That's right. You said people only ever wrote one job and I was thinking of Kaskalog as
+the thing that made it so that you could not. That's right. That's right. Kaskalog, you could
+make, you know, really like a, you could say the, it was this little data log implementation
+where you could just say things you wanted to be true or facts. So it was this logic programming
+language and it would go make something where the number of MapReduce jobs often was very surprising.
+You could express something logically sometimes that would take hundreds of jobs to compute.
+And you know, that's got its problems too, but the, the fact that your creativity is not bounded by
+the, uh, limitations of a particular system, I think is a very, very powerful, uh, primitive. So
+I'd like to go to a world where the information that really just slams everybody, like how do I store
+my data? How do I manage data sets? How do I know I can access down the road? How do I do this efficiently?
+Where that's all just part of the data sets themselves, the data structures themselves.
+And, you know, the tools we build are able to kind of communicate behind the scenes and just not,
+just not bother us with that stuff. I think it's been too long, Tim. We spent too much time.
+It's been too much rage coding. Um, you know, I'd be curious to hear what you think, but I think this,
+this, you know, in a hundred years, are we going to be specifying sort of,
+of, you know, beyond just responding to a cost estimate from a compiler that you've got to think
+with many of these, many of these jobs, um, you'll be kind of finding very interesting data
+structures, taking cues from them about what sorts of things they could tell you about the world.
+And then asking your system if, if it's possible to build this stuff. And often it will be because
+you're leaning on these sort of tried and true, amazing gems that we just haven't really plugged
+into our incredible computing engine yet.
+I appreciate you asking me. I, I, I'm normally the one asking the questions here.
+Um, and I actually don't have a solid answer to that, but I know,
+I know what has happened since we've had computers and since we've had programming languages
+just over the last, like, you know, three generations of, of human lives. And that's that,
+that, uh, things have become more abstract, right? We have, we have added layers of abstraction.
+That's Grady Booch's observation that that's the history of computing. Um, we don't do any less.
+We don't think any less, uh, you know, uh, in the mid 20th century, uh, John Maynard Keynes
+predicted that by now people would work, he was an economist, people would work about 15 hours a week.
+He was just sort of extrapolating productivity gains. And he said, well, you'd only need to work
+15 hours a week to provide for your needs. And we're like, that's, that's cute, John. It's not the case.
+Uh, we work a lot. We just have more. So, you know, we never work less. We never think less
+as, as developers, but our tools do get more abstract and therefore more powerful. So
+what you're saying is, is credible in terms of that framework that I use to think about the future.
+Um, because, um, you know, where's my data getting stored and Hey, when you write to the data store,
+uh, should you retry if it doesn't go through the first time? I'm, you know, great. That's give me
+a break. Why, why am I thinking about a thing like that? Um, that's, that's way down in the weeds.
+And the first, the first generation of anything we build has to be like that because nobody's smart
+enough to, to build the more abstract thing. But then once you use that, you get some experience
+with it. You get thinking like what you've provided here.
+Well, I think, yeah, I think the, the, um, and what you're saying, what you're saying is really
+interesting, right? There's this, the, the, the going up the abstraction ladder, I think
+does not, it's not obvious that that is going to be, that that's a great thing, that that equals
+more power. I mean, I know a number of developers worry about this sort of future when we're just
+really plugging components together and the creativity has been pulled out of the enterprise. And I think
+that's, that's a valid fear with certain types of abstractions. You know, a lot of people love
+their Emacs because they can really get in and sort of open up, uh, open up the editor and do anything
+they want. Um, so I think what we're after is, and I, these are the abstractions I think you were
+talking about, you know, we don't want abstractions that box us in and say, okay, here's something where
+you don't know what's going on inside, but there's a limited number of ways to put it together and just do
+that. You know, we want to find these abstractions that are really like portals to another entire
+field. And I think that that's, that's what the attempt was here. And that's not something at all
+that I knew in advance. It was, sometimes you find an idea that just tidies code for you and
+maybe solves a problem. So you don't have to think about it again, like this sort of retry dance that
+you're mentioning. Um, but sometimes you find something that almost zooms you in to an entirely new,
+like, you know, it's just as creative and open as when you started, you just sort of zoomed in
+on the Mandelbrot fractal. And I think that, you know, if I were to really push and evangelize for
+people to go, like, if you're going to do a concrete thing, like look at the systems you have
+and just see if there's something where if you kind of cocked your head and squinted,
+there's some simple idea that you could actually spend years on just sort of plugging in different
+pieces to that. It's maybe not the best way of framing it, but the, the, the dive into something
+like the field of abstract algebra and realizing that system optimizations actually seem one-to-one
+with these different properties, just, I mean, you become like an explorer in a land that,
+you know, no one's seen before. Um, so those are the abstractions we want, uh, to hot it down,
+I think. My guest today has been Sam Ritchie. Sam, thanks for being a part of Streaming Audio.
+Tim, thank you so much. I really appreciate the time.
+And there you have it. I hope this podcast was helpful to you. If you want to discuss it or ask
+a question, you can always reach out to me at at TL Berglund on Twitter. That's at T-L-B-E-R-G-L-U-N-D.
+Or you can leave a comment on a YouTube video or reach out in community Slack. There's a Slack
+signup link in the show notes if you want to register there. And while you're at it,
+please subscribe to our YouTube channel and to this podcast wherever fine podcasts are sold.
+And if you subscribe through iTunes, be sure to leave us a review there.
+That helps other people discover the podcast, which we think is a good thing.
+So thanks for your support and we'll see you next time.
+Have a good one.
+Bye.
+Bye.
+Bye.
+Bye.
+Bye.
+Bye.
+Bye.
+Bye.
+Bye.
+Bye.
+Bye.
+Bye.
+Bye.
