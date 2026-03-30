@@ -1,5 +1,7 @@
 # Arcanum
 
+[Audio Overviews](https://standardgalactic.github.io/arcanum/working/)
+
 So, we started by agreeing that machine learning breakthroughs aren’t about inventing new stuff anymore but about duct-taping all the old stuff together in clever ways—because clearly, the human brain running on 20W is too much competition for today’s power-hungry AI models.
 
 Then we shifted gears to praise cultural exchange as the true driver of innovation, because borders and copyright are just fancy ways to say, “No, you can’t have nice things.”
