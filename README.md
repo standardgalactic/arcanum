@@ -1,6 +1,10 @@
 # Arcanum
 
+[The Illusions of Reality](https://standardgalactic.github.io/arcanum/overview/)
+
+<!--
 [Audio Overviews](https://standardgalactic.github.io/arcanum/working/)
+-->
 
 So, we started by agreeing that machine learning breakthroughs aren’t about inventing new stuff anymore but about duct-taping all the old stuff together in clever ways—because clearly, the human brain running on 20W is too much competition for today’s power-hungry AI models.
 
